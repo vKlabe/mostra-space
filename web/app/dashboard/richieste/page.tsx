@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import InquiryStatusButton from "@/components/dashboard/InquiryStatusButton";
 import DeleteInquiryButton from "@/components/dashboard/DeleteInquiryButton";
+import DataErrorCard from "@/components/system/DataErrorCard";
+import EmptyStateCard from "@/components/system/EmptyStateCard";
+import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import { getPlanLimits, normalizePlanName } from "@/lib/plans";
 
 type DashboardInquiriesPageProps = {
@@ -255,12 +258,16 @@ export default async function DashboardInquiriesPage({
       }
     >
       {inquiriesError && (
-        <div className="mb-6 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-          <p className="text-lg font-medium">Errore caricamento richieste</p>
-
-          <p className="mt-2 text-sm text-red-100">
-            {inquiriesError.message}
-          </p>
+        <div className="mb-6">
+          <DataErrorCard
+            title="Non riesco a caricare le richieste"
+            message="Le richieste non sono state recuperate correttamente da Supabase. Puoi ricaricare la pagina oppure tornare alla dashboard."
+            details={getErrorMessage(inquiriesError)}
+            actionHref="/dashboard/richieste"
+            actionLabel="Ricarica richieste"
+            secondaryHref="/dashboard"
+            secondaryLabel="Dashboard"
+          />
         </div>
       )}
 
@@ -338,29 +345,30 @@ export default async function DashboardInquiriesPage({
         </div>
 
         {!inquiriesError && safeInquiries.length === 0 && (
-          <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
-            <p className="text-neutral-300">
-              Non hai ancora ricevuto richieste.
-            </p>
-
-            <p className="mt-2 text-sm text-neutral-500">
-              Quando un visitatore compilera il form pubblico di una galleria,
-              la richiesta apparira qui.
-            </p>
+          <div className="mt-8">
+            <EmptyStateCard
+              eyebrow="Nessuna richiesta"
+              title="Non hai ancora ricevuto richieste"
+              message="Quando un visitatore compilera il form pubblico di una galleria o di un opera, la richiesta apparira qui."
+              actionHref="/gallerie"
+              actionLabel="Apri gallerie pubbliche"
+            />
           </div>
         )}
 
-        {safeInquiries.length > 0 && visibleInquiries.length === 0 && (
-          <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
-            <p className="text-neutral-300">
-              Nessuna richiesta in questa categoria.
-            </p>
-
-            <p className="mt-2 text-sm text-neutral-500">
-              Cambia filtro per visualizzare altre richieste.
-            </p>
-          </div>
-        )}
+        {!inquiriesError &&
+          safeInquiries.length > 0 &&
+          visibleInquiries.length === 0 && (
+            <div className="mt-8">
+              <EmptyStateCard
+                eyebrow="Filtro vuoto"
+                title="Nessuna richiesta in questa categoria"
+                message="Cambia filtro per visualizzare altre richieste. Le richieste non sono state eliminate: non rientrano nel filtro selezionato."
+                actionHref="/dashboard/richieste"
+                actionLabel="Mostra tutte"
+              />
+            </div>
+          )}
 
         {visibleInquiries.length > 0 && (
           <div className="mt-6 space-y-4">

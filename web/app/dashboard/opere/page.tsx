@@ -4,6 +4,9 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import CreateArtworkForm from "@/components/dashboard/CreateArtworkForm";
 import EditArtworkForm from "@/components/dashboard/EditArtworkForm";
 import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
+import DataErrorCard from "@/components/system/DataErrorCard";
+import EmptyStateCard from "@/components/system/EmptyStateCard";
+import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import {
   bytesToMb,
   canUploadArtwork,
@@ -115,19 +118,15 @@ export default async function DashboardArtworksPage({
     return (
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-5xl">
-          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-red-400">
-            Errore
-          </p>
-
-          <h1 className="text-4xl font-semibold">Profilo non trovato</h1>
-
-          <p className="mt-4 text-neutral-300">
-            Non riesco a leggere il profilo utente.
-          </p>
-
-          <div className="mt-8 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-            {profileError?.message || "Profilo assente."}
-          </div>
+          <DataErrorCard
+            title="Profilo non trovato"
+            message="Non riesco a leggere il profilo utente. Effettua di nuovo il login oppure torna alla dashboard."
+            details={getErrorMessage(profileError)}
+            actionHref="/auth/login"
+            actionLabel="Vai al login"
+            secondaryHref="/dashboard"
+            secondaryLabel="Dashboard"
+          />
         </section>
       </main>
     );
@@ -243,12 +242,16 @@ export default async function DashboardArtworksPage({
       }
     >
       {artworksError && (
-        <div className="mb-6 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-          <p className="text-lg font-medium">Errore caricamento opere</p>
-
-          <p className="mt-2 text-sm text-red-100">
-            {artworksError.message}
-          </p>
+        <div className="mb-6">
+          <DataErrorCard
+            title="Non riesco a caricare le opere"
+            message="Le opere non sono state recuperate correttamente da Supabase. Puoi ricaricare la pagina oppure tornare alla dashboard."
+            details={getErrorMessage(artworksError)}
+            actionHref="/dashboard/opere"
+            actionLabel="Ricarica opere"
+            secondaryHref="/dashboard"
+            secondaryLabel="Dashboard"
+          />
         </div>
       )}
 
@@ -349,29 +352,29 @@ export default async function DashboardArtworksPage({
             })}
           </div>
 
-          {safeArtworks.length === 0 && (
-            <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
-              <p className="text-neutral-300">
-                Non hai ancora creato opere.
-              </p>
-
-              <p className="mt-2 text-sm text-neutral-500">
-                Usa il form a sinistra per aggiungere la prima opera.
-              </p>
+          {!artworksError && safeArtworks.length === 0 && (
+            <div className="mt-8">
+              <EmptyStateCard
+                eyebrow="Archivio vuoto"
+                title="Non hai ancora creato opere"
+                message="Usa il form di caricamento per aggiungere la prima opera al tuo archivio. Dopo il caricamento potrai inserirla in una galleria virtuale."
+              />
             </div>
           )}
 
-          {safeArtworks.length > 0 && visibleArtworks.length === 0 && (
-            <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
-              <p className="text-neutral-300">
-                Nessuna opera in questa categoria.
-              </p>
-
-              <p className="mt-2 text-sm text-neutral-500">
-                Cambia filtro oppure crea una nuova opera.
-              </p>
-            </div>
-          )}
+          {!artworksError &&
+            safeArtworks.length > 0 &&
+            visibleArtworks.length === 0 && (
+              <div className="mt-8">
+                <EmptyStateCard
+                  eyebrow="Filtro vuoto"
+                  title="Nessuna opera in questa categoria"
+                  message="Cambia filtro oppure crea una nuova opera. Le opere non sono state eliminate: semplicemente non rientrano nel filtro selezionato."
+                  actionHref="/dashboard/opere"
+                  actionLabel="Mostra tutte"
+                />
+              </div>
+            )}
 
           {visibleArtworks.length > 0 && (
             <div className="mt-6 space-y-6">

@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import CreateGalleryForm from "@/components/dashboard/CreateGalleryForm";
+import DataErrorCard from "@/components/system/DataErrorCard";
+import EmptyStateCard from "@/components/system/EmptyStateCard";
+import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import {
   canCreateGallery,
   canUseTemplateByIndex,
@@ -135,19 +138,15 @@ export default async function DashboardGalleriesPage({
     return (
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-5xl">
-          <p className="mb-4 text-sm uppercase tracking-[0.35em] text-red-400">
-            Errore
-          </p>
-
-          <h1 className="text-4xl font-semibold">Profilo non trovato</h1>
-
-          <p className="mt-4 text-neutral-300">
-            Non riesco a leggere il profilo utente.
-          </p>
-
-          <div className="mt-8 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-            {profileError?.message || "Profilo assente."}
-          </div>
+          <DataErrorCard
+            title="Profilo non trovato"
+            message="Non riesco a leggere il profilo utente. Effettua di nuovo il login oppure torna alla dashboard."
+            details={getErrorMessage(profileError)}
+            actionHref="/auth/login"
+            actionLabel="Vai al login"
+            secondaryHref="/dashboard"
+            secondaryLabel="Dashboard"
+          />
         </section>
       </main>
     );
@@ -263,20 +262,21 @@ export default async function DashboardGalleriesPage({
       }
     >
       {(templatesError || galleriesError) && (
-        <div className="mb-6 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-          <p className="text-lg font-medium">Errore caricamento dati</p>
-
-          {templatesError && (
-            <p className="mt-2 text-sm text-red-100">
-              Template: {templatesError.message}
-            </p>
-          )}
-
-          {galleriesError && (
-            <p className="mt-2 text-sm text-red-100">
-              Gallerie: {galleriesError.message}
-            </p>
-          )}
+        <div className="mb-6">
+          <DataErrorCard
+            title="Non riesco a caricare le gallerie"
+            message="Una o piu query verso Supabase non hanno risposto correttamente. Puoi ricaricare la pagina oppure tornare alla dashboard."
+            details={[
+              getErrorMessage(templatesError, ""),
+              getErrorMessage(galleriesError, ""),
+            ]
+              .filter(Boolean)
+              .join(" | ")}
+            actionHref="/dashboard/gallerie"
+            actionLabel="Ricarica gallerie"
+            secondaryHref="/dashboard"
+            secondaryLabel="Dashboard"
+          />
         </div>
       )}
 
@@ -366,29 +366,29 @@ export default async function DashboardGalleriesPage({
             })}
           </div>
 
-          {safeGalleries.length === 0 && (
-            <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
-              <p className="text-neutral-300">
-                Non hai ancora creato gallerie.
-              </p>
-
-              <p className="mt-2 text-sm text-neutral-500">
-                Usa il form a sinistra per creare la prima bozza.
-              </p>
+          {!galleriesError && safeGalleries.length === 0 && (
+            <div className="mt-8">
+              <EmptyStateCard
+                eyebrow="Archivio vuoto"
+                title="Non hai ancora creato gallerie"
+                message="Usa il form di creazione per generare la prima bozza. Potrai poi aggiungere opere, cover, template e pubblicarla."
+              />
             </div>
           )}
 
-          {safeGalleries.length > 0 && visibleGalleries.length === 0 && (
-            <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
-              <p className="text-neutral-300">
-                Nessuna galleria in questa categoria.
-              </p>
-
-              <p className="mt-2 text-sm text-neutral-500">
-                Cambia filtro oppure crea una nuova galleria.
-              </p>
-            </div>
-          )}
+          {!galleriesError &&
+            safeGalleries.length > 0 &&
+            visibleGalleries.length === 0 && (
+              <div className="mt-8">
+                <EmptyStateCard
+                  eyebrow="Filtro vuoto"
+                  title="Nessuna galleria in questa categoria"
+                  message="Cambia filtro oppure crea una nuova galleria. Le gallerie non sono state eliminate: non rientrano nel filtro selezionato."
+                  actionHref="/dashboard/gallerie"
+                  actionLabel="Mostra tutte"
+                />
+              </div>
+            )}
 
           {visibleGalleries.length > 0 && (
             <div className="mt-6 space-y-4">
