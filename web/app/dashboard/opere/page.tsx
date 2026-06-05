@@ -397,11 +397,20 @@ export default async function DashboardArtworksPage({
                     }}
                   />
 
-                  <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-xs text-neutral-500">
-                    Peso file:{" "}
-                    {artwork.file_size_bytes
-                      ? `${bytesToMb(artwork.file_size_bytes).toFixed(2)} MB`
-                      : "Non registrato"}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <a
+                      href={`/dashboard/opere/${artwork.id}`}
+                      className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                    >
+                      Dettaglio
+                    </a>
+
+                    <div className="rounded-full border border-neutral-800 bg-neutral-950 px-4 py-2 text-xs text-neutral-500">
+                      Peso file:{" "}
+                      {artwork.file_size_bytes
+                        ? `${bytesToMb(artwork.file_size_bytes).toFixed(2)} MB`
+                        : "Non registrato"}
+                    </div>
                   </div>
 
                   <DeleteArtworkButton
