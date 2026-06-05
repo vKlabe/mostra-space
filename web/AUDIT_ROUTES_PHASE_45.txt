@@ -1,0 +1,19 @@
+AUDIT ROUTE / API / LINK — FASE 45
+Generato: 06/04/2026 21:42:08
+
+=== PAGINE APP ===
+
+=== API ROUTES ===
+
+=== OCCORRENZE /viewer/gallerie ===
+
+=== OCCORRENZE /api/dashboard/inquiries/export ===
+
+=== OCCORRENZE /api/dashboard/inquiries-export ===
+
+=== CARTELLE SOSPETTE ===
+ESISTE: app\viewer
+NON ESISTE: app\dashboard\gallerie\[galleryId]\editor
+ESISTE: app\api\dashboard\inquiries\export
+ESISTE: app\dashboard\gallerie-editor
+ESISTE: app\unity-frame
