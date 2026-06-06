@@ -1,0 +1,175 @@
+﻿AUDIT PRODUZIONE / STABILIZZAZIONE
+Generato: 2026-06-06 11:40:13
+Root: G:\Users\User\ArtPortalImmersivo\web
+
+============================================================
+1. FILE ROOT IMPORTANTI
+============================================================
+ESISTE: proxy.ts
+NON ESISTE: middleware.ts
+ESISTE: next.config.ts
+ESISTE: package.json
+ESISTE: tsconfig.json
+ESISTE: .env.local
+ESISTE: .gitignore
+
+============================================================
+2. PAGINE APP
+============================================================
+
+============================================================
+3. LAYOUT / ERROR / LOADING / NOT FOUND
+============================================================
+ESISTE: app\layout.tsx
+ESISTE: app\error.tsx
+ESISTE: app\global-error.tsx
+ESISTE: app\not-found.tsx
+ESISTE: app\loading.tsx
+
+============================================================
+4. API ROUTES
+============================================================
+app\api\admin\galleries\[galleryId]\route.ts
+app\api\admin\inquiries\[inquiryId]\route.ts
+app\api\admin\templates\[templateId]\route.ts
+app\api\admin\users\[userId]\route.ts
+app\api\dashboard\artworks\[artworkId]\route.ts
+app\api\dashboard\artworks\route.ts
+app\api\dashboard\galleries\[galleryId]\route.ts
+app\api\dashboard\galleries\[galleryId]\status\route.ts
+app\api\dashboard\galleries\route.ts
+app\api\dashboard\gallery-artworks\route.ts
+app\api\dashboard\inquiries\[inquiryId]\route.ts
+app\api\dashboard\inquiries\[inquiryId]\status\route.ts
+app\api\dashboard\inquiries-export\route.ts
+app\api\health\route.ts
+app\api\public\gallery-inquiries\route.ts
+app\api\unity\galleries\[galleryId]\route.ts
+app\api\unity\gallery-artworks\[galleryArtworkId]\transform\route.ts
+
+============================================================
+5. CARTELLE SOSPETTE / LEGACY
+============================================================
+NON ESISTE: app\viewer
+NON ESISTE: app\dashboard\inquiries
+NON ESISTE: app\dashboard\inquiries\export
+NON ESISTE: app\api\dashboard\inquiries\export
+ESISTE: app\api\dashboard\inquiries-export
+  - app\api\dashboard\inquiries-export\route.ts
+ESISTE: app\dashboard\gallerie-editor
+  - app\dashboard\gallerie-editor\[galleryId]\page.tsx
+  - app\dashboard\gallerie-editor\page.tsx
+ESISTE: app\unity-frame
+  - app\unity-frame\page.tsx
+ESISTE: app\dashboard\opere\[artworkId]
+  - app\dashboard\opere\[artworkId]\page.tsx
+ESISTE: app\admin
+  - app\admin\gallerie\page.tsx
+  - app\admin\page.tsx
+  - app\admin\richieste\page.tsx
+  - app\admin\storage\page.tsx
+  - app\admin\template\page.tsx
+  - app\admin\utenti\page.tsx
+ESISTE: components\admin
+  - components\admin\AdminGalleryControls.tsx
+  - components\admin\AdminInquiryControls.tsx
+  - components\admin\AdminShell.tsx
+  - components\admin\AdminTemplateControls.tsx
+  - components\admin\AdminUserControls.tsx
+ESISTE: components\system
+  - components\system\DataErrorCard.tsx
+  - components\system\DataWarningCard.tsx
+  - components\system\EmptyStateCard.tsx
+ESISTE: lib\admin
+  - lib\admin\requireAdmin.ts
+ESISTE: lib\system
+  - lib\system\getErrorMessage.ts
+
+============================================================
+6. OCCORRENZE LINK / ROUTE LEGACY
+============================================================
+
+--- Pattern: /viewer/gallerie ---
+Nessuna occorrenza.
+
+--- Pattern: /dashboard/inquiries ---
+Nessuna occorrenza.
+
+--- Pattern: /dashboard/inquiries/export ---
+Nessuna occorrenza.
+
+--- Pattern: /api/dashboard/inquiries/export ---
+Nessuna occorrenza.
+
+--- Pattern: /api/dashboard/inquiries-export ---
+Nessuna occorrenza.
+
+--- Pattern: /dashboard/gallerie-editor ---
+Nessuna occorrenza.
+
+--- Pattern: /unity-frame ---
+Nessuna occorrenza.
+
+--- Pattern: localhost:3000 ---
+Nessuna occorrenza.
+
+--- Pattern: 127.0.0.1 ---
+Nessuna occorrenza.
+
+--- Pattern: http://localhost ---
+Nessuna occorrenza.
+
+============================================================
+7. USO SERVICE ROLE / CREATE ADMIN CLIENT
+============================================================
+
+--- Pattern sicurezza: SUPABASE_SERVICE_ROLE_KEY ---
+Nessuna occorrenza.
+
+--- Pattern sicurezza: createAdminClient ---
+Nessuna occorrenza.
+
+--- Pattern sicurezza: @/lib/supabase/admin ---
+Nessuna occorrenza.
+
+--- Pattern sicurezza: service_role ---
+Nessuna occorrenza.
+
+============================================================
+8. API ADMIN PRESENTI
+============================================================
+app\api\admin\galleries\[galleryId]\route.ts
+app\api\admin\inquiries\[inquiryId]\route.ts
+app\api\admin\templates\[templateId]\route.ts
+app\api\admin\users\[userId]\route.ts
+
+============================================================
+9. FILE POTENZIALMENTE GRANDI IN PUBLIC
+============================================================
+44.21 MB — public\unity\artportal-viewer\Build\artportal-viewer.wasm
+12.17 MB — public\unity\artportal-viewer\Build\artportal-viewer.data
+0.44 MB — public\unity\artportal-viewer\Build\artportal-viewer.framework.js
+0.03 MB — public\unity\artportal-viewer\Build\artportal-viewer.loader.js
+0.01 MB — public\unity\artportal-viewer\index.html
+0 MB — public\unity\artportal-viewer\TemplateData\unity-logo-light.png
+0 MB — public\unity\artportal-viewer\TemplateData\unity-logo-dark.png
+0 MB — public\unity\artportal-viewer\StreamingAssets\ArtPortal\demo-gallery.json
+0 MB — public\unity\artportal-viewer\TemplateData\favicon.ico
+0 MB — public\unity\artportal-viewer\TemplateData\webmemd-icon.png
+0 MB — public\unity\artportal-viewer\TemplateData\style.css
+0 MB — public\next.svg
+0 MB — public\unity\artportal-viewer\TemplateData\unity-logo-title-footer.png
+0 MB — public\globe.svg
+0 MB — public\unity\artportal-viewer\TemplateData\MemoryProfiler.png
+0 MB — public\file.svg
+0 MB — public\window.svg
+0 MB — public\unity\artportal-viewer\TemplateData\fullscreen-button.png
+0 MB — public\vercel.svg
+0 MB — public\unity\artportal-viewer\TemplateData\progress-bar-empty-light.png
+0 MB — public\unity\artportal-viewer\TemplateData\progress-bar-empty-dark.png
+0 MB — public\unity\artportal-viewer\TemplateData\progress-bar-full-light.png
+0 MB — public\unity\artportal-viewer\TemplateData\progress-bar-full-dark.png
+
+============================================================
+10. CARTELLE VUOTE IN APP / COMPONENTS / LIB
+============================================================
