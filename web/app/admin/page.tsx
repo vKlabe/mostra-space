@@ -1,5 +1,8 @@
 import AdminShell from "@/components/admin/AdminShell";
+import DataErrorCard from "@/components/system/DataErrorCard";
+import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import { getErrorMessage } from "@/lib/system/getErrorMessage";
 
 type Profile = {
   id: string;
@@ -169,42 +172,38 @@ export default async function AdminOverviewPage() {
   const adminName =
     profile.display_name || profile.full_name || profile.email || "Admin";
 
+  const hasAdminDataError =
+    profilesResult.error ||
+    galleriesResult.error ||
+    artworksResult.error ||
+    inquiriesResult.error;
+
+  const adminErrorDetails = [
+    getErrorMessage(profilesResult.error, ""),
+    getErrorMessage(galleriesResult.error, ""),
+    getErrorMessage(artworksResult.error, ""),
+    getErrorMessage(inquiriesResult.error, ""),
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
   return (
     <AdminShell
       title={`Ciao, ${adminName}`}
       subtitle="Panoramica generale della piattaforma: utenti, gallerie, opere, richieste, storage e piani account."
       activeSection="overview"
     >
-      {(profilesResult.error ||
-        galleriesResult.error ||
-        artworksResult.error ||
-        inquiriesResult.error) && (
-        <div className="mb-6 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-          <p className="text-lg font-medium">Errore caricamento dati admin</p>
-
-          {profilesResult.error && (
-            <p className="mt-2 text-sm text-red-100">
-              Profiles: {profilesResult.error.message}
-            </p>
-          )}
-
-          {galleriesResult.error && (
-            <p className="mt-2 text-sm text-red-100">
-              Galleries: {galleriesResult.error.message}
-            </p>
-          )}
-
-          {artworksResult.error && (
-            <p className="mt-2 text-sm text-red-100">
-              Artworks: {artworksResult.error.message}
-            </p>
-          )}
-
-          {inquiriesResult.error && (
-            <p className="mt-2 text-sm text-red-100">
-              Inquiries: {inquiriesResult.error.message}
-            </p>
-          )}
+      {hasAdminDataError && (
+        <div className="mb-6">
+          <DataErrorCard
+            title="Alcuni dati admin non sono stati caricati"
+            message="Una o più query della control room non hanno risposto correttamente. I dati visualizzati potrebbero essere parziali."
+            details={adminErrorDetails}
+            actionHref="/admin"
+            actionLabel="Ricarica admin"
+            secondaryHref="/dashboard"
+            secondaryLabel="Dashboard"
+          />
         </div>
       )}
 
@@ -319,7 +318,11 @@ export default async function AdminOverviewPage() {
 
           <div className="space-y-3">
             {latestProfiles.length === 0 && (
-              <p className="text-sm text-neutral-500">Nessun utente.</p>
+              <EmptyStateCard
+                eyebrow="Nessun utente"
+                title="Nessuna registrazione recente"
+                message="Quando nuovi utenti si registreranno, appariranno qui."
+              />
             )}
 
             {latestProfiles.map((item) => (
@@ -376,7 +379,11 @@ export default async function AdminOverviewPage() {
 
           <div className="space-y-3">
             {latestGalleries.length === 0 && (
-              <p className="text-sm text-neutral-500">Nessuna galleria.</p>
+              <EmptyStateCard
+                eyebrow="Nessuna galleria"
+                title="Nessuna galleria recente"
+                message="Quando gli utenti creeranno nuovi spazi, appariranno qui."
+              />
             )}
 
             {latestGalleries.map((item) => (
@@ -427,7 +434,11 @@ export default async function AdminOverviewPage() {
 
           <div className="space-y-3">
             {latestInquiries.length === 0 && (
-              <p className="text-sm text-neutral-500">Nessuna richiesta.</p>
+              <EmptyStateCard
+                eyebrow="Nessuna richiesta"
+                title="Nessun lead recente"
+                message="Quando arriveranno richieste pubbliche, appariranno qui."
+              />
             )}
 
             {latestInquiries.map((item) => (

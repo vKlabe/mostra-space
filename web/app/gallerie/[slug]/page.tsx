@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PublicGalleryInquiryForm from "@/components/public/PublicGalleryInquiryForm";
+import DataErrorCard from "@/components/system/DataErrorCard";
+import EmptyStateCard from "@/components/system/EmptyStateCard";
+import { getErrorMessage } from "@/lib/system/getErrorMessage";
 
 type PublicGalleryPageProps = {
   params: Promise<{
@@ -124,7 +127,8 @@ export default async function PublicGalleryDetailPage({
     .eq("gallery_id", gallery.id)
     .order("sort_order", { ascending: true });
 
-  const safeGalleryArtworks = (galleryArtworks || []) as GalleryArtworkRow[];
+  const safeGalleryArtworks =
+    (galleryArtworks || []) as unknown as GalleryArtworkRow[];
 
   const publicArtworks = safeGalleryArtworks
     .map((item) => {
@@ -225,7 +229,9 @@ export default async function PublicGalleryDetailPage({
             <div className="grid min-w-full gap-3 rounded-3xl border border-neutral-800 bg-neutral-900/80 p-5 backdrop-blur md:min-w-[360px]">
               <div className="flex justify-between gap-4 text-sm">
                 <span className="text-neutral-500">Opere pubbliche</span>
-                <span className="text-neutral-100">{publicArtworks.length}</span>
+                <span className="text-neutral-100">
+                  {publicArtworks.length}
+                </span>
               </div>
 
               <div className="flex justify-between gap-4 text-sm">
@@ -256,7 +262,9 @@ export default async function PublicGalleryDetailPage({
               Viewer 3D
             </p>
 
-            <h2 className="text-3xl font-semibold">Visita lo spazio virtuale</h2>
+            <h2 className="text-3xl font-semibold">
+              Visita lo spazio virtuale
+            </h2>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
               Muoviti nello spazio, osserva le opere allestite e usa il catalogo
@@ -310,24 +318,28 @@ export default async function PublicGalleryDetailPage({
         </div>
 
         {galleryArtworksError && (
-          <div className="mt-8 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-            <p className="text-lg font-medium">Errore caricamento opere</p>
-
-            <p className="mt-2 text-sm text-red-100">
-              {galleryArtworksError.message}
-            </p>
+          <div className="mt-8">
+            <DataErrorCard
+              title="Non riesco a caricare le opere della galleria"
+              message="La galleria è stata caricata, ma le opere associate non sono state recuperate correttamente. Puoi ricaricare la pagina oppure inviare una richiesta generale."
+              details={getErrorMessage(galleryArtworksError)}
+              actionHref={`/gallerie/${gallery.slug}`}
+              actionLabel="Ricarica galleria"
+              secondaryHref="#richiesta"
+              secondaryLabel="Invia richiesta"
+            />
           </div>
         )}
 
         {!galleryArtworksError && publicArtworks.length === 0 && (
-          <div className="mt-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-8">
-            <p className="text-neutral-300">
-              Non ci sono ancora opere pubbliche associate a questa galleria.
-            </p>
-
-            <p className="mt-2 text-sm text-neutral-500">
-              Torna più avanti oppure contatta il gallerista per informazioni.
-            </p>
+          <div className="mt-8">
+            <EmptyStateCard
+              eyebrow="Catalogo vuoto"
+              title="Non ci sono ancora opere pubbliche associate a questa galleria"
+              message="Torna più avanti oppure contatta il gallerista per informazioni sull’allestimento e sulle opere disponibili."
+              actionHref="#richiesta"
+              actionLabel="Contatta il gallerista"
+            />
           </div>
         )}
 
@@ -374,50 +386,36 @@ export default async function PublicGalleryDetailPage({
                         {artwork.year ? `, ${artwork.year}` : ""}
                       </p>
 
-                      <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
+                      <dl className="mt-4 space-y-1 text-xs text-neutral-500">
                         {artwork.technique && (
                           <div>
-                            <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                              Tecnica
-                            </dt>
-                            <dd className="mt-1 text-neutral-300">
-                              {artwork.technique}
-                            </dd>
+                            <dt className="inline">Tecnica: </dt>
+                            <dd className="inline">{artwork.technique}</dd>
                           </div>
                         )}
 
                         {artwork.dimensions && (
                           <div>
-                            <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                              Dimensioni
-                            </dt>
-                            <dd className="mt-1 text-neutral-300">
-                              {artwork.dimensions}
-                            </dd>
+                            <dt className="inline">Dimensioni: </dt>
+                            <dd className="inline">{artwork.dimensions}</dd>
                           </div>
                         )}
                       </dl>
 
                       {artwork.description && (
-                        <p className="mt-4 line-clamp-4 text-sm leading-7 text-neutral-400">
+                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-neutral-400">
                           {artwork.description}
                         </p>
                       )}
 
-                      <details className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-                        <summary className="cursor-pointer text-sm font-medium text-neutral-100">
-                          Richiedi informazioni su quest’opera
-                        </summary>
-
-                        <div className="mt-5">
-                          <PublicGalleryInquiryForm
-                            galleryId={gallery.id}
-                            galleryTitle={gallery.title}
-                            artworkId={artwork.id}
-                            artworkTitle={artwork.title}
-                          />
-                        </div>
-                      </details>
+                      <div className="mt-6">
+                        <PublicGalleryInquiryForm
+                          galleryId={gallery.id}
+                          galleryTitle={gallery.title}
+                          artworkId={artwork.id}
+                          artworkTitle={artwork.title}
+                        />
+                      </div>
                     </div>
                   </div>
                 </article>

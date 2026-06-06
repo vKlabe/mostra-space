@@ -1,6 +1,11 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  apiBadRequest,
+  apiError,
+  apiForbidden,
+  apiSuccess,
+  apiUnauthorized,
+} from "@/lib/api/responses";
+import { requireAdminApi } from "@/lib/admin/requireAdminApi";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,11 +22,6 @@ type RequestBody = {
   status?: unknown;
 };
 
-type AdminProfile = {
-  id: string;
-  role: "user" | "gallerist" | "admin";
-};
-
 const validStatuses: GalleryStatus[] = ["draft", "published", "archived"];
 
 function isValidStatus(value: unknown): value is GalleryStatus {
@@ -30,64 +30,17 @@ function isValidStatus(value: unknown): value is GalleryStatus {
   );
 }
 
-async function getCurrentAdminProfile() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return {
-      user: null,
-      profile: null,
-      error: "Unauthorized",
-    };
-  }
-
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .eq("id", user.id)
-    .single<AdminProfile>();
-
-  if (error || !profile) {
-    return {
-      user,
-      profile: null,
-      error: "Profilo non trovato.",
-    };
-  }
-
-  if (profile.role !== "admin") {
-    return {
-      user,
-      profile,
-      error: "Accesso negato.",
-    };
-  }
-
-  return {
-    user,
-    profile,
-    error: null,
-  };
-}
-
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { galleryId } = await params;
 
-  const current = await getCurrentAdminProfile();
+  const current = await requireAdminApi();
 
-  if (!current.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!current.ok) {
+    if (current.status === 401) {
+      return apiUnauthorized(current.error);
+    }
 
-  if (current.error || !current.profile || current.profile.role !== "admin") {
-    return NextResponse.json(
-      { error: current.error || "Accesso negato." },
-      { status: 403 }
-    );
+    return apiForbidden(current.error);
   }
 
   let body: RequestBody;
@@ -95,20 +48,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     body = (await request.json()) as RequestBody;
   } catch {
-    return NextResponse.json(
-      { error: "Payload non valido." },
-      { status: 400 }
-    );
+    return apiBadRequest("Payload non valido.");
   }
 
   if (!isValidStatus(body.status)) {
-    return NextResponse.json(
-      { error: "Stato galleria non valido." },
-      { status: 400 }
-    );
+    return apiBadRequest("Stato galleria non valido.", {
+      acceptedValues: validStatuses,
+      received: body.status,
+    });
   }
-
-  const admin = createAdminClient();
 
   const updatePayload: {
     status: GalleryStatus;
@@ -125,7 +73,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     updatePayload.published_at = null;
   }
 
-  const { data: updatedGallery, error: updateError } = await admin
+  const { data: updatedGallery, error: updateError } = await current.admin
     .from("galleries")
     .update(updatePayload)
     .eq("id", galleryId)
@@ -135,17 +83,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     .single();
 
   if (updateError || !updatedGallery) {
-    return NextResponse.json(
-      {
-        error: "Errore aggiornamento galleria.",
-        details: updateError?.message || null,
-      },
-      { status: 500 }
-    );
+    return apiError("Errore aggiornamento galleria.", {
+      status: 500,
+      code: "ADMIN_GALLERY_UPDATE_FAILED",
+      details: updateError,
+    });
   }
 
-  return NextResponse.json({
-    success: true,
+  return apiSuccess({
     gallery: updatedGallery,
   });
 }

@@ -1,6 +1,11 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  apiBadRequest,
+  apiError,
+  apiForbidden,
+  apiSuccess,
+  apiUnauthorized,
+} from "@/lib/api/responses";
+import { requireAdminApi } from "@/lib/admin/requireAdminApi";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,12 +24,6 @@ type RequestBody = {
   plan?: unknown;
 };
 
-type AdminProfile = {
-  id: string;
-  role: UserRole;
-  plan: UserPlan;
-};
-
 const validRoles: UserRole[] = ["user", "gallerist", "admin"];
 const validPlans: UserPlan[] = ["free", "pro", "business", "institution"];
 
@@ -36,67 +35,17 @@ function isValidPlan(value: unknown): value is UserPlan {
   return typeof value === "string" && validPlans.includes(value as UserPlan);
 }
 
-async function getCurrentAdminProfile() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return {
-      user: null,
-      profile: null,
-      error: "Unauthorized",
-    };
-  }
-
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, role, plan")
-    .eq("id", user.id)
-    .single<AdminProfile>();
-
-  if (error || !profile) {
-    return {
-      user,
-      profile: null,
-      error: "Profilo non trovato.",
-    };
-  }
-
-  if (profile.role !== "admin") {
-    return {
-      user,
-      profile,
-      error: "Accesso negato.",
-    };
-  }
-
-  return {
-    user,
-    profile,
-    error: null,
-  };
-}
-
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { userId } = await params;
 
-  const current = await getCurrentAdminProfile();
+  const current = await requireAdminApi();
 
-  if (!current.user) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
-  }
+  if (!current.ok) {
+    if (current.status === 401) {
+      return apiUnauthorized(current.error);
+    }
 
-  if (current.error || !current.profile || current.profile.role !== "admin") {
-    return NextResponse.json(
-      { error: current.error || "Accesso negato." },
-      { status: 403 }
-    );
+    return apiForbidden(current.error);
   }
 
   let body: RequestBody;
@@ -104,39 +53,30 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   try {
     body = (await request.json()) as RequestBody;
   } catch {
-    return NextResponse.json(
-      { error: "Payload non valido." },
-      { status: 400 }
-    );
+    return apiBadRequest("Payload non valido.");
   }
 
   if (!isValidRole(body.role)) {
-    return NextResponse.json(
-      { error: "Ruolo non valido." },
-      { status: 400 }
-    );
+    return apiBadRequest("Ruolo non valido.", {
+      acceptedValues: validRoles,
+      received: body.role,
+    });
   }
 
   if (!isValidPlan(body.plan)) {
-    return NextResponse.json(
-      { error: "Piano non valido." },
-      { status: 400 }
-    );
+    return apiBadRequest("Piano non valido.", {
+      acceptedValues: validPlans,
+      received: body.plan,
+    });
   }
 
   if (userId === current.user.id && body.role !== "admin") {
-    return NextResponse.json(
-      {
-        error:
-          "Non puoi togliere il ruolo admin al tuo stesso account da questa schermata.",
-      },
-      { status: 400 }
+    return apiBadRequest(
+      "Non puoi togliere il ruolo admin al tuo stesso account da questa schermata."
     );
   }
 
-  const admin = createAdminClient();
-
-  const { data: updatedProfile, error: updateError } = await admin
+  const { data: updatedProfile, error: updateError } = await current.admin
     .from("profiles")
     .update({
       role: body.role,
@@ -147,17 +87,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     .single();
 
   if (updateError || !updatedProfile) {
-    return NextResponse.json(
-      {
-        error: "Errore aggiornamento utente.",
-        details: updateError?.message || null,
-      },
-      { status: 500 }
-    );
+    return apiError("Errore aggiornamento utente.", {
+      status: 500,
+      code: "ADMIN_USER_UPDATE_FAILED",
+      details: updateError,
+    });
   }
 
-  return NextResponse.json({
-    success: true,
+  return apiSuccess({
     profile: updatedProfile,
   });
 }
