@@ -7,6 +7,10 @@ import {
   getPlanLimits,
   normalizePlanName,
 } from "@/lib/plans";
+import {
+  parseDimensionCm,
+  parseOptionalDepthCm,
+} from "@/lib/artworks/dimensions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -136,6 +140,9 @@ export async function POST(request: Request) {
   const year = cleanNullableText(formData.get("year"));
   const technique = cleanNullableText(formData.get("technique"));
   const dimensions = cleanNullableText(formData.get("dimensions"));
+  const widthCm = parseDimensionCm(cleanText(formData.get("width_cm")));
+  const heightCm = parseDimensionCm(cleanText(formData.get("height_cm")));
+  const depthCm = parseOptionalDepthCm(cleanText(formData.get("depth_cm")));
   const description = cleanNullableText(formData.get("description"));
   const price = cleanPrice(formData.get("price"));
   const currency = cleanText(formData.get("currency")) || "EUR";
@@ -260,6 +267,9 @@ export async function POST(request: Request) {
       year,
       technique,
       dimensions,
+      width_cm: widthCm,
+      height_cm: heightCm,
+      depth_cm: depthCm,
       description,
       image_url: imageUrl,
       thumbnail_url: imageUrl,
@@ -273,7 +283,7 @@ export async function POST(request: Request) {
       is_public: isPublic,
     })
     .select(
-      "id, title, artist_name, year, image_url, file_size_bytes, created_at"
+      "id, title, artist_name, year, dimensions, width_cm, height_cm, depth_cm, image_url, file_size_bytes, created_at"
     )
     .single();
 

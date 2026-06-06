@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  parseDimensionCm,
+  parseOptionalDepthCm,
+} from "@/lib/artworks/dimensions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +19,9 @@ type UpdateArtworkPayload = {
   year?: unknown;
   technique?: unknown;
   dimensions?: unknown;
+  widthCm?: unknown;
+  heightCm?: unknown;
+  depthCm?: unknown;
   description?: unknown;
   price?: unknown;
   currency?: unknown;
@@ -44,7 +51,10 @@ function cleanBoolean(value: unknown) {
   return value === true;
 }
 
-async function getUserAndPermission(supabase: Awaited<ReturnType<typeof createClient>>, artworkId: string) {
+async function getUserAndPermission(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  artworkId: string
+) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -144,6 +154,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  const widthCm = parseDimensionCm(cleanText(body.widthCm));
+  const heightCm = parseDimensionCm(cleanText(body.heightCm));
+  const depthCm = parseOptionalDepthCm(cleanText(body.depthCm));
+
   const { data: updated, error: updateError } = await supabase
     .from("artworks")
     .update({
@@ -152,6 +166,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       year: cleanNullableText(body.year),
       technique: cleanNullableText(body.technique),
       dimensions: cleanNullableText(body.dimensions),
+      width_cm: widthCm,
+      height_cm: heightCm,
+      depth_cm: depthCm,
       description: cleanNullableText(body.description),
       price: cleanNullableText(body.price),
       currency: cleanNullableText(body.currency) || "EUR",
@@ -169,6 +186,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       year,
       technique,
       dimensions,
+      width_cm,
+      height_cm,
+      depth_cm,
       description,
       image_url,
       price,

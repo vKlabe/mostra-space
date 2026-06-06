@@ -36,6 +36,9 @@ type Artwork = {
   year: string | null;
   technique: string | null;
   dimensions: string | null;
+  width_cm: number | null;
+  height_cm: number | null;
+  depth_cm: number | null;
   price: number | string | null;
   currency: string | null;
   description: string | null;
@@ -90,6 +93,16 @@ function getFilterLabel(filter: ArtworkFilter) {
   }
 
   return "Tutte";
+}
+
+function getArtworkRealSizeLabel(artwork: Artwork) {
+  if (artwork.width_cm && artwork.height_cm) {
+    return `${Number(artwork.width_cm).toFixed(2)} x ${Number(
+      artwork.height_cm
+    ).toFixed(2)} cm`;
+  }
+
+  return "Fallback editor: 50 x 50 cm";
 }
 
 export default async function DashboardArtworksPage({
@@ -158,7 +171,7 @@ export default async function DashboardArtworksPage({
   const { data: artworks, error: artworksError } = await supabase
     .from("artworks")
     .select(
-      "id, title, artist_name, year, technique, dimensions, price, currency, description, image_url, thumbnail_url, is_for_sale, is_public, file_size_bytes, storage_path, created_at, updated_at"
+      "id, title, artist_name, year, technique, dimensions, width_cm, height_cm, depth_cm, price, currency, description, image_url, thumbnail_url, is_for_sale, is_public, file_size_bytes, storage_path, created_at, updated_at"
     )
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
@@ -388,6 +401,9 @@ export default async function DashboardArtworksPage({
                       year: artwork.year,
                       technique: artwork.technique,
                       dimensions: artwork.dimensions,
+                      width_cm: artwork.width_cm,
+                      height_cm: artwork.height_cm,
+                      depth_cm: artwork.depth_cm,
                       description: artwork.description,
                       image_url: artwork.thumbnail_url || artwork.image_url,
                       price:
@@ -413,6 +429,10 @@ export default async function DashboardArtworksPage({
                       {artwork.file_size_bytes
                         ? `${bytesToMb(artwork.file_size_bytes).toFixed(2)} MB`
                         : "Non registrato"}
+                    </div>
+
+                    <div className="rounded-full border border-neutral-800 bg-neutral-950 px-4 py-2 text-xs text-neutral-500">
+                      Misure: {getArtworkRealSizeLabel(artwork)}
                     </div>
                   </div>
 

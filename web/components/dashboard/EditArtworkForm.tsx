@@ -11,6 +11,9 @@ type EditArtworkFormProps = {
     year: string | null;
     technique: string | null;
     dimensions: string | null;
+    width_cm: number | null;
+    height_cm: number | null;
+    depth_cm: number | null;
     description: string | null;
     image_url: string;
     price: string | null;
@@ -20,6 +23,14 @@ type EditArtworkFormProps = {
   };
 };
 
+function stringifyNumber(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value);
+}
+
 export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
   const router = useRouter();
 
@@ -28,6 +39,9 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
   const [year, setYear] = useState(artwork.year || "");
   const [technique, setTechnique] = useState(artwork.technique || "");
   const [dimensions, setDimensions] = useState(artwork.dimensions || "");
+  const [widthCm, setWidthCm] = useState(stringifyNumber(artwork.width_cm));
+  const [heightCm, setHeightCm] = useState(stringifyNumber(artwork.height_cm));
+  const [depthCm, setDepthCm] = useState(stringifyNumber(artwork.depth_cm));
   const [description, setDescription] = useState(artwork.description || "");
   const [price, setPrice] = useState(artwork.price || "");
   const [currency, setCurrency] = useState(artwork.currency || "EUR");
@@ -55,6 +69,9 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
           year,
           technique,
           dimensions,
+          widthCm,
+          heightCm,
+          depthCm,
           description,
           price,
           currency,
@@ -171,7 +188,7 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Dimensioni
+                Dimensioni testuali
               </label>
 
               <input
@@ -180,6 +197,68 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
                 className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
                 placeholder="100 x 80 cm"
               />
+            </div>
+
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 md:col-span-2">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
+                Dimensioni reali per editor 3D
+              </p>
+
+              <p className="mb-4 text-sm leading-6 text-neutral-400">
+                Questi valori determinano la proporzione iniziale dell opera
+                dentro Unity. Se larghezza o altezza mancano, l editor userà 50
+                x 50 cm.
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="mb-2 block text-sm text-neutral-300">
+                    Larghezza cm
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={widthCm}
+                    onChange={(event) => setWidthCm(event.target.value)}
+                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
+                    placeholder="70"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm text-neutral-300">
+                    Altezza cm
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={heightCm}
+                    onChange={(event) => setHeightCm(event.target.value)}
+                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
+                    placeholder="100"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm text-neutral-300">
+                    Profondità cm
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={depthCm}
+                    onChange={(event) => setDepthCm(event.target.value)}
+                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
+                    placeholder="2"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
@@ -202,7 +281,7 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
               <input
                 value={currency}
-                onChange={(event) => setCurrency(event.target.value)}
+                onChange={(event) => setCurrency(event.target.value.toUpperCase())}
                 className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
                 placeholder="EUR"
               />

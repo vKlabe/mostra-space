@@ -38,6 +38,9 @@ export default function CreateArtworkForm({
   const [year, setYear] = useState("");
   const [technique, setTechnique] = useState("");
   const [dimensions, setDimensions] = useState("");
+  const [widthCm, setWidthCm] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [depthCm, setDepthCm] = useState("");
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState("EUR");
   const [description, setDescription] = useState("");
@@ -62,6 +65,9 @@ export default function CreateArtworkForm({
     setYear("");
     setTechnique("");
     setDimensions("");
+    setWidthCm("");
+    setHeightCm("");
+    setDepthCm("");
     setPrice("");
     setCurrency("EUR");
     setDescription("");
@@ -148,6 +154,9 @@ export default function CreateArtworkForm({
       formData.append("year", year);
       formData.append("technique", technique);
       formData.append("dimensions", dimensions);
+      formData.append("width_cm", widthCm);
+      formData.append("height_cm", heightCm);
+      formData.append("depth_cm", depthCm);
       formData.append("price", price);
       formData.append("currency", currency);
       formData.append("description", description);
@@ -293,7 +302,7 @@ export default function CreateArtworkForm({
 
           <div>
             <label className="mb-2 block text-sm text-neutral-300">
-              Dimensioni
+              Dimensioni testuali
             </label>
 
             <input
@@ -303,6 +312,70 @@ export default function CreateArtworkForm({
               className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="50 x 70 cm"
             />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+          <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
+            Dimensioni reali per editor 3D
+          </p>
+
+          <p className="mb-4 text-sm leading-6 text-neutral-400">
+            Inserisci larghezza e altezza reali dell opera in centimetri. Se non
+            le inserisci, l editor userà un fallback di 50 x 50 cm.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="mb-2 block text-sm text-neutral-300">
+                Larghezza cm
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={widthCm}
+                onChange={(event) => setWidthCm(event.target.value)}
+                disabled={!canUpload || isLoading}
+                className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="70"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm text-neutral-300">
+                Altezza cm
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={heightCm}
+                onChange={(event) => setHeightCm(event.target.value)}
+                disabled={!canUpload || isLoading}
+                className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="100"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm text-neutral-300">
+                Profondità cm
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={depthCm}
+                onChange={(event) => setDepthCm(event.target.value)}
+                disabled={!canUpload || isLoading}
+                className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="2"
+              />
+            </div>
           </div>
         </div>
 

@@ -26,6 +26,9 @@ type Artwork = {
   year: string | null;
   technique: string | null;
   dimensions: string | null;
+  width_cm: number | null;
+  height_cm: number | null;
+  depth_cm: number | null;
   price: number | string | null;
   currency: string | null;
   description: string | null;
@@ -152,6 +155,28 @@ function formatNumber(value: number | null) {
   return Number(value).toFixed(2);
 }
 
+function formatCm(value: number | null) {
+  if (value === null || value === undefined) {
+    return "Non indicata";
+  }
+
+  return `${Number(value).toFixed(2)} cm`;
+}
+
+function getEditorFallbackLabel(artwork: Artwork) {
+  if (artwork.width_cm && artwork.height_cm) {
+    return `${Number(artwork.width_cm).toFixed(2)} x ${Number(
+      artwork.height_cm
+    ).toFixed(2)} cm`;
+  }
+
+  return "50 x 50 cm";
+}
+
+function hasRealEditorDimensions(artwork: Artwork) {
+  return Boolean(artwork.width_cm && artwork.height_cm);
+}
+
 export default async function DashboardArtworkDetailPage({
   params,
 }: DashboardArtworkDetailPageProps) {
@@ -183,7 +208,7 @@ export default async function DashboardArtworkDetailPage({
   const { data: artwork, error: artworkError } = await db
     .from("artworks")
     .select(
-      "id, owner_id, title, artist_name, year, technique, dimensions, price, currency, description, image_url, thumbnail_url, is_for_sale, is_public, file_size_bytes, storage_path, created_at, updated_at"
+      "id, owner_id, title, artist_name, year, technique, dimensions, width_cm, height_cm, depth_cm, price, currency, description, image_url, thumbnail_url, is_for_sale, is_public, file_size_bytes, storage_path, created_at, updated_at"
     )
     .eq("id", artworkId)
     .single<Artwork>();
@@ -366,11 +391,63 @@ export default async function DashboardArtworkDetailPage({
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Dimensioni
+                    Dimensioni testuali
                   </dt>
                   <dd className="mt-2 text-sm text-neutral-100">
                     {artwork.dimensions || "Non indicate"}
                   </dd>
+                </div>
+
+                <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 md:col-span-2">
+                  <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                    Dimensioni reali per editor 3D
+                  </dt>
+
+                  <dd className="mt-3 grid gap-3 text-sm md:grid-cols-3">
+                    <div>
+                      <span className="block text-neutral-500">Larghezza</span>
+                      <span className="mt-1 block text-neutral-100">
+                        {formatCm(artwork.width_cm)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="block text-neutral-500">Altezza</span>
+                      <span className="mt-1 block text-neutral-100">
+                        {formatCm(artwork.height_cm)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="block text-neutral-500">Profondità</span>
+                      <span className="mt-1 block text-neutral-100">
+                        {formatCm(artwork.depth_cm)}
+                      </span>
+                    </div>
+                  </dd>
+
+                  <div
+                    className={
+                      hasRealEditorDimensions(artwork)
+                        ? "mt-4 rounded-2xl border border-green-900 bg-green-950/30 p-4"
+                        : "mt-4 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4"
+                    }
+                  >
+                    <p
+                      className={
+                        hasRealEditorDimensions(artwork)
+                          ? "text-sm leading-6 text-green-100"
+                          : "text-sm leading-6 text-yellow-100"
+                      }
+                    >
+                      Dimensione usata dall editor:{" "}
+                      <span className="font-medium">
+                        {getEditorFallbackLabel(artwork)}
+                      </span>
+                      {!hasRealEditorDimensions(artwork) &&
+                        ". Mancando larghezza o altezza, Unity userà il fallback 50 x 50 cm."}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
