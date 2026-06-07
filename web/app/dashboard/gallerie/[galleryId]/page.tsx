@@ -264,7 +264,8 @@ export default async function DashboardGalleryDetailPage({
     .order("sort_order", { ascending: true });
 
   const safeArtworks = (artworks || []) as Artwork[];
-  const safeGalleryArtworks = (galleryArtworks || []) as unknown as GalleryArtworkRow[];
+  const safeGalleryArtworks =
+    (galleryArtworks || []) as unknown as GalleryArtworkRow[];
   const linkedArtworkIds = safeGalleryArtworks.map((item) => item.artwork_id);
 
   const templateMaxArtworks =
@@ -322,13 +323,24 @@ export default async function DashboardGalleryDetailPage({
           </a>
 
           <a
-            href={`/gallerie/${gallery.slug}`}
+            href={`/unity-frame?galleryId=${gallery.id}&mode=visitor`}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
           >
-            Viewer pubblico
+            Anteprima viewer 3D
           </a>
+
+          {gallery.status === "published" && (
+            <a
+              href={`/gallerie/${gallery.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
+            >
+              Pagina pubblica
+            </a>
+          )}
         </>
       }
     >
@@ -413,9 +425,7 @@ export default async function DashboardGalleryDetailPage({
             <div>
               <dt className="text-neutral-500">Limite template</dt>
               <dd className="mt-1 text-neutral-200">
-                {templateMaxArtworks === null
-                  ? "N/D"
-                  : templateMaxArtworks}
+                {templateMaxArtworks === null ? "N/D" : templateMaxArtworks}
               </dd>
             </div>
 
@@ -440,6 +450,7 @@ export default async function DashboardGalleryDetailPage({
       <div className="mt-6">
         <GalleryPublishStatusButton
           galleryId={gallery.id}
+          gallerySlug={gallery.slug}
           currentStatus={gallery.status}
         />
       </div>
@@ -454,14 +465,14 @@ export default async function DashboardGalleryDetailPage({
       </div>
 
       <div className="mt-6">
-  <GalleryCoverUploadForm
-    galleryId={gallery.id}
-    ownerId={gallery.owner_id}
-    currentTitle={gallery.title}
-    currentDescription={gallery.description || ""}
-    currentCoverImageUrl={gallery.cover_image_url}
-  />
-</div>
+        <GalleryCoverUploadForm
+          galleryId={gallery.id}
+          ownerId={gallery.owner_id}
+          currentTitle={gallery.title}
+          currentDescription={gallery.description || ""}
+          currentCoverImageUrl={gallery.cover_image_url}
+        />
+      </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[420px_1fr]">
         <AddArtworkToGalleryForm
@@ -634,20 +645,31 @@ export default async function DashboardGalleryDetailPage({
         <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
           Ogni opera aggiunta qui crea una riga in{" "}
           <span className="text-neutral-100">gallery_artworks</span>. Unity
-          leggera queste righe, scarichera le immagini da{" "}
-          <span className="text-neutral-100">image_url</span> e creera i quadri
+          leggerà queste righe, scaricherà le immagini da{" "}
+          <span className="text-neutral-100">image_url</span> e creerà i quadri
           nello spazio 3D usando posizione, rotazione e scala.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
           <a
-            href={`/gallerie/${gallery.slug}`}
+            href={`/unity-frame?galleryId=${gallery.id}&mode=visitor`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="inline-flex rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
           >
-            Apri viewer pubblico
+            Anteprima viewer 3D
           </a>
+
+          {gallery.status === "published" && (
+            <a
+              href={`/gallerie/${gallery.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
+            >
+              Apri pagina pubblica
+            </a>
+          )}
 
           <a
             href={`/dashboard/gallerie-editor/${gallery.id}`}
@@ -665,6 +687,14 @@ export default async function DashboardGalleryDetailPage({
             Apri JSON Unity
           </a>
         </div>
+
+        {gallery.status !== "published" && (
+          <p className="mt-4 text-xs leading-5 text-neutral-500">
+            La pagina pubblica completa sarà disponibile dopo la pubblicazione.
+            Puoi comunque usare l’anteprima viewer 3D per controllare
+            l’allestimento in modalità visitatore.
+          </p>
+        )}
       </div>
 
       <div className="mt-6">

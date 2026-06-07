@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { validateGalleryForPublish } from "@/lib/gallery/validateGalleryForPublish";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,35 @@ type RouteContext = {
 };
 
 type GalleryStatus = "draft" | "published" | "archived";
+
+type GalleryRecord = {
+  id: string;
+  owner_id: string;
+  title: string | null;
+  status: GalleryStatus;
+  cover_image_url: string | null;
+};
+
+type ArtworkForPublish = {
+  id: string;
+  title: string | null;
+  image_url: string | null;
+  thumbnail_url: string | null;
+  width_cm: number | string | null;
+  height_cm: number | string | null;
+};
+
+type GalleryArtworkForPublish = {
+  id: string;
+  gallery_id: string;
+  artwork_id: string;
+  wall_key: string | null;
+  display_width_cm: number | string | null;
+  display_height_cm: number | string | null;
+  frame_width_cm: number | string | null;
+  frame_depth_cm: number | string | null;
+  artworks: ArtworkForPublish | ArtworkForPublish[] | null;
+};
 
 function isValidStatus(value: unknown): value is GalleryStatus {
   return value === "draft" || value === "published" || value === "archived";
@@ -64,9 +94,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
-    .select("id, owner_id, status")
+    .select("id, owner_id, title, status, cover_image_url")
     .eq("id", galleryId)
-    .single();
+    .single<GalleryRecord>();
 
   if (galleryError || !gallery) {
     return NextResponse.json(
@@ -89,6 +119,63 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const nextStatus = body.status;
+
+  let validation = null;
+
+  if (nextStatus === "published") {
+    const { data: galleryArtworks, error: galleryArtworksError } =
+      await supabase
+        .from("gallery_artworks")
+        .select(
+          `
+          id,
+          gallery_id,
+          artwork_id,
+          wall_key,
+          display_width_cm,
+          display_height_cm,
+          frame_width_cm,
+          frame_depth_cm,
+          artworks (
+            id,
+            title,
+            image_url,
+            thumbnail_url,
+            width_cm,
+            height_cm
+          )
+        `
+        )
+        .eq("gallery_id", gallery.id);
+
+    if (galleryArtworksError) {
+      return NextResponse.json(
+        {
+          error: "Errore validazione galleria.",
+          details: galleryArtworksError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    validation = validateGalleryForPublish({
+      gallery,
+      galleryArtworks:
+        ((galleryArtworks || []) as unknown as GalleryArtworkForPublish[]),
+    });
+
+    if (!validation.canPublish) {
+      return NextResponse.json(
+        {
+          error: "Non puoi pubblicare ancora questa galleria.",
+          message:
+            "La galleria non è pronta per la pubblicazione. Correggi gli errori indicati e riprova.",
+          validation,
+        },
+        { status: 400 }
+      );
+    }
+  }
 
   const updatePayload =
     nextStatus === "published"
@@ -121,5 +208,6 @@ export async function PATCH(request: Request, context: RouteContext) {
   return NextResponse.json({
     success: true,
     gallery: updated,
+    validation,
   });
 }

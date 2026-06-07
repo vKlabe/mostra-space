@@ -5,8 +5,29 @@ import { useState } from "react";
 
 type GalleryStatus = "draft" | "published" | "archived";
 
+type ValidationIssue = {
+  code: string;
+  label: string;
+  message: string;
+  severity: "error" | "warning";
+};
+
+type ValidationResult = {
+  canPublish: boolean;
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+  summary: {
+    totalArtworks: number;
+    positionedArtworks: number;
+    unpositionedArtworks: number;
+    artworksWithoutDimensions: number;
+    artworksWithoutImage: number;
+  };
+};
+
 type GalleryPublishStatusButtonProps = {
   galleryId: string;
+  gallerySlug?: string | null;
   currentStatus: GalleryStatus;
 };
 
@@ -46,18 +67,40 @@ function getStatusBadgeClass(status: GalleryStatus) {
   return "border-neutral-700 bg-neutral-950 text-neutral-300";
 }
 
+function getMessageClass(type: "success" | "error" | "neutral") {
+  if (type === "success") {
+    return "text-sm text-green-300";
+  }
+
+  if (type === "error") {
+    return "text-sm text-red-300";
+  }
+
+  return "text-sm text-neutral-300";
+}
+
 export default function GalleryPublishStatusButton({
   galleryId,
+  gallerySlug = null,
   currentStatus,
 }: GalleryPublishStatusButtonProps) {
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<
+    "success" | "error" | "neutral"
+  >("neutral");
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
+
+  const publicPageHref = gallerySlug ? `/gallerie/${gallerySlug}` : null;
+  const visitorFrameHref = `/unity-frame?galleryId=${galleryId}&mode=visitor`;
 
   async function updateStatus(nextStatus: GalleryStatus) {
     setIsLoading(true);
     setMessage("");
+    setMessageType("neutral");
+    setValidation(null);
 
     try {
       const response = await fetch(
@@ -76,24 +119,38 @@ export default function GalleryPublishStatusButton({
       const data = await response.json();
 
       if (!response.ok) {
+        setMessageType("error");
         setMessage(data.error || "Errore aggiornamento status.");
+
+        if (data.validation) {
+          setValidation(data.validation);
+        }
+
         return;
       }
 
+      if (data.validation) {
+        setValidation(data.validation);
+      }
+
       if (nextStatus === "published") {
+        setMessageType("success");
         setMessage("Galleria pubblicata correttamente.");
       }
 
       if (nextStatus === "draft") {
+        setMessageType("neutral");
         setMessage("Galleria riportata in bozza.");
       }
 
       if (nextStatus === "archived") {
+        setMessageType("neutral");
         setMessage("Galleria archiviata correttamente.");
       }
 
       router.refresh();
     } catch {
+      setMessageType("error");
       setMessage("Errore di rete durante aggiornamento status.");
     } finally {
       setIsLoading(false);
@@ -137,7 +194,7 @@ export default function GalleryPublishStatusButton({
               disabled={isLoading}
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? "Aggiornamento..." : "Pubblica galleria"}
+              {isLoading ? "Controllo pubblicazione..." : "Pubblica galleria"}
             </button>
 
             <button
@@ -183,12 +240,111 @@ export default function GalleryPublishStatusButton({
             {isLoading ? "Ripristino..." : "Ripristina in bozza"}
           </button>
         )}
+
+        <a
+          href={visitorFrameHref}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
+        >
+          Anteprima viewer 3D
+        </a>
+
+        {publicPageHref && currentStatus === "published" && (
+          <a
+            href={publicPageHref}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
+          >
+            Anteprima pagina pubblica
+          </a>
+        )}
+
+        {publicPageHref && currentStatus !== "published" && (
+          <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
+            Pagina pubblica disponibile dopo la pubblicazione
+          </span>
+        )}
       </div>
 
-      {message && (
-        <p className="mt-4 text-sm text-neutral-300">
-          {message}
+      {currentStatus !== "published" && (
+        <p className="mt-4 text-xs leading-5 text-neutral-500">
+          L’anteprima viewer 3D apre direttamente Unity in modalità visitatore.
+          La pagina pubblica completa sarà visibile quando la galleria sarà
+          pubblicata.
         </p>
+      )}
+
+      {message && (
+        <p className={`mt-4 ${getMessageClass(messageType)}`}>{message}</p>
+      )}
+
+      {validation && (
+        <div className="mt-5 space-y-4">
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+              Controllo pubblicazione
+            </p>
+
+            <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
+              <div>
+                <p className="text-neutral-500">Opere associate</p>
+                <p className="mt-1 text-lg text-neutral-100">
+                  {validation.summary.totalArtworks}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-neutral-500">Opere posizionate</p>
+                <p className="mt-1 text-lg text-neutral-100">
+                  {validation.summary.positionedArtworks}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-neutral-500">Non posizionate</p>
+                <p className="mt-1 text-lg text-neutral-100">
+                  {validation.summary.unpositionedArtworks}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {validation.errors.length > 0 && (
+            <div className="rounded-2xl border border-red-900 bg-red-950/30 p-4">
+              <p className="text-sm font-medium text-red-200">
+                Non puoi pubblicare ancora
+              </p>
+
+              <ul className="mt-3 space-y-2">
+                {validation.errors.map((issue) => (
+                  <li key={issue.code} className="text-sm text-red-100">
+                    <span className="font-medium">{issue.label}:</span>{" "}
+                    {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {validation.warnings.length > 0 && (
+            <div className="rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
+              <p className="text-sm font-medium text-yellow-200">
+                Attenzioni non bloccanti
+              </p>
+
+              <ul className="mt-3 space-y-2">
+                {validation.warnings.map((issue) => (
+                  <li key={issue.code} className="text-sm text-yellow-100">
+                    <span className="font-medium">{issue.label}:</span>{" "}
+                    {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
