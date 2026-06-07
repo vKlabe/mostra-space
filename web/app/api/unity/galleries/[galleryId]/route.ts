@@ -38,6 +38,9 @@ type ArtworkRecord = {
   year: string | null;
   technique: string | null;
   dimensions: string | null;
+  width_cm: number | string | null;
+  height_cm: number | string | null;
+  depth_cm: number | string | null;
   description: string | null;
   image_url: string | null;
   price: number | string | null;
@@ -50,17 +53,30 @@ type GalleryArtworkRecord = {
   id: string;
   gallery_id: string;
   artwork_id: string;
+
   position_x: number | string | null;
   position_y: number | string | null;
   position_z: number | string | null;
+
   rotation_x: number | string | null;
   rotation_y: number | string | null;
   rotation_z: number | string | null;
+
   scale_x: number | string | null;
   scale_y: number | string | null;
   scale_z: number | string | null;
+
   wall_key: string | null;
   sort_order: number | null;
+
+  display_width_cm: number | string | null;
+  display_height_cm: number | string | null;
+
+  frame_enabled: boolean | null;
+  frame_color: string | null;
+  frame_width_cm: number | string | null;
+  frame_depth_cm: number | string | null;
+
   artworks: ArtworkRecord | ArtworkRecord[] | null;
 };
 
@@ -71,10 +87,47 @@ function parseMode(request: Request): UnityMode {
   return mode === "editor" ? "editor" : "visitor";
 }
 
+function isDevTokenValid(request: Request) {
+  const expectedToken = process.env.ARTPORTAL_UNITY_DEV_TOKEN;
+  const receivedToken = request.headers.get("x-artportal-dev-token");
+
+  if (!expectedToken || !receivedToken) {
+    return false;
+  }
+
+  // Il dev token vale solo in locale/sviluppo.
+  // In produzione Vercel NODE_ENV è "production", quindi viene sempre rifiutato.
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  return receivedToken === expectedToken;
+}
+
 function toNumber(value: number | string | null | undefined, fallback: number) {
   const parsed = Number(value);
 
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toNullablePositiveNumber(value: number | string | null | undefined) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return Math.round(parsed * 100) / 100;
+}
+
+function toNullableNonNegativeNumber(value: number | string | null | undefined) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return Math.round(parsed * 100) / 100;
 }
 
 function normalizeArtworkRelation(
@@ -95,6 +148,20 @@ function formatPrice(value: number | string | null | undefined) {
   return String(value);
 }
 
+function normalizeHexColor(value: string | null | undefined) {
+  if (!value) {
+    return "#000000";
+  }
+
+  const cleaned = value.trim();
+
+  if (/^#[0-9A-Fa-f]{6}$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  return "#000000";
+}
+
 export async function GET(request: Request, context: RouteContext) {
   const { galleryId } = await context.params;
   const mode = parseMode(request);
@@ -108,6 +175,8 @@ export async function GET(request: Request, context: RouteContext) {
 
   const supabase = await createClient();
   const admin = createAdminClient();
+
+  const devTokenOk = isDevTokenValid(request);
 
   const {
     data: { user },
@@ -138,7 +207,9 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   if (mode === "editor") {
-    if (user) {
+    if (devTokenOk) {
+      isAllowed = true;
+    } else if (user) {
       const { data: profile } = await admin
         .from("profiles")
         .select("id, role")
@@ -161,6 +232,11 @@ export async function GET(request: Request, context: RouteContext) {
             : "You are not allowed to edit this gallery",
         mode,
         galleryStatus: gallery.status,
+        devTokenEnabled:
+          process.env.NODE_ENV !== "production" &&
+          Boolean(process.env.ARTPORTAL_UNITY_DEV_TOKEN),
+        devTokenReceived: Boolean(request.headers.get("x-artportal-dev-token")),
+        userReceived: Boolean(user),
       },
       { status: mode === "visitor" ? 404 : 403 }
     );
@@ -187,17 +263,30 @@ export async function GET(request: Request, context: RouteContext) {
       id,
       gallery_id,
       artwork_id,
+
       position_x,
       position_y,
       position_z,
+
       rotation_x,
       rotation_y,
       rotation_z,
+
       scale_x,
       scale_y,
       scale_z,
+
       wall_key,
       sort_order,
+
+      display_width_cm,
+      display_height_cm,
+
+      frame_enabled,
+      frame_color,
+      frame_width_cm,
+      frame_depth_cm,
+
       artworks (
         id,
         title,
@@ -205,6 +294,9 @@ export async function GET(request: Request, context: RouteContext) {
         year,
         technique,
         dimensions,
+        width_cm,
+        height_cm,
+        depth_cm,
         description,
         image_url,
         price,
@@ -246,6 +338,25 @@ export async function GET(request: Request, context: RouteContext) {
         return null;
       }
 
+      const artworkWidthCm = toNullablePositiveNumber(artwork.width_cm);
+      const artworkHeightCm = toNullablePositiveNumber(artwork.height_cm);
+      const artworkDepthCm = toNullableNonNegativeNumber(artwork.depth_cm);
+
+      const displayWidthCm =
+        toNullablePositiveNumber(item.display_width_cm) ||
+        artworkWidthCm ||
+        50;
+
+      const displayHeightCm =
+        toNullablePositiveNumber(item.display_height_cm) ||
+        artworkHeightCm ||
+        50;
+
+      const frameEnabled = item.frame_enabled === true;
+      const frameColor = normalizeHexColor(item.frame_color);
+      const frameWidthCm = toNullableNonNegativeNumber(item.frame_width_cm) ?? 0;
+      const frameDepthCm = toNullableNonNegativeNumber(item.frame_depth_cm) ?? 2;
+
       return {
         galleryArtworkId: item.id,
         artworkId: artwork.id,
@@ -262,6 +373,22 @@ export async function GET(request: Request, context: RouteContext) {
 
         isForSale: artwork.is_for_sale === true,
         isPublic: artwork.is_public === true,
+
+        artworkWidthCm,
+        artworkHeightCm,
+        artworkDepthCm,
+
+        widthCm: artworkWidthCm || 50,
+        heightCm: artworkHeightCm || 50,
+        depthCm: artworkDepthCm || 0,
+
+        displayWidthCm,
+        displayHeightCm,
+
+        frameEnabled,
+        frameColor,
+        frameWidthCm,
+        frameDepthCm,
 
         positionX: toNumber(item.position_x, 0),
         positionY: toNumber(item.position_y, 1.8),

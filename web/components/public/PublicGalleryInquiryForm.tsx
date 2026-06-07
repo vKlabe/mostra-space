@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type PublicGalleryInquiryFormProps = {
   galleryId: string;
   galleryTitle: string;
   artworkId?: string | null;
+  galleryArtworkId?: string | null;
   artworkTitle?: string | null;
 };
 
@@ -21,9 +22,13 @@ export default function PublicGalleryInquiryForm({
   galleryId,
   galleryTitle,
   artworkId = null,
+  galleryArtworkId = null,
   artworkTitle = null,
 }: PublicGalleryInquiryFormProps) {
-  const initialMessage = buildInitialMessage(galleryTitle, artworkTitle);
+  const initialMessage = useMemo(
+    () => buildInitialMessage(galleryTitle, artworkTitle),
+    [galleryTitle, artworkTitle]
+  );
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -37,6 +42,12 @@ export default function PublicGalleryInquiryForm({
   const [feedbackType, setFeedbackType] = useState<"success" | "error" | "">(
     ""
   );
+
+  useEffect(() => {
+    setMessage(initialMessage);
+    setFeedback("");
+    setFeedbackType("");
+  }, [initialMessage]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,6 +73,7 @@ export default function PublicGalleryInquiryForm({
         body: JSON.stringify({
           galleryId,
           artworkId,
+          galleryArtworkId,
           name,
           email,
           message,
@@ -119,6 +131,22 @@ export default function PublicGalleryInquiryForm({
           : "Lascia i tuoi dati per essere ricontattato dal gallerista."}
       </p>
 
+      {artworkTitle && (
+        <div className="mt-5 rounded-2xl border border-blue-900 bg-blue-950/30 p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
+            Opera selezionata
+          </p>
+
+          <p className="mt-2 text-sm text-neutral-100">{artworkTitle}</p>
+
+          {galleryArtworkId && (
+            <p className="mt-1 break-all text-xs text-neutral-500">
+              ID allestimento: {galleryArtworkId}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="hidden" aria-hidden="true">
         <label>
           Sito web
@@ -133,9 +161,7 @@ export default function PublicGalleryInquiryForm({
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
-            Nome
-          </label>
+          <label className="mb-2 block text-sm text-neutral-300">Nome</label>
 
           <input
             value={name}
@@ -148,9 +174,7 @@ export default function PublicGalleryInquiryForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
-            Email
-          </label>
+          <label className="mb-2 block text-sm text-neutral-300">Email</label>
 
           <input
             type="email"

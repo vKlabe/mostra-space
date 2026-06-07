@@ -10,6 +10,7 @@ const PRIVACY_POLICY_VERSION = "2026-06-privacy-v1";
 type GalleryInquiryPayload = {
   galleryId?: unknown;
   artworkId?: unknown;
+  galleryArtworkId?: unknown;
   name?: unknown;
   email?: unknown;
   message?: unknown;
@@ -30,6 +31,12 @@ type ArtworkRecord = {
   title: string;
   artist_name: string | null;
   year: string | null;
+};
+
+type GalleryArtworkRecord = {
+  id: string;
+  gallery_id: string;
+  artwork_id: string;
 };
 
 type ProfileRecord = {
@@ -84,6 +91,7 @@ export async function POST(request: Request) {
 
   const galleryId = cleanText(body.galleryId);
   const artworkId = cleanNullableText(body.artworkId);
+  const galleryArtworkId = cleanNullableText(body.galleryArtworkId);
   const name = cleanText(body.name);
   const email = cleanText(body.email).toLowerCase();
   const message = cleanNullableText(body.message);
@@ -199,18 +207,52 @@ export async function POST(request: Request) {
     );
   }
 
+  let galleryArtwork: GalleryArtworkRecord | null = null;
+
+  if (galleryArtworkId) {
+    const { data: galleryArtworkData, error: galleryArtworkError } =
+      await admin
+        .from("gallery_artworks")
+        .select("id, gallery_id, artwork_id")
+        .eq("id", galleryArtworkId)
+        .eq("gallery_id", gallery.id)
+        .single<GalleryArtworkRecord>();
+
+    if (galleryArtworkError || !galleryArtworkData) {
+      return NextResponse.json(
+        { error: "Opera allestita non trovata in questa galleria." },
+        { status: 404 }
+      );
+    }
+
+    if (artworkId && galleryArtworkData.artwork_id !== artworkId) {
+      return NextResponse.json(
+        {
+          error:
+            "L’opera richiesta non corrisponde all’opera allestita indicata.",
+        },
+        { status: 400 }
+      );
+    }
+
+    galleryArtwork = galleryArtworkData;
+  }
+
+  const finalArtworkId = galleryArtwork?.artwork_id || artworkId || null;
+
   let artwork: ArtworkRecord | null = null;
 
-  if (artworkId) {
+  if (finalArtworkId) {
     const { data: artworkData, error: artworkError } = await admin
       .from("artworks")
       .select("id, title, artist_name, year")
-      .eq("id", artworkId)
+      .eq("id", finalArtworkId)
+      .eq("is_public", true)
       .single<ArtworkRecord>();
 
     if (artworkError || !artworkData) {
       return NextResponse.json(
-        { error: "Opera richiesta non trovata." },
+        { error: "Opera richiesta non trovata o non pubblica." },
         { status: 404 }
       );
     }
@@ -230,6 +272,7 @@ export async function POST(request: Request) {
     .insert({
       gallery_id: gallery.id,
       artwork_id: artwork?.id || null,
+      gallery_artwork_id: galleryArtwork?.id || null,
       name,
       email,
       message,
@@ -241,7 +284,9 @@ export async function POST(request: Request) {
       marketing_consent_at: marketingConsent ? nowIso : null,
       user_agent: userAgent,
     })
-    .select("id, gallery_id, artwork_id, name, email, message, status, created_at")
+    .select(
+      "id, gallery_id, artwork_id, gallery_artwork_id, name, email, message, status, created_at"
+    )
     .single();
 
   if (insertError || !inquiry) {
@@ -256,14 +301,14 @@ export async function POST(request: Request) {
 
   if (ownerProfile.email) {
     await sendGalleryInquiryEmail({
-  to: ownerProfile.email,
-  galleryTitle: gallery.title,
-  gallerySlug: gallery.slug,
-  inquiryName: name,
-  inquiryEmail: email,
-  inquiryMessage: message || "",
-  artworkTitle: artwork?.title || null,
-});
+      to: ownerProfile.email,
+      galleryTitle: gallery.title,
+      gallerySlug: gallery.slug,
+      inquiryName: name,
+      inquiryEmail: email,
+      inquiryMessage: message || "",
+      artworkTitle: artwork?.title || null,
+    });
   }
 
   return NextResponse.json({

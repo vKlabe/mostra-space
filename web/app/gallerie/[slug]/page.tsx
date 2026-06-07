@@ -9,6 +9,10 @@ type PublicGalleryPageProps = {
   params: Promise<{
     slug: string;
   }>;
+  searchParams?: Promise<{
+    artworkId?: string | string[];
+    galleryArtworkId?: string | string[];
+  }>;
 };
 
 type Gallery = {
@@ -78,10 +82,28 @@ function formatPrice(price: number | string | null, currency: string | null) {
   }
 }
 
+function getSingleSearchParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+
+  return value || null;
+}
+
 export default async function PublicGalleryDetailPage({
   params,
+  searchParams,
 }: PublicGalleryPageProps) {
   const { slug } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+
+  const requestedArtworkId = getSingleSearchParam(
+    resolvedSearchParams.artworkId
+  );
+
+  const requestedGalleryArtworkId = getSingleSearchParam(
+    resolvedSearchParams.galleryArtworkId
+  );
 
   const supabase = await createClient();
 
@@ -151,6 +173,22 @@ export default async function PublicGalleryDetailPage({
     wallKey: string | null;
     artwork: Artwork;
   }>;
+
+  const selectedInquiryTarget =
+    publicArtworks.find((item) => {
+      if (
+        requestedGalleryArtworkId &&
+        item.galleryArtworkId === requestedGalleryArtworkId
+      ) {
+        return true;
+      }
+
+      if (requestedArtworkId && item.artwork.id === requestedArtworkId) {
+        return true;
+      }
+
+      return false;
+    }) || null;
 
   const heroDescription =
     gallery.description ||
@@ -347,11 +385,17 @@ export default async function PublicGalleryDetailPage({
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {publicArtworks.map(({ galleryArtworkId, artwork }) => {
               const priceLabel = formatPrice(artwork.price, artwork.currency);
+              const isSelected =
+                selectedInquiryTarget?.galleryArtworkId === galleryArtworkId;
 
               return (
                 <article
                   key={galleryArtworkId}
-                  className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900"
+                  className={
+                    isSelected
+                      ? "overflow-hidden rounded-3xl border border-blue-700 bg-blue-950/20 ring-1 ring-blue-500/40"
+                      : "overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900"
+                  }
                 >
                   <div className="grid gap-0 md:grid-cols-[220px_1fr]">
                     <div className="aspect-[4/3] bg-neutral-950 md:aspect-auto">
@@ -364,6 +408,12 @@ export default async function PublicGalleryDetailPage({
 
                     <div className="p-6">
                       <div className="flex flex-wrap items-center gap-2">
+                        {isSelected && (
+                          <span className="rounded-full border border-blue-700 bg-blue-950 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-200">
+                            Opera selezionata
+                          </span>
+                        )}
+
                         {artwork.is_for_sale && (
                           <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
                             Disponibile
@@ -413,6 +463,7 @@ export default async function PublicGalleryDetailPage({
                           galleryId={gallery.id}
                           galleryTitle={gallery.title}
                           artworkId={artwork.id}
+                          galleryArtworkId={galleryArtworkId}
                           artworkTitle={artwork.title}
                         />
                       </div>
@@ -433,13 +484,51 @@ export default async function PublicGalleryDetailPage({
             </p>
 
             <h2 className="text-3xl font-semibold">
-              Vuoi informazioni sulla galleria?
+              {selectedInquiryTarget
+                ? "Richiesta informazioni sull’opera"
+                : "Vuoi informazioni sulla galleria?"}
             </h2>
 
             <p className="mt-4 text-sm leading-7 text-neutral-400">
-              Usa il form per chiedere disponibilità, prezzi, dettagli sulle
-              opere, appuntamenti o informazioni sull’allestimento.
+              {selectedInquiryTarget
+                ? `Hai selezionato "${selectedInquiryTarget.artwork.title}". Compila il form per essere ricontattato dal gallerista.`
+                : "Usa il form per chiedere disponibilità, prezzi, dettagli sulle opere, appuntamenti o informazioni sull’allestimento."}
             </p>
+
+            {selectedInquiryTarget && (
+              <div className="mt-6 overflow-hidden rounded-2xl border border-blue-900 bg-blue-950/30">
+                <div className="grid gap-0 sm:grid-cols-[120px_1fr]">
+                  <div className="aspect-[4/3] bg-neutral-950 sm:aspect-auto">
+                    <img
+                      src={
+                        selectedInquiryTarget.artwork.thumbnail_url ||
+                        selectedInquiryTarget.artwork.image_url
+                      }
+                      alt={selectedInquiryTarget.artwork.title}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
+                      Opera selezionata
+                    </p>
+
+                    <p className="mt-2 text-sm font-medium text-neutral-100">
+                      {selectedInquiryTarget.artwork.title}
+                    </p>
+
+                    <p className="mt-1 text-xs text-neutral-400">
+                      {selectedInquiryTarget.artwork.artist_name ||
+                        "Artista non indicato"}
+                      {selectedInquiryTarget.artwork.year
+                        ? `, ${selectedInquiryTarget.artwork.year}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-5">
               <p className="text-sm leading-7 text-neutral-400">
@@ -462,6 +551,9 @@ export default async function PublicGalleryDetailPage({
           <PublicGalleryInquiryForm
             galleryId={gallery.id}
             galleryTitle={gallery.title}
+            artworkId={selectedInquiryTarget?.artwork.id || null}
+            galleryArtworkId={selectedInquiryTarget?.galleryArtworkId || null}
+            artworkTitle={selectedInquiryTarget?.artwork.title || null}
           />
         </div>
       </section>
