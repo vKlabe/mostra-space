@@ -113,34 +113,46 @@ export default function PublicGalleryInquiryForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative z-20 rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
+      className="relative z-20 overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-900 p-6 shadow-2xl"
     >
-      <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-        Richieste
-      </p>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
-      <h2 className="text-2xl font-medium">
-        {artworkTitle
-          ? "Richiedi informazioni sull'opera"
-          : "Richiedi informazioni"}
-      </h2>
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div>
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+            Richiesta informazioni
+          </p>
 
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-        {artworkTitle
-          ? `Lascia i tuoi dati per essere ricontattato riguardo "${artworkTitle}".`
-          : "Lascia i tuoi dati per essere ricontattato dal gallerista."}
-      </p>
+          <h2 className="text-2xl font-medium">
+            {artworkTitle
+              ? "Parla con la galleria di quest’opera"
+              : "Contatta la galleria"}
+          </h2>
+
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
+            {artworkTitle
+              ? `Lascia i tuoi dati per ricevere informazioni su "${artworkTitle}".`
+              : "Invia una richiesta diretta per informazioni su opere, disponibilità, prezzi o visite."}
+          </p>
+        </div>
+
+        <span className="inline-flex w-fit rounded-full border border-neutral-800 bg-neutral-950 px-3 py-1 text-xs uppercase tracking-[0.16em] text-neutral-500">
+          Risposta dal gallerista
+        </span>
+      </div>
 
       {artworkTitle && (
-        <div className="mt-5 rounded-2xl border border-blue-900 bg-blue-950/30 p-4">
+        <div className="mt-6 rounded-2xl border border-blue-900 bg-blue-950/30 p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
             Opera selezionata
           </p>
 
-          <p className="mt-2 text-sm text-neutral-100">{artworkTitle}</p>
+          <p className="mt-2 text-base font-medium text-neutral-100">
+            {artworkTitle}
+          </p>
 
           {galleryArtworkId && (
-            <p className="mt-1 break-all text-xs text-neutral-500">
+            <p className="mt-2 break-all text-xs leading-5 text-neutral-500">
               ID allestimento: {galleryArtworkId}
             </p>
           )}
@@ -167,7 +179,7 @@ export default function PublicGalleryInquiryForm({
             value={name}
             onChange={(event) => setName(event.target.value)}
             disabled={isLoading}
-            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Nome e cognome"
             required
           />
@@ -181,7 +193,7 @@ export default function PublicGalleryInquiryForm({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             disabled={isLoading}
-            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="email@example.com"
             required
           />
@@ -196,14 +208,14 @@ export default function PublicGalleryInquiryForm({
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             disabled={isLoading}
-            className="min-h-32 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-36 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-6 text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Scrivi la tua richiesta"
           />
         </div>
       </div>
 
       <div className="mt-5 space-y-3">
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-6 text-neutral-300">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-6 text-neutral-300 transition hover:border-neutral-700">
           <input
             type="checkbox"
             checked={privacyAccepted}
@@ -223,12 +235,12 @@ export default function PublicGalleryInquiryForm({
             >
               informativa privacy
             </a>{" "}
-            e autorizzo il trattamento dei dati inseriti per essere
-            ricontattato in merito alla mia richiesta.
+            e autorizzo il trattamento dei dati inseriti per essere ricontattato
+            in merito alla mia richiesta.
           </span>
         </label>
 
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-6 text-neutral-400">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-6 text-neutral-400 transition hover:border-neutral-700">
           <input
             type="checkbox"
             checked={marketingConsent}
@@ -245,27 +257,31 @@ export default function PublicGalleryInquiryForm({
         </label>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <button
           type="submit"
           disabled={isLoading || !privacyAccepted}
-          className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Invio..." : "Invia richiesta"}
+          {isLoading ? "Invio richiesta..." : "Invia richiesta"}
         </button>
 
-        {feedback && (
-          <p
-            className={
-              feedbackType === "success"
-                ? "text-sm text-green-300"
-                : "text-sm text-red-300"
-            }
-          >
-            {feedback}
-          </p>
-        )}
+        <p className="text-xs leading-5 text-neutral-500">
+          Nessun pagamento online: la richiesta verrà inviata alla galleria.
+        </p>
       </div>
+
+      {feedback && (
+        <div
+          className={
+            feedbackType === "success"
+              ? "mt-5 rounded-2xl border border-green-900 bg-green-950/30 p-4 text-sm leading-6 text-green-200"
+              : "mt-5 rounded-2xl border border-red-900 bg-red-950/30 p-4 text-sm leading-6 text-red-200"
+          }
+        >
+          {feedback}
+        </div>
+      )}
     </form>
   );
 }

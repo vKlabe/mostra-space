@@ -1,6 +1,9 @@
 import AdminShell from "@/components/admin/AdminShell";
 import AdminTemplateControls from "@/components/admin/AdminTemplateControls";
+import AdminCreateTemplateForm from "@/components/admin/AdminCreateTemplateForm";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+
+type TemplatePlan = "free" | "pro" | "business" | "institution";
 
 type Template = {
   id: string;
@@ -11,6 +14,10 @@ type Template = {
   is_free: boolean;
   is_active: boolean;
   max_artworks: number;
+  available_from_plan: TemplatePlan | null;
+  preview_image_url: string | null;
+  is_featured: boolean;
+  sort_order: number;
   created_at: string;
 };
 
@@ -27,6 +34,51 @@ function formatDate(value: string | null) {
   return new Date(value).toLocaleString("it-IT");
 }
 
+function normalizeTemplatePlan(value: unknown): TemplatePlan {
+  if (
+    value === "free" ||
+    value === "pro" ||
+    value === "business" ||
+    value === "institution"
+  ) {
+    return value;
+  }
+
+  return "free";
+}
+
+function getPlanLabel(plan: TemplatePlan) {
+  if (plan === "institution") {
+    return "Institution";
+  }
+
+  if (plan === "business") {
+    return "Business";
+  }
+
+  if (plan === "pro") {
+    return "Pro";
+  }
+
+  return "Free";
+}
+
+function getPlanBadgeClass(plan: TemplatePlan) {
+  if (plan === "institution") {
+    return "border-red-900 bg-red-950/40 text-red-300";
+  }
+
+  if (plan === "business") {
+    return "border-purple-900 bg-purple-950/40 text-purple-300";
+  }
+
+  if (plan === "pro") {
+    return "border-blue-900 bg-blue-950/40 text-blue-300";
+  }
+
+  return "border-green-900 bg-green-950/40 text-green-300";
+}
+
 export default async function AdminTemplatesPage() {
   const { admin } = await requireAdmin();
 
@@ -34,8 +86,9 @@ export default async function AdminTemplatesPage() {
     admin
       .from("gallery_templates")
       .select(
-        "id, name, slug, description, unity_scene_key, is_free, is_active, max_artworks, created_at"
+        "id, name, slug, description, unity_scene_key, is_free, is_active, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order, created_at"
       )
+      .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true }),
     admin.from("galleries").select("id, template_id"),
   ]);
@@ -44,12 +97,28 @@ export default async function AdminTemplatesPage() {
   const galleries = (galleriesResult.data || []) as Gallery[];
 
   const activeCount = templates.filter((item) => item.is_active).length;
-  const freeCount = templates.filter((item) => item.is_free).length;
+  const featuredCount = templates.filter((item) => item.is_featured).length;
+
+  const freeCount = templates.filter((item) => {
+    const plan = normalizeTemplatePlan(
+      item.available_from_plan || (item.is_free ? "free" : "pro")
+    );
+
+    return plan === "free";
+  }).length;
+
+  const proOrHigherCount = templates.filter((item) => {
+    const plan = normalizeTemplatePlan(
+      item.available_from_plan || (item.is_free ? "free" : "pro")
+    );
+
+    return plan !== "free";
+  }).length;
 
   return (
     <AdminShell
       title="Template"
-      subtitle="Gestisci i template delle gallerie: disponibilita, limite opere, scena Unity e accesso free/pro."
+      subtitle="Gestisci il registry dei template: preview, piano minimo, limite opere, scena Unity e disponibilità nel portale."
       activeSection="templates"
     >
       {(templatesResult.error || galleriesResult.error) && (
@@ -70,7 +139,7 @@ export default async function AdminTemplatesPage() {
         </div>
       )}
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-5">
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             Totale template
@@ -89,24 +158,45 @@ export default async function AdminTemplatesPage() {
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Free
+            In evidenza
+          </p>
+
+          <p className="text-4xl font-semibold">{featuredCount}</p>
+        </article>
+
+        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+            Da Free
           </p>
 
           <p className="text-4xl font-semibold">{freeCount}</p>
         </article>
+
+        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+            Premium
+          </p>
+
+          <p className="text-4xl font-semibold">{proOrHigherCount}</p>
+        </article>
+      </div>
+
+      <div className="mt-6">
+        <AdminCreateTemplateForm />
       </div>
 
       <section className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <div>
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Gestione template
+            Template registry
           </p>
 
           <h2 className="text-2xl font-medium">Template gallerie</h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-            Per ora puoi modificare template esistenti. La creazione di nuovi
-            template la collegheremo quando avrai nuove scene Unity pronte.
+            Da qui decidi quali ambienti 3D sono attivi, quale preview mostrano,
+            quale chiave Unity usano, quante opere possono contenere e da quale
+            piano diventano disponibili.
           </p>
         </div>
 
@@ -123,12 +213,39 @@ export default async function AdminTemplatesPage() {
                 (gallery) => gallery.template_id === template.id
               ).length;
 
+              const accessPlan = normalizeTemplatePlan(
+                template.available_from_plan ||
+                  (template.is_free ? "free" : "pro")
+              );
+
               return (
                 <article
                   key={template.id}
                   className="rounded-3xl border border-neutral-800 bg-neutral-950 p-5"
                 >
-                  <div className="grid gap-5 xl:grid-cols-[1fr_1.1fr]">
+                  <div className="grid gap-5 xl:grid-cols-[320px_1fr_1.1fr]">
+                    <div className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900">
+                      {template.preview_image_url ? (
+                        <img
+                          src={template.preview_image_url}
+                          alt={template.name}
+                          className="h-full min-h-72 w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex min-h-72 items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.20),_transparent_30%),linear-gradient(135deg,_#262626,_#111827_55%,_#020617)] p-6 text-center">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+                              Preview assente
+                            </p>
+
+                            <p className="mt-3 text-lg font-medium text-neutral-200">
+                              {template.name}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span
@@ -142,14 +259,18 @@ export default async function AdminTemplatesPage() {
                         </span>
 
                         <span
-                          className={
-                            template.is_free
-                              ? "rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300"
-                              : "rounded-full border border-purple-900 bg-purple-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-purple-300"
-                          }
+                          className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getPlanBadgeClass(
+                            accessPlan
+                          )}`}
                         >
-                          {template.is_free ? "Free" : "Premium"}
+                          Da {getPlanLabel(accessPlan)}
                         </span>
+
+                        {template.is_featured && (
+                          <span className="rounded-full border border-white/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-950">
+                            Featured
+                          </span>
+                        )}
                       </div>
 
                       <h3 className="mt-4 text-2xl font-medium">
@@ -166,13 +287,22 @@ export default async function AdminTemplatesPage() {
                         </p>
                       )}
 
-                      <dl className="mt-5 grid gap-3 md:grid-cols-3">
+                      <dl className="mt-5 grid gap-3 md:grid-cols-2">
                         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
                           <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
                             Unity key
                           </dt>
                           <dd className="mt-2 break-all text-sm text-neutral-100">
                             {template.unity_scene_key}
+                          </dd>
+                        </div>
+
+                        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                          <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                            Piano minimo
+                          </dt>
+                          <dd className="mt-2 text-xl font-semibold text-neutral-100">
+                            {getPlanLabel(accessPlan)}
                           </dd>
                         </div>
 
@@ -186,6 +316,15 @@ export default async function AdminTemplatesPage() {
                         </div>
 
                         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                          <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                            Ordine
+                          </dt>
+                          <dd className="mt-2 text-xl font-semibold text-neutral-100">
+                            {template.sort_order}
+                          </dd>
+                        </div>
+
+                        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
                           <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
                             Usato da
                           </dt>
@@ -212,6 +351,10 @@ export default async function AdminTemplatesPage() {
                       currentIsFree={template.is_free}
                       currentIsActive={template.is_active}
                       currentMaxArtworks={template.max_artworks}
+                      currentAvailableFromPlan={accessPlan}
+                      currentPreviewImageUrl={template.preview_image_url}
+                      currentIsFeatured={template.is_featured}
+                      currentSortOrder={template.sort_order}
                     />
                   </div>
                 </article>

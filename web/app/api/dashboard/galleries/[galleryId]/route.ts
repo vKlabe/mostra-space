@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { canUseTemplateByPlan, normalizePlanName } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,29 @@ type UpdateGalleryPayload = {
   slug?: unknown;
   description?: unknown;
   coverImageUrl?: unknown;
+  templateId?: unknown;
+};
+
+type Profile = {
+  id: string;
+  role: "user" | "gallerist" | "admin";
+  plan: string | null;
+};
+
+type GalleryPermissionRecord = {
+  id: string;
+  owner_id: string;
+  title: string;
+  slug: string;
+  status: "draft" | "published" | "archived";
+  template_id: string | null;
+};
+
+type TemplateRecord = {
+  id: string;
+  name: string;
+  is_active: boolean;
+  available_from_plan: string | null;
 };
 
 function cleanText(value: unknown) {
@@ -57,21 +81,22 @@ async function getUserAndGalleryPermission(
       status: 401,
       error: "Unauthorized",
       user: null,
+      profile: null,
       gallery: null,
     };
   }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role")
+    .select("id, role, plan")
     .eq("id", user.id)
-    .single();
+    .single<Profile>();
 
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
-    .select("id, owner_id, title, slug, status")
+    .select("id, owner_id, title, slug, status, template_id")
     .eq("id", galleryId)
-    .single();
+    .single<GalleryPermissionRecord>();
 
   if (galleryError || !gallery) {
     return {
@@ -79,6 +104,7 @@ async function getUserAndGalleryPermission(
       status: 404,
       error: "Gallery not found",
       user,
+      profile,
       gallery: null,
     };
   }
@@ -92,6 +118,7 @@ async function getUserAndGalleryPermission(
       status: 403,
       error: "Forbidden",
       user,
+      profile,
       gallery,
     };
   }
@@ -101,6 +128,7 @@ async function getUserAndGalleryPermission(
     status: 200,
     error: null,
     user,
+    profile,
     gallery,
   };
 }
@@ -126,80 +154,170 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  const title = cleanText(body.title);
-  const rawSlug = cleanText(body.slug);
-  const slug = slugify(rawSlug || title);
-  const description = cleanNullableText(body.description);
-  const coverImageUrl = cleanNullableText(body.coverImageUrl);
-
-  if (!title) {
-    return NextResponse.json(
-      { error: "Il titolo e obbligatorio." },
-      { status: 400 }
-    );
-  }
-
-  if (!slug) {
-    return NextResponse.json(
-      { error: "Lo slug pubblico e obbligatorio." },
-      { status: 400 }
-    );
-  }
-
-  if (slug.length < 3) {
-    return NextResponse.json(
-      { error: "Lo slug deve contenere almeno 3 caratteri." },
-      { status: 400 }
-    );
-  }
-
   const supabase = await createClient();
 
   const permission = await getUserAndGalleryPermission(supabase, galleryId);
 
-  if (!permission.ok || !permission.gallery) {
+  if (!permission.ok || !permission.gallery || !permission.profile) {
     return NextResponse.json(
       { error: permission.error },
       { status: permission.status }
     );
   }
 
-  const { data: existingSlugOwner, error: existingSlugError } = await supabase
-    .from("galleries")
-    .select("id")
-    .eq("slug", slug)
-    .neq("id", permission.gallery.id)
-    .maybeSingle();
+  const updatePayload: Record<string, unknown> = {};
 
-  if (existingSlugError) {
+  const wantsDetailsUpdate =
+    body.title !== undefined ||
+    body.slug !== undefined ||
+    body.description !== undefined;
+
+  const wantsCoverUpdate = body.coverImageUrl !== undefined;
+  const templateId = cleanText(body.templateId);
+  const wantsTemplateUpdate = templateId.length > 0;
+
+  if (!wantsDetailsUpdate && !wantsCoverUpdate && !wantsTemplateUpdate) {
     return NextResponse.json(
-      {
-        error: "Errore controllo slug.",
-        details: existingSlugError.message,
-      },
-      { status: 500 }
+      { error: "Nessuna modifica ricevuta." },
+      { status: 400 }
     );
   }
 
-  if (existingSlugOwner) {
-    return NextResponse.json(
-      { error: "Questo slug e gia usato da un altra galleria." },
-      { status: 409 }
-    );
+  if (wantsDetailsUpdate) {
+    const title =
+      body.title !== undefined
+        ? cleanText(body.title)
+        : permission.gallery.title;
+
+    const rawSlug =
+      body.slug !== undefined
+        ? cleanText(body.slug)
+        : permission.gallery.slug;
+
+    const slug = slugify(rawSlug || title);
+    const description =
+      body.description !== undefined
+        ? cleanNullableText(body.description)
+        : undefined;
+
+    if (!title) {
+      return NextResponse.json(
+        { error: "Il titolo e obbligatorio." },
+        { status: 400 }
+      );
+    }
+
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Lo slug pubblico e obbligatorio." },
+        { status: 400 }
+      );
+    }
+
+    if (slug.length < 3) {
+      return NextResponse.json(
+        { error: "Lo slug deve contenere almeno 3 caratteri." },
+        { status: 400 }
+      );
+    }
+
+    const { data: existingSlugOwner, error: existingSlugError } = await supabase
+      .from("galleries")
+      .select("id")
+      .eq("slug", slug)
+      .neq("id", permission.gallery.id)
+      .maybeSingle();
+
+    if (existingSlugError) {
+      return NextResponse.json(
+        {
+          error: "Errore controllo slug.",
+          details: existingSlugError.message,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (existingSlugOwner) {
+      return NextResponse.json(
+        { error: "Questo slug e gia usato da un altra galleria." },
+        { status: 409 }
+      );
+    }
+
+    updatePayload.title = title;
+    updatePayload.slug = slug;
+
+    if (body.description !== undefined) {
+      updatePayload.description = description;
+    }
   }
+
+  if (wantsCoverUpdate) {
+    updatePayload.cover_image_url = cleanNullableText(body.coverImageUrl);
+  }
+
+  if (wantsTemplateUpdate) {
+    if (templateId === permission.gallery.template_id) {
+      return NextResponse.json(
+        { error: "Questo template è già assegnato alla galleria." },
+        { status: 400 }
+      );
+    }
+
+    const { data: template, error: templateError } = await supabase
+      .from("gallery_templates")
+      .select("id, name, is_active, available_from_plan")
+      .eq("id", templateId)
+      .single<TemplateRecord>();
+
+    if (templateError || !template) {
+      return NextResponse.json(
+        { error: "Template non trovato." },
+        { status: 404 }
+      );
+    }
+
+    if (!template.is_active) {
+      return NextResponse.json(
+        { error: "Questo template non è attivo." },
+        { status: 403 }
+      );
+    }
+
+    const isAdmin = permission.profile.role === "admin";
+
+    if (!isAdmin) {
+      const plan = normalizePlanName(permission.profile.plan);
+      const templateCheck = canUseTemplateByPlan(
+        plan,
+        template.available_from_plan || "free"
+      );
+
+      if (!templateCheck.allowed) {
+        return NextResponse.json(
+          {
+            error:
+              templateCheck.reason ||
+              "Questo template non è disponibile per il tuo piano.",
+            upgradeTo: templateCheck.upgradeTo,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    updatePayload.template_id = template.id;
+  }
+
+  updatePayload.updated_at = new Date().toISOString();
 
   const { data: updated, error: updateError } = await supabase
     .from("galleries")
-    .update({
-      title,
-      slug,
-      description,
-      cover_image_url: coverImageUrl,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", permission.gallery.id)
     .select(
-      "id, title, slug, description, cover_image_url, status, updated_at"
+      "id, title, slug, description, cover_image_url, template_id, status, updated_at"
     )
     .single();
 

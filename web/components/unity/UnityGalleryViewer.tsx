@@ -10,15 +10,15 @@ type UnityGalleryViewerProps = {
 };
 
 function getViewerTitle(mode: UnityMode) {
-  return mode === "editor" ? "Editor Unity WebGL" : "Viewer Unity WebGL";
+  return mode === "editor" ? "Editor 3D" : "Esperienza 3D";
 }
 
 function getViewerDescription(mode: UnityMode) {
   if (mode === "editor") {
-    return "Allestisci la galleria 3D, trascina le opere sulle pareti, modifica dimensioni e cornici, poi salva le modifiche.";
+    return "Allestisci la galleria, trascina le opere sulle pareti, modifica dimensioni e cornici, poi salva le modifiche.";
   }
 
-  return "Visita la galleria virtuale, muoviti nello spazio e clicca sulle opere per aprire la scheda informativa.";
+  return "Entra nello spazio virtuale, muoviti tra le opere e apri le schede informative direttamente dal viewer.";
 }
 
 function getViewerControls(mode: UnityMode) {
@@ -45,14 +45,20 @@ export default function UnityGalleryViewer({
 
   return (
     <div className="w-full">
-      <div className="overflow-hidden rounded-3xl border border-neutral-800 bg-black shadow-2xl">
-        <div className="flex flex-col justify-between gap-3 border-b border-neutral-800 bg-neutral-950 px-5 py-4 md:flex-row md:items-center">
+      <div className="overflow-hidden rounded-[2rem] border border-neutral-800 bg-black shadow-2xl">
+        <div className="flex flex-col justify-between gap-4 border-b border-neutral-800 bg-neutral-950 px-5 py-4 md:flex-row md:items-center">
           <div>
-            <p className="text-sm font-medium text-neutral-100">
-              {getViewerTitle(mode)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-medium text-neutral-100">
+                {getViewerTitle(mode)}
+              </p>
 
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-neutral-500">
+              <span className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-neutral-500">
+                WebGL
+              </span>
+            </div>
+
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-neutral-500">
               {getViewerDescription(mode)}
             </p>
           </div>
@@ -61,46 +67,44 @@ export default function UnityGalleryViewer({
             <button
               type="button"
               onClick={reloadIframe}
-              className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
+              className="inline-flex h-9 items-center justify-center rounded-full border border-neutral-700 px-4 text-xs text-neutral-100 transition hover:border-neutral-400"
             >
-              Ricarica viewer
+              Ricarica
             </button>
 
             <a
               href={iframeSrc}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
+              className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
-              Apri a schermo intero
+              Schermo intero
             </a>
           </div>
         </div>
 
-        <iframe
-          key={iframeVersion}
-          src={iframeSrc}
-          title={`Unity gallery viewer ${galleryId}`}
-          className="block h-[70vh] w-full bg-black"
-          allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
-          allowFullScreen
-        />
+        <div className="relative">
+          <iframe
+            key={iframeVersion}
+            src={iframeSrc}
+            title={`Unity gallery viewer ${galleryId}`}
+            className="block h-[72vh] w-full bg-black"
+            allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
+            allowFullScreen
+          />
+        </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 md:grid-cols-[1fr_auto] md:items-center">
+      <div className="mt-4 grid gap-3 rounded-3xl border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <p className="text-neutral-100">
             {mode === "editor"
-              ? "Editor 3D isolato in iframe"
-              : "Viewer 3D isolato in iframe"}
+              ? "Ambiente editor isolato"
+              : "Ambiente visitor isolato"}
           </p>
 
           <p className="mt-1 text-xs leading-5 text-neutral-500">
             {getViewerControls(mode)}
-          </p>
-
-          <p className="mt-1 break-all text-xs text-neutral-600">
-            GalleryId: {galleryId} · Mode: {mode}
           </p>
         </div>
 
@@ -112,8 +116,8 @@ export default function UnityGalleryViewer({
             </>
           ) : (
             <>
-              <p className="text-neutral-300">Fallback pubblico</p>
-              <p>Se il 3D non parte, usa il catalogo opere sotto al viewer.</p>
+              <p className="text-neutral-300">Accesso alternativo</p>
+              <p>Se il 3D non parte, consulta il catalogo opere sotto.</p>
             </>
           )}
         </div>

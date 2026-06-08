@@ -93,6 +93,16 @@ function buildArtworkInquiryHref(
   )}&galleryArtworkId=${encodeURIComponent(galleryArtworkId)}#richiesta`;
 }
 
+function getArtworkAuthorLine(artwork: Artwork) {
+  const artist = artwork.artist_name || "Artista non indicato";
+
+  if (artwork.year) {
+    return `${artist}, ${artwork.year}`;
+  }
+
+  return artist;
+}
+
 export default async function PublicGalleryDetailPage({
   params,
   searchParams,
@@ -193,29 +203,44 @@ export default async function PublicGalleryDetailPage({
     ? new Date(gallery.published_at).toLocaleDateString("it-IT")
     : null;
 
+  const positionedPublicArtworks = publicArtworks.filter(
+    (item) => item.wallKey && item.wallKey.trim().length > 0
+  ).length;
+
+  const forSalePublicArtworks = publicArtworks.filter(
+    (item) => item.artwork.is_for_sale
+  ).length;
+
+  const featuredArtwork = selectedArtwork || publicArtworks[0] || null;
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-50">
-      <section className="relative overflow-hidden border-b border-neutral-800">
+      <section className="relative isolate overflow-hidden border-b border-neutral-800">
         {gallery.cover_image_url && (
-          <div className="absolute inset-0 opacity-30">
+          <div className="absolute inset-0 -z-10">
             <img
               src={gallery.cover_image_url}
               alt={gallery.title}
-              className="h-full w-full object-cover"
+              className="h-full w-full scale-105 object-cover opacity-35 blur-[1px]"
             />
 
-            <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/50 via-neutral-950/85 to-neutral-950" />
+            <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/40 via-neutral-950/80 to-neutral-950" />
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/85 to-neutral-950/35" />
           </div>
         )}
 
         {!gallery.cover_image_url && (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.08),_transparent_30%)]" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.08),_transparent_28%)]" />
         )}
 
-        <div className="relative mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-16">
-          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+        <div className="relative mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-20">
+          <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
               <div className="flex flex-wrap items-center gap-3">
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-white/80 backdrop-blur">
+                  Virtual exhibition
+                </span>
+
                 <span className="rounded-full border border-green-900 bg-green-950/40 px-3 py-1 text-xs uppercase tracking-[0.18em] text-green-300">
                   Galleria pubblica
                 </span>
@@ -227,111 +252,171 @@ export default async function PublicGalleryDetailPage({
                 )}
               </div>
 
-              <h1 className="mt-6 max-w-5xl text-4xl font-semibold leading-tight md:text-6xl">
+              <h1 className="mt-7 max-w-5xl text-5xl font-semibold leading-[0.95] tracking-tight md:text-7xl">
                 {gallery.title}
               </h1>
 
-              <p className="mt-6 max-w-3xl text-base leading-8 text-neutral-300">
+              <p className="mt-7 max-w-3xl text-base leading-8 text-neutral-300 md:text-lg">
                 {heroDescription}
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-9 flex flex-wrap gap-3">
                 <a
                   href="#viewer"
-                  className="rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                 >
-                  Entra nella galleria
+                  Entra nello spazio 3D
                 </a>
 
                 <a
                   href="#catalogo"
-                  className="rounded-full border border-neutral-700 px-6 py-3 text-sm text-neutral-100 transition hover:border-neutral-400"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-neutral-600 px-6 text-sm font-medium text-neutral-100 transition hover:border-neutral-300"
                 >
-                  Vedi catalogo opere
+                  Sfoglia le opere
                 </a>
 
                 <a
                   href="#richiesta"
-                  className="rounded-full border border-neutral-700 px-6 py-3 text-sm text-neutral-100 transition hover:border-neutral-400"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-neutral-700 px-6 text-sm font-medium text-neutral-300 transition hover:border-neutral-400 hover:text-white"
                 >
                   Richiedi informazioni
                 </a>
               </div>
+
+              <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
+                <div className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-5 backdrop-blur">
+                  <p className="text-3xl font-semibold">
+                    {publicArtworks.length}
+                  </p>
+
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
+                    Opere pubbliche
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-5 backdrop-blur">
+                  <p className="text-3xl font-semibold">
+                    {positionedPublicArtworks}
+                  </p>
+
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
+                    Allestite in 3D
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-5 backdrop-blur">
+                  <p className="text-3xl font-semibold">
+                    {forSalePublicArtworks}
+                  </p>
+
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
+                    Disponibili
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid min-w-full gap-3 rounded-3xl border border-neutral-800 bg-neutral-900/80 p-5 backdrop-blur md:min-w-[360px]">
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Opere pubbliche</span>
-                <span className="text-neutral-100">
-                  {publicArtworks.length}
-                </span>
+            <aside className="rounded-[2rem] border border-neutral-800 bg-neutral-900/80 p-4 shadow-2xl backdrop-blur">
+              <div className="overflow-hidden rounded-[1.5rem] border border-neutral-800 bg-neutral-950">
+                {featuredArtwork ? (
+                  <img
+                    src={
+                      featuredArtwork.artwork.thumbnail_url ||
+                      featuredArtwork.artwork.image_url
+                    }
+                    alt={featuredArtwork.artwork.title}
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                ) : gallery.cover_image_url ? (
+                  <img
+                    src={gallery.cover_image_url}
+                    alt={gallery.title}
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex aspect-[4/3] items-center justify-center bg-neutral-950 text-sm text-neutral-600">
+                    Anteprima non disponibile
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Esperienza</span>
-                <span className="text-neutral-100">Unity WebGL</span>
-              </div>
+              <div className="p-3">
+                <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+                  Opera in evidenza
+                </p>
 
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Accesso</span>
-                <span className="text-neutral-100">Browser</span>
-              </div>
+                <h2 className="mt-3 text-2xl font-medium">
+                  {featuredArtwork?.artwork.title || gallery.title}
+                </h2>
 
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Fallback</span>
-                <span className="text-neutral-100">Catalogo + form</span>
-              </div>
+                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                  {featuredArtwork
+                    ? getArtworkAuthorLine(featuredArtwork.artwork)
+                    : "Esperienza digitale visitabile via browser."}
+                </p>
 
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Link</span>
-                <span className="break-all text-right text-neutral-100">
-                  /gallerie/{gallery.slug}
-                </span>
+                <div className="mt-5 grid gap-3 text-sm">
+                  <div className="flex justify-between gap-4 border-t border-neutral-800 pt-3">
+                    <span className="text-neutral-500">Esperienza</span>
+                    <span className="text-neutral-100">Unity WebGL</span>
+                  </div>
+
+                  <div className="flex justify-between gap-4 border-t border-neutral-800 pt-3">
+                    <span className="text-neutral-500">Accesso</span>
+                    <span className="text-neutral-100">Browser</span>
+                  </div>
+
+                  <div className="flex justify-between gap-4 border-t border-neutral-800 pt-3">
+                    <span className="text-neutral-500">Fallback</span>
+                    <span className="text-neutral-100">Catalogo + form</span>
+                  </div>
+                </div>
               </div>
-            </div>
+            </aside>
           </div>
         </div>
       </section>
 
-      <section id="viewer" className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+      <section id="viewer" className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
+        <div className="mb-7 grid gap-5 lg:grid-cols-[0.8fr_0.2fr] lg:items-end">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Viewer 3D
+              Esperienza immersiva
             </p>
 
-            <h2 className="text-3xl font-semibold">
-              Visita lo spazio virtuale
+            <h2 className="text-3xl font-semibold md:text-4xl">
+              Entra nello spazio virtuale
             </h2>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-              Muoviti nello spazio, osserva le opere allestite e usa il catalogo
-              sotto al viewer per leggere le schede e inviare richieste.
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
+              Visita l’allestimento 3D, muoviti tra le pareti e clicca sulle
+              opere per aprire le schede informative. Il catalogo sotto resta
+              sempre disponibile come fallback pubblico.
             </p>
           </div>
 
           <a
             href="#richiesta"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Contatta il gallerista
+            Contatta
           </a>
         </div>
 
         <UnityGalleryViewer galleryId={gallery.id} mode="visitor" />
 
-        <div className="mt-5 rounded-3xl border border-yellow-900 bg-yellow-950/20 p-6">
-          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+        <div className="mt-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-yellow-300">
-                Fallback pubblico
+              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-neutral-500">
+                Accesso alternativo
               </p>
 
-              <h3 className="text-xl font-medium text-yellow-50">
+              <h3 className="text-xl font-medium text-neutral-100">
                 Se il 3D non si carica, la galleria resta consultabile
               </h3>
 
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-yellow-100/80">
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
                 Unity WebGL può richiedere qualche secondo al primo avvio o non
                 essere disponibile su alcuni browser/dispositivi. Puoi comunque
                 vedere tutte le opere pubbliche nel catalogo e inviare una
@@ -340,42 +425,177 @@ export default async function PublicGalleryDetailPage({
             </div>
 
             <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-  <a
-    href="#catalogo"
-    className="inline-flex h-10 min-h-0 shrink-0 items-center justify-center rounded-full bg-white px-5 text-sm font-medium leading-none text-neutral-950 transition hover:bg-neutral-200"
-  >
-    Vai al catalogo
-  </a>
+              <a
+                href="#catalogo"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              >
+                Vai al catalogo
+              </a>
 
-  <a
-    href="#richiesta"
-    className="inline-flex h-10 min-h-0 shrink-0 items-center justify-center rounded-full border border-yellow-700 px-5 text-sm font-medium leading-none text-yellow-100 transition hover:border-yellow-400 hover:bg-yellow-950/40"
-  >
-    Richiedi informazioni
-  </a>
-</div>
+              <a
+                href="#richiesta"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm font-medium text-neutral-100 transition hover:border-neutral-400"
+              >
+                Richiedi informazioni
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="catalogo" className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+            <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
+              01
+            </p>
+
+            <h3 className="text-xl font-medium">Visita libera</h3>
+
+            <p className="mt-3 text-sm leading-7 text-neutral-400">
+              La galleria è navigabile direttamente da browser. Non serve
+              installare nulla: basta entrare nello spazio e iniziare la visita.
+            </p>
+          </article>
+
+          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+            <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
+              02
+            </p>
+
+            <h3 className="text-xl font-medium">Schede opera</h3>
+
+            <p className="mt-3 text-sm leading-7 text-neutral-400">
+              Ogni opera può essere approfondita con titolo, artista, tecnica,
+              dimensioni, disponibilità e descrizione.
+            </p>
+          </article>
+
+          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+            <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
+              03
+            </p>
+
+            <h3 className="text-xl font-medium">Richieste dirette</h3>
+
+            <p className="mt-3 text-sm leading-7 text-neutral-400">
+              Dal viewer o dal catalogo puoi inviare una richiesta specifica
+              sulla galleria o su una singola opera.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-8">
+            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+              Il progetto
+            </p>
+
+            <h2 className="text-3xl font-semibold md:text-4xl">
+              Una galleria pensata per essere visitata anche a distanza
+            </h2>
+
+            <p className="mt-5 text-sm leading-8 text-neutral-400">
+              Questa pagina unisce allestimento virtuale, catalogo opere e
+              richiesta diretta di informazioni. Il visitatore può entrare nello
+              spazio 3D, leggere le schede delle opere e contattare il
+              gallerista senza uscire dall’esperienza.
+            </p>
+
+            <p className="mt-4 text-sm leading-8 text-neutral-400">
+              Il viewer immersivo offre la dimensione spaziale della mostra,
+              mentre il catalogo sottostante garantisce sempre un accesso
+              semplice e consultabile anche quando il 3D non è disponibile.
+            </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <a
+                href="#viewer"
+                className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              >
+                Visita in 3D
+              </a>
+
+              <a
+                href="#catalogo"
+                className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
+              >
+                Consulta catalogo
+              </a>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+                Come visitare
+              </p>
+
+              <h3 className="mt-3 text-xl font-medium">
+                Entra, muoviti, clicca sulle opere
+              </h3>
+
+              <p className="mt-3 text-sm leading-7 text-neutral-400">
+                Apri il viewer, clicca per entrare nella visita, usa i comandi
+                di movimento e seleziona le opere per visualizzarne le schede.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+                Catalogo e disponibilità
+              </p>
+
+              <h3 className="mt-3 text-xl font-medium">
+                Ogni opera resta consultabile
+              </h3>
+
+              <p className="mt-3 text-sm leading-7 text-neutral-400">
+                Il catalogo pubblico raccoglie immagini, dati tecnici, artista,
+                anno, prezzo o disponibilità. Da ogni scheda puoi inviare una
+                richiesta dedicata.
+              </p>
+            </article>
+
+            <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+                Contatto diretto
+              </p>
+
+              <h3 className="mt-3 text-xl font-medium">
+                Dal visitatore al gallerista
+              </h3>
+
+              <p className="mt-3 text-sm leading-7 text-neutral-400">
+                Il form raccoglie richieste su opere, disponibilità, prezzi,
+                appuntamenti o informazioni generali sull’allestimento.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="catalogo" className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Catalogo fallback
+              Catalogo opere
             </p>
 
-            <h2 className="text-3xl font-semibold">Opere esposte</h2>
+            <h2 className="text-3xl font-semibold md:text-4xl">
+              Opere esposte
+            </h2>
 
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-              Anche se il viewer 3D non dovesse caricarsi, puoi consultare da
-              qui le opere visibili al pubblico e inviare una richiesta
-              specifica.
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
+              Consulta le opere visibili al pubblico. Ogni scheda permette di
+              richiedere informazioni, disponibilità o dettagli commerciali.
             </p>
           </div>
 
-          <p className="text-sm text-neutral-500">
-            Totale opere pubbliche: {publicArtworks.length}
+          <p className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm text-neutral-400">
+            {publicArtworks.length} opere pubbliche
           </p>
         </div>
 
@@ -414,72 +634,75 @@ export default async function PublicGalleryDetailPage({
                 artwork.id,
                 galleryArtworkId
               );
+              const availabilityLabel = artwork.is_for_sale
+                ? priceLabel || "Prezzo su richiesta"
+                : "Scheda informativa";
 
               return (
                 <article
                   key={galleryArtworkId}
-                  className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900"
+                  className="group overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-900 transition hover:border-neutral-600"
                 >
-                  <div className="grid gap-0 md:grid-cols-[220px_1fr]">
-                    <div className="aspect-[4/3] bg-neutral-950 md:aspect-auto">
+                  <div className="grid gap-0 md:grid-cols-[260px_1fr]">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-neutral-950 md:aspect-auto">
                       <img
                         src={artwork.thumbnail_url || artwork.image_url}
                         alt={artwork.title}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
-                    </div>
 
-                    <div className="p-6">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                         {artwork.is_for_sale && (
-                          <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
+                          <span className="rounded-full border border-blue-900 bg-blue-950/80 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-200 backdrop-blur">
                             Disponibile
                           </span>
                         )}
-
-                        {priceLabel && artwork.is_for_sale && (
-                          <span className="rounded-full border border-neutral-700 bg-neutral-950 px-3 py-1 text-xs text-neutral-300">
-                            {priceLabel}
-                          </span>
-                        )}
                       </div>
+                    </div>
 
-                      <h3 className="mt-4 text-2xl font-medium">
+                    <div className="p-6">
+                      <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+                        Opera #{String(galleryArtworkId).slice(0, 8)}
+                      </p>
+
+                      <h3 className="mt-3 text-2xl font-medium leading-tight">
                         {artwork.title}
                       </h3>
 
                       <p className="mt-2 text-sm text-neutral-400">
-                        {artwork.artist_name || "Artista non indicato"}
-                        {artwork.year ? `, ${artwork.year}` : ""}
+                        {getArtworkAuthorLine(artwork)}
                       </p>
 
-                      <dl className="mt-4 space-y-1 text-xs text-neutral-500">
+                      <div className="mt-5 inline-flex rounded-full border border-neutral-800 bg-neutral-950 px-4 py-2 text-sm text-neutral-200">
+                        {availabilityLabel}
+                      </div>
+
+                      <dl className="mt-5 space-y-2 text-sm text-neutral-500">
                         {artwork.technique && (
                           <div>
-                            <dt className="inline">Tecnica: </dt>
-                            <dd className="inline">{artwork.technique}</dd>
+                            <dt className="inline text-neutral-600">
+                              Tecnica:{" "}
+                            </dt>
+                            <dd className="inline text-neutral-300">
+                              {artwork.technique}
+                            </dd>
                           </div>
                         )}
 
                         {artwork.dimensions && (
                           <div>
-                            <dt className="inline">Dimensioni: </dt>
-                            <dd className="inline">{artwork.dimensions}</dd>
-                          </div>
-                        )}
-
-                        {galleryArtworkId && (
-                          <div>
-                            <dt className="inline">ID allestimento: </dt>
-                            <dd className="inline break-all">
-                              {galleryArtworkId}
+                            <dt className="inline text-neutral-600">
+                              Dimensioni:{" "}
+                            </dt>
+                            <dd className="inline text-neutral-300">
+                              {artwork.dimensions}
                             </dd>
                           </div>
                         )}
                       </dl>
 
                       {artwork.description && (
-                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-neutral-400">
+                        <p className="mt-5 line-clamp-3 text-sm leading-7 text-neutral-400">
                           {artwork.description}
                         </p>
                       )}
@@ -487,16 +710,16 @@ export default async function PublicGalleryDetailPage({
                       <div className="mt-6 flex flex-wrap gap-3">
                         <a
                           href={inquiryHref}
-                          className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                          className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                         >
                           Richiedi informazioni
                         </a>
 
                         <a
                           href="#viewer"
-                          className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                          className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
                         >
-                          Vedi nel viewer 3D
+                          Vedi nel 3D
                         </a>
                       </div>
 
@@ -524,20 +747,20 @@ export default async function PublicGalleryDetailPage({
         )}
       </section>
 
-      <section id="richiesta" className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+      <section id="richiesta" className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-8">
+          <div className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-8">
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
               Contatto
             </p>
 
-            <h2 className="text-3xl font-semibold">
+            <h2 className="text-3xl font-semibold md:text-4xl">
               {selectedArtwork
                 ? "Richiesta per l’opera selezionata"
                 : "Vuoi informazioni sulla galleria?"}
             </h2>
 
-            <p className="mt-4 text-sm leading-7 text-neutral-400">
+            <p className="mt-5 text-sm leading-7 text-neutral-400">
               {selectedArtwork
                 ? `Il form è stato predisposto per l’opera "${selectedArtwork.artwork.title}". Puoi modificare liberamente il messaggio prima dell’invio.`
                 : "Usa il form per chiedere disponibilità, prezzi, dettagli sulle opere, appuntamenti o informazioni sull’allestimento."}
@@ -549,39 +772,46 @@ export default async function PublicGalleryDetailPage({
                   Opera selezionata
                 </p>
 
-                <p className="mt-2 text-sm text-neutral-100">
+                <p className="mt-2 text-base font-medium text-neutral-100">
                   {selectedArtwork.artwork.title}
                 </p>
 
-                <p className="mt-1 text-xs text-neutral-400">
-                  {selectedArtwork.artwork.artist_name ||
-                    "Artista non indicato"}
-                  {selectedArtwork.artwork.year
-                    ? `, ${selectedArtwork.artwork.year}`
-                    : ""}
-                </p>
-
-                <p className="mt-2 break-all text-xs text-neutral-500">
-                  ID allestimento: {selectedArtwork.galleryArtworkId}
+                <p className="mt-1 text-sm text-neutral-400">
+                  {getArtworkAuthorLine(selectedArtwork.artwork)}
                 </p>
               </div>
             )}
 
-            <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-5">
-              <p className="text-sm leading-7 text-neutral-400">
-                I dati inviati saranno usati solo per rispondere alla tua
-                richiesta. Puoi leggere l’informativa completa nella pagina
-                privacy.
-              </p>
+            <div className="mt-6 grid gap-3">
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5">
+                <p className="text-sm font-medium text-neutral-100">
+                  Cosa puoi chiedere
+                </p>
 
-              <a
-                href="/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex text-sm text-neutral-100 underline underline-offset-4 hover:text-white"
-              >
-                Leggi informativa privacy
-              </a>
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-neutral-400">
+                  <li>• informazioni su prezzo e disponibilità</li>
+                  <li>• dettagli tecnici o documentazione dell’opera</li>
+                  <li>• appuntamenti, visite o contatto diretto</li>
+                  <li>• richieste generali sull’allestimento virtuale</li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5">
+                <p className="text-sm leading-7 text-neutral-400">
+                  I dati inviati saranno usati solo per rispondere alla tua
+                  richiesta. Puoi leggere l’informativa completa nella pagina
+                  privacy.
+                </p>
+
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex text-sm text-neutral-100 underline underline-offset-4 hover:text-white"
+                >
+                  Leggi informativa privacy
+                </a>
+              </div>
             </div>
           </div>
 
@@ -610,21 +840,21 @@ export default async function PublicGalleryDetailPage({
           <div className="flex flex-wrap gap-3">
             <a
               href="#viewer"
-              className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
               Torna al viewer
             </a>
 
             <a
               href="#catalogo"
-              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
               Catalogo opere
             </a>
 
             <a
               href="/gallerie"
-              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
               Altre gallerie
             </a>

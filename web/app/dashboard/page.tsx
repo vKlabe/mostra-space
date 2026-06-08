@@ -116,6 +116,36 @@ function getCurrentMonthStart() {
   );
 }
 
+function formatDate(value: string | null) {
+  if (!value) {
+    return "N/D";
+  }
+
+  try {
+    return new Date(value).toLocaleDateString("it-IT", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "N/D";
+  }
+}
+
+function formatStorage(bytes: number) {
+  if (bytes <= 0) {
+    return "0 MB";
+  }
+
+  const mb = bytes / 1024 / 1024;
+
+  if (mb < 1024) {
+    return `${mb.toFixed(1)} MB`;
+  }
+
+  return `${(mb / 1024).toFixed(2)} GB`;
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -161,7 +191,7 @@ export default async function DashboardPage() {
     return (
       <DashboardShell
         title="Benvenuto nel portale"
-        subtitle={`Il tuo ruolo attuale e ${profile.role}. Per creare gallerie virtuali, caricare opere e gestire richieste devi avere il ruolo gallerista.`}
+        subtitle={`Il tuo ruolo attuale è ${profile.role}. Per creare gallerie virtuali, caricare opere e gestire richieste devi avere il ruolo gallerista.`}
         activeSection="dashboard"
         actions={
           <a
@@ -175,6 +205,12 @@ export default async function DashboardPage() {
         <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-neutral-300">
             Il tuo account non ha ancora accesso agli strumenti da gallerista.
+          </p>
+
+          <p className="mt-3 text-sm leading-6 text-neutral-500">
+            Quando il ruolo sarà aggiornato, da qui potrai creare gallerie
+            virtuali, caricare opere, aprire l’editor 3D e ricevere richieste
+            dai visitatori.
           </p>
         </div>
       </DashboardShell>
@@ -215,17 +251,21 @@ export default async function DashboardPage() {
   const safeArtworks = (artworks || []) as Artwork[];
   const safeInquiries = (inquiries || []) as unknown as Inquiry[];
 
-  const draftGalleries = safeGalleries.filter(
+  const draftGalleriesList = safeGalleries.filter(
     (gallery) => gallery.status === "draft"
-  ).length;
+  );
 
-  const publishedGalleries = safeGalleries.filter(
+  const publishedGalleriesList = safeGalleries.filter(
     (gallery) => gallery.status === "published"
-  ).length;
+  );
 
-  const archivedGalleries = safeGalleries.filter(
+  const archivedGalleriesList = safeGalleries.filter(
     (gallery) => gallery.status === "archived"
-  ).length;
+  );
+
+  const draftGalleries = draftGalleriesList.length;
+  const publishedGalleries = publishedGalleriesList.length;
+  const archivedGalleries = archivedGalleriesList.length;
 
   const publicArtworks = safeArtworks.filter(
     (artwork) => artwork.is_public === true
@@ -257,23 +297,240 @@ export default async function DashboardPage() {
   const displayName =
     profile.display_name || profile.full_name || profile.email || "Gallerista";
 
+  const firstDraftGallery = draftGalleriesList[0] || null;
+  const latestPublishedGallery = publishedGalleriesList[0] || null;
+  const primaryGallery = firstDraftGallery || latestPublishedGallery || null;
+
+  const hasGalleries = safeGalleries.length > 0;
+  const hasArtworks = safeArtworks.length > 0;
+  const hasPublishedGallery = publishedGalleries > 0;
+  const hasNewInquiries = newInquiries > 0;
+
+  let onboardingTitle = "Crea la tua prima galleria virtuale";
+  let onboardingDescription =
+    "Parti creando uno spazio, poi carica le opere, apri l’editor 3D e pubblica la pagina visitatore.";
+  let onboardingPrimaryHref = "/dashboard/gallerie";
+  let onboardingPrimaryLabel = "Crea galleria";
+  let onboardingSecondaryHref = "/dashboard/opere";
+  let onboardingSecondaryLabel = "Carica opere";
+
+  if (hasGalleries && !hasArtworks) {
+    onboardingTitle = "Carica le prime opere";
+    onboardingDescription =
+      "Hai già creato una galleria. Ora carica le opere da inserire nello spazio 3D.";
+    onboardingPrimaryHref = "/dashboard/opere";
+    onboardingPrimaryLabel = "Carica opere";
+    onboardingSecondaryHref = `/dashboard/gallerie/${primaryGallery?.id}`;
+    onboardingSecondaryLabel = "Apri galleria";
+  }
+
+  if (hasGalleries && hasArtworks && firstDraftGallery) {
+    onboardingTitle = "Continua la configurazione della bozza";
+    onboardingDescription =
+      "Completa cover, opere e allestimento 3D. Quando la checklist è pronta, potrai pubblicare.";
+    onboardingPrimaryHref = `/dashboard/gallerie/${firstDraftGallery.id}`;
+    onboardingPrimaryLabel = "Continua configurazione";
+    onboardingSecondaryHref = `/dashboard/gallerie-editor/${firstDraftGallery.id}`;
+    onboardingSecondaryLabel = "Apri editor 3D";
+  }
+
+  if (hasPublishedGallery && !firstDraftGallery) {
+    onboardingTitle = "La tua galleria è online";
+    onboardingDescription =
+      "Controlla le richieste ricevute, aggiorna le opere o crea un nuovo spazio espositivo.";
+    onboardingPrimaryHref = latestPublishedGallery
+      ? `/gallerie/${latestPublishedGallery.slug}`
+      : "/gallerie";
+    onboardingPrimaryLabel = "Apri pagina pubblica";
+    onboardingSecondaryHref = "/dashboard/richieste";
+    onboardingSecondaryLabel = "Vedi richieste";
+  }
+
   return (
     <DashboardShell
       title={`Ciao, ${displayName}`}
       subtitle="Da qui controlli gallerie virtuali, opere, pubblicazioni, limiti piano e richieste ricevute dai visitatori."
       activeSection="dashboard"
       actions={
-        <a
-          href="/gallerie"
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-        >
-          Elenco pubblico
-        </a>
+        <>
+          <a
+            href="/dashboard/gallerie"
+            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+          >
+            Crea / gestisci gallerie
+          </a>
+
+          <a
+            href="/gallerie"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+          >
+            Elenco pubblico
+          </a>
+        </>
       }
     >
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+              Onboarding
+            </p>
+
+            <h2 className="text-3xl font-semibold">{onboardingTitle}</h2>
+
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
+              {onboardingDescription}
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href={onboardingPrimaryHref}
+                target={
+                  onboardingPrimaryHref.startsWith("/gallerie/")
+                    ? "_blank"
+                    : undefined
+                }
+                rel={
+                  onboardingPrimaryHref.startsWith("/gallerie/")
+                    ? "noreferrer"
+                    : undefined
+                }
+                className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              >
+                {onboardingPrimaryLabel}
+              </a>
+
+              <a
+                href={onboardingSecondaryHref}
+                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              >
+                {onboardingSecondaryLabel}
+              </a>
+
+              {primaryGallery && (
+                <a
+                  href={`/unity-frame?galleryId=${primaryGallery.id}&mode=visitor`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
+                >
+                  Anteprima viewer 3D
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className={
+                    hasGalleries
+                      ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-800 bg-green-950 text-sm text-green-300"
+                      : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900 text-sm text-neutral-500"
+                  }
+                >
+                  {hasGalleries ? "✓" : "1"}
+                </span>
+
+                <div>
+                  <p className="text-sm font-medium text-neutral-100">
+                    Crea una galleria
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    {hasGalleries
+                      ? `${safeGalleries.length} gallerie create.`
+                      : "Crea il primo spazio espositivo dal pannello gallerie."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className={
+                    hasArtworks
+                      ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-800 bg-green-950 text-sm text-green-300"
+                      : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900 text-sm text-neutral-500"
+                  }
+                >
+                  {hasArtworks ? "✓" : "2"}
+                </span>
+
+                <div>
+                  <p className="text-sm font-medium text-neutral-100">
+                    Carica opere
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    {hasArtworks
+                      ? `${safeArtworks.length} opere caricate, ${publicArtworks} pubbliche.`
+                      : "Carica immagini, dati, prezzi e stato pubblico delle opere."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className={
+                    hasPublishedGallery
+                      ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-800 bg-green-950 text-sm text-green-300"
+                      : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-yellow-800 bg-yellow-950 text-sm text-yellow-300"
+                  }
+                >
+                  {hasPublishedGallery ? "✓" : "3"}
+                </span>
+
+                <div>
+                  <p className="text-sm font-medium text-neutral-100">
+                    Allestisci e pubblica
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    {hasPublishedGallery
+                      ? `${publishedGalleries} gallerie online.`
+                      : "Apri l’editor 3D, posiziona le opere e pubblica quando la checklist è pronta."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className={
+                    hasNewInquiries
+                      ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-green-800 bg-green-950 text-sm text-green-300"
+                      : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900 text-sm text-neutral-500"
+                  }
+                >
+                  {hasNewInquiries ? "!" : "4"}
+                </span>
+
+                <div>
+                  <p className="text-sm font-medium text-neutral-100">
+                    Gestisci richieste
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    {hasNewInquiries
+                      ? `Hai ${newInquiries} nuove richieste da controllare.`
+                      : "Quando i visitatori inviano richieste, le troverai nella sezione richieste."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             Gallerie
@@ -340,17 +597,88 @@ export default async function DashboardPage() {
           <p className="text-4xl font-semibold capitalize">{plan}</p>
 
           <p className="mt-3 text-sm text-neutral-400">
-            Ruolo account: {profile.role}
+            {formatStorage(storageUsedBytes)} usati · ruolo {profile.role}
           </p>
 
-          <a
-            href="/account"
-            className="mt-6 inline-flex rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-500 transition hover:border-neutral-600 hover:text-neutral-300"
-          >
-            Account
-          </a>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <a
+              href="/account"
+              className="inline-flex rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-500 transition hover:border-neutral-600 hover:text-neutral-300"
+            >
+              Account
+            </a>
+
+            <a
+              href="/pricing"
+              className="inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            >
+              Piani
+            </a>
+          </div>
         </article>
       </div>
+
+      <section className="mt-6 grid gap-4 lg:grid-cols-4">
+        <a
+          href="/dashboard/gallerie"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+            Azione rapida
+          </p>
+
+          <h3 className="mt-3 text-lg font-medium">Crea galleria</h3>
+
+          <p className="mt-2 text-sm leading-6 text-neutral-400">
+            Apri la sezione gallerie e crea o modifica uno spazio virtuale.
+          </p>
+        </a>
+
+        <a
+          href="/dashboard/opere"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+            Azione rapida
+          </p>
+
+          <h3 className="mt-3 text-lg font-medium">Carica opera</h3>
+
+          <p className="mt-2 text-sm leading-6 text-neutral-400">
+            Aggiungi immagini, dati, dimensioni, prezzo e visibilità.
+          </p>
+        </a>
+
+        <a
+          href={primaryGallery ? `/dashboard/gallerie/${primaryGallery.id}` : "/dashboard/gallerie"}
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+            Azione rapida
+          </p>
+
+          <h3 className="mt-3 text-lg font-medium">Checklist galleria</h3>
+
+          <p className="mt-2 text-sm leading-6 text-neutral-400">
+            Controlla cover, opere, allestimento, anteprima e pubblicazione.
+          </p>
+        </a>
+
+        <a
+          href="/dashboard/richieste"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
+            Azione rapida
+          </p>
+
+          <h3 className="mt-3 text-lg font-medium">Richieste ricevute</h3>
+
+          <p className="mt-2 text-sm leading-6 text-neutral-400">
+            Leggi e gestisci i contatti arrivati dalle gallerie pubbliche.
+          </p>
+        </a>
+      </section>
 
       <div className="mt-6">
         <PlanUsageCard
@@ -385,6 +713,11 @@ export default async function DashboardPage() {
             <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
               <p className="text-neutral-300">
                 Non hai ancora creato gallerie.
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-neutral-500">
+                Crea la prima galleria, poi carica opere e apri l’editor 3D per
+                iniziare l’allestimento.
               </p>
 
               <a
@@ -422,6 +755,10 @@ export default async function DashboardPage() {
                       <p className="mt-2 break-all text-xs text-neutral-500">
                         /gallerie/{gallery.slug}
                       </p>
+
+                      <p className="mt-2 text-xs text-neutral-600">
+                        Creata il {formatDate(gallery.created_at)}
+                      </p>
                     </div>
 
                     <div className="flex shrink-0 flex-wrap gap-2">
@@ -438,6 +775,17 @@ export default async function DashboardPage() {
                       >
                         Editor
                       </a>
+
+                      {gallery.status === "published" && (
+                        <a
+                          href={`/gallerie/${gallery.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-full border border-green-800 px-4 py-2 text-sm text-green-200 transition hover:border-green-500"
+                        >
+                          Pubblica
+                        </a>
+                      )}
                     </div>
                   </div>
                 </article>
@@ -474,6 +822,17 @@ export default async function DashboardPage() {
                 Pubblica una galleria e condividi il link per iniziare a
                 ricevere contatti.
               </p>
+
+              {latestPublishedGallery && (
+                <a
+                  href={`/gallerie/${latestPublishedGallery.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
+                >
+                  Apri galleria pubblica
+                </a>
+              )}
             </div>
           )}
 

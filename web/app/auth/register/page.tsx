@@ -44,7 +44,7 @@ export default function RegisterPage() {
 
     if (data.session) {
       setMessage("Registrazione completata. Ti sto portando al tuo account...");
-      router.push("/account");
+      router.push("/dashboard");
       router.refresh();
       return;
     }

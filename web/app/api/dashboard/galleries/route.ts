@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   canCreateGallery,
-  canUseTemplateByIndex,
   canUseTemplateByPlan,
   getPlanLimits,
   normalizePlanName,
@@ -80,7 +79,7 @@ export async function POST(request: Request) {
 
   if (!title) {
     return NextResponse.json(
-      { error: "Il titolo della galleria e obbligatorio." },
+      { error: "Il titolo della galleria è obbligatorio." },
       { status: 400 }
     );
   }
@@ -193,34 +192,29 @@ export async function POST(request: Request) {
   }
 
   const safeTemplates = (templates || []) as Template[];
-  const templateIndex = safeTemplates.findIndex(
+  const selectedTemplate = safeTemplates.find(
     (template) => template.id === templateId
   );
 
-  if (templateIndex < 0) {
+  if (!selectedTemplate) {
     return NextResponse.json(
       { error: "Template non trovato o non attivo." },
       { status: 404 }
     );
   }
 
-  const selectedTemplate = safeTemplates[templateIndex];
-
-  const templateIndexCheck = canUseTemplateByIndex(plan, templateIndex);
   const templatePlanCheck = canUseTemplateByPlan(
     plan,
     selectedTemplate.available_from_plan || "free"
   );
 
-  if (!templateIndexCheck.allowed || !templatePlanCheck.allowed) {
+  if (!templatePlanCheck.allowed) {
     return NextResponse.json(
       {
         error:
           templatePlanCheck.reason ||
-          templateIndexCheck.reason ||
-          "Questo template non e disponibile per il tuo piano.",
-        upgradeTo:
-          templatePlanCheck.upgradeTo || templateIndexCheck.upgradeTo,
+          "Questo template non è disponibile per il tuo piano.",
+        upgradeTo: templatePlanCheck.upgradeTo,
       },
       { status: 403 }
     );
@@ -236,7 +230,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Questo slug e gia in uso. Scegli uno slug diverso per la galleria.",
+          "Questo slug è già in uso. Scegli uno slug diverso per la galleria.",
       },
       { status: 409 }
     );

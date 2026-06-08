@@ -7,7 +7,6 @@ import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import {
   canCreateGallery,
-  canUseTemplateByIndex,
   canUseTemplateByPlan,
   getPlanLimits,
   normalizePlanName,
@@ -39,6 +38,9 @@ type GalleryTemplate = {
   is_free: boolean;
   max_artworks: number;
   available_from_plan: string | null;
+  preview_image_url: string | null;
+  is_featured: boolean;
+  sort_order: number;
 };
 
 type Gallery = {
@@ -112,6 +114,22 @@ function getFilterLabel(status: StatusFilter) {
   return "Tutte";
 }
 
+function getTemplatePlanLabel(value: string | null | undefined) {
+  if (value === "institution") {
+    return "Institution";
+  }
+
+  if (value === "business") {
+    return "Business";
+  }
+
+  if (value === "pro") {
+    return "Pro";
+  }
+
+  return "Free";
+}
+
 export default async function DashboardGalleriesPage({
   searchParams,
 }: DashboardGalleriesPageProps) {
@@ -178,10 +196,11 @@ export default async function DashboardGalleriesPage({
   const { data: templates, error: templatesError } = await supabase
     .from("gallery_templates")
     .select(
-      "id, name, slug, description, unity_scene_key, is_free, max_artworks, available_from_plan"
-    )
+  "id, name, slug, description, unity_scene_key, is_free, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order"
+)
     .eq("is_active", true)
-    .order("created_at", { ascending: true });
+    .order("sort_order", { ascending: true })
+.order("created_at", { ascending: true });
 
   const { data: galleries, error: galleriesError } = await supabase
     .from("galleries")
@@ -194,14 +213,22 @@ export default async function DashboardGalleriesPage({
   const safeTemplates = (templates || []) as GalleryTemplate[];
   const safeGalleries = (galleries || []) as Gallery[];
 
-  const availableTemplates = safeTemplates.filter((template, index) => {
-    const byIndex = canUseTemplateByIndex(plan, index);
+  const availableTemplates = safeTemplates.filter((template) => {
     const byPlan = canUseTemplateByPlan(
       plan,
       template.available_from_plan || "free"
     );
 
-    return byIndex.allowed && byPlan.allowed;
+    return byPlan.allowed;
+  });
+
+  const lockedTemplates = safeTemplates.filter((template) => {
+    const byPlan = canUseTemplateByPlan(
+      plan,
+      template.available_from_plan || "free"
+    );
+
+    return !byPlan.allowed;
   });
 
   const galleryCreateCheck = canCreateGallery(plan, safeGalleries.length);
@@ -295,10 +322,24 @@ export default async function DashboardGalleriesPage({
             </p>
 
             <p className="mt-1 text-sm text-neutral-500">
-              Template disponibili: {availableTemplates.length} /{" "}
-              {limits.selectableTemplates === null
-                ? "Tutti"
-                : limits.selectableTemplates}
+              Template disponibili per il tuo piano:{" "}
+              <span className="text-neutral-200">
+                {availableTemplates.length}
+              </span>
+              {lockedTemplates.length > 0 && (
+                <>
+                  {" "}
+                  · Template bloccati da upgrade:{" "}
+                  <span className="text-neutral-400">
+                    {lockedTemplates.length}
+                  </span>
+                </>
+              )}
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-neutral-600">
+              I template sono filtrati tramite il campo{" "}
+              <span className="text-neutral-400">available_from_plan</span>.
             </p>
           </div>
 
@@ -422,6 +463,16 @@ export default async function DashboardGalleriesPage({
                           Template: {template?.name || "Template non trovato"}
                         </p>
 
+                        {template && (
+                          <p className="mt-1 text-xs text-neutral-600">
+                            Piano minimo template:{" "}
+                            {getTemplatePlanLabel(
+                              template.available_from_plan || "free"
+                            )}{" "}
+                            · Unity key: {template.unity_scene_key}
+                          </p>
+                        )}
+
                         {gallery.description && (
                           <p className="mt-3 text-sm leading-6 text-neutral-400">
                             {gallery.description}
@@ -464,14 +515,25 @@ export default async function DashboardGalleriesPage({
                           Gestisci
                         </a>
 
-                        <a
-                          href={`/gallerie/${gallery.slug}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-                        >
-                          Viewer pubblico
-                        </a>
+                        {gallery.status === "published" ? (
+                          <a
+                            href={`/gallerie/${gallery.slug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                          >
+                            Viewer pubblico
+                          </a>
+                        ) : (
+                          <a
+                            href={`/unity-frame?galleryId=${gallery.id}&mode=visitor`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                          >
+                            Anteprima visitor
+                          </a>
+                        )}
 
                         <a
                           href={`/dashboard/gallerie-editor/${gallery.id}`}
@@ -497,6 +559,65 @@ export default async function DashboardGalleriesPage({
           )}
         </div>
       </div>
+
+      {lockedTemplates.length > 0 && (
+        <section className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+            Template bloccati
+          </p>
+
+          <h2 className="text-2xl font-medium">
+            Template disponibili con upgrade
+          </h2>
+
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
+            Questi template esistono nel registry e sono attivi, ma richiedono
+            un piano superiore rispetto al tuo piano attuale.
+          </p>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {lockedTemplates.map((template) => (
+              <article
+                key={template.id}
+                className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Richiede {getTemplatePlanLabel(template.available_from_plan)}
+                </p>
+
+                <h3 className="mt-3 text-lg font-medium text-neutral-100">
+                  {template.name}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-neutral-500">
+                  {template.description || "Nessuna descrizione disponibile."}
+                </p>
+
+                <dl className="mt-4 space-y-1 text-xs text-neutral-500">
+                  <div>
+                    <dt className="inline">Unity key: </dt>
+                    <dd className="inline break-all">
+                      {template.unity_scene_key}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="inline">Max opere: </dt>
+                    <dd className="inline">{template.max_artworks}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+
+          <a
+            href="/pricing"
+            className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+          >
+            Vedi piani e upgrade
+          </a>
+        </section>
+      )}
     </DashboardShell>
   );
 }

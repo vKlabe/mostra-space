@@ -7,11 +7,14 @@ import GalleryPublishStatusButton from "@/components/dashboard/GalleryPublishSta
 import EditGalleryDetailsForm from "@/components/dashboard/EditGalleryDetailsForm";
 import GalleryCoverUploadForm from "@/components/dashboard/GalleryCoverUploadForm";
 import DeleteGalleryButton from "@/components/dashboard/DeleteGalleryButton";
+import ChangeGalleryTemplateForm from "@/components/dashboard/ChangeGalleryTemplateForm";
 import {
   canAddArtworkToGallery,
+  canUseTemplateByPlan,
   getPlanLimits,
   normalizePlanName,
 } from "@/lib/plans";
+import { validateGalleryForPublish } from "@/lib/gallery/validateGalleryForPublish";
 
 type GalleryDetailPageProps = {
   params: Promise<{
@@ -43,8 +46,15 @@ type GalleryTemplate = {
   id: string;
   name: string;
   slug: string;
+  description: string | null;
   unity_scene_key: string;
+  is_free: boolean;
+  is_active: boolean;
   max_artworks: number;
+  available_from_plan: string | null;
+  preview_image_url: string | null;
+  is_featured: boolean;
+  sort_order: number;
 };
 
 type Artwork = {
@@ -55,32 +65,59 @@ type Artwork = {
   image_url: string;
 };
 
+type GalleryArtworkRelation = {
+  id: string;
+  title: string;
+  artist_name: string | null;
+  year: string | null;
+  technique: string | null;
+  dimensions: string | null;
+  image_url: string | null;
+  thumbnail_url?: string | null;
+  width_cm?: number | string | null;
+  height_cm?: number | string | null;
+  is_for_sale: boolean;
+  is_public: boolean;
+};
+
 type GalleryArtworkRow = {
   id: string;
   gallery_id: string;
   artwork_id: string;
+
   position_x: number;
   position_y: number;
   position_z: number;
+
   rotation_x: number;
   rotation_y: number;
   rotation_z: number;
+
   scale_x: number;
   scale_y: number;
   scale_z: number;
+
   wall_key: string | null;
   sort_order: number;
-  artworks: {
-    id: string;
-    title: string;
-    artist_name: string | null;
-    year: string | null;
-    technique: string | null;
-    dimensions: string | null;
-    image_url: string;
-    is_for_sale: boolean;
-    is_public: boolean;
-  } | null;
+
+  display_width_cm?: number | string | null;
+  display_height_cm?: number | string | null;
+
+  frame_width_cm?: number | string | null;
+  frame_depth_cm?: number | string | null;
+
+  artworks: GalleryArtworkRelation | GalleryArtworkRelation[] | null;
+};
+
+type OnboardingStepStatus = "done" | "warning" | "todo";
+
+type OnboardingStep = {
+  id: string;
+  label: string;
+  description: string;
+  status: OnboardingStepStatus;
+  href?: string;
+  actionLabel?: string;
 };
 
 function formatNumber(value: number | null | undefined) {
@@ -115,6 +152,22 @@ function getStatusBadgeClass(status: Gallery["status"]) {
   return "border-neutral-700 bg-neutral-950 text-neutral-400";
 }
 
+function getTemplatePlanLabel(value: string | null | undefined) {
+  if (value === "institution") {
+    return "Institution";
+  }
+
+  if (value === "business") {
+    return "Business";
+  }
+
+  if (value === "pro") {
+    return "Pro";
+  }
+
+  return "Free";
+}
+
 function getEffectiveLimit(
   planLimit: number | null,
   templateLimit: number | null
@@ -132,6 +185,179 @@ function getEffectiveLimit(
   }
 
   return Math.min(planLimit, templateLimit);
+}
+
+function normalizeArtworkRelation(
+  value: GalleryArtworkRelation | GalleryArtworkRelation[] | null
+) {
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+
+  return value;
+}
+
+function getOnboardingStepIcon(status: OnboardingStepStatus) {
+  if (status === "done") {
+    return "✓";
+  }
+
+  if (status === "warning") {
+    return "!";
+  }
+
+  return "•";
+}
+
+function getOnboardingStepClass(status: OnboardingStepStatus) {
+  if (status === "done") {
+    return "border-green-900 bg-green-950/30";
+  }
+
+  if (status === "warning") {
+    return "border-yellow-900 bg-yellow-950/30";
+  }
+
+  return "border-neutral-800 bg-neutral-950";
+}
+
+function getOnboardingIconClass(status: OnboardingStepStatus) {
+  if (status === "done") {
+    return "border-green-800 bg-green-950 text-green-300";
+  }
+
+  if (status === "warning") {
+    return "border-yellow-800 bg-yellow-950 text-yellow-300";
+  }
+
+  return "border-neutral-700 bg-neutral-900 text-neutral-500";
+}
+
+function buildOnboardingSteps({
+  gallery,
+  totalArtworks,
+  positionedArtworks,
+  unpositionedArtworks,
+  artworksWithoutDimensions,
+  canPublish,
+}: {
+  gallery: Gallery;
+  totalArtworks: number;
+  positionedArtworks: number;
+  unpositionedArtworks: number;
+  artworksWithoutDimensions: number;
+  canPublish: boolean;
+}): OnboardingStep[] {
+  const hasTitle = gallery.title.trim().length > 0;
+  const hasCover =
+    Boolean(gallery.cover_image_url) &&
+    gallery.cover_image_url !== null &&
+    gallery.cover_image_url.trim().length > 0;
+
+  return [
+    {
+      id: "gallery-created",
+      label: "Galleria creata",
+      description:
+        "Lo spazio espositivo esiste nel portale ed è pronto per essere configurato.",
+      status: "done",
+    },
+    {
+      id: "gallery-data",
+      label: "Titolo e descrizione",
+      description: hasTitle
+        ? "I dati principali della galleria sono presenti."
+        : "Inserisci almeno il titolo della galleria.",
+      status: hasTitle ? "done" : "todo",
+      href: "#dati-galleria",
+      actionLabel: "Modifica dati",
+    },
+    {
+      id: "gallery-cover",
+      label: "Cover galleria",
+      description: hasCover
+        ? "La galleria ha una cover visibile nelle pagine pubbliche."
+        : "Aggiungi una cover: serve per pubblicare e rendere la pagina più credibile.",
+      status: hasCover ? "done" : "todo",
+      href: "#cover-galleria",
+      actionLabel: hasCover ? "Aggiorna cover" : "Carica cover",
+    },
+    {
+      id: "artworks-linked",
+      label: "Opere associate",
+      description:
+        totalArtworks > 0
+          ? `Hai associato ${totalArtworks} opere a questa galleria.`
+          : "Associa almeno un’opera alla galleria prima di pubblicarla.",
+      status: totalArtworks > 0 ? "done" : "todo",
+      href: "#opere-galleria",
+      actionLabel: "Gestisci opere",
+    },
+    {
+      id: "artworks-positioned",
+      label: "Allestimento 3D",
+      description:
+        positionedArtworks > 0
+          ? `${positionedArtworks} opere sono già posizionate sulle pareti.`
+          : "Apri l’editor 3D e posiziona almeno un’opera su una parete.",
+      status: positionedArtworks > 0 ? "done" : "todo",
+      href: `/dashboard/gallerie-editor/${gallery.id}`,
+      actionLabel: "Apri editor 3D",
+    },
+    {
+      id: "unpositioned-warning",
+      label: "Opere non posizionate",
+      description:
+        unpositionedArtworks > 0
+          ? `${unpositionedArtworks} opere sono associate ma non posizionate: non saranno visibili nel viewer.`
+          : "Tutte le opere associate risultano posizionate o non ci sono warning di allestimento.",
+      status: unpositionedArtworks > 0 ? "warning" : "done",
+      href: `/dashboard/gallerie-editor/${gallery.id}`,
+      actionLabel: "Controlla editor",
+    },
+    {
+      id: "dimensions-warning",
+      label: "Dimensioni opere",
+      description:
+        artworksWithoutDimensions > 0
+          ? `${artworksWithoutDimensions} opere non hanno dimensioni: nel viewer verrà usato il fallback 50 x 50 cm.`
+          : "Le dimensioni opere sono sufficienti per il viewer.",
+      status: artworksWithoutDimensions > 0 ? "warning" : "done",
+      href: `/dashboard/gallerie-editor/${gallery.id}`,
+      actionLabel: "Controlla dimensioni",
+    },
+    {
+      id: "visitor-preview",
+      label: "Anteprima visitatore",
+      description:
+        gallery.status === "published"
+          ? "La galleria è pubblicata: puoi controllare la pagina pubblica completa."
+          : "Apri l’anteprima visitatore prima di pubblicare, così controlli esperienza e allestimento.",
+      status: gallery.status === "published" ? "done" : "todo",
+      href:
+        gallery.status === "published"
+          ? `/gallerie/${gallery.slug}`
+          : `/unity-frame?galleryId=${gallery.id}&mode=visitor`,
+      actionLabel:
+        gallery.status === "published"
+          ? "Apri pagina pubblica"
+          : "Apri anteprima",
+    },
+    {
+      id: "publication",
+      label: "Pubblicazione",
+      description:
+        gallery.status === "published"
+          ? "La galleria è online e visibile pubblicamente."
+          : canPublish
+            ? "La galleria è pronta per la pubblicazione."
+            : "Completa gli step obbligatori prima di pubblicare.",
+      status:
+        gallery.status === "published" ? "done" : canPublish ? "warning" : "todo",
+      href: "#pubblicazione",
+      actionLabel: "Vai alla pubblicazione",
+    },
+  ];
 }
 
 export default async function DashboardGalleryDetailPage({
@@ -211,17 +437,35 @@ export default async function DashboardGalleryDetailPage({
     );
   }
 
-  let template: GalleryTemplate | null = null;
+  const { data: templates } = await supabase
+    .from("gallery_templates")
+    .select(
+  "id, name, slug, description, unity_scene_key, is_free, is_active, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order"
+)
+    .order("sort_order", { ascending: true })
+.order("created_at", { ascending: true });
 
-  if (gallery.template_id) {
-    const { data } = await supabase
-      .from("gallery_templates")
-      .select("id, name, slug, unity_scene_key, max_artworks")
-      .eq("id", gallery.template_id)
-      .single<GalleryTemplate>();
+  const safeTemplates = (templates || []) as GalleryTemplate[];
 
-    template = data;
-  }
+  const template =
+    safeTemplates.find((item) => item.id === gallery.template_id) || null;
+
+  const availableTemplates = safeTemplates.filter((item) => {
+    if (!item.is_active) {
+      return false;
+    }
+
+    if (isAdmin) {
+      return true;
+    }
+
+    const check = canUseTemplateByPlan(
+      plan,
+      item.available_from_plan || "free"
+    );
+
+    return check.allowed;
+  });
 
   const { data: artworks } = await supabase
     .from("artworks")
@@ -236,17 +480,27 @@ export default async function DashboardGalleryDetailPage({
       id,
       gallery_id,
       artwork_id,
+
       position_x,
       position_y,
       position_z,
+
       rotation_x,
       rotation_y,
       rotation_z,
+
       scale_x,
       scale_y,
       scale_z,
+
       wall_key,
       sort_order,
+
+      display_width_cm,
+      display_height_cm,
+      frame_width_cm,
+      frame_depth_cm,
+
       artworks (
         id,
         title,
@@ -255,6 +509,9 @@ export default async function DashboardGalleryDetailPage({
         technique,
         dimensions,
         image_url,
+        thumbnail_url,
+        width_cm,
+        height_cm,
         is_for_sale,
         is_public
       )
@@ -267,6 +524,34 @@ export default async function DashboardGalleryDetailPage({
   const safeGalleryArtworks =
     (galleryArtworks || []) as unknown as GalleryArtworkRow[];
   const linkedArtworkIds = safeGalleryArtworks.map((item) => item.artwork_id);
+
+  const publishValidation = validateGalleryForPublish({
+    gallery,
+    galleryArtworks: safeGalleryArtworks,
+  });
+
+  const onboardingSteps = buildOnboardingSteps({
+    gallery,
+    totalArtworks: publishValidation.summary.totalArtworks,
+    positionedArtworks: publishValidation.summary.positionedArtworks,
+    unpositionedArtworks: publishValidation.summary.unpositionedArtworks,
+    artworksWithoutDimensions:
+      publishValidation.summary.artworksWithoutDimensions,
+    canPublish: publishValidation.canPublish,
+  });
+
+  const completedOnboardingSteps = onboardingSteps.filter(
+    (step) => step.status === "done"
+  ).length;
+
+  const onboardingProgress = Math.round(
+    (completedOnboardingSteps / onboardingSteps.length) * 100
+  );
+
+  const blockingErrors = publishValidation.errors.length;
+  const onboardingWarnings =
+    publishValidation.warnings.length +
+    onboardingSteps.filter((step) => step.status === "warning").length;
 
   const templateMaxArtworks =
     template && template.max_artworks > 0 ? template.max_artworks : null;
@@ -304,7 +589,7 @@ export default async function DashboardGalleryDetailPage({
   return (
     <DashboardShell
       title={gallery.title}
-      subtitle="Gestisci dati pubblici, opere collegate, pubblicazione e apertura dell editor Unity WebGL."
+      subtitle="Gestisci dati pubblici, opere collegate, template, pubblicazione e apertura dell editor Unity WebGL."
       activeSection="gallerie"
       actions={
         <>
@@ -344,8 +629,167 @@ export default async function DashboardGalleryDetailPage({
         </>
       }
     >
-      <div className="grid gap-5 md:grid-cols-2">
-        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+          <div>
+            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+              Onboarding galleria
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-2xl font-medium">
+                Preparazione pubblicazione
+              </h2>
+
+              <span
+                className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getStatusBadgeClass(
+                  gallery.status
+                )}`}
+              >
+                {getStatusLabel(gallery.status)}
+              </span>
+            </div>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
+              Segui questi passaggi per trasformare la galleria da bozza tecnica
+              a spazio pubblico pronto per essere condiviso con visitatori e
+              collezionisti.
+            </p>
+
+            <div className="mt-6">
+              <div className="mb-2 flex items-center justify-between text-xs text-neutral-500">
+                <span>
+                  Completati {completedOnboardingSteps}/{onboardingSteps.length}
+                </span>
+
+                <span>{onboardingProgress}%</span>
+              </div>
+
+              <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
+                <div
+                  className="h-full rounded-full bg-white transition-all"
+                  style={{ width: `${onboardingProgress}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 text-sm">
+              <div className="flex justify-between gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3">
+                <span className="text-neutral-500">Errori bloccanti</span>
+                <span
+                  className={
+                    blockingErrors > 0 ? "text-red-300" : "text-green-300"
+                  }
+                >
+                  {blockingErrors}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3">
+                <span className="text-neutral-500">Attenzioni</span>
+                <span
+                  className={
+                    onboardingWarnings > 0
+                      ? "text-yellow-300"
+                      : "text-green-300"
+                  }
+                >
+                  {onboardingWarnings}
+                </span>
+              </div>
+
+              <div className="flex justify-between gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3">
+                <span className="text-neutral-500">Opere posizionate</span>
+                <span className="text-neutral-100">
+                  {publishValidation.summary.positionedArtworks} /{" "}
+                  {publishValidation.summary.totalArtworks}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href="#opere-galleria"
+                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              >
+                Gestisci opere
+              </a>
+
+              <a
+                href={`/dashboard/gallerie-editor/${gallery.id}`}
+                className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              >
+                Apri editor 3D
+              </a>
+
+              <a
+                href="#pubblicazione"
+                className="rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
+              >
+                Pubblicazione
+              </a>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {onboardingSteps.map((step) => (
+              <div
+                key={step.id}
+                className={`rounded-2xl border p-4 ${getOnboardingStepClass(
+                  step.status
+                )}`}
+              >
+                <div className="flex gap-3">
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-medium ${getOnboardingIconClass(
+                      step.status
+                    )}`}
+                  >
+                    {getOnboardingStepIcon(step.status)}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                      <div>
+                        <p className="font-medium text-neutral-100">
+                          {step.label}
+                        </p>
+
+                        <p className="mt-1 text-sm leading-6 text-neutral-400">
+                          {step.description}
+                        </p>
+                      </div>
+
+                      {step.href && step.actionLabel && (
+                        <a
+                          href={step.href}
+                          target={
+                            step.href.startsWith("http") ? "_blank" : undefined
+                          }
+                          rel={
+                            step.href.startsWith("http")
+                              ? "noreferrer"
+                              : undefined
+                          }
+                          className="inline-flex shrink-0 rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
+                        >
+                          {step.actionLabel}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-5 md:grid-cols-2">
+        <article
+          id="dati-galleria"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
+        >
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-2xl font-medium">Dati galleria</h2>
 
@@ -409,7 +853,14 @@ export default async function DashboardGalleryDetailPage({
             </div>
 
             <div>
-              <dt className="text-neutral-500">Piano</dt>
+              <dt className="text-neutral-500">Piano minimo template</dt>
+              <dd className="mt-1 text-neutral-200">
+                {getTemplatePlanLabel(template?.available_from_plan || "free")}
+              </dd>
+            </div>
+
+            <div>
+              <dt className="text-neutral-500">Piano account</dt>
               <dd className="mt-1 text-neutral-200">{limits.label}</dd>
             </div>
 
@@ -448,6 +899,19 @@ export default async function DashboardGalleryDetailPage({
       </div>
 
       <div className="mt-6">
+        <ChangeGalleryTemplateForm
+          galleryId={gallery.id}
+          currentTemplateId={gallery.template_id}
+          templates={availableTemplates}
+          currentGalleryArtworkCount={safeGalleryArtworks.length}
+          positionedArtworkCount={publishValidation.summary.positionedArtworks}
+          unpositionedArtworkCount={
+            publishValidation.summary.unpositionedArtworks
+          }
+        />
+      </div>
+
+      <div id="pubblicazione" className="mt-6">
         <GalleryPublishStatusButton
           galleryId={gallery.id}
           gallerySlug={gallery.slug}
@@ -464,7 +928,7 @@ export default async function DashboardGalleryDetailPage({
         />
       </div>
 
-      <div className="mt-6">
+      <div id="cover-galleria" className="mt-6">
         <GalleryCoverUploadForm
           galleryId={gallery.id}
           ownerId={gallery.owner_id}
@@ -474,7 +938,10 @@ export default async function DashboardGalleryDetailPage({
         />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[420px_1fr]">
+      <div
+        id="opere-galleria"
+        className="mt-6 grid gap-6 lg:grid-cols-[420px_1fr]"
+      >
         <AddArtworkToGalleryForm
           galleryId={gallery.id}
           artworks={safeArtworks}
@@ -523,111 +990,140 @@ export default async function DashboardGalleryDetailPage({
 
           {safeGalleryArtworks.length > 0 && (
             <div className="mt-6 space-y-4">
-              {safeGalleryArtworks.map((item) => (
-                <article
-                  key={item.id}
-                  className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950"
-                >
-                  <div className="grid gap-0 md:grid-cols-[180px_1fr]">
-                    <div className="aspect-[4/3] bg-neutral-900 md:aspect-auto">
-                      {item.artworks?.image_url ? (
-                        <img
-                          src={item.artworks.image_url}
-                          alt={item.artworks.title}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-neutral-500">
-                          Immagine assente
-                        </div>
-                      )}
-                    </div>
+              {safeGalleryArtworks.map((item) => {
+                const artwork = normalizeArtworkRelation(item.artworks);
 
-                    <div className="p-5">
-                      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-xl font-medium">
-                              {item.artworks?.title || "Opera non trovata"}
-                            </h3>
+                return (
+                  <article
+                    key={item.id}
+                    className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950"
+                  >
+                    <div className="grid gap-0 md:grid-cols-[180px_1fr]">
+                      <div className="aspect-[4/3] bg-neutral-900 md:aspect-auto">
+                        {artwork?.image_url ? (
+                          <img
+                            src={artwork.image_url}
+                            alt={artwork.title}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+                            Immagine assente
+                          </div>
+                        )}
+                      </div>
 
-                            {item.artworks?.is_public ? (
-                              <span className="rounded-full border border-green-900 bg-green-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-green-300">
-                                Pubblica
-                              </span>
-                            ) : (
-                              <span className="rounded-full border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-400">
-                                Privata
-                              </span>
-                            )}
+                      <div className="p-5">
+                        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-xl font-medium">
+                                {artwork?.title || "Opera non trovata"}
+                              </h3>
 
-                            {item.artworks?.is_for_sale && (
-                              <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
-                                In vendita
-                              </span>
-                            )}
+                              {artwork?.is_public ? (
+                                <span className="rounded-full border border-green-900 bg-green-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-green-300">
+                                  Pubblica
+                                </span>
+                              ) : (
+                                <span className="rounded-full border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-400">
+                                  Privata
+                                </span>
+                              )}
+
+                              {artwork?.is_for_sale && (
+                                <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
+                                  In vendita
+                                </span>
+                              )}
+
+                              {item.wall_key ? (
+                                <span className="rounded-full border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-300">
+                                  Posizionata
+                                </span>
+                              ) : (
+                                <span className="rounded-full border border-yellow-900 bg-yellow-950/30 px-3 py-1 text-xs uppercase tracking-[0.15em] text-yellow-300">
+                                  Non posizionata
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="mt-2 text-sm text-neutral-500">
+                              {artwork?.artist_name || "Artista non indicato"}
+                              {artwork?.year ? `, ${artwork.year}` : ""}
+                            </p>
+
+                            <dl className="mt-4 grid gap-2 text-xs text-neutral-500 md:grid-cols-2">
+                              <div>
+                                <dt className="text-neutral-600">Parete</dt>
+                                <dd className="text-neutral-300">
+                                  {item.wall_key || "N/D"}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-neutral-600">Ordine</dt>
+                                <dd className="text-neutral-300">
+                                  {item.sort_order}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-neutral-600">
+                                  Dimensioni display
+                                </dt>
+                                <dd className="text-neutral-300">
+                                  {item.display_width_cm || "50"} x{" "}
+                                  {item.display_height_cm || "50"} cm
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-neutral-600">Cornice</dt>
+                                <dd className="text-neutral-300">
+                                  larg. {item.frame_width_cm ?? "0"} cm · prof.{" "}
+                                  {item.frame_depth_cm ?? "2"} cm
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-neutral-600">Posizione</dt>
+                                <dd className="text-neutral-300">
+                                  x {formatNumber(item.position_x)} · y{" "}
+                                  {formatNumber(item.position_y)} · z{" "}
+                                  {formatNumber(item.position_z)}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-neutral-600">Rotazione</dt>
+                                <dd className="text-neutral-300">
+                                  x {formatNumber(item.rotation_x)} · y{" "}
+                                  {formatNumber(item.rotation_y)} · z{" "}
+                                  {formatNumber(item.rotation_z)}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-neutral-600">Scala</dt>
+                                <dd className="text-neutral-300">
+                                  x {formatNumber(item.scale_x)} · y{" "}
+                                  {formatNumber(item.scale_y)} · z{" "}
+                                  {formatNumber(item.scale_z)}
+                                </dd>
+                              </div>
+                            </dl>
                           </div>
 
-                          <p className="mt-2 text-sm text-neutral-500">
-                            {item.artworks?.artist_name ||
-                              "Artista non indicato"}
-                            {item.artworks?.year
-                              ? `, ${item.artworks.year}`
-                              : ""}
-                          </p>
-
-                          <dl className="mt-4 grid gap-2 text-xs text-neutral-500 md:grid-cols-2">
-                            <div>
-                              <dt className="text-neutral-600">Parete</dt>
-                              <dd className="text-neutral-300">
-                                {item.wall_key || "N/D"}
-                              </dd>
-                            </div>
-
-                            <div>
-                              <dt className="text-neutral-600">Ordine</dt>
-                              <dd className="text-neutral-300">
-                                {item.sort_order}
-                              </dd>
-                            </div>
-
-                            <div>
-                              <dt className="text-neutral-600">Posizione</dt>
-                              <dd className="text-neutral-300">
-                                x {formatNumber(item.position_x)} · y{" "}
-                                {formatNumber(item.position_y)} · z{" "}
-                                {formatNumber(item.position_z)}
-                              </dd>
-                            </div>
-
-                            <div>
-                              <dt className="text-neutral-600">Rotazione</dt>
-                              <dd className="text-neutral-300">
-                                x {formatNumber(item.rotation_x)} · y{" "}
-                                {formatNumber(item.rotation_y)} · z{" "}
-                                {formatNumber(item.rotation_z)}
-                              </dd>
-                            </div>
-
-                            <div>
-                              <dt className="text-neutral-600">Scala</dt>
-                              <dd className="text-neutral-300">
-                                x {formatNumber(item.scale_x)} · y{" "}
-                                {formatNumber(item.scale_y)} · z{" "}
-                                {formatNumber(item.scale_z)}
-                              </dd>
-                            </div>
-                          </dl>
+                          <RemoveGalleryArtworkButton
+                            galleryArtworkId={item.id}
+                          />
                         </div>
-
-                        <RemoveGalleryArtworkButton
-                          galleryArtworkId={item.id}
-                        />
                       </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
@@ -647,7 +1143,8 @@ export default async function DashboardGalleryDetailPage({
           <span className="text-neutral-100">gallery_artworks</span>. Unity
           leggerà queste righe, scaricherà le immagini da{" "}
           <span className="text-neutral-100">image_url</span> e creerà i quadri
-          nello spazio 3D usando posizione, rotazione e scala.
+          nello spazio 3D usando posizione, rotazione, scala, dimensioni
+          espositive e cornici.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">

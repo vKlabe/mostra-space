@@ -12,24 +12,14 @@ export const runtime = "nodejs";
 
 type TemplatePlan = "free" | "pro" | "business" | "institution";
 
-type RouteParams = {
-  params: Promise<{
-    templateId: string;
-  }>;
-};
-
 type RequestBody = {
   name?: unknown;
   slug?: unknown;
   description?: unknown;
   unitySceneKey?: unknown;
   availableFromPlan?: unknown;
-  isFree?: unknown;
   isActive?: unknown;
   maxArtworks?: unknown;
-  previewImageUrl?: unknown;
-  isFeatured?: unknown;
-  sortOrder?: unknown;
 };
 
 function cleanText(value: unknown) {
@@ -50,6 +40,19 @@ function cleanNullableText(value: unknown) {
   return cleaned.length > 0 ? cleaned : null;
 }
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[àáâãäå]/g, "a")
+    .replace(/[èéêë]/g, "e")
+    .replace(/[ìíîï]/g, "i")
+    .replace(/[òóôõö]/g, "o")
+    .replace(/[ùúûü]/g, "u")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function isValidTemplatePlan(value: unknown): value is TemplatePlan {
   return (
     value === "free" ||
@@ -59,9 +62,7 @@ function isValidTemplatePlan(value: unknown): value is TemplatePlan {
   );
 }
 
-export async function PATCH(request: Request, { params }: RouteParams) {
-  const { templateId } = await params;
-
+export async function POST(request: Request) {
   const current = await requireAdminApi();
 
   if (!current.ok) {
@@ -81,23 +82,19 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 
   const name = cleanText(body.name);
-  const slug = cleanText(body.slug);
+  const rawSlug = cleanText(body.slug);
   const description = cleanNullableText(body.description);
   const unitySceneKey = cleanText(body.unitySceneKey);
-  const previewImageUrl = cleanNullableText(body.previewImageUrl);
   const isActive = body.isActive === true;
-  const isFeatured = body.isFeatured === true;
   const maxArtworks = Number(body.maxArtworks);
-  const sortOrder = Number(body.sortOrder ?? 100);
 
   const availableFromPlan: TemplatePlan = isValidTemplatePlan(
     body.availableFromPlan
   )
     ? body.availableFromPlan
-    : body.isFree === true
-      ? "free"
-      : "pro";
+    : "free";
 
+  const slug = slugify(rawSlug || name);
   const isFree = availableFromPlan === "free";
 
   if (!name) {
@@ -118,15 +115,30 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     });
   }
 
-  if (!Number.isFinite(sortOrder) || sortOrder < 0) {
-    return apiBadRequest("L’ordine di visualizzazione non è valido.", {
-      received: body.sortOrder,
+  const { data: existingTemplate, error: existingTemplateError } =
+    await current.admin
+      .from("gallery_templates")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+  if (existingTemplateError) {
+    return apiError("Errore controllo slug template.", {
+      status: 500,
+      code: "ADMIN_TEMPLATE_SLUG_CHECK_FAILED",
+      details: existingTemplateError,
     });
   }
 
-  const { data: updatedTemplate, error: updateError } = await current.admin
+  if (existingTemplate) {
+    return apiBadRequest(
+      "Esiste già un template con questo slug. Scegli uno slug diverso."
+    );
+  }
+
+  const { data: template, error: insertError } = await current.admin
     .from("gallery_templates")
-    .update({
+    .insert({
       name,
       slug,
       description,
@@ -135,25 +147,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       is_free: isFree,
       is_active: isActive,
       max_artworks: maxArtworks,
-      preview_image_url: previewImageUrl,
-      is_featured: isFeatured,
-      sort_order: sortOrder,
     })
-    .eq("id", templateId)
     .select(
-      "id, name, slug, description, unity_scene_key, available_from_plan, is_free, is_active, max_artworks, preview_image_url, is_featured, sort_order, created_at"
+      "id, name, slug, description, unity_scene_key, available_from_plan, is_free, is_active, max_artworks, created_at"
     )
     .single();
 
-  if (updateError || !updatedTemplate) {
-    return apiError("Errore aggiornamento template.", {
+  if (insertError || !template) {
+    return apiError("Errore creazione template.", {
       status: 500,
-      code: "ADMIN_TEMPLATE_UPDATE_FAILED",
-      details: updateError,
+      code: "ADMIN_TEMPLATE_CREATE_FAILED",
+      details: insertError,
     });
   }
 
   return apiSuccess({
-    template: updatedTemplate,
+    template,
   });
 }
