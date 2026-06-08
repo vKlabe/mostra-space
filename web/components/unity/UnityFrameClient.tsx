@@ -44,6 +44,43 @@ declare global {
   }
 }
 
+function getModeLabel(mode: UnityMode) {
+  return mode === "editor" ? "Editor 3D" : "Visita 3D";
+}
+
+function getModeDescription(mode: UnityMode) {
+  if (mode === "editor") {
+    return "Caricamento dell’editor di allestimento. Potrai trascinare opere, modificare cornici, dimensioni e salvare le modifiche.";
+  }
+
+  return "Caricamento della galleria virtuale. Potrai muoverti nello spazio, osservare le opere e aprire le schede informative.";
+}
+
+function getModeControls(mode: UnityMode) {
+  if (mode === "editor") {
+    return "Editor: WASD movimento · Q/E rotazione · R/F quota · mouse libero per UI e drag";
+  }
+
+  return "Visitor: click per entrare · WASD movimento · mouse visuale · Shift corsa · ESC libera mouse · SPACE menu";
+}
+
+function isWebGlAvailable() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const canvas = document.createElement("canvas");
+
+    return Boolean(
+      window.WebGLRenderingContext &&
+        (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default function UnityFrameClient({
   galleryId,
   mode,
@@ -55,12 +92,19 @@ export default function UnityFrameClient({
 
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  const [hasStartedLoading, setHasStartedLoading] = useState(false);
+  const [isTakingLong, setIsTakingLong] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Preparazione viewer...");
   const [errorMessage, setErrorMessage] = useState("");
 
+  const progressPercent = Math.max(
+    0,
+    Math.min(100, Math.round(loadingProgress * 100))
+  );
+
   function sendLaunchConfig() {
     if (!unityInstanceRef.current) {
-      setStatusMessage("Unity non e ancora pronto.");
+      setStatusMessage("Unity non è ancora pronto.");
       return;
     }
 
@@ -82,11 +126,23 @@ export default function UnityFrameClient({
     setStatusMessage(`Configurazione inviata a Unity: ${mode}`);
   }
 
+  function reloadFrame() {
+    window.location.reload();
+  }
+
   useEffect(() => {
     const canvas = canvasRef.current;
 
     if (!canvas) {
       setErrorMessage("Canvas Unity non disponibile.");
+      return;
+    }
+
+    if (!isWebGlAvailable()) {
+      setErrorMessage(
+        "WebGL non sembra disponibile in questo browser. Prova con Chrome o Edge aggiornati."
+      );
+      setStatusMessage("WebGL non disponibile.");
       return;
     }
 
@@ -105,13 +161,23 @@ export default function UnityFrameClient({
       productVersion: "0.1.0",
     };
 
+    const longLoadTimer = window.setTimeout(() => {
+      if (!disposed && !isReady) {
+        setIsTakingLong(true);
+      }
+    }, 18000);
+
     async function startUnity() {
       if (!window.createUnityInstance) {
-        setErrorMessage("createUnityInstance non disponibile.");
+        setErrorMessage(
+          "createUnityInstance non disponibile. Il loader Unity non è stato inizializzato correttamente."
+        );
+        setStatusMessage("Loader Unity non disponibile.");
         return;
       }
 
       try {
+        setHasStartedLoading(true);
         setStatusMessage("Caricamento Unity WebGL...");
 
         if (window.WebGLInput) {
@@ -133,9 +199,10 @@ export default function UnityFrameClient({
 
         unityInstanceRef.current = instance;
         setIsReady(true);
+        setIsTakingLong(false);
         setStatusMessage("Unity pronto.");
 
-        setTimeout(() => {
+        window.setTimeout(() => {
           sendLaunchConfig();
         }, 500);
       } catch (error) {
@@ -164,6 +231,7 @@ export default function UnityFrameClient({
 
       script.onerror = () => {
         setErrorMessage(`Impossibile caricare il loader Unity: ${loaderUrl}`);
+        setStatusMessage("Errore loader Unity.");
       };
 
       document.body.appendChild(script);
@@ -171,6 +239,7 @@ export default function UnityFrameClient({
 
     return () => {
       disposed = true;
+      window.clearTimeout(longLoadTimer);
 
       const currentInstance = unityInstanceRef.current;
       unityInstanceRef.current = null;
@@ -194,27 +263,125 @@ export default function UnityFrameClient({
   }, [galleryId, mode, isReady]);
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-black text-white">
+    <main className="relative h-screen w-screen overflow-hidden bg-black text-white">
       <canvas
         ref={canvasRef}
         id="unity-canvas"
-        className="block h-full w-full bg-black"
+        className={
+          isReady
+            ? "block h-full w-full bg-black opacity-100 transition-opacity duration-700"
+            : "block h-full w-full bg-black opacity-40 transition-opacity duration-700"
+        }
         tabIndex={0}
       />
 
-      <div className="pointer-events-none fixed bottom-4 left-4 z-20 rounded-2xl bg-black/70 px-4 py-3 text-xs leading-5 text-white backdrop-blur">
-        <p>{statusMessage}</p>
+      {!isReady && !errorMessage && (
+        <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-3xl border border-neutral-800 bg-neutral-950/95 p-7 shadow-2xl">
+            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-neutral-500">
+              {getModeLabel(mode)}
+            </p>
 
-        {!isReady && !errorMessage && (
-          <p className="text-white/60">
-            Caricamento: {Math.round(loadingProgress * 100)}%
+            <h1 className="text-2xl font-semibold">
+              Caricamento esperienza immersiva
+            </h1>
+
+            <p className="mt-3 text-sm leading-6 text-neutral-400">
+              {getModeDescription(mode)}
+            </p>
+
+            <div className="mt-6">
+              <div className="mb-2 flex items-center justify-between text-xs text-neutral-500">
+                <span>
+                  {hasStartedLoading
+                    ? "Download e inizializzazione WebGL"
+                    : "Preparazione loader Unity"}
+                </span>
+                <span>{progressPercent}%</span>
+              </div>
+
+              <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
+                <div
+                  className="h-full rounded-full bg-white transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs leading-5 text-neutral-500">
+              {getModeControls(mode)}
+            </p>
+
+            {isTakingLong && (
+              <div className="mt-5 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4 text-sm leading-6 text-yellow-100/90">
+                Il primo caricamento può richiedere qualche secondo, soprattutto
+                dopo una nuova build o con connessioni lente. Se resta bloccato,
+                ricarica la pagina.
+              </div>
+            )}
+
+            <p className="mt-5 break-all text-[11px] leading-5 text-neutral-600">
+              GalleryId: {galleryId} · Mode: {mode}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/90 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-3xl border border-red-900 bg-red-950/30 p-7 shadow-2xl">
+            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-red-300/70">
+              Errore WebGL
+            </p>
+
+            <h1 className="text-2xl font-semibold text-white">
+              Non riesco a caricare la galleria 3D
+            </h1>
+
+            <p className="mt-3 text-sm leading-6 text-red-100/80">
+              {errorMessage}
+            </p>
+
+            <div className="mt-5 rounded-2xl border border-neutral-800 bg-black/30 p-4 text-sm leading-6 text-neutral-300">
+              Prova a ricaricare la pagina. Se il problema continua, usa Chrome
+              o Edge aggiornati e verifica che WebGL sia attivo nel browser.
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={reloadFrame}
+                className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              >
+                Ricarica viewer
+              </button>
+
+              <a
+                href="/gallerie"
+                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              >
+                Torna alle gallerie
+              </a>
+            </div>
+
+            <p className="mt-5 break-all text-[11px] leading-5 text-neutral-500">
+              GalleryId: {galleryId} · Mode: {mode}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isReady && (
+        <div className="pointer-events-none fixed bottom-4 left-4 z-20 rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-xs leading-5 text-white shadow-xl backdrop-blur">
+          <p>{statusMessage}</p>
+
+          <p className="mt-1 text-white/50">
+            {mode === "editor"
+              ? "Editor attivo · salva le modifiche prima di uscire"
+              : "Visitor attivo · click per entrare, ESC per uscire"}
           </p>
-        )}
-
-        {errorMessage && <p className="text-red-300">{errorMessage}</p>}
-
-        <p className="mt-1 text-white/50">Mode: {mode}</p>
-      </div>
+        </div>
+      )}
     </main>
   );
 }

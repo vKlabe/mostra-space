@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PublicGalleryInquiryForm from "@/components/public/PublicGalleryInquiryForm";
+import UnityGalleryViewer from "@/components/unity/UnityGalleryViewer";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
@@ -10,8 +11,8 @@ type PublicGalleryPageProps = {
     slug: string;
   }>;
   searchParams?: Promise<{
-    artworkId?: string | string[];
-    galleryArtworkId?: string | string[];
+    artworkId?: string;
+    galleryArtworkId?: string;
   }>;
 };
 
@@ -82,12 +83,14 @@ function formatPrice(price: number | string | null, currency: string | null) {
   }
 }
 
-function getSingleSearchParam(value: string | string[] | undefined) {
-  if (Array.isArray(value)) {
-    return value[0] || null;
-  }
-
-  return value || null;
+function buildArtworkInquiryHref(
+  slug: string,
+  artworkId: string,
+  galleryArtworkId: string
+) {
+  return `/gallerie/${slug}?artworkId=${encodeURIComponent(
+    artworkId
+  )}&galleryArtworkId=${encodeURIComponent(galleryArtworkId)}#richiesta`;
 }
 
 export default async function PublicGalleryDetailPage({
@@ -97,13 +100,8 @@ export default async function PublicGalleryDetailPage({
   const { slug } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : {};
 
-  const requestedArtworkId = getSingleSearchParam(
-    resolvedSearchParams.artworkId
-  );
-
-  const requestedGalleryArtworkId = getSingleSearchParam(
-    resolvedSearchParams.galleryArtworkId
-  );
+  const selectedArtworkId = resolvedSearchParams.artworkId || "";
+  const selectedGalleryArtworkId = resolvedSearchParams.galleryArtworkId || "";
 
   const supabase = await createClient();
 
@@ -174,17 +172,14 @@ export default async function PublicGalleryDetailPage({
     artwork: Artwork;
   }>;
 
-  const selectedInquiryTarget =
+  const selectedArtwork =
     publicArtworks.find((item) => {
-      if (
-        requestedGalleryArtworkId &&
-        item.galleryArtworkId === requestedGalleryArtworkId
-      ) {
-        return true;
+      if (selectedGalleryArtworkId) {
+        return item.galleryArtworkId === selectedGalleryArtworkId;
       }
 
-      if (requestedArtworkId && item.artwork.id === requestedArtworkId) {
-        return true;
+      if (selectedArtworkId) {
+        return item.artwork.id === selectedArtworkId;
       }
 
       return false;
@@ -283,6 +278,11 @@ export default async function PublicGalleryDetailPage({
               </div>
 
               <div className="flex justify-between gap-4 text-sm">
+                <span className="text-neutral-500">Fallback</span>
+                <span className="text-neutral-100">Catalogo + form</span>
+              </div>
+
+              <div className="flex justify-between gap-4 text-sm">
                 <span className="text-neutral-500">Link</span>
                 <span className="break-all text-right text-neutral-100">
                   /gallerie/{gallery.slug}
@@ -318,20 +318,43 @@ export default async function PublicGalleryDetailPage({
           </a>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-neutral-800 bg-black shadow-2xl">
-          <iframe
-            src={`/unity-frame?galleryId=${gallery.id}&mode=visitor`}
-            title={`Viewer 3D ${gallery.title}`}
-            className="block h-[72vh] w-full bg-black"
-            allow="fullscreen; gamepad; accelerometer; gyroscope; xr-spatial-tracking"
-          />
-        </div>
+        <UnityGalleryViewer galleryId={gallery.id} mode="visitor" />
 
-        <div className="mt-4 rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
-          <p className="text-sm leading-6 text-neutral-400">
-            Suggerimento: clicca nel viewer per navigare. Se vuoi tornare a
-            usare la pagina, premi ESC o clicca fuori dal viewer.
-          </p>
+        <div className="mt-5 rounded-3xl border border-yellow-900 bg-yellow-950/20 p-6">
+          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-yellow-300">
+                Fallback pubblico
+              </p>
+
+              <h3 className="text-xl font-medium text-yellow-50">
+                Se il 3D non si carica, la galleria resta consultabile
+              </h3>
+
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-yellow-100/80">
+                Unity WebGL può richiedere qualche secondo al primo avvio o non
+                essere disponibile su alcuni browser/dispositivi. Puoi comunque
+                vedere tutte le opere pubbliche nel catalogo e inviare una
+                richiesta informazioni.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+  <a
+    href="#catalogo"
+    className="inline-flex h-10 min-h-0 shrink-0 items-center justify-center rounded-full bg-white px-5 text-sm font-medium leading-none text-neutral-950 transition hover:bg-neutral-200"
+  >
+    Vai al catalogo
+  </a>
+
+  <a
+    href="#richiesta"
+    className="inline-flex h-10 min-h-0 shrink-0 items-center justify-center rounded-full border border-yellow-700 px-5 text-sm font-medium leading-none text-yellow-100 transition hover:border-yellow-400 hover:bg-yellow-950/40"
+  >
+    Richiedi informazioni
+  </a>
+</div>
+          </div>
         </div>
       </section>
 
@@ -339,14 +362,15 @@ export default async function PublicGalleryDetailPage({
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Catalogo
+              Catalogo fallback
             </p>
 
             <h2 className="text-3xl font-semibold">Opere esposte</h2>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-              Una selezione delle opere visibili al pubblico in questa galleria.
-              Per ogni opera puoi inviare una richiesta specifica.
+              Anche se il viewer 3D non dovesse caricarsi, puoi consultare da
+              qui le opere visibili al pubblico e inviare una richiesta
+              specifica.
             </p>
           </div>
 
@@ -385,17 +409,16 @@ export default async function PublicGalleryDetailPage({
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {publicArtworks.map(({ galleryArtworkId, artwork }) => {
               const priceLabel = formatPrice(artwork.price, artwork.currency);
-              const isSelected =
-                selectedInquiryTarget?.galleryArtworkId === galleryArtworkId;
+              const inquiryHref = buildArtworkInquiryHref(
+                gallery.slug,
+                artwork.id,
+                galleryArtworkId
+              );
 
               return (
                 <article
                   key={galleryArtworkId}
-                  className={
-                    isSelected
-                      ? "overflow-hidden rounded-3xl border border-blue-700 bg-blue-950/20 ring-1 ring-blue-500/40"
-                      : "overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900"
-                  }
+                  className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900"
                 >
                   <div className="grid gap-0 md:grid-cols-[220px_1fr]">
                     <div className="aspect-[4/3] bg-neutral-950 md:aspect-auto">
@@ -408,12 +431,6 @@ export default async function PublicGalleryDetailPage({
 
                     <div className="p-6">
                       <div className="flex flex-wrap items-center gap-2">
-                        {isSelected && (
-                          <span className="rounded-full border border-blue-700 bg-blue-950 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-200">
-                            Opera selezionata
-                          </span>
-                        )}
-
                         {artwork.is_for_sale && (
                           <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
                             Disponibile
@@ -450,6 +467,15 @@ export default async function PublicGalleryDetailPage({
                             <dd className="inline">{artwork.dimensions}</dd>
                           </div>
                         )}
+
+                        {galleryArtworkId && (
+                          <div>
+                            <dt className="inline">ID allestimento: </dt>
+                            <dd className="inline break-all">
+                              {galleryArtworkId}
+                            </dd>
+                          </div>
+                        )}
                       </dl>
 
                       {artwork.description && (
@@ -458,15 +484,37 @@ export default async function PublicGalleryDetailPage({
                         </p>
                       )}
 
-                      <div className="mt-6">
-                        <PublicGalleryInquiryForm
-                          galleryId={gallery.id}
-                          galleryTitle={gallery.title}
-                          artworkId={artwork.id}
-                          galleryArtworkId={galleryArtworkId}
-                          artworkTitle={artwork.title}
-                        />
+                      <div className="mt-6 flex flex-wrap gap-3">
+                        <a
+                          href={inquiryHref}
+                          className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                        >
+                          Richiedi informazioni
+                        </a>
+
+                        <a
+                          href="#viewer"
+                          className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                        >
+                          Vedi nel viewer 3D
+                        </a>
                       </div>
+
+                      <details className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                        <summary className="cursor-pointer text-sm font-medium text-neutral-100">
+                          Apri form rapido per quest’opera
+                        </summary>
+
+                        <div className="mt-5">
+                          <PublicGalleryInquiryForm
+                            galleryId={gallery.id}
+                            galleryTitle={gallery.title}
+                            artworkId={artwork.id}
+                            galleryArtworkId={galleryArtworkId}
+                            artworkTitle={artwork.title}
+                          />
+                        </div>
+                      </details>
                     </div>
                   </div>
                 </article>
@@ -484,49 +532,38 @@ export default async function PublicGalleryDetailPage({
             </p>
 
             <h2 className="text-3xl font-semibold">
-              {selectedInquiryTarget
-                ? "Richiesta informazioni sull’opera"
+              {selectedArtwork
+                ? "Richiesta per l’opera selezionata"
                 : "Vuoi informazioni sulla galleria?"}
             </h2>
 
             <p className="mt-4 text-sm leading-7 text-neutral-400">
-              {selectedInquiryTarget
-                ? `Hai selezionato "${selectedInquiryTarget.artwork.title}". Compila il form per essere ricontattato dal gallerista.`
+              {selectedArtwork
+                ? `Il form è stato predisposto per l’opera "${selectedArtwork.artwork.title}". Puoi modificare liberamente il messaggio prima dell’invio.`
                 : "Usa il form per chiedere disponibilità, prezzi, dettagli sulle opere, appuntamenti o informazioni sull’allestimento."}
             </p>
 
-            {selectedInquiryTarget && (
-              <div className="mt-6 overflow-hidden rounded-2xl border border-blue-900 bg-blue-950/30">
-                <div className="grid gap-0 sm:grid-cols-[120px_1fr]">
-                  <div className="aspect-[4/3] bg-neutral-950 sm:aspect-auto">
-                    <img
-                      src={
-                        selectedInquiryTarget.artwork.thumbnail_url ||
-                        selectedInquiryTarget.artwork.image_url
-                      }
-                      alt={selectedInquiryTarget.artwork.title}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+            {selectedArtwork && (
+              <div className="mt-6 rounded-2xl border border-blue-900 bg-blue-950/30 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
+                  Opera selezionata
+                </p>
 
-                  <div className="p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
-                      Opera selezionata
-                    </p>
+                <p className="mt-2 text-sm text-neutral-100">
+                  {selectedArtwork.artwork.title}
+                </p>
 
-                    <p className="mt-2 text-sm font-medium text-neutral-100">
-                      {selectedInquiryTarget.artwork.title}
-                    </p>
+                <p className="mt-1 text-xs text-neutral-400">
+                  {selectedArtwork.artwork.artist_name ||
+                    "Artista non indicato"}
+                  {selectedArtwork.artwork.year
+                    ? `, ${selectedArtwork.artwork.year}`
+                    : ""}
+                </p>
 
-                    <p className="mt-1 text-xs text-neutral-400">
-                      {selectedInquiryTarget.artwork.artist_name ||
-                        "Artista non indicato"}
-                      {selectedInquiryTarget.artwork.year
-                        ? `, ${selectedInquiryTarget.artwork.year}`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
+                <p className="mt-2 break-all text-xs text-neutral-500">
+                  ID allestimento: {selectedArtwork.galleryArtworkId}
+                </p>
               </div>
             )}
 
@@ -551,9 +588,9 @@ export default async function PublicGalleryDetailPage({
           <PublicGalleryInquiryForm
             galleryId={gallery.id}
             galleryTitle={gallery.title}
-            artworkId={selectedInquiryTarget?.artwork.id || null}
-            galleryArtworkId={selectedInquiryTarget?.galleryArtworkId || null}
-            artworkTitle={selectedInquiryTarget?.artwork.title || null}
+            artworkId={selectedArtwork?.artwork.id || null}
+            galleryArtworkId={selectedArtwork?.galleryArtworkId || null}
+            artworkTitle={selectedArtwork?.artwork.title || null}
           />
         </div>
       </section>
@@ -576,6 +613,13 @@ export default async function PublicGalleryDetailPage({
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
               Torna al viewer
+            </a>
+
+            <a
+              href="#catalogo"
+              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            >
+              Catalogo opere
             </a>
 
             <a
