@@ -1,3 +1,31 @@
+# Unity generated
+unity/ArtPortalUnity/Library/
+unity/ArtPortalUnity/Temp/
+unity/ArtPortalUnity/Obj/
+unity/ArtPortalUnity/Build/
+unity/ArtPortalUnity/Builds/
+unity/ArtPortalUnity/Logs/
+unity/ArtPortalUnity/UserSettings/
+unity/ArtPortalUnity/.vs/
 
-# Visual Studio cache
+# Unity cache/crash
+unity/ArtPortalUnity/MemoryCaptures/
+unity/ArtPortalUnity/Recordings/
+
+# IDE
 .vs/
+.idea/
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup/local accidental
+web/_backup_wrong_routes/
+app/
