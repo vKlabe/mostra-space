@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -10,8 +10,39 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [checkingSession, setCheckingSession] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkExistingSession() {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (user) {
+        router.replace("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      setCheckingSession(false);
+    }
+
+    void checkExistingSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -19,22 +50,31 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMessage("");
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
-      setErrorMessage(error.message);
+      if (error) {
+        setErrorMessage(error.message);
+        setLoading(false);
+        return;
+      }
+
+      router.replace("/dashboard");
+      router.refresh();
+    } catch {
+      setErrorMessage(
+        "Errore di rete durante l’accesso. Riprova tra qualche secondo."
+      );
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
+
+  const formDisabled = loading || checkingSession;
 
   return (
     <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
@@ -59,9 +99,11 @@ export default function LoginPage() {
             <input
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400"
+              disabled={formDisabled}
+              className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="email@example.com"
             />
           </div>
@@ -71,9 +113,11 @@ export default function LoginPage() {
             <input
               type="password"
               required
+              autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400"
+              disabled={formDisabled}
+              className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="La tua password"
             />
           </div>
@@ -86,10 +130,14 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={formDisabled}
             className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Accesso..." : "Accedi"}
+            {checkingSession
+              ? "Controllo sessione..."
+              : loading
+                ? "Accesso..."
+                : "Accedi"}
           </button>
 
           <p className="text-center text-sm text-neutral-400">
