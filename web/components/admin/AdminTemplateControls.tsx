@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TemplatePlan = "free" | "pro" | "business" | "institution";
 
@@ -20,6 +20,13 @@ type AdminTemplateControlsProps = {
   currentSortOrder: number;
 };
 
+const MAX_PREVIEW_SIZE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_PREVIEW_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
+
 function getPlanLabel(plan: TemplatePlan) {
   if (plan === "institution") {
     return "Institution";
@@ -34,6 +41,26 @@ function getPlanLabel(plan: TemplatePlan) {
   }
 
   return "Free";
+}
+
+function getReadableFileSize(size: number) {
+  return `${(size / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function validatePreviewFile(file: File) {
+  if (!ALLOWED_PREVIEW_TYPES.includes(file.type)) {
+    return "Formato non supportato. Usa JPG, PNG oppure WEBP.";
+  }
+
+  if (file.size > MAX_PREVIEW_SIZE_BYTES) {
+    return "La preview non può superare 2 MB.";
+  }
+
+  if (file.size <= 0) {
+    return "Il file selezionato è vuoto.";
+  }
+
+  return "";
 }
 
 export default function AdminTemplateControls({
@@ -51,6 +78,7 @@ export default function AdminTemplateControls({
   currentSortOrder,
 }: AdminTemplateControlsProps) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(currentName);
   const [slug, setSlug] = useState(currentSlug);
@@ -65,8 +93,15 @@ export default function AdminTemplateControls({
   const [previewImageUrl, setPreviewImageUrl] = useState(
     currentPreviewImageUrl || ""
   );
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewLocalUrl, setPreviewLocalUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [previewMessage, setPreviewMessage] = useState("");
+  const [previewMessageType, setPreviewMessageType] = useState<
+    "success" | "error" | ""
+  >("");
 
   const nextIsFree = availableFromPlan === "free";
 
@@ -80,8 +115,154 @@ export default function AdminTemplateControls({
     isActive !== currentIsActive ||
     isFeatured !== currentIsFeatured ||
     maxArtworks !== currentMaxArtworks ||
-    sortOrder !== currentSortOrder ||
-    previewImageUrl !== (currentPreviewImageUrl || "");
+    sortOrder !== currentSortOrder;
+
+  useEffect(() => {
+    setPreviewImageUrl(currentPreviewImageUrl || "");
+  }, [currentPreviewImageUrl]);
+
+  useEffect(() => {
+    if (!previewFile) {
+      setPreviewLocalUrl("");
+      return;
+    }
+
+    const localUrl = URL.createObjectURL(previewFile);
+    setPreviewLocalUrl(localUrl);
+
+    return () => URL.revokeObjectURL(localUrl);
+  }, [previewFile]);
+
+  function handlePreviewFileChange(file: File | null) {
+    setPreviewMessage("");
+    setPreviewMessageType("");
+
+    if (!file) {
+      setPreviewFile(null);
+      return;
+    }
+
+    const validationError = validatePreviewFile(file);
+
+    if (validationError) {
+      setPreviewMessageType("error");
+      setPreviewMessage(validationError);
+      setPreviewFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
+    setPreviewFile(file);
+  }
+
+  async function handlePreviewUpload() {
+    if (!previewFile) {
+      setPreviewMessageType("error");
+      setPreviewMessage("Seleziona prima un file immagine.");
+      return;
+    }
+
+    const validationError = validatePreviewFile(previewFile);
+
+    if (validationError) {
+      setPreviewMessageType("error");
+      setPreviewMessage(validationError);
+      return;
+    }
+
+    setIsPreviewLoading(true);
+    setPreviewMessage("");
+    setPreviewMessageType("");
+
+    try {
+      const formData = new FormData();
+      formData.append("preview_file", previewFile);
+
+      const response = await fetch(
+        `/api/admin/templates/${templateId}/preview`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPreviewMessageType("error");
+        setPreviewMessage(data.error || "Errore upload preview.");
+        return;
+      }
+
+      const nextPreviewImageUrl =
+        (data?.data?.previewImageUrl as string | undefined) || "";
+
+      setPreviewImageUrl(nextPreviewImageUrl);
+      setPreviewFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      setPreviewMessageType("success");
+      setPreviewMessage("Preview caricata correttamente.");
+      router.refresh();
+    } catch {
+      setPreviewMessageType("error");
+      setPreviewMessage("Errore di rete durante upload preview.");
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  }
+
+  async function handlePreviewRemove() {
+    if (!previewImageUrl) {
+      setPreviewMessageType("");
+      setPreviewMessage("Nessuna preview da rimuovere.");
+      return;
+    }
+
+    setIsPreviewLoading(true);
+    setPreviewMessage("");
+    setPreviewMessageType("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/templates/${templateId}/preview`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPreviewMessageType("error");
+        setPreviewMessage(data.error || "Errore rimozione preview.");
+        return;
+      }
+
+      setPreviewImageUrl("");
+      setPreviewFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      setPreviewMessageType("success");
+      setPreviewMessage("Preview rimossa correttamente.");
+      router.refresh();
+    } catch {
+      setPreviewMessageType("error");
+      setPreviewMessage("Errore di rete durante rimozione preview.");
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  }
 
   async function handleSave() {
     if (!hasChanges) {
@@ -154,6 +335,9 @@ export default function AdminTemplateControls({
     }
   }
 
+  const controlsDisabled = isLoading || isPreviewLoading;
+  const previewToShow = previewLocalUrl || previewImageUrl;
+
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -165,7 +349,7 @@ export default function AdminTemplateControls({
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
@@ -178,7 +362,7 @@ export default function AdminTemplateControls({
           <input
             value={slug}
             onChange={(event) => setSlug(event.target.value)}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
@@ -191,7 +375,7 @@ export default function AdminTemplateControls({
           <input
             value={unitySceneKey}
             onChange={(event) => setUnitySceneKey(event.target.value)}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
@@ -206,7 +390,7 @@ export default function AdminTemplateControls({
             min={1}
             value={maxArtworks}
             onChange={(event) => setMaxArtworks(Number(event.target.value))}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
@@ -221,7 +405,7 @@ export default function AdminTemplateControls({
             onChange={(event) =>
               setAvailableFromPlan(event.target.value as TemplatePlan)
             }
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="free">Free</option>
@@ -246,7 +430,7 @@ export default function AdminTemplateControls({
             min={0}
             value={sortOrder}
             onChange={(event) => setSortOrder(Number(event.target.value))}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           />
 
@@ -260,7 +444,7 @@ export default function AdminTemplateControls({
             type="checkbox"
             checked={isActive}
             onChange={(event) => setIsActive(event.target.checked)}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="mt-1"
           />
 
@@ -272,7 +456,7 @@ export default function AdminTemplateControls({
             type="checkbox"
             checked={isFeatured}
             onChange={(event) => setIsFeatured(event.target.checked)}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="mt-1"
           />
 
@@ -281,26 +465,108 @@ export default function AdminTemplateControls({
 
         <div className="md:col-span-2">
           <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
-            Preview image URL
+            Preview template
           </label>
 
-          <input
-            value={previewImageUrl}
-            onChange={(event) => setPreviewImageUrl(event.target.value)}
-            disabled={isLoading}
-            className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="https://..."
-          />
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) =>
+                handlePreviewFileChange(event.target.files?.[0] || null)
+              }
+              disabled={controlsDisabled}
+              className="block w-full text-sm text-neutral-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-neutral-950 hover:file:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+            />
 
-          {previewImageUrl && (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950">
-              <img
-                src={previewImageUrl}
-                alt="Preview template"
-                className="h-48 w-full object-cover"
-              />
+            <p className="mt-3 text-xs leading-5 text-neutral-500">
+              JPG, PNG o WEBP · massimo 2 MB · formato consigliato 16:9,
+              1200×675 px.
+            </p>
+
+            {previewFile && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-neutral-200">
+                    {previewFile.name}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {getReadableFileSize(previewFile.size)}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewFile(null);
+
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  disabled={controlsDisabled}
+                  className="rounded-full border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Annulla file
+                </button>
+              </div>
+            )}
+
+            {previewToShow ? (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950">
+                <img
+                  src={previewToShow}
+                  alt={`Preview ${name}`}
+                  className="aspect-video w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="mt-4 flex aspect-video items-center justify-center rounded-2xl border border-dashed border-neutral-700 bg-neutral-950 px-6 text-center">
+                <p className="text-sm text-neutral-500">
+                  Nessuna preview caricata.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handlePreviewUpload}
+                disabled={controlsDisabled || !previewFile}
+                className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPreviewLoading
+                  ? "Caricamento..."
+                  : previewImageUrl
+                    ? "Sostituisci preview"
+                    : "Carica preview"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePreviewRemove}
+                disabled={controlsDisabled || !previewImageUrl}
+                className="rounded-full border border-red-900 px-4 py-2 text-sm text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Rimuovi preview
+              </button>
+
+              {previewMessage && (
+                <p
+                  className={
+                    previewMessageType === "error"
+                      ? "text-sm text-red-300"
+                      : previewMessageType === "success"
+                        ? "text-sm text-green-300"
+                        : "text-sm text-neutral-400"
+                  }
+                >
+                  {previewMessage}
+                </p>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         <div className="md:col-span-2">
@@ -311,7 +577,7 @@ export default function AdminTemplateControls({
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            disabled={isLoading}
+            disabled={controlsDisabled}
             className="min-h-24 w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
@@ -326,8 +592,8 @@ export default function AdminTemplateControls({
         </p>
 
         <p className="mt-2 text-xs leading-5 text-neutral-500">
-          Da ora la disponibilità reale viene gestita da available_from_plan.
-          is_free resta solo come campo legacy.
+          La disponibilità reale viene gestita da available_from_plan. is_free
+          resta come campo legacy.
         </p>
       </div>
 
@@ -335,7 +601,7 @@ export default function AdminTemplateControls({
         <button
           type="button"
           onClick={handleSave}
-          disabled={isLoading || !hasChanges}
+          disabled={controlsDisabled || !hasChanges}
           className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? "Salvataggio..." : "Salva template"}

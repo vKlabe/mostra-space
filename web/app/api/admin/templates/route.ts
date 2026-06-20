@@ -19,7 +19,10 @@ type RequestBody = {
   unitySceneKey?: unknown;
   availableFromPlan?: unknown;
   isActive?: unknown;
+  isFeatured?: unknown;
   maxArtworks?: unknown;
+  sortOrder?: unknown;
+  previewImageUrl?: unknown;
 };
 
 function cleanText(value: unknown) {
@@ -85,8 +88,11 @@ export async function POST(request: Request) {
   const rawSlug = cleanText(body.slug);
   const description = cleanNullableText(body.description);
   const unitySceneKey = cleanText(body.unitySceneKey);
+  const previewImageUrl = cleanNullableText(body.previewImageUrl);
   const isActive = body.isActive === true;
+  const isFeatured = body.isFeatured === true;
   const maxArtworks = Number(body.maxArtworks);
+  const sortOrder = Number(body.sortOrder ?? 100);
 
   const availableFromPlan: TemplatePlan = isValidTemplatePlan(
     body.availableFromPlan
@@ -112,6 +118,12 @@ export async function POST(request: Request) {
   if (!Number.isFinite(maxArtworks) || maxArtworks < 1) {
     return apiBadRequest("Il numero massimo opere non è valido.", {
       received: body.maxArtworks,
+    });
+  }
+
+  if (!Number.isFinite(sortOrder) || sortOrder < 0) {
+    return apiBadRequest("L’ordine di visualizzazione non è valido.", {
+      received: body.sortOrder,
     });
   }
 
@@ -146,10 +158,13 @@ export async function POST(request: Request) {
       available_from_plan: availableFromPlan,
       is_free: isFree,
       is_active: isActive,
+      is_featured: isFeatured,
       max_artworks: maxArtworks,
+      sort_order: sortOrder,
+      preview_image_url: previewImageUrl,
     })
     .select(
-      "id, name, slug, description, unity_scene_key, available_from_plan, is_free, is_active, max_artworks, created_at"
+      "id, name, slug, description, unity_scene_key, available_from_plan, is_free, is_active, is_featured, max_artworks, sort_order, preview_image_url, created_at"
     )
     .single();
 
@@ -161,7 +176,10 @@ export async function POST(request: Request) {
     });
   }
 
-  return apiSuccess({
-    template,
-  });
+  return apiSuccess(
+    {
+      template,
+    },
+    201
+  );
 }

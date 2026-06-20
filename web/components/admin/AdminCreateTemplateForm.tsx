@@ -1,9 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TemplatePlan = "free" | "pro" | "business" | "institution";
+
+const MAX_PREVIEW_SIZE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_PREVIEW_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
 function slugify(value: string) {
   return value
@@ -34,8 +41,29 @@ function getPlanDescription(plan: TemplatePlan) {
   return "Visibile anche agli account Free.";
 }
 
+function getReadableFileSize(size: number) {
+  return `${(size / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function validatePreviewFile(file: File) {
+  if (!ALLOWED_PREVIEW_TYPES.includes(file.type)) {
+    return "Formato non supportato. Usa JPG, PNG oppure WEBP.";
+  }
+
+  if (file.size > MAX_PREVIEW_SIZE_BYTES) {
+    return "La preview non può superare 2 MB.";
+  }
+
+  if (file.size <= 0) {
+    return "Il file selezionato è vuoto.";
+  }
+
+  return "";
+}
+
 export default function AdminCreateTemplateForm() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -47,17 +75,73 @@ export default function AdminCreateTemplateForm() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [maxArtworks, setMaxArtworks] = useState(20);
   const [sortOrder, setSortOrder] = useState(100);
-  const [previewImageUrl, setPreviewImageUrl] = useState("");
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewLocalUrl, setPreviewLocalUrl] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
+
+  useEffect(() => {
+    if (!previewFile) {
+      setPreviewLocalUrl("");
+      return;
+    }
+
+    const localUrl = URL.createObjectURL(previewFile);
+    setPreviewLocalUrl(localUrl);
+
+    return () => URL.revokeObjectURL(localUrl);
+  }, [previewFile]);
 
   function handleNameChange(value: string) {
     setName(value);
 
     if (!slug) {
       setSlug(slugify(value));
+    }
+  }
+
+  function handlePreviewFileChange(file: File | null) {
+    setMessage("");
+    setMessageType("");
+
+    if (!file) {
+      setPreviewFile(null);
+      return;
+    }
+
+    const validationError = validatePreviewFile(file);
+
+    if (validationError) {
+      setMessageType("error");
+      setMessage(validationError);
+      setPreviewFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
+    setPreviewFile(file);
+  }
+
+  function resetForm() {
+    setName("");
+    setSlug("");
+    setDescription("");
+    setUnitySceneKey("");
+    setAvailableFromPlan("free");
+    setIsActive(true);
+    setIsFeatured(false);
+    setMaxArtworks(20);
+    setSortOrder(100);
+    setPreviewFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   }
 
@@ -94,6 +178,16 @@ export default function AdminCreateTemplateForm() {
       return;
     }
 
+    if (previewFile) {
+      const validationError = validatePreviewFile(previewFile);
+
+      if (validationError) {
+        setMessageType("error");
+        setMessage(validationError);
+        return;
+      }
+    }
+
     setIsLoading(true);
     setMessage("");
     setMessageType("");
@@ -114,7 +208,6 @@ export default function AdminCreateTemplateForm() {
           isFeatured,
           maxArtworks,
           sortOrder,
-          previewImageUrl,
         }),
       });
 
@@ -126,20 +219,52 @@ export default function AdminCreateTemplateForm() {
         return;
       }
 
+      const templateId = data?.data?.template?.id as string | undefined;
+
+      if (!templateId) {
+        setMessageType("error");
+        setMessage(
+          "Template creato, ma la risposta non contiene il suo identificativo."
+        );
+        router.refresh();
+        return;
+      }
+
+      if (previewFile) {
+        const previewFormData = new FormData();
+        previewFormData.append("preview_file", previewFile);
+
+        const uploadResponse = await fetch(
+          `/api/admin/templates/${templateId}/preview`,
+          {
+            method: "POST",
+            body: previewFormData,
+          }
+        );
+
+        const uploadData = await uploadResponse.json();
+
+        if (!uploadResponse.ok) {
+          setMessageType("error");
+          setMessage(
+            `Template creato, ma la preview non è stata caricata: ${
+              uploadData.error || "errore upload"
+            }. Puoi riprovare dalla scheda del template.`
+          );
+          resetForm();
+          router.refresh();
+          return;
+        }
+      }
+
       setMessageType("success");
-      setMessage("Template creato correttamente.");
+      setMessage(
+        previewFile
+          ? "Template e preview creati correttamente."
+          : "Template creato correttamente."
+      );
 
-      setName("");
-      setSlug("");
-      setDescription("");
-      setUnitySceneKey("");
-      setAvailableFromPlan("free");
-      setIsActive(true);
-      setIsFeatured(false);
-      setMaxArtworks(20);
-      setSortOrder(100);
-      setPreviewImageUrl("");
-
+      resetForm();
       router.refresh();
     } catch {
       setMessageType("error");
@@ -309,31 +434,64 @@ export default function AdminCreateTemplateForm() {
 
         <div className="md:col-span-2">
           <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
-            Preview image URL
+            Preview template
           </label>
 
-          <input
-            value={previewImageUrl}
-            onChange={(event) => setPreviewImageUrl(event.target.value)}
-            disabled={isLoading}
-            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="https://..."
-          />
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) =>
+                handlePreviewFileChange(event.target.files?.[0] || null)
+              }
+              disabled={isLoading}
+              className="block w-full text-sm text-neutral-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-neutral-950 hover:file:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+            />
 
-          <p className="mt-2 text-xs leading-5 text-neutral-500">
-            Per ora puoi incollare un URL immagine. L’upload diretto lo
-            collegheremo in una fase successiva.
-          </p>
+            <p className="mt-3 text-xs leading-5 text-neutral-500">
+              JPG, PNG o WEBP · massimo 2 MB · formato consigliato 16:9,
+              1200×675 px.
+            </p>
 
-          {previewImageUrl && (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950">
-              <img
-                src={previewImageUrl}
-                alt="Preview template"
-                className="h-48 w-full object-cover"
-              />
-            </div>
-          )}
+            {previewFile && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-neutral-200">
+                    {previewFile.name}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {getReadableFileSize(previewFile.size)}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewFile(null);
+
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="rounded-full border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Rimuovi selezione
+                </button>
+              </div>
+            )}
+
+            {previewLocalUrl && (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
+                <img
+                  src={previewLocalUrl}
+                  alt="Anteprima file template"
+                  className="aspect-video w-full object-cover"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="md:col-span-2">
@@ -357,7 +515,11 @@ export default function AdminCreateTemplateForm() {
           disabled={isLoading}
           className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Creazione..." : "Crea template"}
+          {isLoading
+            ? previewFile
+              ? "Creazione e upload..."
+              : "Creazione..."
+            : "Crea template"}
         </button>
 
         {message && (
