@@ -1,4 +1,4 @@
-import LogoutButton from "@/components/auth/LogoutButton";
+﻿import LogoutButton from "@/components/auth/LogoutButton";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -11,6 +11,7 @@ type DashboardShellProps = {
     | "opere"
     | "richieste"
     | "account";
+  navMode?: "community" | "creator";
   actions?: React.ReactNode;
 };
 
@@ -20,6 +21,21 @@ type NavItem = {
   section: DashboardShellProps["activeSection"];
   description: string;
 };
+
+const communityNavItems: NavItem[] = [
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    section: "dashboard",
+    description: "Spazio community",
+  },
+  {
+    label: "Account",
+    href: "/account",
+    section: "account",
+    description: "Profilo e impostazioni",
+  },
+];
 
 const navItems: NavItem[] = [
   {
@@ -32,7 +48,7 @@ const navItems: NavItem[] = [
     label: "Gallerie",
     href: "/dashboard/gallerie",
     section: "gallerie",
-    description: "Spazi virtuali",
+    description: "Spazi espositivi",
   },
   {
     label: "Opere",
@@ -44,7 +60,7 @@ const navItems: NavItem[] = [
     label: "Richieste",
     href: "/dashboard/richieste",
     section: "richieste",
-    description: "Lead e contatti",
+    description: "Richieste e contatti",
   },
   {
     label: "Account",
@@ -58,10 +74,14 @@ export default function DashboardShell({
   children,
   title,
   subtitle,
-  eyebrow = "Dashboard gallerista",
+  eyebrow = "Dashboard account",
   activeSection = "dashboard",
+  navMode = "creator",
   actions,
 }: DashboardShellProps) {
+  const visibleNavItems =
+    navMode === "community" ? communityNavItems : navItems;
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-50">
       <div className="flex min-h-screen">
@@ -73,17 +93,17 @@ export default function DashboardShell({
               </p>
 
               <h1 className="mt-3 text-2xl font-semibold">
-                Gallerista
+                Account
               </h1>
             </a>
 
             <p className="mt-3 text-sm leading-6 text-neutral-500">
-              Gestisci gallerie virtuali, opere, lead e viewer Unity WebGL.
+              Gestisci community, profilo, strumenti creator e contenuti del tuo spazio.
             </p>
           </div>
 
           <nav className="mt-8 space-y-2">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = activeSection === item.section;
 
               return (

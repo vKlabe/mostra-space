@@ -187,12 +187,16 @@ export default async function DashboardPage() {
 
   const canManage = profile.role === "gallerist" || profile.role === "admin";
 
-  if (!canManage) {
+    if (!canManage) {
+    const visitorName =
+      profile.display_name || profile.full_name || profile.email || "Visitor";
+
     return (
       <DashboardShell
-        title="Benvenuto nel portale"
-        subtitle={`Il tuo ruolo attuale è ${profile.role}. Per creare gallerie virtuali, caricare opere e gestire richieste devi avere il ruolo gallerista.`}
+        title={`Ciao, ${visitorName}`}
+        subtitle="Questa e la tua dashboard community: il tuo spazio personale dentro mostra.space."
         activeSection="dashboard"
+          navMode="community"
         actions={
           <a
             href="/gallerie"
@@ -202,16 +206,151 @@ export default async function DashboardPage() {
           </a>
         }
       >
-        <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-          <p className="text-neutral-300">
-            Il tuo account non ha ancora accesso agli strumenti da gallerista.
-          </p>
+        <div className="space-y-8">
+          <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+            <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+              Community
+            </p>
 
-          <p className="mt-3 text-sm leading-6 text-neutral-500">
-            Quando il ruolo sarà aggiornato, da qui potrai creare gallerie
-            virtuali, caricare opere, aprire l’editor 3D e ricevere richieste
-            dai visitatori.
-          </p>
+            <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
+              Il tuo spazio personale
+            </h2>
+
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
+              Il tuo account e attivo come Visitor. Puoi esplorare il portale,
+              visitare gallerie pubbliche, salvare preferiti e gestire le tue
+              richieste. Questi strumenti community resteranno disponibili anche
+              se passerai ad account Gallerista o Artista.
+            </p>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <a
+              href="/account"
+              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+            >
+              <h3 className="text-lg font-semibold text-neutral-100">
+                Profilo
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                Gestisci nome, dati account e informazioni personali.
+              </p>
+            </a>
+
+            <a
+              href="/gallerie"
+              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+            >
+              <h3 className="text-lg font-semibold text-neutral-100">
+                Gallerie preferite
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                Qui troverai le gallerie salvate tra i preferiti.
+              </p>
+            </a>
+
+            <a
+              href="/gallerie"
+              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+            >
+              <h3 className="text-lg font-semibold text-neutral-100">
+                Opere preferite
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                Una raccolta personale delle opere che salverai.
+              </p>
+            </a>
+
+            <a
+              href="/account"
+              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+            >
+              <h3 className="text-lg font-semibold text-neutral-100">
+                Richieste inviate
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                Storico delle richieste inviate a gallerie e artisti.
+              </p>
+            </a>
+
+            <a
+              href="/gallerie"
+              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+            >
+              <h3 className="text-lg font-semibold text-neutral-100">
+                Gallerie visitate recentemente
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                In futuro ritroverai qui gli spazi visitati di recente.
+              </p>
+            </a>
+
+            <a
+              href="/account"
+              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+            >
+              <h3 className="text-lg font-semibold text-neutral-100">
+                Impostazioni account
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-400">
+                Gestisci sicurezza, preferenze e dati del tuo account.
+              </p>
+            </a>
+          </section>
+
+          <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+                  Creator tools
+                </p>
+
+                <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
+                  Vuoi creare una galleria?
+                </h2>
+
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
+                  Puoi trasformare questo stesso account in account Gallerista
+                  o Artista. La parte community resta attiva, ma si aggiungono
+                  gallerie, opere, editor 3D e richieste ricevute.
+                </p>
+              </div>
+
+              <a
+                href="/account/upgrade-gallerist"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              >
+                Passa a Gallerista / Artista
+              </a>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-dashed border-neutral-800 p-6">
+            <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+              Prossimamente
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-400">
+              <span className="rounded-full border border-neutral-800 px-4 py-2">
+                Chat
+              </span>
+              <span className="rounded-full border border-neutral-800 px-4 py-2">
+                Follow
+              </span>
+              <span className="rounded-full border border-neutral-800 px-4 py-2">
+                Notifiche
+              </span>
+              <span className="rounded-full border border-neutral-800 px-4 py-2">
+                Eventi
+              </span>
+              <span className="rounded-full border border-neutral-800 px-4 py-2">
+                Liste personali
+              </span>
+              <span className="rounded-full border border-neutral-800 px-4 py-2">
+                Feed
+              </span>
+            </div>
+          </section>
         </div>
       </DashboardShell>
     );
@@ -371,6 +510,123 @@ export default async function DashboardPage() {
         </>
       }
     >
+          <section className="mb-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+          Community
+        </p>
+
+        <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
+          Il tuo spazio personale
+        </h2>
+
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
+          Anche come Gallerista o Artista mantieni tutti gli strumenti community:
+          profilo, preferiti, richieste inviate, cronologia visite e impostazioni
+          account. La community e unica, cambiano solo gli strumenti creator
+          disponibili in base al ruolo.
+        </p>
+      </section>
+
+      <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <a
+          href="/account"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            Profilo
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            Gestisci nome, dati account e informazioni personali.
+          </p>
+        </a>
+
+        <a
+          href="/gallerie"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            Gallerie preferite
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            Qui troverai le gallerie salvate tra i preferiti.
+          </p>
+        </a>
+
+        <a
+          href="/gallerie"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            Opere preferite
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            Una raccolta personale delle opere che salverai.
+          </p>
+        </a>
+
+        <a
+          href="/account"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            Richieste inviate
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            Storico delle richieste inviate a gallerie e artisti.
+          </p>
+        </a>
+
+        <a
+          href="/gallerie"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            Gallerie visitate recentemente
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            In futuro ritroverai qui gli spazi visitati di recente.
+          </p>
+        </a>
+
+        <a
+          href="/account"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            Impostazioni account
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            Gestisci sicurezza, preferenze e dati del tuo account.
+          </p>
+        </a>
+      </section>
+
+      <section className="mb-8 rounded-3xl border border-dashed border-neutral-800 p-6">
+        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+          Prossimamente
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-400">
+          <span className="rounded-full border border-neutral-800 px-4 py-2">
+            Chat
+          </span>
+          <span className="rounded-full border border-neutral-800 px-4 py-2">
+            Follow
+          </span>
+          <span className="rounded-full border border-neutral-800 px-4 py-2">
+            Notifiche
+          </span>
+          <span className="rounded-full border border-neutral-800 px-4 py-2">
+            Eventi
+          </span>
+          <span className="rounded-full border border-neutral-800 px-4 py-2">
+            Liste personali
+          </span>
+          <span className="rounded-full border border-neutral-800 px-4 py-2">
+            Feed
+          </span>
+        </div>
+      </section>
       <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
