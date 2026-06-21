@@ -64,6 +64,10 @@ export default function LoginPage() {
         return;
       }
 
+      await fetch("/api/auth/sync-profile", {
+  method: "POST",
+});
+
       router.replace("/dashboard");
       router.refresh();
     } catch {
