@@ -121,12 +121,21 @@ export default async function AccountPage() {
             dashboard protetta dove potrai creare la prima galleria virtuale.
           </p>
 
-          <a
-            href="/dashboard"
-            className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-          >
-            Vai alla dashboard
-          </a>
+          <div className="mt-6 flex flex-wrap gap-3">
+  <a
+    href="/dashboard"
+    className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+  >
+    Vai alla dashboard
+  </a>
+
+  <a
+    href="/account/upgrade-gallerist"
+    className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+  >
+    Passa ad account Gallerista / Artista
+  </a>
+</div>
         </div>
       </section>
     </main>
