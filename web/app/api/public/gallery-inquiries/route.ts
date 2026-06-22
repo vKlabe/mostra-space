@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { canReceiveRequest, getPlanLimits, normalizePlanName } from "@/lib/plans";
 import { sendGalleryInquiryEmail } from "@/lib/email/sendGalleryInquiryEmail";
 
@@ -138,6 +139,12 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
+  const supabase = await createClient();
+
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+
   const { data: gallery, error: galleryError } = await admin
     .from("galleries")
     .select("id, owner_id, title, slug")
@@ -273,6 +280,7 @@ export async function POST(request: Request) {
       gallery_id: gallery.id,
       artwork_id: artwork?.id || null,
       gallery_artwork_id: galleryArtwork?.id || null,
+      submitted_by_user_id: currentUser?.id || null,
       name,
       email,
       message,
@@ -285,8 +293,8 @@ export async function POST(request: Request) {
       user_agent: userAgent,
     })
     .select(
-      "id, gallery_id, artwork_id, gallery_artwork_id, name, email, message, status, created_at"
-    )
+  "id, gallery_id, artwork_id, gallery_artwork_id, submitted_by_user_id, name, email, message, status, created_at"
+)
     .single();
 
   if (insertError || !inquiry) {

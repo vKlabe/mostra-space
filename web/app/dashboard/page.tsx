@@ -107,6 +107,15 @@ type Inquiry = {
   galleries: GalleryRelation | GalleryRelation[] | null;
 };
 
+type SentInquiry = {
+  id: string;
+  gallery_id: string;
+  artwork_id: string | null;
+  status: string;
+  created_at: string;
+  galleries: GalleryRelation | GalleryRelation[] | null;
+};
+
 function normalizeGalleryRelation(
   value: GalleryRelation | GalleryRelation[] | null
 ) {
@@ -163,6 +172,46 @@ function getInquiryLabel(status: InquiryStatus) {
   }
 
   return "Letta";
+}
+
+function getSentInquiryBadgeClass(status: string) {
+  if (status === "new") {
+    return "border-green-900 bg-green-950/40 text-green-300";
+  }
+
+  if (status === "read") {
+    return "border-blue-900 bg-blue-950/40 text-blue-300";
+  }
+
+  if (status === "replied") {
+    return "border-purple-900 bg-purple-950/40 text-purple-300";
+  }
+
+  if (status === "archived" || status === "closed") {
+    return "border-yellow-900 bg-yellow-950/40 text-yellow-300";
+  }
+
+  return "border-neutral-700 bg-neutral-950 text-neutral-300";
+}
+
+function getSentInquiryLabel(status: string) {
+  if (status === "new") {
+    return "Nuova";
+  }
+
+  if (status === "read") {
+    return "Letta";
+  }
+
+  if (status === "replied") {
+    return "Risposta";
+  }
+
+  if (status === "archived" || status === "closed") {
+    return "Archiviata";
+  }
+
+  return status;
 }
 
 function getCurrentMonthStart() {
@@ -469,6 +518,85 @@ export default async function DashboardPage() {
     </article>
   );
 
+    const { data: sentInquiriesData } = await admin
+    .from("gallery_inquiries")
+    .select(
+      `
+      id,
+      gallery_id,
+      artwork_id,
+      status,
+      created_at,
+      galleries (
+        id,
+        title,
+        slug
+      )
+    `
+    )
+    .eq("submitted_by_user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  const sentInquiries = (sentInquiriesData || []) as unknown as SentInquiry[];
+
+  const sentInquiriesCard = (
+    <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
+      <h3 className="text-lg font-semibold text-neutral-100">
+        Richieste inviate
+      </h3>
+
+      {sentInquiries.length === 0 && (
+        <p className="mt-3 text-sm leading-6 text-neutral-400">
+          Non hai ancora inviato richieste. Apri una galleria pubblica e usa il
+          form informazioni.
+        </p>
+      )}
+
+      {sentInquiries.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {sentInquiries.slice(0, 3).map((inquiry) => {
+            const gallery = normalizeGalleryRelation(inquiry.galleries);
+
+            return (
+              <a
+                key={inquiry.id}
+                href={gallery ? `/gallerie/${gallery.slug}` : "/gallerie"}
+                className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-600"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-neutral-100">
+                    {gallery?.title || "Galleria non trovata"}
+                  </p>
+
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${getSentInquiryBadgeClass(
+                      inquiry.status
+                    )}`}
+                  >
+                    {getSentInquiryLabel(inquiry.status)}
+                  </span>
+                </div>
+
+                <p className="mt-2 text-xs text-neutral-500">
+                  Inviata il{" "}
+                  {new Date(inquiry.created_at).toLocaleDateString("it-IT")}
+                </p>
+              </a>
+            );
+          })}
+        </div>
+      )}
+
+      <a
+        href="/gallerie"
+        className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
+      >
+        Esplora gallerie
+      </a>
+    </article>
+  );
+
   const favoriteArtworksCard = (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
       <h3 className="text-lg font-semibold text-neutral-100">
@@ -608,9 +736,12 @@ export default async function DashboardPage() {
 
   {favoriteArtworksCard}
 
-              {recentGalleriesCard}
+  {sentInquiriesCard}
 
-            <a
+  {recentGalleriesCard}
+
+  <a
+    href="/account"
               href="/account"
               className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
             >
@@ -869,17 +1000,9 @@ export default async function DashboardPage() {
 
   {favoriteArtworksCard}
 
-                <a
-          href="/account"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-        >
-          <h3 className="text-lg font-semibold text-neutral-100">
-            Richieste inviate
-          </h3>
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
-            Storico delle richieste inviate a gallerie e artisti.
-          </p>
-        </a>
+              
+          {sentInquiriesCard}
+
 
         {recentGalleriesCard}
 
