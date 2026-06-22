@@ -6,6 +6,7 @@ import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import FavoriteGalleryButton from "@/components/galleries/FavoriteGalleryButton";
+import FavoriteArtworkButton from "@/components/galleries/FavoriteArtworkButton";
 
 type PublicGalleryPageProps = {
   params: Promise<{
@@ -670,6 +671,10 @@ export default async function PublicGalleryDetailPage({
                       <h3 className="mt-3 text-2xl font-medium leading-tight">
                         {artwork.title}
                       </h3>
+
+                      <div className="mt-4">
+  <FavoriteArtworkButton artworkId={artwork.id} />
+</div>
 
                       <p className="mt-2 text-sm text-neutral-400">
                         {getArtworkAuthorLine(artwork)}

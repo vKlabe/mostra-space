@@ -50,6 +50,37 @@ type Artwork = {
   created_at: string;
 };
 
+type FavoriteArtworkRow = {
+  artwork_id: string;
+  created_at: string;
+};
+
+type FavoriteArtworkRecord = {
+  id: string;
+  title: string;
+  artist_name: string | null;
+  is_public: boolean;
+};
+
+type FavoriteArtworkGalleryRelation = {
+  id: string;
+  title: string;
+  slug: string;
+  status: GalleryStatus;
+};
+
+type FavoriteArtworkPlacement = {
+  id: string;
+  artwork_id: string;
+  galleries: FavoriteArtworkGalleryRelation | FavoriteArtworkGalleryRelation[] | null;
+};
+
+type FavoritePublicArtwork = FavoriteArtworkRecord & {
+  saved_at: string;
+  gallery_title: string | null;
+  gallery_slug: string | null;
+};
+
 type InquiryStatus = "new" | "read" | "closed";
 
 type GalleryRelation = {
@@ -251,6 +282,156 @@ export default async function DashboardPage() {
       .filter(Boolean) as FavoritePublicGallery[];
   }
 
+    const { data: favoriteArtworkRowsData } = await admin
+    .from("favorite_artworks")
+    .select("artwork_id, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  const favoriteArtworkRows =
+    (favoriteArtworkRowsData || []) as FavoriteArtworkRow[];
+
+  const favoriteArtworkIds = favoriteArtworkRows.map(
+    (favorite) => favorite.artwork_id
+  );
+
+  let favoriteArtworks: FavoritePublicArtwork[] = [];
+
+  if (favoriteArtworkIds.length > 0) {
+    const { data: favoriteArtworksData } = await admin
+      .from("artworks")
+      .select("id, title, artist_name, is_public")
+      .in("id", favoriteArtworkIds)
+      .eq("is_public", true);
+
+    const { data: favoriteArtworkPlacementsData } = await admin
+      .from("gallery_artworks")
+      .select(
+        `
+        id,
+        artwork_id,
+        galleries (
+          id,
+          title,
+          slug,
+          status
+        )
+      `
+      )
+      .in("artwork_id", favoriteArtworkIds);
+
+    const favoriteArtworkById = new Map(
+      ((favoriteArtworksData || []) as FavoriteArtworkRecord[]).map(
+        (artwork) => [artwork.id, artwork]
+      )
+    );
+
+    const favoriteArtworkPlacementByArtworkId = new Map<
+      string,
+      FavoriteArtworkPlacement
+    >();
+
+    ((favoriteArtworkPlacementsData || []) as unknown as FavoriteArtworkPlacement[])
+      .forEach((placement) => {
+        const galleries = Array.isArray(placement.galleries)
+          ? placement.galleries
+          : placement.galleries
+            ? [placement.galleries]
+            : [];
+
+        const publishedGallery = galleries.find(
+          (gallery) => gallery.status === "published"
+        );
+
+        if (publishedGallery && !favoriteArtworkPlacementByArtworkId.has(placement.artwork_id)) {
+          favoriteArtworkPlacementByArtworkId.set(placement.artwork_id, {
+            ...placement,
+            galleries: publishedGallery,
+          });
+        }
+      });
+
+    favoriteArtworks = favoriteArtworkRows
+      .map((favorite) => {
+        const artwork = favoriteArtworkById.get(favorite.artwork_id);
+
+        if (!artwork) {
+          return null;
+        }
+
+        const placement = favoriteArtworkPlacementByArtworkId.get(artwork.id);
+        const gallery = Array.isArray(placement?.galleries)
+          ? placement?.galleries[0] || null
+          : placement?.galleries || null;
+
+        return {
+          ...artwork,
+          saved_at: favorite.created_at,
+          gallery_title: gallery?.title || null,
+          gallery_slug: gallery?.slug || null,
+        };
+      })
+      .filter(Boolean) as FavoritePublicArtwork[];
+  }
+
+  const favoriteArtworksCard = (
+    <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
+      <h3 className="text-lg font-semibold text-neutral-100">
+        Opere preferite
+      </h3>
+
+      {favoriteArtworks.length === 0 && (
+        <p className="mt-3 text-sm leading-6 text-neutral-400">
+          Non hai ancora salvato opere. Apri una galleria pubblica e usa il
+          pulsante Salva opera.
+        </p>
+      )}
+
+      {favoriteArtworks.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {favoriteArtworks.slice(0, 3).map((artwork) => (
+            <a
+              key={artwork.id}
+              href={
+                artwork.gallery_slug
+                  ? `/gallerie/${artwork.gallery_slug}#catalogo`
+                  : "/gallerie"
+              }
+              className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-600"
+            >
+              <p className="font-medium text-neutral-100">{artwork.title}</p>
+
+              {artwork.artist_name && (
+                <p className="mt-1 text-xs text-neutral-400">
+                  {artwork.artist_name}
+                </p>
+              )}
+
+              {artwork.gallery_title && (
+                <p className="mt-1 text-xs text-neutral-500">
+                  Da: {artwork.gallery_title}
+                </p>
+              )}
+
+              <p className="mt-1 text-xs text-neutral-500">
+                Salvata il{" "}
+                {new Date(artwork.saved_at).toLocaleDateString("it-IT")}
+              </p>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <a
+        href="/gallerie"
+        className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
+      >
+        Esplora opere
+      </a>
+    </article>
+  );
+
   const favoriteGalleriesCard = (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
       <h3 className="text-lg font-semibold text-neutral-100">
@@ -331,31 +512,9 @@ export default async function DashboardPage() {
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
   {favoriteGalleriesCard}
 
-  <a
-    href="/gallerie"
-    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-  >
-    <h3 className="text-lg font-semibold text-neutral-100">
-      Opere preferite
-    </h3>
-    <p className="mt-3 text-sm leading-6 text-neutral-400">
-      Una raccolta personale delle opere che salverai.
-    </p>
-  </a>
+  {favoriteArtworksCard}
 
-  <a
-    href="/account"
-    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-  >
-    <h3 className="text-lg font-semibold text-neutral-100">
-      Richieste inviate
-    </h3>
-    <p className="mt-3 text-sm leading-6 text-neutral-400">
-      Storico delle richieste inviate a gallerie e artisti.
-    </p>
-  </a>
-
-            <a
+              <a
               href="/gallerie"
               className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
             >
@@ -624,31 +783,9 @@ export default async function DashboardPage() {
 
   {favoriteGalleriesCard}
 
-  <a
-    href="/gallerie"
-    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-  >
-    <h3 className="text-lg font-semibold text-neutral-100">
-      Opere preferite
-    </h3>
-    <p className="mt-3 text-sm leading-6 text-neutral-400">
-      Una raccolta personale delle opere che salverai.
-    </p>
-  </a>
+  {favoriteArtworksCard}
 
-        <a
-          href="/gallerie"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-        >
-          <h3 className="text-lg font-semibold text-neutral-100">
-            Opere preferite
-          </h3>
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
-            Una raccolta personale delle opere che salverai.
-          </p>
-        </a>
-
-        <a
+                <a
           href="/account"
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
