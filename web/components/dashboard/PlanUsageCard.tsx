@@ -82,11 +82,11 @@ export default function PlanUsageCard({
         </div>
 
         <a
-          href="/pricing"
-          className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-        >
-          Upgrade
-        </a>
+  href="/pricing"
+  className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+>
+  Vedi piani e upgrade
+</a>
       </div>
 
       <div className="mt-6 space-y-5">
