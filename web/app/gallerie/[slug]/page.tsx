@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import PublicGalleryInquiryForm from "@/components/public/PublicGalleryInquiryForm";
 import UnityGalleryViewer from "@/components/unity/UnityGalleryViewer";
 import DataErrorCard from "@/components/system/DataErrorCard";
@@ -128,6 +129,25 @@ export default async function PublicGalleryDetailPage({
 
   if (galleryError || !gallery) {
     notFound();
+  }
+
+    const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+
+  if (currentUser) {
+    const admin = createAdminClient();
+
+    await admin.from("recent_gallery_visits").upsert(
+      {
+        user_id: currentUser.id,
+        gallery_id: gallery.id,
+        visited_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "user_id,gallery_id",
+      }
+    );
   }
 
   const { data: galleryArtworks, error: galleryArtworksError } = await supabase

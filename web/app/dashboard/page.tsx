@@ -41,6 +41,15 @@ type FavoritePublicGallery = FavoriteGalleryRecord & {
   saved_at: string;
 };
 
+type RecentGalleryVisitRow = {
+  gallery_id: string;
+  visited_at: string;
+};
+
+type RecentPublicGallery = FavoriteGalleryRecord & {
+  visited_at: string;
+};
+
 type Artwork = {
   id: string;
   title: string;
@@ -375,6 +384,91 @@ export default async function DashboardPage() {
       .filter(Boolean) as FavoritePublicArtwork[];
   }
 
+    const { data: recentGalleryVisitRowsData } = await admin
+    .from("recent_gallery_visits")
+    .select("gallery_id, visited_at")
+    .eq("user_id", user.id)
+    .order("visited_at", { ascending: false })
+    .limit(6);
+
+  const recentGalleryVisitRows =
+    (recentGalleryVisitRowsData || []) as RecentGalleryVisitRow[];
+
+  const recentGalleryIds = recentGalleryVisitRows.map(
+    (visit) => visit.gallery_id
+  );
+
+  let recentGalleries: RecentPublicGallery[] = [];
+
+  if (recentGalleryIds.length > 0) {
+    const { data: recentGalleriesData } = await admin
+      .from("galleries")
+      .select("id, title, slug, status")
+      .in("id", recentGalleryIds)
+      .eq("status", "published");
+
+    const recentGalleryById = new Map(
+      ((recentGalleriesData || []) as FavoriteGalleryRecord[]).map(
+        (gallery) => [gallery.id, gallery]
+      )
+    );
+
+    recentGalleries = recentGalleryVisitRows
+      .map((visit) => {
+        const gallery = recentGalleryById.get(visit.gallery_id);
+
+        if (!gallery) {
+          return null;
+        }
+
+        return {
+          ...gallery,
+          visited_at: visit.visited_at,
+        };
+      })
+      .filter(Boolean) as RecentPublicGallery[];
+  }
+
+  const recentGalleriesCard = (
+    <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
+      <h3 className="text-lg font-semibold text-neutral-100">
+        Gallerie visitate recentemente
+      </h3>
+
+      {recentGalleries.length === 0 && (
+        <p className="mt-3 text-sm leading-6 text-neutral-400">
+          Non hai ancora visitato gallerie pubbliche. Esplora il portale e
+          ritroverai qui gli ultimi spazi aperti.
+        </p>
+      )}
+
+      {recentGalleries.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {recentGalleries.slice(0, 3).map((gallery) => (
+            <a
+              key={gallery.id}
+              href={`/gallerie/${gallery.slug}`}
+              className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-600"
+            >
+              <p className="font-medium text-neutral-100">{gallery.title}</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Visitata il{" "}
+                {new Date(gallery.visited_at).toLocaleDateString("it-IT")}
+              </p>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <a
+        href="/gallerie"
+        className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
+      >
+        Esplora gallerie
+      </a>
+    </article>
+  );
+
   const favoriteArtworksCard = (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
       <h3 className="text-lg font-semibold text-neutral-100">
@@ -514,17 +608,7 @@ export default async function DashboardPage() {
 
   {favoriteArtworksCard}
 
-              <a
-              href="/gallerie"
-              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-            >
-              <h3 className="text-lg font-semibold text-neutral-100">
-                Gallerie visitate recentemente
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">
-                In futuro ritroverai qui gli spazi visitati di recente.
-              </p>
-            </a>
+              {recentGalleriesCard}
 
             <a
               href="/account"
@@ -797,17 +881,7 @@ export default async function DashboardPage() {
           </p>
         </a>
 
-        <a
-          href="/gallerie"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-        >
-          <h3 className="text-lg font-semibold text-neutral-100">
-            Gallerie visitate recentemente
-          </h3>
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
-            In futuro ritroverai qui gli spazi visitati di recente.
-          </p>
-        </a>
+        {recentGalleriesCard}
 
         <a
           href="/account"
