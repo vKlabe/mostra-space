@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import PlanUsageCard from "@/components/dashboard/PlanUsageCard";
 import { normalizePlanName } from "@/lib/plans";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type Profile = {
   id: string;
@@ -22,6 +23,22 @@ type Gallery = {
   status: GalleryStatus;
   created_at: string;
   published_at: string | null;
+};
+
+type FavoriteGalleryRow = {
+  gallery_id: string;
+  created_at: string;
+};
+
+type FavoriteGalleryRecord = {
+  id: string;
+  title: string;
+  slug: string;
+  status: GalleryStatus;
+};
+
+type FavoritePublicGallery = FavoriteGalleryRecord & {
+  saved_at: string;
 };
 
 type Artwork = {
@@ -187,6 +204,93 @@ export default async function DashboardPage() {
 
   const canManage = profile.role === "gallerist" || profile.role === "admin";
 
+    const admin = createAdminClient();
+
+  const { data: favoriteGalleryRowsData } = await admin
+    .from("favorite_galleries")
+    .select("gallery_id, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  const favoriteGalleryRows =
+    (favoriteGalleryRowsData || []) as FavoriteGalleryRow[];
+
+  const favoriteGalleryIds = favoriteGalleryRows.map(
+    (favorite) => favorite.gallery_id
+  );
+
+  let favoriteGalleries: FavoritePublicGallery[] = [];
+
+  if (favoriteGalleryIds.length > 0) {
+    const { data: favoriteGalleriesData } = await admin
+      .from("galleries")
+      .select("id, title, slug, status")
+      .in("id", favoriteGalleryIds)
+      .eq("status", "published");
+
+    const favoriteGalleryById = new Map(
+      ((favoriteGalleriesData || []) as FavoriteGalleryRecord[]).map(
+        (gallery) => [gallery.id, gallery]
+      )
+    );
+
+    favoriteGalleries = favoriteGalleryRows
+      .map((favorite) => {
+        const gallery = favoriteGalleryById.get(favorite.gallery_id);
+
+        if (!gallery) {
+          return null;
+        }
+
+        return {
+          ...gallery,
+          saved_at: favorite.created_at,
+        };
+      })
+      .filter(Boolean) as FavoritePublicGallery[];
+  }
+
+  const favoriteGalleriesCard = (
+    <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
+      <h3 className="text-lg font-semibold text-neutral-100">
+        Gallerie preferite
+      </h3>
+
+      {favoriteGalleries.length === 0 && (
+        <p className="mt-3 text-sm leading-6 text-neutral-400">
+          Non hai ancora salvato gallerie. Esplora il portale e usa il pulsante
+          Salva galleria.
+        </p>
+      )}
+
+      {favoriteGalleries.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {favoriteGalleries.slice(0, 3).map((gallery) => (
+            <a
+              key={gallery.id}
+              href={`/gallerie/${gallery.slug}`}
+              className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-600"
+            >
+              <p className="font-medium text-neutral-100">{gallery.title}</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Salvata il{" "}
+                {new Date(gallery.saved_at).toLocaleDateString("it-IT")}
+              </p>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <a
+        href="/gallerie"
+        className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
+      >
+        Esplora gallerie
+      </a>
+    </article>
+  );
+
     if (!canManage) {
     const visitorName =
       profile.display_name || profile.full_name || profile.email || "Visitor";
@@ -225,53 +329,31 @@ export default async function DashboardPage() {
           </section>
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <a
-              href="/account"
-              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-            >
-              <h3 className="text-lg font-semibold text-neutral-100">
-                Profilo
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Gestisci nome, dati account e informazioni personali.
-              </p>
-            </a>
+  {favoriteGalleriesCard}
 
-            <a
-              href="/gallerie"
-              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-            >
-              <h3 className="text-lg font-semibold text-neutral-100">
-                Gallerie preferite
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Qui troverai le gallerie salvate tra i preferiti.
-              </p>
-            </a>
+  <a
+    href="/gallerie"
+    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+  >
+    <h3 className="text-lg font-semibold text-neutral-100">
+      Opere preferite
+    </h3>
+    <p className="mt-3 text-sm leading-6 text-neutral-400">
+      Una raccolta personale delle opere che salverai.
+    </p>
+  </a>
 
-            <a
-              href="/gallerie"
-              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-            >
-              <h3 className="text-lg font-semibold text-neutral-100">
-                Opere preferite
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Una raccolta personale delle opere che salverai.
-              </p>
-            </a>
-
-            <a
-              href="/account"
-              className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-            >
-              <h3 className="text-lg font-semibold text-neutral-100">
-                Richieste inviate
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Storico delle richieste inviate a gallerie e artisti.
-              </p>
-            </a>
+  <a
+    href="/account"
+    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+  >
+    <h3 className="text-lg font-semibold text-neutral-100">
+      Richieste inviate
+    </h3>
+    <p className="mt-3 text-sm leading-6 text-neutral-400">
+      Storico delle richieste inviate a gallerie e artisti.
+    </p>
+  </a>
 
             <a
               href="/gallerie"
@@ -528,29 +610,31 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <a
-          href="/account"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-        >
-          <h3 className="text-lg font-semibold text-neutral-100">
-            Profilo
-          </h3>
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
-            Gestisci nome, dati account e informazioni personali.
-          </p>
-        </a>
+  <a
+    href="/account"
+    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+  >
+    <h3 className="text-lg font-semibold text-neutral-100">
+      Profilo
+    </h3>
+    <p className="mt-3 text-sm leading-6 text-neutral-400">
+      Gestisci nome, dati account e informazioni personali.
+    </p>
+  </a>
 
-        <a
-          href="/gallerie"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-        >
-          <h3 className="text-lg font-semibold text-neutral-100">
-            Gallerie preferite
-          </h3>
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
-            Qui troverai le gallerie salvate tra i preferiti.
-          </p>
-        </a>
+  {favoriteGalleriesCard}
+
+  <a
+    href="/gallerie"
+    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+  >
+    <h3 className="text-lg font-semibold text-neutral-100">
+      Opere preferite
+    </h3>
+    <p className="mt-3 text-sm leading-6 text-neutral-400">
+      Una raccolta personale delle opere che salverai.
+    </p>
+  </a>
 
         <a
           href="/gallerie"

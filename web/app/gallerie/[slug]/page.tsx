@@ -5,6 +5,7 @@ import UnityGalleryViewer from "@/components/unity/UnityGalleryViewer";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
+import FavoriteGalleryButton from "@/components/galleries/FavoriteGalleryButton";
 
 type PublicGalleryPageProps = {
   params: Promise<{
@@ -281,6 +282,7 @@ export default async function PublicGalleryDetailPage({
                 >
                   Richiedi informazioni
                 </a>
+                <FavoriteGalleryButton galleryId={gallery.id} />
               </div>
 
               <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
