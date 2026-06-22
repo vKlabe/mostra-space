@@ -742,7 +742,7 @@ export default async function DashboardPage() {
 
   <a
     href="/account"
-              href="/account"
+    
               className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
             >
               <h3 className="text-lg font-semibold text-neutral-100">
