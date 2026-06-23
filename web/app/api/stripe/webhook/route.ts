@@ -86,11 +86,11 @@ function getSubscriptionId(
 }
 
 function getCurrentPeriodEnd(subscription: Stripe.Subscription) {
-  const subscriptionWithPeriod = subscription as Stripe.Subscription & {
+  const firstItem = subscription.items.data[0] as Stripe.SubscriptionItem & {
     current_period_end?: number | null;
   };
 
-  const currentPeriodEnd = subscriptionWithPeriod.current_period_end;
+  const currentPeriodEnd = firstItem?.current_period_end;
 
   if (!currentPeriodEnd) {
     return null;

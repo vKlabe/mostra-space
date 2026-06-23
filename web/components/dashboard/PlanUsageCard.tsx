@@ -7,6 +7,7 @@ import {
   normalizePlanName,
   type PlanName,
 } from "@/lib/plans";
+import CustomerPortalButton from "@/components/billing/CustomerPortalButton";
 
 type PlanUsageCardProps = {
   plan: PlanName | string | null | undefined;
@@ -81,12 +82,20 @@ export default function PlanUsageCard({
           </p>
         </div>
 
-        <a
-  href="/pricing"
-  className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
->
-  Vedi piani e upgrade
-</a>
+        <div className="flex flex-wrap gap-3">
+  <a
+    href="/pricing"
+    className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+  >
+    Vedi piani e upgrade
+  </a>
+
+  {planName !== "free" && (
+    <CustomerPortalButton>
+      Gestisci abbonamento
+    </CustomerPortalButton>
+  )}
+</div>
       </div>
 
       <div className="mt-6 space-y-5">
