@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import CheckoutButton from "@/components/billing/CheckoutButton";
 import {
   PLAN_LIMITS,
   PLAN_ORDER,
@@ -226,27 +227,38 @@ export default async function PricingPage() {
                 </p>
 
                 <div className="mt-6">
-                  {isCurrent ? (
-                    <button
-                      type="button"
-                      disabled
-                      className="w-full rounded-full border border-neutral-700 px-5 py-3 text-sm text-neutral-500"
-                    >
-                      {getCtaLabel(plan.name, currentPlan)}
-                    </button>
-                  ) : (
-                    <a
-                      href={getMailtoHref(plan.name, profile?.email)}
-                      className={
-                        plan.name === "free"
-                          ? "flex w-full justify-center rounded-full border border-neutral-700 px-5 py-3 text-sm text-neutral-100 transition hover:border-neutral-400"
-                          : "flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-                      }
-                    >
-                      {getCtaLabel(plan.name, currentPlan)}
-                    </a>
-                  )}
-                </div>
+  {isCurrent ? (
+    <button
+      type="button"
+      disabled
+      className="w-full rounded-full border border-neutral-700 px-5 py-3 text-sm text-neutral-500"
+    >
+      Piano attuale
+    </button>
+  ) : plan.name === "free" ? (
+    <button
+      type="button"
+      disabled
+      className="w-full rounded-full border border-neutral-700 px-5 py-3 text-sm text-neutral-500"
+    >
+      Piano base
+    </button>
+  ) : profile ? (
+    <CheckoutButton
+      plan={plan.name as Exclude<PlanName, "free">}
+      className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      Passa a {plan.label}
+    </CheckoutButton>
+  ) : (
+    <a
+      href="/auth/login"
+      className="flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+    >
+      Accedi per attivare
+    </a>
+  )}
+</div>
 
                 <div className="mt-6 space-y-4 border-t border-neutral-800 pt-6">
                   <div className="flex justify-between gap-3 text-sm">
