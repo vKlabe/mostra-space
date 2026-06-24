@@ -44,6 +44,11 @@ const navItems = [
     href: "/admin/storage",
     key: "storage",
   },
+  {
+  label: "Billing",
+  href: "/admin/billing",
+  key: "billing",
+}
 ] as const;
 
 export default function AdminShell({

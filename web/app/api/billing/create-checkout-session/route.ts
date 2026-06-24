@@ -23,9 +23,18 @@ type Profile = {
   role: "user" | "gallerist" | "admin";
   plan: PlanName;
   stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_subscription_status: string | null;
 };
 
 const PAID_PLANS: PaidPlan[] = ["pro", "business", "institution"];
+
+const EXISTING_SUBSCRIPTION_STATUSES = new Set([
+  "active",
+  "trialing",
+  "past_due",
+  "unpaid",
+]);
 
 function isPaidPlan(value: unknown): value is PaidPlan {
   return typeof value === "string" && PAID_PLANS.includes(value as PaidPlan);
@@ -97,7 +106,9 @@ export async function POST(request: Request) {
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("id, email, role, plan, stripe_customer_id")
+    .select(
+  "id, email, role, plan, stripe_customer_id, stripe_subscription_id, stripe_subscription_status"
+)
     .eq("id", user.id)
     .single<Profile>();
 
@@ -125,6 +136,23 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  if (
+  profile.stripe_subscription_id &&
+  profile.stripe_subscription_status &&
+  EXISTING_SUBSCRIPTION_STATUSES.has(profile.stripe_subscription_status)
+) {
+  return NextResponse.json(
+    {
+      error:
+        "Hai già un abbonamento Stripe attivo. Usa il portale abbonamento per gestire cambio piano, metodo di pagamento o cancellazione.",
+      currentPlan,
+      targetPlan,
+      action: "manage_subscription",
+    },
+    { status: 409 }
+  );
+}
 
   const stripe = getStripe();
 

@@ -1,33 +1,40 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PLAN_ORDER, normalizePlanName, type PlanName } from "@/lib/plans";
+import { normalizePlanName, type PlanName } from "@/lib/plans";
 import { getStripe } from "@/lib/stripe/server";
 
 export const dynamic = "force-dynamic";
 
 type PaidPlan = Exclude<PlanName, "free">;
 
+type ProfileRole = "user" | "gallerist" | "admin";
+
+type ProfileLookup = {
+  id: string;
+  role: ProfileRole;
+};
+
 type ProfileUpdate = {
   plan?: PlanName;
+  role?: ProfileRole;
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
   stripe_subscription_status?: string | null;
   stripe_price_id?: string | null;
   stripe_current_period_end?: string | null;
+  stripe_cancel_at_period_end?: boolean;
+  stripe_cancel_at?: string | null;
+  stripe_canceled_at?: string | null;
+  stripe_last_event_id?: string | null;
+  stripe_last_event_type?: string | null;
+  stripe_last_event_at?: string | null;
 };
 
-const ACTIVE_STATUSES = new Set([
-  "active",
-  "trialing",
-  "past_due",
-]);
+type WebhookLogStatus = "received" | "processing" | "processed" | "failed";
 
-const DOWNGRADE_STATUSES = new Set([
-  "canceled",
-  "unpaid",
-  "incomplete_expired",
-]);
+const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+const DOWNGRADE_STATUSES = new Set(["unpaid", "incomplete_expired"]);
 
 function getWebhookSecret() {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -37,6 +44,14 @@ function getWebhookSecret() {
   }
 
   return secret;
+}
+
+function unixToIso(value: number | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value * 1000).toISOString();
 }
 
 function getPlanByPriceId(priceId: string | null | undefined): PaidPlan | null {
@@ -59,7 +74,9 @@ function getPlanByPriceId(priceId: string | null | undefined): PaidPlan | null {
   return null;
 }
 
-function getCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer | null) {
+function getCustomerId(
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
+) {
   if (!customer) {
     return null;
   }
@@ -71,9 +88,7 @@ function getCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustom
   return customer.id;
 }
 
-function getSubscriptionId(
-  subscription: string | Stripe.Subscription | null
-) {
+function getSubscriptionId(subscription: string | Stripe.Subscription | null) {
   if (!subscription) {
     return null;
   }
@@ -85,25 +100,91 @@ function getSubscriptionId(
   return subscription.id;
 }
 
+function getFirstSubscriptionItem(subscription: Stripe.Subscription) {
+  return subscription.items.data[0] as
+    | (Stripe.SubscriptionItem & {
+        current_period_end?: number | null;
+      })
+    | undefined;
+}
+
 function getCurrentPeriodEnd(subscription: Stripe.Subscription) {
-  const firstItem = subscription.items.data[0] as Stripe.SubscriptionItem & {
-    current_period_end?: number | null;
-  };
+  const firstItem = getFirstSubscriptionItem(subscription);
 
-  const currentPeriodEnd = firstItem?.current_period_end;
-
-  if (!currentPeriodEnd) {
-    return null;
-  }
-
-  return new Date(currentPeriodEnd * 1000).toISOString();
+  return unixToIso(firstItem?.current_period_end);
 }
 
 function getFirstPriceId(subscription: Stripe.Subscription) {
-  return subscription.items.data[0]?.price?.id || null;
+  return getFirstSubscriptionItem(subscription)?.price?.id || null;
 }
 
-async function findUserIdForStripeData({
+function getCancelAt(subscription: Stripe.Subscription) {
+  const subscriptionWithCancel = subscription as Stripe.Subscription & {
+    cancel_at?: number | null;
+  };
+
+  return unixToIso(subscriptionWithCancel.cancel_at);
+}
+
+function getCanceledAt(subscription: Stripe.Subscription) {
+  const subscriptionWithCancel = subscription as Stripe.Subscription & {
+    canceled_at?: number | null;
+  };
+
+  return unixToIso(subscriptionWithCancel.canceled_at);
+}
+
+function getCancelAtPeriodEnd(subscription: Stripe.Subscription) {
+  const subscriptionWithCancel = subscription as Stripe.Subscription & {
+    cancel_at_period_end?: boolean | null;
+  };
+
+  return Boolean(subscriptionWithCancel.cancel_at_period_end);
+}
+
+function getEventObject(event: Stripe.Event) {
+  return event.data.object as Stripe.Checkout.Session | Stripe.Subscription;
+}
+
+function getEventCustomerId(event: Stripe.Event) {
+  const object = getEventObject(event);
+
+  if ("customer" in object) {
+    return getCustomerId(object.customer);
+  }
+
+  return null;
+}
+
+function getEventSubscriptionId(event: Stripe.Event) {
+  const object = getEventObject(event);
+
+  if ("subscription" in object) {
+    return getSubscriptionId(object.subscription);
+  }
+
+  if ("id" in object && object.object === "subscription") {
+    return object.id;
+  }
+
+  return null;
+}
+
+function getEventUserId(event: Stripe.Event) {
+  const object = getEventObject(event);
+
+  if ("metadata" in object && object.metadata?.user_id) {
+    return object.metadata.user_id;
+  }
+
+  if ("client_reference_id" in object && object.client_reference_id) {
+    return object.client_reference_id;
+  }
+
+  return null;
+}
+
+async function findProfileForStripeData({
   userId,
   customerId,
   subscriptionId,
@@ -112,40 +193,126 @@ async function findUserIdForStripeData({
   customerId?: string | null;
   subscriptionId?: string | null;
 }) {
-  if (userId) {
-    return userId;
-  }
-
   const admin = createAdminClient();
+
+  if (userId) {
+    const { data } = await admin
+      .from("profiles")
+      .select("id, role")
+      .eq("id", userId)
+      .maybeSingle<ProfileLookup>();
+
+    if (data?.id) {
+      return data;
+    }
+  }
 
   if (customerId) {
     const { data } = await admin
       .from("profiles")
-      .select("id")
+      .select("id, role")
       .eq("stripe_customer_id", customerId)
-      .maybeSingle<{ id: string }>();
+      .maybeSingle<ProfileLookup>();
 
     if (data?.id) {
-      return data.id;
+      return data;
     }
   }
 
   if (subscriptionId) {
     const { data } = await admin
       .from("profiles")
-      .select("id")
+      .select("id, role")
       .eq("stripe_subscription_id", subscriptionId)
-      .maybeSingle<{ id: string }>();
+      .maybeSingle<ProfileLookup>();
 
     if (data?.id) {
-      return data.id;
+      return data;
     }
   }
 
   return null;
 }
 
-async function updateProfileFromSubscription(subscription: Stripe.Subscription) {
+async function registerWebhookEvent(event: Stripe.Event) {
+  const admin = createAdminClient();
+
+  const customerId = getEventCustomerId(event);
+  const subscriptionId = getEventSubscriptionId(event);
+  const userId = getEventUserId(event);
+
+  const { data: existingEvent } = await admin
+    .from("stripe_webhook_events")
+    .select("stripe_event_id, status")
+    .eq("stripe_event_id", event.id)
+    .maybeSingle<{
+      stripe_event_id: string;
+      status: WebhookLogStatus;
+    }>();
+
+  if (existingEvent?.status === "processed") {
+    return { shouldProcess: false };
+  }
+
+  if (!existingEvent) {
+    const { error } = await admin.from("stripe_webhook_events").insert({
+      stripe_event_id: event.id,
+      event_type: event.type,
+      livemode: event.livemode,
+      customer_id: customerId,
+      subscription_id: subscriptionId,
+      user_id: userId,
+      status: "received",
+      payload: event as unknown as Record<string, unknown>,
+    });
+
+    if (error) {
+      throw new Error(`Webhook event insert failed: ${error.message}`);
+    }
+  }
+
+  const { error: processingError } = await admin
+    .from("stripe_webhook_events")
+    .update({
+      status: "processing",
+      error_message: null,
+    })
+    .eq("stripe_event_id", event.id);
+
+  if (processingError) {
+    throw new Error(
+      `Webhook event processing update failed: ${processingError.message}`
+    );
+  }
+
+  return { shouldProcess: true };
+}
+
+async function markWebhookEvent(
+  event: Stripe.Event,
+  status: WebhookLogStatus,
+  errorMessage?: string | null
+) {
+  const admin = createAdminClient();
+
+  const { error } = await admin
+    .from("stripe_webhook_events")
+    .update({
+      status,
+      error_message: errorMessage || null,
+      processed_at: status === "processed" ? new Date().toISOString() : null,
+    })
+    .eq("stripe_event_id", event.id);
+
+  if (error) {
+    throw new Error(`Webhook event status update failed: ${error.message}`);
+  }
+}
+
+async function updateProfileFromSubscription(
+  subscription: Stripe.Subscription,
+  event: Stripe.Event
+) {
   const customerId = getCustomerId(subscription.customer);
   const subscriptionId = subscription.id;
   const priceId = getFirstPriceId(subscription);
@@ -153,13 +320,13 @@ async function updateProfileFromSubscription(subscription: Stripe.Subscription) 
   const metadataPlan = normalizePlanName(subscription.metadata?.plan);
   const metadataUserId = subscription.metadata?.user_id || null;
 
-  const userId = await findUserIdForStripeData({
+  const profile = await findProfileForStripeData({
     userId: metadataUserId,
     customerId,
     subscriptionId,
   });
 
-  if (!userId) {
+  if (!profile) {
     console.warn("Stripe webhook: no user found for subscription", {
       customerId,
       subscriptionId,
@@ -174,17 +341,28 @@ async function updateProfileFromSubscription(subscription: Stripe.Subscription) 
     stripe_subscription_status: subscription.status,
     stripe_price_id: priceId,
     stripe_current_period_end: getCurrentPeriodEnd(subscription),
+    stripe_cancel_at_period_end: getCancelAtPeriodEnd(subscription),
+    stripe_cancel_at: getCancelAt(subscription),
+    stripe_canceled_at: getCanceledAt(subscription),
+    stripe_last_event_id: event.id,
+    stripe_last_event_type: event.type,
+    stripe_last_event_at: new Date().toISOString(),
   };
 
   if (paidPlan && ACTIVE_STATUSES.has(subscription.status)) {
     update.plan = paidPlan;
+
+    if (profile.role === "user") {
+      update.role = "gallerist";
+    }
   } else if (DOWNGRADE_STATUSES.has(subscription.status)) {
     update.plan = "free";
-  } else if (
-    paidPlan &&
-    PLAN_ORDER.indexOf(metadataPlan) >= PLAN_ORDER.indexOf("pro")
-  ) {
+  } else if (paidPlan && metadataPlan !== "free") {
     update.plan = paidPlan;
+
+    if (profile.role === "user") {
+      update.role = "gallerist";
+    }
   }
 
   const admin = createAdminClient();
@@ -192,14 +370,17 @@ async function updateProfileFromSubscription(subscription: Stripe.Subscription) 
   const { error } = await admin
     .from("profiles")
     .update(update)
-    .eq("id", userId);
+    .eq("id", profile.id);
 
   if (error) {
     throw new Error(`Supabase profile update failed: ${error.message}`);
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+  event: Stripe.Event
+) {
   const stripe = getStripe();
 
   const subscriptionId = getSubscriptionId(session.subscription);
@@ -210,21 +391,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-  await updateProfileFromSubscription(subscription);
+  await updateProfileFromSubscription(subscription, event);
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  event: Stripe.Event
+) {
   const customerId = getCustomerId(subscription.customer);
   const subscriptionId = subscription.id;
   const metadataUserId = subscription.metadata?.user_id || null;
 
-  const userId = await findUserIdForStripeData({
+  const profile = await findProfileForStripeData({
     userId: metadataUserId,
     customerId,
     subscriptionId,
   });
 
-  if (!userId) {
+  if (!profile) {
     console.warn("Stripe webhook: no user found for deleted subscription", {
       customerId,
       subscriptionId,
@@ -243,8 +427,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       stripe_subscription_id: subscriptionId,
       stripe_price_id: getFirstPriceId(subscription),
       stripe_current_period_end: getCurrentPeriodEnd(subscription),
+      stripe_cancel_at_period_end: getCancelAtPeriodEnd(subscription),
+      stripe_cancel_at: getCancelAt(subscription),
+      stripe_canceled_at: getCanceledAt(subscription),
+      stripe_last_event_id: event.id,
+      stripe_last_event_type: event.type,
+      stripe_last_event_at: new Date().toISOString(),
     })
-    .eq("id", userId);
+    .eq("id", profile.id);
 
   if (error) {
     throw new Error(`Supabase downgrade failed: ${error.message}`);
@@ -284,9 +474,16 @@ export async function POST(request: Request) {
   }
 
   try {
+    const { shouldProcess } = await registerWebhookEvent(event);
+
+    if (!shouldProcess) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
     if (event.type === "checkout.session.completed") {
       await handleCheckoutCompleted(
-        event.data.object as Stripe.Checkout.Session
+        event.data.object as Stripe.Checkout.Session,
+        event
       );
     }
 
@@ -295,24 +492,31 @@ export async function POST(request: Request) {
       event.type === "customer.subscription.updated"
     ) {
       await updateProfileFromSubscription(
-        event.data.object as Stripe.Subscription
+        event.data.object as Stripe.Subscription,
+        event
       );
     }
 
     if (event.type === "customer.subscription.deleted") {
       await handleSubscriptionDeleted(
-        event.data.object as Stripe.Subscription
+        event.data.object as Stripe.Subscription,
+        event
       );
     }
+
+    await markWebhookEvent(event, "processed");
 
     return NextResponse.json({ received: true });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Webhook handler failed.";
 
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    try {
+      await markWebhookEvent(event, "failed", message);
+    } catch (logError) {
+      console.error("Stripe webhook: failed to update event log", logError);
+    }
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

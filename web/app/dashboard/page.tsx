@@ -12,6 +12,9 @@ type Profile = {
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
   plan: "free" | "pro" | "business" | "institution";
+  stripe_subscription_status: string | null;
+  stripe_current_period_end: string | null;
+  stripe_cancel_at_period_end: boolean | null;
 };
 
 type GalleryStatus = "draft" | "published" | "archived";
@@ -265,7 +268,9 @@ export default async function DashboardPage() {
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, email, display_name, full_name, role, plan")
+    .select(
+  "id, email, display_name, full_name, role, plan, stripe_subscription_status, stripe_current_period_end, stripe_cancel_at_period_end"
+)
     .eq("id", user.id)
     .single<Profile>();
 

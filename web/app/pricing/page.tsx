@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import CheckoutButton from "@/components/billing/CheckoutButton";
+import CustomerPortalButton from "@/components/billing/CustomerPortalButton";
 import {
   PLAN_LIMITS,
   PLAN_ORDER,
@@ -243,6 +244,10 @@ export default async function PricingPage() {
     >
       Piano base
     </button>
+  ) : profile && currentPlan && currentPlan !== "free" ? (
+    <CustomerPortalButton className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60">
+      Gestisci abbonamento
+    </CustomerPortalButton>
   ) : profile ? (
     <CheckoutButton
       plan={plan.name as Exclude<PlanName, "free">}
