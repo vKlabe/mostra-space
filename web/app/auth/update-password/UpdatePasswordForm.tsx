@@ -129,7 +129,7 @@ export default function UpdatePasswordForm() {
 
   if (isPreparingSession) {
     return (
-      <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-4 text-sm text-neutral-400">
+      <div className="mt-8 rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] px-4 py-4 text-sm text-[var(--museum-stone)]">
         Verifica del link in corso...
       </div>
     );
@@ -139,14 +139,14 @@ export default function UpdatePasswordForm() {
     return (
       <div className="mt-8 space-y-5">
         {errorMessage && (
-          <div className="rounded-2xl border border-red-900 bg-red-950/30 px-4 py-3 text-sm leading-6 text-red-200">
+          <div className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-danger)]">
             {errorMessage}
           </div>
         )}
 
         <Link
           href="/auth/forgot-password"
-          className="flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+          className="museum-button-primary flex w-full px-5 py-3"
         >
           Richiedi nuovo link
         </Link>
@@ -159,7 +159,7 @@ export default function UpdatePasswordForm() {
       <div>
         <label
           htmlFor="password"
-          className="text-sm font-medium text-neutral-200"
+          className="block text-sm text-[var(--museum-ivory-soft)]"
         >
           Nuova password
         </label>
@@ -172,14 +172,14 @@ export default function UpdatePasswordForm() {
           autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-600 focus:border-neutral-500"
+          className="museum-input mt-2 w-full rounded-2xl px-4 py-3 text-sm"
         />
       </div>
 
       <div>
         <label
           htmlFor="password-confirm"
-          className="text-sm font-medium text-neutral-200"
+          className="block text-sm text-[var(--museum-ivory-soft)]"
         >
           Conferma nuova password
         </label>
@@ -192,18 +192,18 @@ export default function UpdatePasswordForm() {
           autoComplete="new-password"
           value={passwordConfirm}
           onChange={(event) => setPasswordConfirm(event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-600 focus:border-neutral-500"
+          className="museum-input mt-2 w-full rounded-2xl px-4 py-3 text-sm"
         />
       </div>
 
       {statusMessage && (
-        <div className="rounded-2xl border border-emerald-900 bg-emerald-950/30 px-4 py-3 text-sm leading-6 text-emerald-200">
+        <div className="rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-success)]">
           {statusMessage}
         </div>
       )}
 
       {errorMessage && (
-        <div className="rounded-2xl border border-red-900 bg-red-950/30 px-4 py-3 text-sm leading-6 text-red-200">
+        <div className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-danger)]">
           {errorMessage}
         </div>
       )}
@@ -211,7 +211,7 @@ export default function UpdatePasswordForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="museum-button-primary w-full px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? "Aggiornamento..." : "Aggiorna password"}
       </button>
@@ -219,7 +219,7 @@ export default function UpdatePasswordForm() {
       {statusMessage && (
         <Link
           href="/dashboard"
-          className="flex w-full justify-center rounded-full border border-neutral-700 px-5 py-3 text-sm font-medium text-neutral-200 transition hover:border-neutral-500 hover:text-white"
+          className="museum-button-secondary flex w-full px-5 py-3"
         >
           Vai alla dashboard
         </Link>

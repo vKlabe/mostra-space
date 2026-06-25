@@ -34,11 +34,11 @@ function UsageRow({
   const percentage = getPlanUsagePercentage(current, limit);
 
   return (
-    <div>
+    <div className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.34)] p-4">
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="text-neutral-400">{label}</span>
+        <span className="text-[var(--museum-stone-muted)]">{label}</span>
 
-        <span className="text-neutral-200">
+        <span className="text-[var(--museum-ivory-soft)]">
           {unit === "mb"
             ? `${formatMb(current)} / ${formatMb(limit)}`
             : `${current} / ${formatLimitValue(limit)}`}
@@ -46,9 +46,9 @@ function UsageRow({
       </div>
 
       {limit !== null && (
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-950">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[rgba(8,7,5,0.72)]">
           <div
-            className="h-full rounded-full bg-white"
+            className="h-full rounded-full bg-[linear-gradient(90deg,var(--museum-bronze),var(--museum-bronze-light))]"
             style={{
               width: `${percentage}%`,
             }}
@@ -86,36 +86,38 @@ export default function PlanUsageCard({
   const storageUsedMb = Number(bytesToMb(storageUsedBytes).toFixed(2));
   const billingDate = formatBillingDate(stripeCurrentPeriodEnd);
 const hasPaidPlan = planName !== "free";
-const hasActiveStripeSubscription =
-  stripeSubscriptionStatus === "active" ||
-  stripeSubscriptionStatus === "trialing" ||
-  stripeSubscriptionStatus === "past_due";
+  const hasActiveStripeSubscription =
+    stripeSubscriptionStatus === "active" ||
+    stripeSubscriptionStatus === "trialing" ||
+    stripeSubscriptionStatus === "past_due";
 
   return (
-    <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+    <article className="museum-dashboard-card rounded-[1.75rem] p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
-          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Piano account
-          </p>
+          <p className="museum-label mb-3">
+  Piano account
+</p>
 
-          <h2 className="text-2xl font-medium">{limits.label}</h2>
+          <h2 className="font-editorial text-4xl font-medium text-[var(--museum-ivory)]">
+  {limits.label}
+</h2>
 
-          <p className="mt-2 text-sm text-neutral-500">
-            {limits.monthlyPriceLabel}
-          </p>
+          <p className="mt-2 text-sm text-[var(--museum-stone)]">
+  {limits.monthlyPriceLabel}
+</p>
         </div>
 
         <div className="flex flex-wrap gap-3">
   <a
     href="/pricing"
-    className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+    className="museum-button-secondary px-5 py-2.5"
   >
     Vedi piani e upgrade
   </a>
 
   {planName !== "free" && (
-    <CustomerPortalButton>
+    <CustomerPortalButton className="museum-button-primary px-5 py-2.5">
       Gestisci abbonamento
     </CustomerPortalButton>
   )}
@@ -123,20 +125,20 @@ const hasActiveStripeSubscription =
       </div>
 
             {hasPaidPlan && (
-        <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+        <div className="mt-6 rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
           <div className="flex flex-col gap-2 text-sm md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="font-medium text-neutral-100">
+              <p className="font-medium text-[var(--museum-ivory)]">
                 Abbonamento Stripe
               </p>
 
-              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-neutral-500">
+              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
                 {stripeSubscriptionStatus || "stato non disponibile"}
               </p>
             </div>
 
             {billingDate && (
-              <p className="text-sm text-neutral-300">
+              <p className="text-sm text-[var(--museum-ivory-soft)]">
                 {stripeCancelAtPeriodEnd
                   ? `Attivo fino al ${billingDate}`
                   : `Rinnovo previsto il ${billingDate}`}
@@ -145,14 +147,14 @@ const hasActiveStripeSubscription =
           </div>
 
           {stripeCancelAtPeriodEnd && (
-            <p className="mt-3 rounded-xl border border-yellow-900 bg-yellow-950/30 px-4 py-3 text-xs leading-5 text-yellow-200">
+            <p className="mt-3 rounded-xl border border-[rgba(201,155,74,0.45)] bg-[rgba(201,155,74,0.08)] px-4 py-3 text-xs leading-5 text-[var(--museum-warning)]">
               Cancellazione programmata: il piano resta attivo fino alla fine
               del periodo già pagato.
             </p>
           )}
 
           {!hasActiveStripeSubscription && (
-            <p className="mt-3 rounded-xl border border-red-900 bg-red-950/30 px-4 py-3 text-xs leading-5 text-red-200">
+            <p className="mt-3 rounded-xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] px-4 py-3 text-xs leading-5 text-[var(--museum-danger)]">
               L’abbonamento non risulta attivo. Se hai appena pagato, attendi
               qualche secondo e ricarica la pagina.
             </p>
@@ -187,10 +189,10 @@ const hasActiveStripeSubscription =
         />
       </div>
 
-      <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-        <p className="text-xs leading-5 text-neutral-500">
+      <div className="mt-6 rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
+        <p className="text-xs leading-5 text-[var(--museum-stone)]">
           Runtime WebGL: massimo{" "}
-          <span className="text-neutral-300">
+          <span className="text-[var(--museum-ivory-soft)]">
             {formatLimitValue(limits.maxArtworksVisiblePerRoom)}
           </span>{" "}
           opere visibili/caricate per sala.

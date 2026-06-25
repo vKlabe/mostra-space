@@ -50,7 +50,7 @@ export default function ForgotPasswordForm() {
       <div>
         <label
           htmlFor="email"
-          className="text-sm font-medium text-neutral-200"
+          className="block text-sm text-[var(--museum-ivory-soft)]"
         >
           Email account
         </label>
@@ -63,18 +63,18 @@ export default function ForgotPasswordForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="nome@email.com"
-          className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-600 focus:border-neutral-500"
+          className="museum-input mt-2 w-full rounded-2xl px-4 py-3 text-sm"
         />
       </div>
 
       {statusMessage && (
-        <div className="rounded-2xl border border-emerald-900 bg-emerald-950/30 px-4 py-3 text-sm leading-6 text-emerald-200">
+        <div className="rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-success)]">
           {statusMessage}
         </div>
       )}
 
       {errorMessage && (
-        <div className="rounded-2xl border border-red-900 bg-red-950/30 px-4 py-3 text-sm leading-6 text-red-200">
+        <div className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-danger)]">
           {errorMessage}
         </div>
       )}
@@ -82,7 +82,7 @@ export default function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="museum-button-primary w-full px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? "Invio in corso..." : "Invia link di recupero"}
       </button>

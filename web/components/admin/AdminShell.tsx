@@ -1,4 +1,5 @@
 import LogoutButton from "@/components/auth/LogoutButton";
+import Link from "next/link";
 
 type AdminShellProps = {
   title: string;
@@ -9,7 +10,8 @@ type AdminShellProps = {
     | "galleries"
     | "inquiries"
     | "templates"
-    | "storage";
+    | "storage"
+    | "billing";
   children: React.ReactNode;
 };
 
@@ -45,10 +47,10 @@ const navItems = [
     key: "storage",
   },
   {
-  label: "Billing",
-  href: "/admin/billing",
-  key: "billing",
-}
+    label: "Billing",
+    href: "/admin/billing",
+    key: "billing",
+  },
 ] as const;
 
 export default function AdminShell({
@@ -58,89 +60,99 @@ export default function AdminShell({
   children,
 }: AdminShellProps) {
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-50">
-      <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside className="border-b border-neutral-800 bg-neutral-950 px-5 py-5 lg:border-b-0 lg:border-r">
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-red-400">
-              Admin
-            </p>
+    <main className="museum-app-layout min-h-screen">
+      <aside className="museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-y-auto px-5 py-6">
+        <div>
+          <Link
+            href="/admin"
+            className="museum-logo block text-3xl leading-none text-[var(--museum-ivory)] transition hover:text-[var(--museum-bronze-light)]"
+          >
+            mostra
+            <span className="text-[var(--museum-bronze-light)]">.</span>
+            <span className="text-[var(--museum-ivory-soft)]">space</span>
+          </Link>
 
-            <h1 className="mt-3 text-2xl font-semibold">MOSTRA.SPACE</h1>
+          <p className="mt-3 text-xs uppercase tracking-[0.25em] text-[var(--museum-bronze-light)]">
+            Admin console
+          </p>
 
-            <p className="mt-2 text-sm leading-6 text-neutral-500">
-              Pannello amministratore per gestione piattaforma.
-            </p>
-          </div>
+          <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
+            Pannello amministratore per gestione piattaforma.
+          </p>
+        </div>
 
-          <nav className="mt-8 space-y-2">
-            {navItems.map((item) => {
-              const isActive = item.key === activeSection;
+        <nav className="mt-8 flex flex-col gap-2">
+          {navItems.map((item) => {
+            const isActive = item.key === activeSection;
 
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className={
-                    isActive
-                      ? "flex rounded-2xl bg-white px-4 py-3 text-sm font-medium text-neutral-950"
-                      : "flex rounded-2xl border border-transparent px-4 py-3 text-sm text-neutral-400 transition hover:border-neutral-800 hover:bg-neutral-900 hover:text-neutral-100"
-                  }
-                >
-                  {item.label}
-                </a>
-              );
-            })}
-          </nav>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={
+                  isActive
+                    ? "flex w-full rounded-2xl border border-[rgba(197,151,94,0.55)] bg-[rgba(168,121,69,0.13)] px-4 py-3 text-sm font-medium text-[var(--museum-bronze-light)]"
+                    : "flex w-full rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-[var(--museum-stone)] transition hover:border-[rgba(168,121,69,0.32)] hover:bg-[rgba(168,121,69,0.08)] hover:text-[var(--museum-ivory)]"
+                }
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-          <div className="mt-8 space-y-3">
-            <a
+        <div className="museum-dashboard-card mt-8 rounded-[1.5rem] p-5">
+          <p className="museum-label">Uscite rapide</p>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <Link
               href="/dashboard"
-              className="flex rounded-2xl border border-neutral-800 px-4 py-3 text-sm text-neutral-300 transition hover:border-neutral-600 hover:text-white"
+              className="flex w-full rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-[var(--museum-stone)] transition hover:border-[rgba(168,121,69,0.32)] hover:bg-[rgba(168,121,69,0.08)] hover:text-[var(--museum-ivory)]"
             >
               Dashboard utente
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/gallerie"
               target="_blank"
               rel="noreferrer"
-              className="flex rounded-2xl border border-neutral-800 px-4 py-3 text-sm text-neutral-300 transition hover:border-neutral-600 hover:text-white"
+              className="flex w-full rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-[var(--museum-stone)] transition hover:border-[rgba(168,121,69,0.32)] hover:bg-[rgba(168,121,69,0.08)] hover:text-[var(--museum-ivory)]"
             >
               Sito pubblico
-            </a>
+            </Link>
 
-            <LogoutButton />
+            <div className="pt-2">
+              <LogoutButton />
+            </div>
           </div>
-        </aside>
+        </div>
+      </aside>
 
-        <section className="px-5 py-8 lg:px-8">
-          <header className="flex flex-col justify-between gap-5 border-b border-neutral-800 pb-8 md:flex-row md:items-end">
+      <div className="min-h-screen min-w-0 pl-72">
+        <header className="museum-topbar sticky top-0 z-30 px-5 py-8 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.35em] text-neutral-500">
-                Control room
-              </p>
+              <p className="museum-label mb-3">Control room</p>
 
-              <h2 className="text-4xl font-semibold leading-tight">
+              <h1 className="font-editorial text-5xl font-medium leading-tight text-[var(--museum-ivory)]">
                 {title}
-              </h2>
+              </h1>
 
               {subtitle && (
-                <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
+                <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
                   {subtitle}
                 </p>
               )}
             </div>
 
-            <a
-              href="/pricing"
-              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
+            <Link href="/pricing" className="museum-button-secondary px-5 py-2.5">
               Vedi piani
-            </a>
-          </header>
+            </Link>
+          </div>
+        </header>
 
-          <div className="py-8">{children}</div>
+        <section className="px-5 py-8 lg:px-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
         </section>
       </div>
     </main>

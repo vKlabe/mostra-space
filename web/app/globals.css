@@ -24,3 +24,291 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Dark Editorial Museum — Design Tokens                                      */
+/* -------------------------------------------------------------------------- */
+
+:root {
+    --museum-black: #080705;
+    --museum-charcoal: #11100d;
+    --museum-surface: #171511;
+    --museum-surface-elevated: #1f1c17;
+    --museum-border: #3a352d;
+    --museum-border-soft: rgba(216, 205, 187, 0.12);
+    --museum-ivory: #f3ede2;
+    --museum-ivory-soft: #d8cdbb;
+    --museum-stone: #a59d90;
+    --museum-stone-muted: #6f675b;
+    --museum-bronze: #a87945;
+    --museum-bronze-light: #c5975e;
+    --museum-bronze-dark: #5f4227;
+    --museum-success: #7faf7b;
+    --museum-danger: #b65b4e;
+    --museum-warning: #c99b4a;
+    --museum-radius-sm: 12px;
+    --museum-radius-md: 18px;
+    --museum-radius-lg: 26px;
+    --museum-radius-xl: 34px;
+    --museum-shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.38);
+    --museum-shadow-bronze: 0 18px 60px rgba(168, 121, 69, 0.14);
+}
+
+html {
+    background: var(--museum-black);
+}
+
+body {
+    background: radial-gradient(circle at top left, rgba(168, 121, 69, 0.08), transparent 34rem), radial-gradient(circle at top right, rgba(197, 151, 94, 0.06), transparent 32rem), var(--museum-black);
+    color: var(--museum-ivory);
+}
+
+::selection {
+    background: rgba(168, 121, 69, 0.45);
+    color: var(--museum-ivory);
+}
+
+.museum-page {
+    min-height: 100vh;
+    background: radial-gradient(circle at 18% 0%, rgba(168, 121, 69, 0.1), transparent 30rem), radial-gradient(circle at 85% 10%, rgba(197, 151, 94, 0.06), transparent 32rem), var(--museum-black);
+    color: var(--museum-ivory);
+}
+
+.museum-shell {
+    background: var(--museum-black);
+    color: var(--museum-ivory);
+}
+
+.museum-card {
+    border: 1px solid var(--museum-border);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)), var(--museum-surface);
+    box-shadow: var(--museum-shadow-soft);
+}
+
+.museum-card-soft {
+    border: 1px solid var(--museum-border-soft);
+    background: rgba(23, 21, 17, 0.76);
+    box-shadow: var(--museum-shadow-soft);
+    backdrop-filter: blur(14px);
+}
+
+.museum-label {
+    color: var(--museum-bronze-light);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+.museum-muted {
+    color: var(--museum-stone);
+}
+
+.museum-muted-soft {
+    color: var(--museum-stone-muted);
+}
+
+.museum-heading {
+    color: var(--museum-ivory);
+    letter-spacing: -0.045em;
+}
+
+.museum-link {
+    color: var(--museum-ivory-soft);
+    text-decoration: none;
+    transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+    .museum-link:hover {
+        color: var(--museum-bronze-light);
+    }
+
+.museum-button-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--museum-bronze-light);
+    background: var(--museum-bronze);
+    color: var(--museum-black);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease, opacity 180ms ease;
+}
+
+    .museum-button-primary:hover {
+        background: var(--museum-bronze-light);
+        border-color: var(--museum-bronze-light);
+        transform: translateY(-1px);
+    }
+
+.museum-button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--museum-bronze-dark);
+    background: transparent;
+    color: var(--museum-ivory-soft);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+    .museum-button-secondary:hover {
+        border-color: var(--museum-bronze);
+        background: rgba(168, 121, 69, 0.08);
+        color: var(--museum-ivory);
+        transform: translateY(-1px);
+    }
+
+.museum-divider {
+    border-color: var(--museum-border);
+}
+
+.museum-bronze-text {
+    color: var(--museum-bronze-light);
+}
+
+.museum-bronze-border {
+    border-color: var(--museum-bronze);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dark Editorial Museum — Typography                                         */
+/* -------------------------------------------------------------------------- */
+
+body {
+    font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.font-editorial {
+    font-family: var(--font-cormorant), Georgia, "Times New Roman", serif;
+}
+
+.font-ui {
+    font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.museum-logo {
+    font-family: var(--font-cormorant), Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    letter-spacing: -0.045em;
+}
+
+.museum-title {
+    font-family: var(--font-cormorant), Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    letter-spacing: -0.055em;
+    line-height: 0.95;
+}
+
+.museum-title-tight {
+    font-family: var(--font-cormorant), Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    letter-spacing: -0.065em;
+    line-height: 0.9;
+}
+
+.museum-subtitle {
+    font-family: var(--font-inter), system-ui, sans-serif;
+    letter-spacing: -0.015em;
+    line-height: 1.75;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dark Editorial Museum — Dashboard / Admin UI                               */
+/* -------------------------------------------------------------------------- */
+
+.museum-app-layout {
+    min-height: 100vh;
+    background: radial-gradient(circle at 0% 0%, rgba(168, 121, 69, 0.08), transparent 32rem), radial-gradient(circle at 100% 0%, rgba(216, 205, 187, 0.045), transparent 30rem), var(--museum-black);
+    color: var(--museum-ivory);
+}
+
+.museum-sidebar {
+    border-right: 1px solid var(--museum-border);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)), var(--museum-charcoal);
+}
+
+.museum-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid transparent;
+    color: var(--museum-stone);
+    transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+    .museum-sidebar-link:hover {
+        border-color: rgba(168, 121, 69, 0.32);
+        background: rgba(168, 121, 69, 0.08);
+        color: var(--museum-ivory);
+    }
+
+.museum-sidebar-link-active {
+    border-color: rgba(197, 151, 94, 0.55);
+    background: rgba(168, 121, 69, 0.13);
+    color: var(--museum-bronze-light);
+}
+
+.museum-topbar {
+    border-bottom: 1px solid var(--museum-border);
+    background: rgba(8, 7, 5, 0.72);
+    backdrop-filter: blur(18px);
+}
+
+.museum-dashboard-card {
+    border: 1px solid var(--museum-border);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)), rgba(23, 21, 17, 0.88);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+}
+
+.museum-stat-card {
+    border: 1px solid var(--museum-border);
+    background: rgba(17, 16, 13, 0.86);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.museum-input {
+    border: 1px solid var(--museum-border);
+    background: rgba(8, 7, 5, 0.68);
+    color: var(--museum-ivory);
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+    .museum-input::placeholder {
+        color: var(--museum-stone-muted);
+    }
+
+    .museum-input:focus {
+        border-color: var(--museum-bronze);
+        box-shadow: 0 0 0 3px rgba(168, 121, 69, 0.14);
+    }
+
+.museum-table {
+    border: 1px solid var(--museum-border);
+    background: rgba(23, 21, 17, 0.72);
+}
+
+    .museum-table thead {
+        background: rgba(8, 7, 5, 0.44);
+        color: var(--museum-stone);
+    }
+
+    .museum-table tbody tr {
+        border-top: 1px solid var(--museum-border);
+    }
+
+        .museum-table tbody tr:hover {
+            background: rgba(168, 121, 69, 0.055);
+        }
+
+.museum-pill {
+    border: 1px solid rgba(168, 121, 69, 0.38);
+    background: rgba(168, 121, 69, 0.1);
+    color: var(--museum-bronze-light);
+}

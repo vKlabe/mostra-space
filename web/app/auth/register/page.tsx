@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 type AccountType = "visitor" | "gallerist";
 
@@ -164,15 +165,15 @@ export default function RegisterPage() {
       }
 
       if (data.session) {
-  await fetch("/api/auth/sync-profile", {
-    method: "POST",
-  });
+        await fetch("/api/auth/sync-profile", {
+          method: "POST",
+        });
 
-  setMessage("Registrazione completata. Ti sto portando alla dashboard...");
-  router.replace("/dashboard");
-  router.refresh();
-  return;
-}
+        setMessage("Registrazione completata. Ti sto portando alla dashboard...");
+        router.replace("/dashboard");
+        router.refresh();
+        return;
+      }
 
       setMessage(
         "Registrazione completata. Controlla la tua email per confermare l’account, poi accedi al portale."
@@ -189,237 +190,321 @@ export default function RegisterPage() {
   const formDisabled = loading || checkingSession;
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
-      <section className="mx-auto max-w-5xl">
-        <p className="mb-4 text-sm uppercase tracking-[0.35em] text-neutral-500">
-          Accesso
-        </p>
+    <main className="museum-page px-5 py-12">
+      <section className="mx-auto max-w-6xl">
+        <div className="mb-10 flex items-center justify-between gap-5">
+          <Link
+            href="/"
+            className="museum-logo text-3xl leading-none text-[var(--museum-ivory)]"
+          >
+            mostra
+            <span className="text-[var(--museum-bronze-light)]">.</span>
+            <span className="text-[var(--museum-ivory-soft)]">space</span>
+          </Link>
 
-        <div className="max-w-3xl">
-          <h1 className="text-4xl font-semibold">Crea account</h1>
-
-          <p className="mt-4 text-neutral-300">
-            Scegli come vuoi entrare nel portale: come visitatore della community
-            oppure come artista, gallerista o realtà culturale che vuole creare
-            esposizioni virtuali.
-          </p>
+          <Link
+            href="/auth/login"
+            className="museum-button-secondary px-5 py-2.5"
+          >
+            Accedi
+          </Link>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setAccountType("visitor")}
-            disabled={formDisabled}
-            className={`rounded-3xl border p-6 text-left transition ${
-              accountType === "visitor"
-                ? "border-white bg-white text-neutral-950"
-                : "border-neutral-800 bg-neutral-900 text-neutral-100 hover:border-neutral-500"
-            } disabled:cursor-not-allowed disabled:opacity-50`}
-          >
-            <p className="text-sm uppercase tracking-[0.25em] opacity-70">
-              Visitor
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold">
-              Voglio esplorare l’arte
-            </h2>
-            <p className="mt-3 text-sm leading-6 opacity-80">
-              Crea un account per salvare preferiti, inviare richieste e usare i
-              primi strumenti community.
-            </p>
-          </button>
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+          <div className="lg:sticky lg:top-10">
+            <p className="museum-label">Registrazione</p>
 
-          <button
-            type="button"
-            onClick={() => setAccountType("gallerist")}
-            disabled={formDisabled}
-            className={`rounded-3xl border p-6 text-left transition ${
-              accountType === "gallerist"
-                ? "border-white bg-white text-neutral-950"
-                : "border-neutral-800 bg-neutral-900 text-neutral-100 hover:border-neutral-500"
-            } disabled:cursor-not-allowed disabled:opacity-50`}
-          >
-            <p className="text-sm uppercase tracking-[0.25em] opacity-70">
-              Gallerista / Artista
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold">
-              Voglio creare e gestire esposizioni
-            </h2>
-            <p className="mt-3 text-sm leading-6 opacity-80">
-              Crea un account per caricare opere, scegliere template, aprire
-              l’editor 3D e pubblicare gallerie virtuali.
-            </p>
-          </button>
-        </div>
+            <h1 className="museum-title mt-5 text-6xl text-[var(--museum-ivory)] md:text-7xl">
+              Crea il tuo spazio.
+            </h1>
 
-        <form
-          onSubmit={handleRegister}
-          className="mt-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
-        >
-          <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
-            <div>
-              <p className="text-sm uppercase tracking-[0.25em] text-neutral-500">
-                Registrazione
+            <p className="museum-subtitle mt-6 max-w-xl text-sm text-[var(--museum-stone)] md:text-base">
+              Scegli come vuoi entrare nel portale: come visitatore della
+              community oppure come artista, gallerista o realtà culturale che
+              vuole creare esposizioni virtuali.
+            </p>
+
+            <div className="museum-card mt-8 rounded-[1.75rem] p-5">
+              <p className="museum-label">Due modalità</p>
+
+              <div className="mt-5 space-y-4 text-sm leading-7 text-[var(--museum-stone)]">
+                <p>
+                  <span className="text-[var(--museum-ivory-soft)]">
+                    Visitor:
+                  </span>{" "}
+                  salva preferiti, invia richieste e segui gallerie.
+                </p>
+
+                <p>
+                  <span className="text-[var(--museum-ivory-soft)]">
+                    Creator:
+                  </span>{" "}
+                  carica opere, scegli template, usa l’editor e pubblica spazi.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setAccountType("visitor")}
+                disabled={formDisabled}
+                className={
+                  accountType === "visitor"
+                    ? "rounded-[1.5rem] border border-[var(--museum-bronze-light)] bg-[rgba(168,121,69,0.16)] p-6 text-left shadow-[var(--museum-shadow-bronze)] transition disabled:cursor-not-allowed disabled:opacity-50"
+                    : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-6 text-left transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
+                }
+              >
+                <p className="museum-label">Visitor</p>
+
+                <h2 className="mt-3 font-editorial text-3xl text-[var(--museum-ivory)]">
+                  Voglio esplorare l’arte
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
+                  Crea un account per salvare preferiti, inviare richieste e
+                  usare i primi strumenti community.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAccountType("gallerist")}
+                disabled={formDisabled}
+                className={
+                  accountType === "gallerist"
+                    ? "rounded-[1.5rem] border border-[var(--museum-bronze-light)] bg-[rgba(168,121,69,0.16)] p-6 text-left shadow-[var(--museum-shadow-bronze)] transition disabled:cursor-not-allowed disabled:opacity-50"
+                    : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-6 text-left transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
+                }
+              >
+                <p className="museum-label">Gallerista / Artista</p>
+
+                <h2 className="mt-3 font-editorial text-3xl text-[var(--museum-ivory)]">
+                  Voglio creare esposizioni
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
+                  Crea un account per caricare opere, scegliere template, aprire
+                  l’editor 3D e pubblicare gallerie virtuali.
+                </p>
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleRegister}
+              className="museum-card mt-6 rounded-[1.75rem] p-6"
+            >
+              <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+                <div>
+                  <p className="museum-label">Dati account</p>
+
+                  <h2 className="mt-2 font-editorial text-4xl text-[var(--museum-ivory)]">
+                    {accountTitle}
+                  </h2>
+                </div>
+
+                <p className="museum-pill rounded-full px-4 py-2 text-xs uppercase tracking-[0.18em]">
+                  {isGallerist ? "Account creator" : "Account community"}
+                </p>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                    Nome
+                  </label>
+
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    disabled={formDisabled}
+                    className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Mario"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                    Cognome
+                  </label>
+
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    disabled={formDisabled}
+                    className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Rossi"
+                  />
+                </div>
+
+                {isGallerist && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                        Nome galleria / artista / studio
+                      </label>
+
+                      <input
+                        type="text"
+                        value={businessName}
+                        onChange={(event) =>
+                          setBusinessName(event.target.value)
+                        }
+                        disabled={formDisabled}
+                        className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Galleria Rossi"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                        Telefono
+                      </label>
+
+                      <input
+                        type="tel"
+                        required={isGallerist}
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        disabled={formDisabled}
+                        className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="+39 ..."
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                        Sito o profilo social
+                      </label>
+
+                      <input
+                        type="text"
+                        required={isGallerist}
+                        value={professionalUrl}
+                        onChange={(event) =>
+                          setProfessionalUrl(event.target.value)
+                        }
+                        disabled={formDisabled}
+                        className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="https://... oppure @profilo"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                    Email
+                  </label>
+
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={formDisabled}
+                    className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="email@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                    Password
+                  </label>
+
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    disabled={formDisabled}
+                    className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Minimo 6 caratteri"
+                  />
+                </div>
+              </div>
+
+              <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4 text-sm leading-6 text-[var(--museum-stone)]">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(event) => setTermsAccepted(event.target.checked)}
+                  disabled={formDisabled}
+                  className="mt-1 accent-[var(--museum-bronze)]"
+                />
+
+                <span>
+                  Accetto termini, privacy e trattamento dei dati per la
+                  creazione dell’account e l’utilizzo del portale.
+                </span>
+              </label>
+
+              {errorMessage && (
+                <div className="mt-5 rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
+                  {errorMessage}
+                </div>
+              )}
+
+              {message && (
+                <div className="mt-5 rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] p-4 text-sm text-[var(--museum-success)]">
+                  {message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={formDisabled}
+                className="museum-button-primary mt-6 w-full px-6 py-3 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {checkingSession
+                  ? "Controllo sessione..."
+                  : loading
+                    ? "Registrazione..."
+                    : isGallerist
+                      ? "Crea account creator"
+                      : "Crea account visitor"}
+              </button>
+
+              <p className="mt-5 text-center text-sm text-[var(--museum-stone)]">
+                Hai già un account?{" "}
+                <Link
+                  href="/auth/login"
+                  className="text-[var(--museum-bronze-light)] underline-offset-4 hover:underline"
+                >
+                  Accedi
+                </Link>
               </p>
-              <h2 className="mt-2 text-2xl font-semibold">{accountTitle}</h2>
-            </div>
+            </form>
 
-            <p className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.18em] text-neutral-300">
-              {isGallerist ? "Account creator" : "Account community"}
+            <p className="mt-6 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
+              Creando un account accetti i{" "}
+              <Link
+                href="/legal/termini"
+                className="text-[var(--museum-stone)] underline-offset-4 hover:text-[var(--museum-bronze-light)] hover:underline"
+              >
+                Termini e condizioni
+              </Link>{" "}
+              e confermi di aver letto la{" "}
+              <Link
+                href="/legal/privacy"
+                className="text-[var(--museum-stone)] underline-offset-4 hover:text-[var(--museum-bronze-light)] hover:underline"
+              >
+                Privacy Policy
+              </Link>
+              .
             </p>
           </div>
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label className="block text-sm text-neutral-300">Nome</label>
-              <input
-                type="text"
-                required
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                disabled={formDisabled}
-                className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Mario"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-neutral-300">Cognome</label>
-              <input
-                type="text"
-                required
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                disabled={formDisabled}
-                className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Rossi"
-              />
-            </div>
-
-            {isGallerist && (
-              <>
-                <div>
-                  <label className="block text-sm text-neutral-300">
-                    Nome galleria / artista / studio
-                  </label>
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(event) => setBusinessName(event.target.value)}
-                    disabled={formDisabled}
-                    className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Galleria Rossi"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-neutral-300">
-                    Telefono
-                  </label>
-                  <input
-                    type="tel"
-                    required={isGallerist}
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    disabled={formDisabled}
-                    className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="+39 ..."
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm text-neutral-300">
-                    Sito o profilo social
-                  </label>
-                  <input
-                    type="text"
-                    required={isGallerist}
-                    value={professionalUrl}
-                    onChange={(event) => setProfessionalUrl(event.target.value)}
-                    disabled={formDisabled}
-                    className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="https://... oppure @profilo"
-                  />
-                </div>
-              </>
-            )}
-
-            <div>
-              <label className="block text-sm text-neutral-300">Email</label>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                disabled={formDisabled}
-                className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="email@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-neutral-300">Password</label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                disabled={formDisabled}
-                className="mt-2 w-full rounded-2xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-neutral-50 outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Minimo 6 caratteri"
-              />
-            </div>
-          </div>
-
-          <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm leading-6 text-neutral-300">
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(event) => setTermsAccepted(event.target.checked)}
-              disabled={formDisabled}
-              className="mt-1"
-            />
-            <span>
-              Accetto termini, privacy e trattamento dei dati per la creazione
-              dell’account e l’utilizzo del portale.
-            </span>
-          </label>
-
-          {errorMessage && (
-            <div className="mt-5 rounded-2xl border border-red-800 bg-red-950/30 p-4 text-sm text-red-100">
-              {errorMessage}
-            </div>
-          )}
-
-          {message && (
-            <div className="mt-5 rounded-2xl border border-emerald-800 bg-emerald-950/30 p-4 text-sm text-emerald-100">
-              {message}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={formDisabled}
-            className="mt-6 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {checkingSession
-              ? "Controllo sessione..."
-              : loading
-                ? "Registrazione..."
-                : isGallerist
-                  ? "Crea account creator"
-                  : "Crea account visitor"}
-          </button>
-
-          <p className="mt-5 text-center text-sm text-neutral-400">
-            Hai già un account?{" "}
-            <a href="/auth/login" className="text-neutral-100 underline">
-              Accedi
-            </a>
-          </p>
-        </form>
+        </div>
       </section>
     </main>
   );

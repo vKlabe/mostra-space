@@ -1,4 +1,5 @@
-﻿import LogoutButton from "@/components/auth/LogoutButton";
+import LogoutButton from "@/components/auth/LogoutButton";
+import Link from "next/link";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -82,131 +83,125 @@ export default function DashboardShell({
   const visibleNavItems =
     navMode === "community" ? communityNavItems : navItems;
 
-  return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-50">
-      <div className="flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-neutral-800 bg-neutral-950 px-5 py-6 lg:block">
-          <div>
-            <a href="/dashboard" className="block">
-              <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">
-                Art Portal
-              </p>
+    return (
+    <main className="museum-app-layout min-h-screen">
+      <aside className="museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 shrink-0 flex-col overflow-y-auto px-5 py-6">
+        <div>
+          <Link
+            href="/dashboard"
+            className="museum-logo text-3xl leading-none text-[var(--museum-ivory)] transition hover:text-[var(--museum-bronze-light)]"
+          >
+            mostra
+            <span className="text-[var(--museum-bronze-light)]">.</span>
+            <span className="text-[var(--museum-ivory-soft)]">space</span>
+          </Link>
 
-              <h1 className="mt-3 text-2xl font-semibold">
-                Account
-              </h1>
-            </a>
+          <p className="mt-3 text-xs uppercase tracking-[0.25em] text-[var(--museum-bronze-light)]">
+            Account
+          </p>
 
-            <p className="mt-3 text-sm leading-6 text-neutral-500">
-              Gestisci community, profilo, strumenti creator e contenuti del tuo spazio.
-            </p>
-          </div>
+          <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
+            Gestisci community, profilo, strumenti creator e contenuti del tuo
+            spazio.
+          </p>
+        </div>
 
-          <nav className="mt-8 space-y-2">
-            {visibleNavItems.map((item) => {
-              const isActive = activeSection === item.section;
+        <nav className="mt-8 space-y-2">
+          {visibleNavItems.map((item) => {
+            const isActive = activeSection === item.section;
 
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={
+                  isActive
+                    ? "museum-sidebar-link museum-sidebar-link-active rounded-2xl px-4 py-3 text-sm"
+                    : "museum-sidebar-link rounded-2xl px-4 py-3 text-sm"
+                }
+              >
+                <span className="block text-sm font-medium">{item.label}</span>
+
+                <span
                   className={
                     isActive
-                      ? "block rounded-2xl border border-neutral-700 bg-white px-4 py-3 text-neutral-950"
-                      : "block rounded-2xl border border-transparent px-4 py-3 text-neutral-300 transition hover:border-neutral-800 hover:bg-neutral-900 hover:text-white"
+                      ? "mt-1 block text-xs text-[var(--museum-bronze-light)]/75"
+                      : "mt-1 block text-xs text-[var(--museum-stone-muted)]"
                   }
                 >
-                  <span className="block text-sm font-medium">
-                    {item.label}
-                  </span>
+                  {item.description}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
 
-                  <span
-                    className={
-                      isActive
-                        ? "mt-1 block text-xs text-neutral-600"
-                        : "mt-1 block text-xs text-neutral-600"
-                    }
-                  >
-                    {item.description}
-                  </span>
-                </a>
-              );
-            })}
-          </nav>
+        <div className="museum-dashboard-card mt-8 rounded-[1.5rem] p-5">
+          <p className="museum-label">Pubblico</p>
 
-          <div className="mt-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
-            <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Pubblico
-            </p>
+          <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
+            Controlla come appaiono le gallerie pubblicate ai visitatori.
+          </p>
 
-            <p className="mt-3 text-sm leading-6 text-neutral-400">
-              Controlla come appaiono le gallerie pubblicate ai visitatori.
-            </p>
-
-            <a
-              href="/gallerie"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
-              Elenco pubblico
-            </a>
-          </div>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-neutral-800 bg-neutral-950/90 px-5 py-4 backdrop-blur lg:px-8">
-            <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 md:flex-row md:items-center">
-              <div>
-                <p className="mb-2 text-xs uppercase tracking-[0.3em] text-neutral-500">
-                  {eyebrow}
-                </p>
-
-                <h1 className="text-2xl font-semibold md:text-3xl">
-                  {title}
-                </h1>
-
-                {subtitle && (
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex flex-wrap gap-2 lg:hidden">
-                  {navItems.map((item) => {
-                    const isActive = activeSection === item.section;
-
-                    return (
-                      <a
-                        key={item.href}
-                        href={item.href}
-                        className={
-                          isActive
-                            ? "rounded-full bg-white px-4 py-2 text-xs font-medium text-neutral-950"
-                            : "rounded-full border border-neutral-800 px-4 py-2 text-xs text-neutral-300"
-                        }
-                      >
-                        {item.label}
-                      </a>
-                    );
-                  })}
-                </div>
-
-                {actions}
-
-                <LogoutButton />
-              </div>
-            </div>
-          </header>
-
-          <section className="flex-1 px-5 py-8 lg:px-8">
-            <div className="mx-auto max-w-7xl">
-              {children}
-            </div>
-          </section>
+          <Link
+            href="/gallerie"
+            target="_blank"
+            rel="noreferrer"
+            className="museum-button-secondary mt-4 px-4 py-2"
+          >
+            Elenco pubblico
+          </Link>
         </div>
+      </aside>
+
+      <div className="min-h-screen min-w-0 pl-72">
+        <header className="museum-topbar sticky top-0 z-30 px-5 py-4 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <p className="museum-label mb-2">{eyebrow}</p>
+
+              <h1 className="font-editorial text-3xl font-medium text-[var(--museum-ivory)] md:text-4xl">
+                {title}
+              </h1>
+
+              {subtitle && (
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--museum-stone)]">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap gap-2 lg:hidden">
+                {visibleNavItems.map((item) => {
+                  const isActive = activeSection === item.section;
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={
+                        isActive
+                          ? "rounded-full border border-[var(--museum-bronze-light)] bg-[var(--museum-bronze)] px-4 py-2 text-xs font-medium text-[var(--museum-black)]"
+                          : "rounded-full border border-[var(--museum-border)] px-4 py-2 text-xs text-[var(--museum-stone)]"
+                      }
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {actions}
+
+              <LogoutButton />
+            </div>
+          </div>
+        </header>
+
+        <section className="flex-1 px-5 py-8 lg:px-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </section>
       </div>
     </main>
   );
