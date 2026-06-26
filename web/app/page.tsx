@@ -2,53 +2,64 @@ import Link from "next/link";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 
+const heroGallery = {
+  title: "Dark Little Gallery",
+  subtitle: "Template immersivo in evidenza",
+  imageUrl: "/home/hero-gallery.jpg",
+  href: "/gallerie",
+};
+
 const featuredGalleries = [
   {
-    initials: "MA",
-    title: "Maroncelli Art Gallery",
-    location: "Milano, Italia",
-    works: "24 opere",
-    tone: "from-stone-200/70 via-stone-500/40 to-black",
+    initials: "GB",
+    title: "Galleria Barattolo",
+    location: "Roma, Italia",
+    works: "2 opere",
+    imageUrl: "/home/featured-1.jpg",
+    href: "/gallerie/aaa",
   },
   {
-    initials: "LF",
-    title: "Lumen Fine Art",
-    location: "Londra, Regno Unito",
+    initials: "DL",
+    title: "Dark Little Gallery",
+    location: "Spazio virtuale",
     works: "18 opere",
-    tone: "from-[#8A6A46]/55 via-[#31251B]/80 to-black",
+    imageUrl: "/home/featured-2.jpg",
+    href: "/gallerie",
   },
   {
-    initials: "GA",
-    title: "Galleria Aurora",
-    location: "Torino, Italia",
-    works: "31 opere",
-    tone: "from-[#E8E1D2]/80 via-[#756F65]/60 to-black",
+    initials: "LG",
+    title: "Light Gallery",
+    location: "White cube digitale",
+    works: "12 opere",
+    imageUrl: "/home/featured-3.jpg",
+    href: "/gallerie",
   },
   {
-    initials: "NR",
-    title: "Noir Contemporary",
-    location: "Berlino, Germania",
-    works: "27 opere",
-    tone: "from-[#4D4A43]/70 via-[#1B1915]/80 to-black",
+    initials: "MR",
+    title: "Museum Room",
+    location: "Ambiente curatoriale",
+    works: "24 opere",
+    imageUrl: "/home/featured-4.jpg",
+    href: "/gallerie",
   },
 ];
 
-const stats = [
+const featureNotes = [
   {
-    value: "12.458",
-    label: "Visitatori oggi",
+    title: "Spazi immersivi",
+    detail: "Ambienti virtuali curati",
   },
   {
-    value: "3.217",
-    label: "Opere esposte",
+    title: "Browser experience",
+    detail: "Accesso diretto senza app",
   },
   {
-    value: "482",
-    label: "Gallerie attive",
+    title: "Curatela digitale",
+    detail: "Schede, opere e richieste",
   },
   {
-    value: "61",
-    label: "Paesi",
+    title: "Pubblicazione rapida",
+    detail: "Dal template allo spazio online",
   },
 ];
 
@@ -77,6 +88,42 @@ const plans = [
     featured: false,
   },
 ];
+
+function GalleryImage({
+  src,
+  alt,
+  initials,
+}: {
+  src: string;
+  alt: string;
+  initials: string;
+}) {
+  if (!src) {
+    return (
+      <div className="relative h-full min-h-full bg-[radial-gradient(circle_at_35%_20%,rgba(243,237,226,0.28),transparent_11rem),linear-gradient(135deg,rgba(168,121,69,0.34),rgba(8,7,5,0.92))]">
+        <div className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--museum-ivory-soft)] bg-black/80 font-editorial text-lg text-[var(--museum-ivory)]">
+          {initials}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-full min-h-full overflow-hidden bg-[var(--museum-charcoal)]">
+      <img
+        src={src}
+        alt={alt}
+        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+      />
+
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05),rgba(8,7,5,0.78))]" />
+
+      <div className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--museum-ivory-soft)] bg-black/80 font-editorial text-lg text-[var(--museum-ivory)]">
+        {initials}
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -114,38 +161,43 @@ export default function HomePage() {
             </div>
 
             <div className="mt-11 grid grid-cols-2 gap-6 border-t border-[var(--museum-border)] pt-7 md:grid-cols-4">
-              {stats.map((stat) => (
-                <div key={stat.label}>
-                  <p className="font-editorial text-3xl leading-none text-[var(--museum-ivory)]">
-                    {stat.value}
+              {featureNotes.map((item) => (
+                <div key={item.title}>
+                  <p className="font-editorial text-2xl leading-none text-[var(--museum-ivory)]">
+                    {item.title}
                   </p>
-                  <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
-                    {stat.label}
+                  <p className="mt-2 text-xs leading-5 text-[var(--museum-stone-muted)]">
+                    {item.detail}
                   </p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="relative min-h-[520px] overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-charcoal)] shadow-[var(--museum-shadow-soft)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(243,237,226,0.18),transparent_22rem),linear-gradient(120deg,rgba(0,0,0,0.1),rgba(0,0,0,0.72))]" />
+          <Link
+            href={heroGallery.href}
+            className="group relative min-h-[520px] overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-charcoal)] shadow-[var(--museum-shadow-soft)]"
+          >
+            {heroGallery.imageUrl ? (
+              <>
+                <img
+                  src={heroGallery.imageUrl}
+                  alt={heroGallery.title}
+                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,7,5,0.18),rgba(8,7,5,0.62)),linear-gradient(180deg,rgba(8,7,5,0.08),rgba(8,7,5,0.78))]" />
+              </>
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(243,237,226,0.18),transparent_22rem),linear-gradient(120deg,rgba(0,0,0,0.1),rgba(0,0,0,0.72))]" />
+                <div className="absolute left-1/2 top-10 h-36 w-72 -translate-x-1/2 rounded-b-full border border-[rgba(243,237,226,0.28)] bg-[radial-gradient(circle_at_center,rgba(243,237,226,0.55),rgba(243,237,226,0.08)_45%,transparent_70%)] blur-[0.2px]" />
+                <div className="absolute inset-x-16 top-28 h-[22rem] rounded-t-full border border-[rgba(197,151,94,0.26)] bg-[linear-gradient(180deg,rgba(216,205,187,0.08),rgba(0,0,0,0.2))]" />
+                <div className="absolute left-1/2 top-48 h-44 w-24 -translate-x-1/2 rounded-full border-[10px] border-[rgba(168,121,69,0.88)] opacity-90 shadow-[0_0_60px_rgba(168,121,69,0.18)]" />
+                <div className="absolute left-1/2 top-60 h-32 w-16 -translate-x-1/2 rotate-45 rounded-full border-[8px] border-[rgba(197,151,94,0.75)] opacity-90" />
+              </>
+            )}
 
-            <div className="absolute left-1/2 top-10 h-36 w-72 -translate-x-1/2 rounded-b-full border border-[rgba(243,237,226,0.28)] bg-[radial-gradient(circle_at_center,rgba(243,237,226,0.55),rgba(243,237,226,0.08)_45%,transparent_70%)] blur-[0.2px]" />
-
-            <div className="absolute inset-x-16 top-28 h-[22rem] rounded-t-full border border-[rgba(197,151,94,0.26)] bg-[linear-gradient(180deg,rgba(216,205,187,0.08),rgba(0,0,0,0.2))]" />
-
-            <div className="absolute inset-x-24 bottom-0 h-52 bg-[linear-gradient(180deg,rgba(197,151,94,0.09),rgba(0,0,0,0.84))]" />
-
-            <div className="absolute left-1/2 top-48 h-44 w-24 -translate-x-1/2 rounded-full border-[10px] border-[rgba(168,121,69,0.88)] opacity-90 shadow-[0_0_60px_rgba(168,121,69,0.18)]" />
-            <div className="absolute left-1/2 top-60 h-32 w-16 -translate-x-1/2 rotate-45 rounded-full border-[8px] border-[rgba(197,151,94,0.75)] opacity-90" />
-
-            <div className="absolute left-14 top-36 h-52 w-24 rounded-sm border border-[var(--museum-border)] bg-[linear-gradient(160deg,rgba(197,151,94,0.28),rgba(0,0,0,0.7))]" />
-            <div className="absolute right-14 top-44 h-40 w-28 rounded-sm border border-[var(--museum-border)] bg-[linear-gradient(160deg,rgba(216,205,187,0.18),rgba(0,0,0,0.76))]" />
-            <div className="absolute left-40 bottom-32 h-32 w-28 rounded-sm border border-[var(--museum-border)] bg-[linear-gradient(160deg,rgba(216,205,187,0.22),rgba(0,0,0,0.8))]" />
-
-            <div className="absolute bottom-0 left-1/2 h-28 w-[70%] -translate-x-1/2 border-t border-[rgba(197,151,94,0.28)] bg-[linear-gradient(90deg,transparent,rgba(197,151,94,0.12),transparent)]" />
-
-            <div className="absolute right-10 top-28 max-w-[11rem]">
+            <div className="absolute right-10 top-10 max-w-[12rem]">
               <p className="museum-label leading-7">
                 Spazi immersivi
                 <br />
@@ -155,7 +207,19 @@ export default function HomePage() {
               </p>
               <div className="mt-5 h-px w-12 bg-[var(--museum-bronze)]" />
             </div>
-          </div>
+
+            <div className="absolute bottom-8 left-8 right-8 rounded-3xl border border-[rgba(216,205,187,0.16)] bg-[rgba(8,7,5,0.68)] p-5 backdrop-blur-md">
+              <p className="museum-label">{heroGallery.subtitle}</p>
+
+              <h2 className="mt-3 font-editorial text-4xl leading-tight text-[var(--museum-ivory)]">
+                {heroGallery.title}
+              </h2>
+
+              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--museum-bronze-light)]">
+                Visita la galleria →
+              </p>
+            </div>
+          </Link>
         </div>
       </section>
 
@@ -177,25 +241,26 @@ export default function HomePage() {
               {featuredGalleries.map((gallery) => (
                 <Link
                   key={gallery.title}
-                  href="/gallerie"
+                  href={gallery.href}
                   className="group overflow-hidden rounded-2xl border border-[var(--museum-border)] bg-[var(--museum-surface)] transition hover:border-[var(--museum-bronze)]"
                 >
-                  <div
-                    className={`relative h-40 bg-gradient-to-br ${gallery.tone}`}
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_45%_20%,rgba(243,237,226,0.24),transparent_12rem)]" />
-                    <div className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--museum-ivory-soft)] bg-black/80 font-editorial text-lg text-[var(--museum-ivory)]">
-                      {gallery.initials}
-                    </div>
+                  <div className="h-44">
+                    <GalleryImage
+                      src={gallery.imageUrl}
+                      alt={gallery.title}
+                      initials={gallery.initials}
+                    />
                   </div>
 
                   <div className="p-4">
-                    <h3 className="font-editorial text-xl text-[var(--museum-ivory)]">
+                    <h3 className="font-editorial text-xl leading-tight text-[var(--museum-ivory)]">
                       {gallery.title}
                     </h3>
-                    <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
+
+                    <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
                       {gallery.location}
                     </p>
+
                     <p className="mt-4 text-right text-xs text-[var(--museum-stone-muted)]">
                       {gallery.works}
                     </p>
@@ -297,6 +362,7 @@ export default function HomePage() {
                 mostra<span className="text-[var(--museum-bronze-light)]">.</span>
                 <span className="text-[var(--museum-ivory-soft)]">space</span>
               </p>
+
               <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
                 Panoramica
               </p>
@@ -312,10 +378,10 @@ export default function HomePage() {
 
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             {[
-              ["Visitatori", "2.349", "+12% rispetto a ieri"],
-              ["Visualizzazioni opere", "8.672", "+8% rispetto a ieri"],
-              ["Opere esposte", "36", "—"],
-              ["Richieste ricevute", "18", "+3 rispetto a ieri"],
+              ["Spazi", "Template", "Gallerie configurabili"],
+              ["Opere", "Catalogo", "Schede e immagini"],
+              ["Richieste", "Lead", "Contatti dal pubblico"],
+              ["Piano", "Billing", "Limiti e abbonamento"],
             ].map(([label, value, detail]) => (
               <div
                 key={label}
@@ -324,10 +390,12 @@ export default function HomePage() {
                 <p className="text-xs text-[var(--museum-stone-muted)]">
                   {label}
                 </p>
-                <p className="mt-3 text-2xl font-semibold text-[var(--museum-ivory)]">
+
+                <p className="mt-3 font-editorial text-2xl text-[var(--museum-ivory)]">
                   {value}
                 </p>
-                <p className="mt-2 text-xs text-[var(--museum-success)]">
+
+                <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
                   {detail}
                 </p>
               </div>
@@ -337,18 +405,20 @@ export default function HomePage() {
           <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1.25fr]">
             <div className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
               <p className="museum-label">Attività recenti</p>
+
               <div className="mt-4 space-y-3 text-xs text-[var(--museum-stone)]">
-                <p>Nuova richiesta di informazioni per “Materia 01”</p>
-                <p>Opera “Soglia #4” salvata da un collezionista</p>
-                <p>Galleria “Notturno” pubblicata</p>
+                <p>Nuova richiesta ricevuta da una galleria pubblica</p>
+                <p>Opera salvata da un collezionista</p>
+                <p>Template aggiornato nello spazio espositivo</p>
               </div>
             </div>
 
             <div className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
               <div className="flex items-center justify-between">
-                <p className="museum-label">Visitatori negli ultimi 7 giorni</p>
+                <p className="museum-label">Flusso espositivo</p>
+
                 <p className="font-editorial text-2xl text-[var(--museum-ivory)]">
-                  2.349
+                  Live
                 </p>
               </div>
 

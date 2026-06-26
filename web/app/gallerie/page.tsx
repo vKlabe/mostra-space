@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import MuseumHeader from "@/components/site/MuseumHeader";
+import LegalFooter from "@/components/legal/LegalFooter";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
@@ -26,6 +29,30 @@ function formatDate(value: string | null) {
   });
 }
 
+function PublicGalleryCover({
+  src,
+  title,
+}: {
+  src: string | null;
+  title: string;
+}) {
+  if (!src) {
+    return (
+      <div className="flex h-full min-h-[280px] items-center justify-center bg-[radial-gradient(circle_at_35%_15%,rgba(243,237,226,0.26),transparent_11rem),linear-gradient(135deg,rgba(168,121,69,0.26),rgba(8,7,5,0.92))] px-6 text-center text-sm text-[var(--museum-stone)]">
+        Anteprima galleria non disponibile
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={title}
+      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+    />
+  );
+}
+
 export default async function PublicGalleriesIndexPage() {
   const supabase = await createClient();
 
@@ -45,64 +72,75 @@ export default async function PublicGalleriesIndexPage() {
     : safeGalleries;
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-50">
-      <section className="relative overflow-hidden border-b border-neutral-800">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.08),_transparent_30%)]" />
+    <main className="museum-page min-h-screen overflow-hidden">
+      <MuseumHeader />
 
-        <div className="relative mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-16">
-          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-            <div>
-              <p className="mb-4 text-xs uppercase tracking-[0.35em] text-neutral-500">
-                Gallerie virtuali
-              </p>
+      <section className="border-b border-[var(--museum-border)]">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:px-8 md:py-20 lg:grid-cols-[1.05fr_0.75fr] lg:items-end">
+          <div>
+            <p className="museum-label">Gallerie virtuali</p>
 
-              <h1 className="max-w-5xl text-4xl font-semibold leading-tight md:text-6xl">
-                Esplora spazi espositivi digitali, direttamente dal browser.
-              </h1>
+            <h1 className="museum-title mt-6 max-w-5xl text-6xl text-[var(--museum-ivory)] md:text-7xl">
+              Esplora spazi espositivi digitali.
+            </h1>
 
-              <p className="mt-6 max-w-3xl text-base leading-8 text-neutral-300">
-                Entra nelle gallerie pubblicate, visita gli ambienti 3D,
-                consulta le opere esposte e richiedi informazioni al gallerista.
-              </p>
+            <p className="museum-subtitle mt-7 max-w-3xl text-base text-[var(--museum-stone)] md:text-lg">
+              Entra nelle gallerie pubblicate, visita gli ambienti 3D, consulta
+              le opere esposte e richiedi informazioni al gallerista.
+            </p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                  href="#gallerie"
-                  className="rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-                >
-                  Sfoglia gallerie
-                </a>
+            <div className="mt-9 flex flex-wrap gap-4">
+              <a href="#gallerie" className="museum-button-primary px-7 py-3.5">
+                Sfoglia gallerie
+              </a>
 
-                <a
-                  href="/pricing"
-                  className="rounded-full border border-neutral-700 px-6 py-3 text-sm text-neutral-100 transition hover:border-neutral-400"
-                >
-                  Crea il tuo spazio
-                </a>
-              </div>
+              <Link
+                href="/pricing"
+                className="museum-button-secondary px-7 py-3.5"
+              >
+                Crea il tuo spazio
+              </Link>
             </div>
+          </div>
 
-            <div className="grid min-w-full gap-3 rounded-3xl border border-neutral-800 bg-neutral-900/80 p-5 backdrop-blur md:min-w-[360px]">
+          <div className="museum-card rounded-[1.75rem] p-6">
+            <p className="museum-label">Esperienza pubblica</p>
+
+            <div className="mt-6 space-y-4">
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Gallerie pubbliche</span>
-                <span className="text-neutral-100">
+                <span className="text-[var(--museum-stone-muted)]">
+                  Gallerie pubbliche
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
                   {safeGalleries.length}
                 </span>
               </div>
 
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Esperienza</span>
-                <span className="text-neutral-100">Unity WebGL</span>
+                <span className="text-[var(--museum-stone-muted)]">
+                  Esperienza
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
+                  Unity WebGL
+                </span>
               </div>
 
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Accesso</span>
-                <span className="text-neutral-100">Browser</span>
+                <span className="text-[var(--museum-stone-muted)]">
+                  Accesso
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
+                  Browser
+                </span>
               </div>
 
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-neutral-500">Interazione</span>
-                <span className="text-neutral-100">Form richieste</span>
+                <span className="text-[var(--museum-stone-muted)]">
+                  Interazione
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
+                  Form richieste
+                </span>
               </div>
             </div>
           </div>
@@ -110,7 +148,7 @@ export default async function PublicGalleriesIndexPage() {
       </section>
 
       {error && (
-        <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+        <section className="mx-auto max-w-7xl px-4 py-10 md:px-8">
           <DataErrorCard
             title="Non riesco a caricare le gallerie pubbliche"
             message="Le gallerie pubbliche non sono state recuperate correttamente da Supabase. Puoi ricaricare la pagina oppure tornare alla home."
@@ -124,7 +162,7 @@ export default async function PublicGalleriesIndexPage() {
       )}
 
       {!error && safeGalleries.length === 0 && (
-        <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+        <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
           <EmptyStateCard
             eyebrow="Nessuna galleria"
             title="Non ci sono ancora gallerie pubblicate"
@@ -136,95 +174,83 @@ export default async function PublicGalleriesIndexPage() {
       )}
 
       {!error && featuredGallery && (
-        <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+        <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                In evidenza
-              </p>
+              <p className="museum-label">In evidenza</p>
 
-              <h2 className="text-3xl font-semibold">
-                Ultima galleria pubblicata
+              <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
+                Ultima galleria pubblicata.
               </h2>
 
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
+              <p className="museum-subtitle mt-5 max-w-3xl text-sm text-[var(--museum-stone)]">
                 Lo spazio più recente disponibile alla visita pubblica.
               </p>
             </div>
 
-            <a
-              href="#gallerie"
-              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
+            <a href="#gallerie" className="museum-button-secondary px-5 py-2.5">
               Vedi tutte
             </a>
           </div>
 
-          <article className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900">
-            <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="min-h-[360px] bg-neutral-950">
-                {featuredGallery.cover_image_url ? (
-                  <img
-                    src={featuredGallery.cover_image_url}
-                    alt={featuredGallery.title}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full min-h-[360px] items-center justify-center px-6 text-center text-sm text-neutral-500">
-                    Anteprima galleria non disponibile
-                  </div>
-                )}
+          <article className="group overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)]">
+            <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="min-h-[380px] overflow-hidden bg-[var(--museum-charcoal)]">
+                <PublicGalleryCover
+                  src={featuredGallery.cover_image_url}
+                  title={featuredGallery.title}
+                />
               </div>
 
               <div className="flex flex-col justify-between p-8">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-green-900 bg-green-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-green-300">
+                    <span className="rounded-full border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-3 py-1 text-xs uppercase tracking-[0.15em] text-[var(--museum-success)]">
                       Pubblicata
                     </span>
 
                     {formatDate(featuredGallery.published_at) && (
-                      <span className="text-xs text-neutral-500">
+                      <span className="text-xs text-[var(--museum-stone-muted)]">
                         {formatDate(featuredGallery.published_at)}
                       </span>
                     )}
                   </div>
 
-                  <h3 className="mt-5 text-4xl font-semibold leading-tight">
+                  <h3 className="mt-6 font-editorial text-5xl font-medium leading-tight text-[var(--museum-ivory)]">
                     {featuredGallery.title}
                   </h3>
 
-                  <p className="mt-5 text-sm leading-7 text-neutral-400">
+                  <p className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
                     {featuredGallery.description ||
                       "Galleria virtuale visitabile direttamente dal browser, con opere, schede e ambiente 3D navigabile."}
                   </p>
 
-                  <p className="mt-5 break-all text-xs text-neutral-600">
+                  <p className="mt-5 break-all text-xs text-[var(--museum-stone-muted)]">
                     /gallerie/{featuredGallery.slug}
                   </p>
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <a
+                  <Link
                     href={`/gallerie/${featuredGallery.slug}`}
-                    className="rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                    className="museum-button-primary px-6 py-3"
                   >
                     Entra nella galleria
-                  </a>
+                  </Link>
 
-                  <a
+                  <Link
                     href={`/gallerie/${featuredGallery.slug}#catalogo`}
-                    className="rounded-full border border-neutral-700 px-6 py-3 text-sm text-neutral-100 transition hover:border-neutral-400"
+                    className="museum-button-secondary px-6 py-3"
                   >
                     Vedi catalogo
-                  </a>
+                  </Link>
 
-                  <a
+                  <Link
                     href={`/gallerie/${featuredGallery.slug}#richiesta`}
-                    className="rounded-full border border-neutral-700 px-6 py-3 text-sm text-neutral-100 transition hover:border-neutral-400"
+                    className="museum-button-secondary px-6 py-3"
                   >
                     Richiedi informazioni
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -233,22 +259,25 @@ export default async function PublicGalleriesIndexPage() {
       )}
 
       {!error && safeGalleries.length > 0 && (
-        <section id="gallerie" className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+        <section
+          id="gallerie"
+          className="mx-auto max-w-7xl px-4 py-12 md:px-8"
+        >
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Archivio pubblico
-              </p>
+              <p className="museum-label">Archivio pubblico</p>
 
-              <h2 className="text-3xl font-semibold">Tutte le gallerie</h2>
+              <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
+                Tutte le gallerie.
+              </h2>
 
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
+              <p className="museum-subtitle mt-5 max-w-3xl text-sm text-[var(--museum-stone)]">
                 Ogni card apre una pagina dedicata con viewer 3D, catalogo opere
                 e form di richiesta informazioni.
               </p>
             </div>
 
-            <p className="text-sm text-neutral-500">
+            <p className="museum-pill rounded-full px-4 py-2 text-xs uppercase tracking-[0.16em]">
               Totale: {safeGalleries.length}
             </p>
           </div>
@@ -258,66 +287,61 @@ export default async function PublicGalleriesIndexPage() {
               (gallery) => (
                 <article
                   key={gallery.id}
-                  className="group overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900 transition hover:border-neutral-600"
+                  className="group overflow-hidden rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)] transition hover:border-[var(--museum-bronze)]"
                 >
-                  <a href={`/gallerie/${gallery.slug}`} className="block">
-                    <div className="aspect-[16/10] overflow-hidden bg-neutral-950">
-                      {gallery.cover_image_url ? (
-                        <img
-                          src={gallery.cover_image_url}
-                          alt={gallery.title}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center px-6 text-center text-sm text-neutral-500">
-                          Anteprima galleria non disponibile
-                        </div>
-                      )}
+                  <Link href={`/gallerie/${gallery.slug}`} className="block">
+                    <div className="aspect-[16/10] overflow-hidden bg-[var(--museum-charcoal)]">
+                      <PublicGalleryCover
+                        src={gallery.cover_image_url}
+                        title={gallery.title}
+                      />
                     </div>
 
                     <div className="p-6">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-green-900 bg-green-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-green-300">
+                        <span className="rounded-full border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-3 py-1 text-xs uppercase tracking-[0.15em] text-[var(--museum-success)]">
                           Pubblicata
                         </span>
 
                         {formatDate(gallery.published_at) && (
-                          <span className="text-xs text-neutral-500">
+                          <span className="text-xs text-[var(--museum-stone-muted)]">
                             {formatDate(gallery.published_at)}
                           </span>
                         )}
                       </div>
 
-                      <h3 className="mt-4 text-2xl font-medium">
+                      <h3 className="mt-5 font-editorial text-3xl font-medium leading-tight text-[var(--museum-ivory)]">
                         {gallery.title}
                       </h3>
 
-                      <p className="mt-3 line-clamp-3 text-sm leading-6 text-neutral-400">
+                      <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--museum-stone)]">
                         {gallery.description ||
                           "Galleria virtuale visitabile direttamente dal browser."}
                       </p>
 
-                      <p className="mt-4 break-all text-xs text-neutral-600">
+                      <p className="mt-4 break-all text-xs text-[var(--museum-stone-muted)]">
                         /gallerie/{gallery.slug}
                       </p>
 
                       <div className="mt-6 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950">
+                        <span className="museum-button-primary px-4 py-2">
                           Apri galleria
                         </span>
 
-                        <span className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100">
+                        <span className="museum-button-secondary px-4 py-2">
                           Catalogo
                         </span>
                       </div>
                     </div>
-                  </a>
+                  </Link>
                 </article>
               )
             )}
           </div>
         </section>
       )}
+
+      <LegalFooter />
     </main>
   );
 }
