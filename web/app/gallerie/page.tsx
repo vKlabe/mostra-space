@@ -228,47 +228,47 @@ export default async function PublicGalleriesIndexPage() {
           </div>
 
           <div className="museum-card rounded-[1.75rem] p-6">
-            <p className="museum-label">Esperienza pubblica</p>
+  <p className="museum-label">Esperienza pubblica</p>
 
-            <div className="mt-6 space-y-4">
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[var(--museum-stone-muted)]">
-                  Gallerie pubbliche
-                </span>
-                <span className="text-[var(--museum-ivory-soft)]">
-                  {safeGalleries.length}
-                </span>
-              </div>
+  <div className="mt-6 space-y-4">
+    <div className="flex justify-between gap-4 text-sm">
+      <span className="text-[var(--museum-stone-muted)]">
+        Gallerie pubbliche
+      </span>
+      <span className="text-[var(--museum-ivory-soft)]">
+        {safeGalleries.length}
+      </span>
+    </div>
 
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[var(--museum-stone-muted)]">
-                  Esperienza
-                </span>
-                <span className="text-[var(--museum-ivory-soft)]">
-                  Unity WebGL
-                </span>
-              </div>
+    <div className="flex justify-between gap-4 text-sm">
+      <span className="text-[var(--museum-stone-muted)]">
+        Formato
+      </span>
+      <span className="text-[var(--museum-ivory-soft)]">
+        Spazi immersivi
+      </span>
+    </div>
 
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[var(--museum-stone-muted)]">
-                  Accesso
-                </span>
-                <span className="text-[var(--museum-ivory-soft)]">
-                  Browser
-                </span>
-              </div>
+    <div className="flex justify-between gap-4 text-sm">
+      <span className="text-[var(--museum-stone-muted)]">
+        Accesso
+      </span>
+      <span className="text-[var(--museum-ivory-soft)]">
+        Browser
+      </span>
+    </div>
 
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[var(--museum-stone-muted)]">
-                  Interazione
-                </span>
-                <span className="text-[var(--museum-ivory-soft)]">
-                  Form richieste
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="flex justify-between gap-4 text-sm">
+      <span className="text-[var(--museum-stone-muted)]">
+        Interazione
+      </span>
+      <span className="text-[var(--museum-ivory-soft)]">
+        Catalogo + richieste
+      </span>
+    </div>
+  </div>
+</div>
+</div>
       </section>
 
       {error && (
