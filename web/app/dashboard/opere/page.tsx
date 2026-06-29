@@ -243,7 +243,7 @@ export default async function DashboardArtworksPage({
   return (
     <DashboardShell
       title="Archivio opere"
-      subtitle="Qui carichi, organizzi e modifichi le opere che poi potranno essere inserite nelle gallerie virtuali e posizionate nell editor Unity WebGL."
+      subtitle="Qui carichi, organizzi e modifichi le opere che poi potranno essere inserite nelle gallerie virtuali e posizionate negli spazi espositivi."
       activeSection="opere"
       actions={
         <a

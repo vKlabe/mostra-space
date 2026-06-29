@@ -317,12 +317,11 @@ export default function CreateArtworkForm({
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
           <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-            Dimensioni reali per editor 3D
+            Dimensioni reali nello spazio 3D
           </p>
 
           <p className="mb-4 text-sm leading-6 text-neutral-400">
-            Inserisci larghezza e altezza reali dell opera in centimetri. Se non
-            le inserisci, l editor userà un fallback di 50 x 50 cm.
+            Inserisci larghezza e altezza reali dell’opera in centimetri. Se non le inserisci, l’editor userà un formato iniziale di 50 × 50 cm.
           </p>
 
           <div className="grid gap-4 md:grid-cols-3">

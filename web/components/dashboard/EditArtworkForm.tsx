@@ -120,8 +120,7 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
               <h2 className="text-2xl font-medium">Modifica dati opera</h2>
 
               <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Questi dati vengono letti da Unity e mostrati nella scheda
-                informativa dell opera.
+                Questi dati vengono mostrati nella scheda informativa dell’opera.
               </p>
             </div>
 
@@ -201,13 +200,11 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 md:col-span-2">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-                Dimensioni reali per editor 3D
+                Dimensioni reali nello spazio 3D
               </p>
 
               <p className="mb-4 text-sm leading-6 text-neutral-400">
-                Questi valori determinano la proporzione iniziale dell opera
-                dentro Unity. Se larghezza o altezza mancano, l editor userà 50
-                x 50 cm.
+                Questi valori determinano la proporzione iniziale dell opera dentro Unity. Se larghezza o altezza mancano, l editor usera 50 x 50 cm.
               </p>
 
               <div className="grid gap-4 md:grid-cols-3">
