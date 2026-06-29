@@ -94,6 +94,29 @@ function createKeyboardEvent(type: "keydown" | "keyup", movementKey: MovementKey
   return event;
 }
 
+function createEscapeKeyboardEvent(type: "keydown" | "keyup") {
+  const event = new KeyboardEvent(type, {
+    key: "Escape",
+    code: "Escape",
+    bubbles: true,
+    cancelable: true,
+  });
+
+  try {
+    Object.defineProperty(event, "keyCode", {
+      get: () => 27,
+    });
+
+    Object.defineProperty(event, "which", {
+      get: () => 27,
+    });
+  } catch {
+    // Alcuni browser non permettono override di keyCode/which.
+  }
+
+  return event;
+}
+
 export default function UnityGalleryViewer({
   galleryId,
   mode,
@@ -179,7 +202,7 @@ export default function UnityGalleryViewer({
     window.open(iframeSrc, "_blank", "noopener,noreferrer");
   }
 
-  function getIframeTargets() {
+  function getIframeTargets(options?: { focus?: boolean }) {
     const iframe = iframeRef.current;
 
     if (!iframe?.contentWindow) {
@@ -199,8 +222,10 @@ export default function UnityGalleryViewer({
         targets.push(canvas);
       }
 
-      iframe.contentWindow.focus();
-      canvas?.focus();
+      if (options?.focus !== false) {
+  iframe.contentWindow.focus();
+  canvas?.focus();
+}
     } catch {
       // Same-origin dovrebbe permetterlo, ma se il browser blocca qualcosa evitiamo crash.
     }
@@ -208,11 +233,40 @@ export default function UnityGalleryViewer({
     return targets;
   }
 
+  function releaseUnityVisualCapture() {
+  const iframe = iframeRef.current;
+  const targets = [...getIframeTargets({ focus: false }), window, document];
+
+  targets.forEach((target) => {
+    target.dispatchEvent(createEscapeKeyboardEvent("keydown"));
+    target.dispatchEvent(createEscapeKeyboardEvent("keyup"));
+  });
+
+  try {
+    document.exitPointerLock?.();
+  } catch {
+    // Ignora: non tutti i browser permettono questa chiamata.
+  }
+
+  try {
+    iframe?.contentWindow?.document.exitPointerLock?.();
+  } catch {
+    // Ignora: sicurezza iframe/browser.
+  }
+
+  try {
+    iframe?.blur();
+    viewerShellRef.current?.focus();
+  } catch {
+    // Ignora: fallback silenzioso.
+  }
+}
+
   function sendMovementKey(
     movementKey: MovementKey,
     type: "keydown" | "keyup"
   ) {
-    const targets = getIframeTargets();
+    const targets = getIframeTargets({ focus: true });
 
     if (targets.length === 0) {
       return;
@@ -249,14 +303,23 @@ export default function UnityGalleryViewer({
   }
 
   function pressMovementKey(movementKey: MovementKey) {
-    if (mode !== "visitor") {
+  if (mode !== "visitor") {
+    return;
+  }
+
+  releaseUnityVisualCapture();
+
+  activeKeysRef.current.add(movementKey);
+
+  window.setTimeout(() => {
+    if (!activeKeysRef.current.has(movementKey)) {
       return;
     }
 
-    activeKeysRef.current.add(movementKey);
     sendMovementKey(movementKey, "keydown");
     startRepeatMovementKeys();
-  }
+  }, 40);
+}
 
   function releaseMovementKey(movementKey: MovementKey) {
     if (!activeKeysRef.current.has(movementKey)) {
@@ -311,7 +374,7 @@ export default function UnityGalleryViewer({
           preventTouchDefaults(event);
           releaseMovementKey(movementKey);
         }}
-        className={`flex h-14 w-14 select-none items-center justify-center rounded-2xl border border-[rgba(197,151,94,0.5)] bg-[rgba(8,7,5,0.78)] text-2xl font-semibold text-[var(--museum-ivory)] shadow-2xl backdrop-blur-md active:bg-[rgba(197,151,94,0.78)] active:text-[var(--museum-black)] ${className}`}
+        className={`pointer-events-auto flex h-14 w-14 touch-none select-none items-center justify-center rounded-2xl border border-[rgba(197,151,94,0.5)] bg-[rgba(8,7,5,0.78)] text-2xl font-semibold text-[var(--museum-ivory)] shadow-2xl backdrop-blur-md active:bg-[rgba(197,151,94,0.78)] active:text-[var(--museum-black)] ${className}`}
       >
         {label}
       </button>
@@ -351,9 +414,10 @@ export default function UnityGalleryViewer({
       )}
 
       <div
-        ref={viewerShellRef}
-        className="overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-black shadow-[var(--museum-shadow-soft)]"
-      >
+  ref={viewerShellRef}
+  tabIndex={-1}
+  className="overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-black shadow-[var(--museum-shadow-soft)]"
+>
         <div className="flex flex-col justify-between gap-4 border-b border-[var(--museum-border)] bg-[rgba(8,7,5,0.94)] px-5 py-4 md:flex-row md:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -416,7 +480,7 @@ export default function UnityGalleryViewer({
 
           {isMobileViewer && mode === "visitor" && (
             <div
-              className="absolute bottom-5 left-5 z-20 grid grid-cols-3 gap-2"
+              className="pointer-events-auto absolute bottom-5 left-5 z-[100] grid touch-none grid-cols-3 gap-2"
               onPointerLeave={releaseAllMovementKeys}
               onPointerCancel={releaseAllMovementKeys}
             >
