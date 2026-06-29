@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 
 type UnityMode = "visitor" | "editor";
 
@@ -124,9 +124,12 @@ export default function UnityGalleryViewer({
   const [iframeVersion, setIframeVersion] = useState(0);
   const [isMobileViewer, setIsMobileViewer] = useState(false);
   const [isFullscreenActive, setIsFullscreenActive] = useState(false);
+
   const viewerShellRef = useRef<HTMLDivElement | null>(null);
-const viewerStageRef = useRef<HTMLDivElement | null>(null);
-const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const viewerStageRef = useRef<HTMLDivElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const mobileFocusTrapRef = useRef<HTMLButtonElement | null>(null);
+
   const activeKeysRef = useRef<Set<MovementKey>>(new Set());
   const repeatIntervalRef = useRef<number | null>(null);
 
@@ -163,34 +166,31 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
   }, []);
 
   useEffect(() => {
-  function handleFullscreenChange() {
-    setIsFullscreenActive(document.fullscreenElement === viewerStageRef.current);
-  }
+    function handleFullscreenChange() {
+      setIsFullscreenActive(
+        document.fullscreenElement === viewerStageRef.current
+      );
+    }
 
-  document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
 
-  return () => {
-    document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  };
-}, []);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     function releaseAllKeys() {
-      activeKeysRef.current.forEach((movementKey) => {
-        sendMovementKey(movementKey, "keyup");
-      });
-
-      activeKeysRef.current.clear();
-      stopRepeatMovementKeys();
+      releaseAllMovementKeys();
     }
 
     window.addEventListener("blur", releaseAllKeys);
-    window.addEventListener("visibilitychange", releaseAllKeys);
+    document.addEventListener("visibilitychange", releaseAllKeys);
 
     return () => {
       releaseAllKeys();
       window.removeEventListener("blur", releaseAllKeys);
-      window.removeEventListener("visibilitychange", releaseAllKeys);
+      document.removeEventListener("visibilitychange", releaseAllKeys);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -201,20 +201,20 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
   }
 
   async function openFullscreen() {
-  const stage = viewerStageRef.current;
+    const stage = viewerStageRef.current;
 
-  if (stage?.requestFullscreen) {
-    try {
-      await stage.requestFullscreen();
-      return;
-    } catch {
-      window.open(iframeSrc, "_blank", "noopener,noreferrer");
-      return;
+    if (stage?.requestFullscreen) {
+      try {
+        await stage.requestFullscreen();
+        return;
+      } catch {
+        window.open(iframeSrc, "_blank", "noopener,noreferrer");
+        return;
+      }
     }
-  }
 
-  window.open(iframeSrc, "_blank", "noopener,noreferrer");
-}
+    window.open(iframeSrc, "_blank", "noopener,noreferrer");
+  }
 
   function getIframeTargets(options?: { focus?: boolean }) {
     const iframe = iframeRef.current;
@@ -237,9 +237,9 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
       }
 
       if (options?.focus !== false) {
-  iframe.contentWindow.focus();
-  canvas?.focus();
-}
+        iframe.contentWindow.focus();
+        canvas?.focus();
+      }
     } catch {
       // Same-origin dovrebbe permetterlo, ma se il browser blocca qualcosa evitiamo crash.
     }
@@ -247,40 +247,84 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
     return targets;
   }
 
+  function focusMobileControlsLayer() {
+    try {
+      iframeRef.current?.blur();
+    } catch {
+      // Ignora.
+    }
+
+    try {
+      mobileFocusTrapRef.current?.focus({
+        preventScroll: true,
+      });
+    } catch {
+      // Ignora.
+    }
+  }
+
+  function suspendIframePointerCapture() {
+    const iframe = iframeRef.current;
+
+    if (!iframe) {
+      return;
+    }
+
+    iframe.style.pointerEvents = "none";
+  }
+
+  function restoreIframePointerCapture() {
+    const iframe = iframeRef.current;
+
+    if (!iframe) {
+      return;
+    }
+
+    iframe.style.pointerEvents = "";
+  }
+
   function releaseUnityVisualCapture() {
-  const iframe = iframeRef.current;
-  const targets = [...getIframeTargets({ focus: false }), window, document];
+    const iframe = iframeRef.current;
+    const targets = [...getIframeTargets({ focus: false }), window, document];
 
-  targets.forEach((target) => {
-    target.dispatchEvent(createEscapeKeyboardEvent("keydown"));
-    target.dispatchEvent(createEscapeKeyboardEvent("keyup"));
-  });
+    targets.forEach((target) => {
+      target.dispatchEvent(createEscapeKeyboardEvent("keydown"));
+      target.dispatchEvent(createEscapeKeyboardEvent("keyup"));
+    });
 
-  try {
-    document.exitPointerLock?.();
-  } catch {
-    // Ignora: non tutti i browser permettono questa chiamata.
+    try {
+      document.exitPointerLock?.();
+    } catch {
+      // Ignora: non tutti i browser permettono questa chiamata.
+    }
+
+    try {
+      iframe?.contentWindow?.document.exitPointerLock?.();
+    } catch {
+      // Ignora: sicurezza iframe/browser.
+    }
+
+    try {
+      iframe?.blur();
+      viewerShellRef.current?.focus({
+        preventScroll: true,
+      });
+    } catch {
+      // Ignora: fallback silenzioso.
+    }
+
+    focusMobileControlsLayer();
   }
-
-  try {
-    iframe?.contentWindow?.document.exitPointerLock?.();
-  } catch {
-    // Ignora: sicurezza iframe/browser.
-  }
-
-  try {
-    iframe?.blur();
-    viewerShellRef.current?.focus();
-  } catch {
-    // Ignora: fallback silenzioso.
-  }
-}
 
   function sendMovementKey(
     movementKey: MovementKey,
     type: "keydown" | "keyup"
   ) {
-    const targets = getIframeTargets({ focus: true });
+    /**
+     * Non rifocalizziamo l'iframe quando premiamo le frecce mobile.
+     * Se lo rifocalizziamo, Unity torna a catturare la visuale.
+     */
+    const targets = [...getIframeTargets({ focus: false }), window, document];
 
     if (targets.length === 0) {
       return;
@@ -317,26 +361,34 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
   }
 
   function pressMovementKey(movementKey: MovementKey) {
-  if (mode !== "visitor") {
-    return;
-  }
-
-  releaseUnityVisualCapture();
-
-  activeKeysRef.current.add(movementKey);
-
-  window.setTimeout(() => {
-    if (!activeKeysRef.current.has(movementKey)) {
+    if (mode !== "visitor") {
       return;
     }
 
-    sendMovementKey(movementKey, "keydown");
-    startRepeatMovementKeys();
-  }, 40);
-}
+    /**
+     * Quando l'utente ha appena trascinato dentro Unity,
+     * Unity resta "agganciato" alla visuale.
+     * Prima di muovere, stacchiamo il focus dal viewer.
+     */
+    suspendIframePointerCapture();
+    releaseUnityVisualCapture();
+    focusMobileControlsLayer();
+
+    activeKeysRef.current.add(movementKey);
+
+    window.setTimeout(() => {
+      if (!activeKeysRef.current.has(movementKey)) {
+        return;
+      }
+
+      sendMovementKey(movementKey, "keydown");
+      startRepeatMovementKeys();
+    }, 90);
+  }
 
   function releaseMovementKey(movementKey: MovementKey) {
     if (!activeKeysRef.current.has(movementKey)) {
+      restoreIframePointerCapture();
       return;
     }
 
@@ -345,6 +397,10 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     if (activeKeysRef.current.size === 0) {
       stopRepeatMovementKeys();
+
+      window.setTimeout(() => {
+        restoreIframePointerCapture();
+      }, 120);
     }
   }
 
@@ -355,9 +411,10 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     activeKeysRef.current.clear();
     stopRepeatMovementKeys();
+    restoreIframePointerCapture();
   }
 
-  function preventTouchDefaults(event: React.PointerEvent<HTMLButtonElement>) {
+  function preventTouchDefaults(event: PointerEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
   }
@@ -373,7 +430,13 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
         aria-label={label}
         onPointerDown={(event) => {
           preventTouchDefaults(event);
-          event.currentTarget.setPointerCapture(event.pointerId);
+
+          try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          } catch {
+            // Ignora.
+          }
+
           pressMovementKey(movementKey);
         }}
         onPointerUp={(event) => {
@@ -397,6 +460,14 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   return (
     <div className="w-full">
+      <button
+        ref={mobileFocusTrapRef}
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        className="fixed left-0 top-0 h-px w-px opacity-0"
+      />
+
       {isMobileViewer && mode === "visitor" && (
         <div className="mb-4 rounded-[1.5rem] border border-[rgba(197,151,94,0.42)] bg-[rgba(168,121,69,0.1)] p-4">
           <p className="museum-label">Visita da smartphone</p>
@@ -428,10 +499,10 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
       )}
 
       <div
-  ref={viewerShellRef}
-  tabIndex={-1}
-  className="overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-black shadow-[var(--museum-shadow-soft)]"
->
+        ref={viewerShellRef}
+        tabIndex={-1}
+        className="overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-black shadow-[var(--museum-shadow-soft)]"
+      >
         <div className="flex flex-col justify-between gap-4 border-b border-[var(--museum-border)] bg-[rgba(8,7,5,0.94)] px-5 py-4 md:flex-row md:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -474,22 +545,25 @@ const iframeRef = useRef<HTMLIFrameElement | null>(null);
           </div>
         </div>
 
-        <div
-  ref={viewerStageRef}
-  className="relative bg-black"
->
+        <div ref={viewerStageRef} className="relative bg-black">
+          {isMobileViewer && mode === "visitor" && (
+            <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-[rgba(8,7,5,0.72)] bg-[rgba(8,7,5,0.78)] px-4 py-3 text-xs leading-5 text-[var(--museum-ivory-soft)] backdrop-blur-md">
+              Frecce touch per muoverti · trascina nel viewer per guardarti
+              intorno
+            </div>
+          )}
 
           <iframe
-  ref={iframeRef}
-  key={iframeVersion}
-  src={iframeSrc}
-  title={`3D gallery viewer ${galleryId}`}
-  className={`block w-full bg-black ${
-    isFullscreenActive ? "h-screen" : "h-[72vh]"
-  }`}
-  allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
-  allowFullScreen
-/>
+            ref={iframeRef}
+            key={iframeVersion}
+            src={iframeSrc}
+            title={`3D gallery viewer ${galleryId}`}
+            className={`block w-full bg-black ${
+              isFullscreenActive ? "h-screen" : "h-[72vh]"
+            }`}
+            allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
+            allowFullScreen
+          />
 
           {isMobileViewer && mode === "visitor" && (
             <div
