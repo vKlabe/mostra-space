@@ -123,7 +123,7 @@ export default function UnityFrameClient({
       payload
     );
 
-    setStatusMessage(`Configurazione inviata a Unity: ${mode}`);
+    setStatusMessage(`Configurazione mostra.space: ${mode}`);
   }
 
   function reloadFrame() {
