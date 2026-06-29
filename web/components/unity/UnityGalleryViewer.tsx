@@ -123,8 +123,10 @@ export default function UnityGalleryViewer({
 }: UnityGalleryViewerProps) {
   const [iframeVersion, setIframeVersion] = useState(0);
   const [isMobileViewer, setIsMobileViewer] = useState(false);
+  const [isFullscreenActive, setIsFullscreenActive] = useState(false);
   const viewerShellRef = useRef<HTMLDivElement | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+const viewerStageRef = useRef<HTMLDivElement | null>(null);
+const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const activeKeysRef = useRef<Set<MovementKey>>(new Set());
   const repeatIntervalRef = useRef<number | null>(null);
 
@@ -161,6 +163,18 @@ export default function UnityGalleryViewer({
   }, []);
 
   useEffect(() => {
+  function handleFullscreenChange() {
+    setIsFullscreenActive(document.fullscreenElement === viewerStageRef.current);
+  }
+
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+  return () => {
+    document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  };
+}, []);
+
+  useEffect(() => {
     function releaseAllKeys() {
       activeKeysRef.current.forEach((movementKey) => {
         sendMovementKey(movementKey, "keyup");
@@ -187,11 +201,11 @@ export default function UnityGalleryViewer({
   }
 
   async function openFullscreen() {
-  const iframe = iframeRef.current;
+  const stage = viewerStageRef.current;
 
-  if (iframe?.requestFullscreen) {
+  if (stage?.requestFullscreen) {
     try {
-      await iframe.requestFullscreen();
+      await stage.requestFullscreen();
       return;
     } catch {
       window.open(iframeSrc, "_blank", "noopener,noreferrer");
@@ -460,23 +474,22 @@ export default function UnityGalleryViewer({
           </div>
         </div>
 
-        <div className="relative">
-          {isMobileViewer && mode === "visitor" && (
-            <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-[rgba(8,7,5,0.72)] bg-[rgba(8,7,5,0.78)] px-4 py-3 text-xs leading-5 text-[var(--museum-ivory-soft)] backdrop-blur-md">
-              Frecce touch per muoverti · trascina nel viewer per guardarti
-              intorno
-            </div>
-          )}
+        <div
+  ref={viewerStageRef}
+  className="relative bg-black"
+>
 
           <iframe
-            ref={iframeRef}
-            key={iframeVersion}
-            src={iframeSrc}
-            title={`3D gallery viewer ${galleryId}`}
-            className="block h-[72vh] w-full bg-black"
-            allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
-            allowFullScreen
-          />
+  ref={iframeRef}
+  key={iframeVersion}
+  src={iframeSrc}
+  title={`3D gallery viewer ${galleryId}`}
+  className={`block w-full bg-black ${
+    isFullscreenActive ? "h-screen" : "h-[72vh]"
+  }`}
+  allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
+  allowFullScreen
+/>
 
           {isMobileViewer && mode === "visitor" && (
             <div
