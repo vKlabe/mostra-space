@@ -275,7 +275,7 @@ export default async function DashboardGalleriesPage({
   return (
     <DashboardShell
       title="Le tue gallerie"
-      subtitle="Crea, gestisci, pubblica e archivia le tue gallerie virtuali. Ogni galleria puo essere modificata nell editor Unity WebGL."
+      subtitle="Crea, gestisci, pubblica e archivia le tue gallerie virtuali. Ogni galleria puo essere modificata nell'editor."
       activeSection="gallerie"
       actions={
         <a
@@ -464,14 +464,11 @@ export default async function DashboardGalleriesPage({
                         </p>
 
                         {template && (
-                          <p className="mt-1 text-xs text-neutral-600">
-                            Piano minimo template:{" "}
-                            {getTemplatePlanLabel(
-                              template.available_from_plan || "free"
-                            )}{" "}
-                            · Unity key: {template.unity_scene_key}
-                          </p>
-                        )}
+  <p className="mt-1 text-xs text-neutral-600">
+    Piano minimo template:{" "}
+    {getTemplatePlanLabel(template.available_from_plan || "free")}
+  </p>
+)}
 
                         {gallery.description && (
                           <p className="mt-3 text-sm leading-6 text-neutral-400">
@@ -536,21 +533,14 @@ export default async function DashboardGalleriesPage({
                         )}
 
                         <a
-                          href={`/dashboard/gallerie-editor/${gallery.id}`}
-                          className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-                        >
-                          Editor Unity
-                        </a>
+  href={`/dashboard/gallerie-editor/${gallery.id}`}
+  className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+>
+  Editor
+</a>
 
-                        <a
-                          href={`/api/unity/galleries/${gallery.id}?mode=editor`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-500 transition hover:border-neutral-600 hover:text-neutral-300"
-                        >
-                          JSON Unity
-                        </a>
-                      </div>
+                        
+</div>
                     </div>
                   </article>
                 );
@@ -594,18 +584,11 @@ export default async function DashboardGalleriesPage({
                 </p>
 
                 <dl className="mt-4 space-y-1 text-xs text-neutral-500">
-                  <div>
-                    <dt className="inline">Unity key: </dt>
-                    <dd className="inline break-all">
-                      {template.unity_scene_key}
-                    </dd>
-                  </div>
-
-                  <div>
-                    <dt className="inline">Max opere: </dt>
-                    <dd className="inline">{template.max_artworks}</dd>
-                  </div>
-                </dl>
+  <div>
+    <dt className="inline">Max opere: </dt>
+    <dd className="inline">{template.max_artworks}</dd>
+  </div>
+</dl>
               </article>
             ))}
           </div>
