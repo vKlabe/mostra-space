@@ -187,20 +187,20 @@ export default function UnityGalleryViewer({
   }
 
   async function openFullscreen() {
-    const element = viewerShellRef.current;
+  const iframe = iframeRef.current;
 
-    if (element?.requestFullscreen) {
-      try {
-        await element.requestFullscreen();
-        return;
-      } catch {
-        window.open(iframeSrc, "_blank", "noopener,noreferrer");
-        return;
-      }
+  if (iframe?.requestFullscreen) {
+    try {
+      await iframe.requestFullscreen();
+      return;
+    } catch {
+      window.open(iframeSrc, "_blank", "noopener,noreferrer");
+      return;
     }
-
-    window.open(iframeSrc, "_blank", "noopener,noreferrer");
   }
+
+  window.open(iframeSrc, "_blank", "noopener,noreferrer");
+}
 
   function getIframeTargets(options?: { focus?: boolean }) {
     const iframe = iframeRef.current;
