@@ -9,6 +9,38 @@ type UnityGalleryViewerProps = {
   mode: UnityMode;
 };
 
+type MovementKey = "KeyW" | "KeyA" | "KeyS" | "KeyD";
+
+const movementKeyMap: Record<
+  MovementKey,
+  {
+    key: string;
+    code: MovementKey;
+    keyCode: number;
+  }
+> = {
+  KeyW: {
+    key: "w",
+    code: "KeyW",
+    keyCode: 87,
+  },
+  KeyA: {
+    key: "a",
+    code: "KeyA",
+    keyCode: 65,
+  },
+  KeyS: {
+    key: "s",
+    code: "KeyS",
+    keyCode: 83,
+  },
+  KeyD: {
+    key: "d",
+    code: "KeyD",
+    keyCode: 68,
+  },
+};
+
 function getViewerTitle(mode: UnityMode) {
   return mode === "editor" ? "Editor spazio 3D" : "Spazio immersivo";
 }
@@ -34,7 +66,32 @@ function getMobileControls(mode: UnityMode) {
     return "Per l’editor consigliamo desktop. Da smartphone o tablet puoi visualizzare, ma l’allestimento è più preciso da computer.";
   }
 
-  return "Per una visita migliore ruota il dispositivo in orizzontale e apri lo spazio a schermo intero. Da mobile puoi guardarti intorno con il dito; il movimento completo è ottimizzato per desktop.";
+  return "Usa le frecce touch per muoverti. Trascina il dito dentro lo spazio 3D per orientare la visuale. Per una visita migliore ruota il dispositivo in orizzontale.";
+}
+
+function createKeyboardEvent(type: "keydown" | "keyup", movementKey: MovementKey) {
+  const config = movementKeyMap[movementKey];
+
+  const event = new KeyboardEvent(type, {
+    key: config.key,
+    code: config.code,
+    bubbles: true,
+    cancelable: true,
+  });
+
+  try {
+    Object.defineProperty(event, "keyCode", {
+      get: () => config.keyCode,
+    });
+
+    Object.defineProperty(event, "which", {
+      get: () => config.keyCode,
+    });
+  } catch {
+    // Alcuni browser non permettono override di keyCode/which.
+  }
+
+  return event;
 }
 
 export default function UnityGalleryViewer({
@@ -44,11 +101,14 @@ export default function UnityGalleryViewer({
   const [iframeVersion, setIframeVersion] = useState(0);
   const [isMobileViewer, setIsMobileViewer] = useState(false);
   const viewerShellRef = useRef<HTMLDivElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const activeKeysRef = useRef<Set<MovementKey>>(new Set());
+  const repeatIntervalRef = useRef<number | null>(null);
 
   /**
    * IMPORTANTISSIMO:
-   * Non aggiungiamo mobile=1, #mobile=1 o altri parametri all'iframe.
-   * L'URL resta identico a prima per non interferire con il bootstrap Unity.
+   * L'URL resta identico alla versione stabile.
+   * Non aggiungiamo mobile=1, #mobile=1 o altri parametri.
    */
   const iframeSrc = `/unity-frame?galleryId=${encodeURIComponent(
     galleryId
@@ -77,7 +137,29 @@ export default function UnityGalleryViewer({
     };
   }, []);
 
+  useEffect(() => {
+    function releaseAllKeys() {
+      activeKeysRef.current.forEach((movementKey) => {
+        sendMovementKey(movementKey, "keyup");
+      });
+
+      activeKeysRef.current.clear();
+      stopRepeatMovementKeys();
+    }
+
+    window.addEventListener("blur", releaseAllKeys);
+    window.addEventListener("visibilitychange", releaseAllKeys);
+
+    return () => {
+      releaseAllKeys();
+      window.removeEventListener("blur", releaseAllKeys);
+      window.removeEventListener("visibilitychange", releaseAllKeys);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function reloadIframe() {
+    releaseAllMovementKeys();
     setIframeVersion((current) => current + 1);
   }
 
@@ -97,6 +179,145 @@ export default function UnityGalleryViewer({
     window.open(iframeSrc, "_blank", "noopener,noreferrer");
   }
 
+  function getIframeTargets() {
+    const iframe = iframeRef.current;
+
+    if (!iframe?.contentWindow) {
+      return [];
+    }
+
+    const targets: EventTarget[] = [iframe.contentWindow];
+
+    try {
+      const iframeDocument = iframe.contentWindow.document;
+
+      targets.push(iframeDocument);
+
+      const canvas = iframeDocument.querySelector("canvas");
+
+      if (canvas) {
+        targets.push(canvas);
+      }
+
+      iframe.contentWindow.focus();
+      canvas?.focus();
+    } catch {
+      // Same-origin dovrebbe permetterlo, ma se il browser blocca qualcosa evitiamo crash.
+    }
+
+    return targets;
+  }
+
+  function sendMovementKey(
+    movementKey: MovementKey,
+    type: "keydown" | "keyup"
+  ) {
+    const targets = getIframeTargets();
+
+    if (targets.length === 0) {
+      return;
+    }
+
+    targets.forEach((target) => {
+      target.dispatchEvent(createKeyboardEvent(type, movementKey));
+    });
+  }
+
+  function repeatActiveMovementKeys() {
+    activeKeysRef.current.forEach((movementKey) => {
+      sendMovementKey(movementKey, "keydown");
+    });
+  }
+
+  function startRepeatMovementKeys() {
+    if (repeatIntervalRef.current !== null) {
+      return;
+    }
+
+    repeatIntervalRef.current = window.setInterval(() => {
+      repeatActiveMovementKeys();
+    }, 80);
+  }
+
+  function stopRepeatMovementKeys() {
+    if (repeatIntervalRef.current === null) {
+      return;
+    }
+
+    window.clearInterval(repeatIntervalRef.current);
+    repeatIntervalRef.current = null;
+  }
+
+  function pressMovementKey(movementKey: MovementKey) {
+    if (mode !== "visitor") {
+      return;
+    }
+
+    activeKeysRef.current.add(movementKey);
+    sendMovementKey(movementKey, "keydown");
+    startRepeatMovementKeys();
+  }
+
+  function releaseMovementKey(movementKey: MovementKey) {
+    if (!activeKeysRef.current.has(movementKey)) {
+      return;
+    }
+
+    activeKeysRef.current.delete(movementKey);
+    sendMovementKey(movementKey, "keyup");
+
+    if (activeKeysRef.current.size === 0) {
+      stopRepeatMovementKeys();
+    }
+  }
+
+  function releaseAllMovementKeys() {
+    activeKeysRef.current.forEach((movementKey) => {
+      sendMovementKey(movementKey, "keyup");
+    });
+
+    activeKeysRef.current.clear();
+    stopRepeatMovementKeys();
+  }
+
+  function preventTouchDefaults(event: React.PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function renderMobileMoveButton(
+    movementKey: MovementKey,
+    label: string,
+    className = ""
+  ) {
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        onPointerDown={(event) => {
+          preventTouchDefaults(event);
+          event.currentTarget.setPointerCapture(event.pointerId);
+          pressMovementKey(movementKey);
+        }}
+        onPointerUp={(event) => {
+          preventTouchDefaults(event);
+          releaseMovementKey(movementKey);
+        }}
+        onPointerCancel={(event) => {
+          preventTouchDefaults(event);
+          releaseMovementKey(movementKey);
+        }}
+        onPointerLeave={(event) => {
+          preventTouchDefaults(event);
+          releaseMovementKey(movementKey);
+        }}
+        className={`flex h-14 w-14 select-none items-center justify-center rounded-2xl border border-[rgba(197,151,94,0.5)] bg-[rgba(8,7,5,0.78)] text-2xl font-semibold text-[var(--museum-ivory)] shadow-2xl backdrop-blur-md active:bg-[rgba(197,151,94,0.78)] active:text-[var(--museum-black)] ${className}`}
+      >
+        {label}
+      </button>
+    );
+  }
+
   return (
     <div className="w-full">
       {isMobileViewer && mode === "visitor" && (
@@ -108,9 +329,9 @@ export default function UnityGalleryViewer({
           </h3>
 
           <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-            Lo spazio 3D è visitabile anche da mobile, ma per ora il movimento
-            completo è ottimizzato per computer. Da smartphone puoi esplorare la
-            visuale con il dito e consultare il catalogo opere sotto al viewer.
+            Usa le frecce touch per muoverti nello spazio. Trascina il dito
+            dentro il viewer per orientare la visuale. Per una visita migliore,
+            ruota il dispositivo in orizzontale.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-3">
@@ -146,7 +367,7 @@ export default function UnityGalleryViewer({
 
               {isMobileViewer && mode === "visitor" && (
                 <span className="rounded-full border border-[rgba(197,151,94,0.42)] bg-[rgba(168,121,69,0.1)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--museum-bronze-light)]">
-                  Mobile
+                  Touch
                 </span>
               )}
             </div>
@@ -178,12 +399,13 @@ export default function UnityGalleryViewer({
         <div className="relative">
           {isMobileViewer && mode === "visitor" && (
             <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-[rgba(8,7,5,0.72)] bg-[rgba(8,7,5,0.78)] px-4 py-3 text-xs leading-5 text-[var(--museum-ivory-soft)] backdrop-blur-md">
-              Ruota il dispositivo in orizzontale · usa “Schermo intero” ·
-              catalogo disponibile sotto
+              Frecce touch per muoverti · trascina nel viewer per guardarti
+              intorno
             </div>
           )}
 
           <iframe
+            ref={iframeRef}
             key={iframeVersion}
             src={iframeSrc}
             title={`3D gallery viewer ${galleryId}`}
@@ -191,6 +413,22 @@ export default function UnityGalleryViewer({
             allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
             allowFullScreen
           />
+
+          {isMobileViewer && mode === "visitor" && (
+            <div
+              className="absolute bottom-5 left-5 z-20 grid grid-cols-3 gap-2"
+              onPointerLeave={releaseAllMovementKeys}
+              onPointerCancel={releaseAllMovementKeys}
+            >
+              <div />
+              {renderMobileMoveButton("KeyW", "↑")}
+              <div />
+
+              {renderMobileMoveButton("KeyA", "←")}
+              {renderMobileMoveButton("KeyS", "↓")}
+              {renderMobileMoveButton("KeyD", "→")}
+            </div>
+          )}
         </div>
       </div>
 
