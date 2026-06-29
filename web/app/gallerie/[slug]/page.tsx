@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import MuseumHeader from "@/components/site/MuseumHeader";
+import LegalFooter from "@/components/legal/LegalFooter";
 import PublicGalleryInquiryForm from "@/components/public/PublicGalleryInquiryForm";
 import UnityGalleryViewer from "@/components/unity/UnityGalleryViewer";
 import DataErrorCard from "@/components/system/DataErrorCard";
@@ -106,6 +109,42 @@ function getArtworkAuthorLine(artwork: Artwork) {
   return artist;
 }
 
+function formatPublishedDate(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toLocaleDateString("it-IT", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function GalleryImagePreview({
+  src,
+  alt,
+}: {
+  src: string | null;
+  alt: string;
+}) {
+  if (!src) {
+    return (
+      <div className="flex aspect-[4/3] w-full items-center justify-center rounded-[1.5rem] border border-[var(--museum-border)] bg-[radial-gradient(circle_at_35%_15%,rgba(243,237,226,0.2),transparent_12rem),linear-gradient(135deg,rgba(168,121,69,0.2),rgba(8,7,5,0.92))] text-sm text-[var(--museum-stone-muted)]">
+        Anteprima non disponibile
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="aspect-[4/3] w-full rounded-[1.5rem] object-cover"
+    />
+  );
+}
+
 export default async function PublicGalleryDetailPage({
   params,
   searchParams,
@@ -131,7 +170,7 @@ export default async function PublicGalleryDetailPage({
     notFound();
   }
 
-    const {
+  const {
     data: { user: currentUser },
   } = await supabase.auth.getUser();
 
@@ -219,11 +258,9 @@ export default async function PublicGalleryDetailPage({
 
   const heroDescription =
     gallery.description ||
-    "Una galleria virtuale visitabile direttamente dal browser, con opere selezionate, schede informative e un ambiente 3D navigabile.";
+    "Una galleria virtuale visitabile direttamente dal browser, con opere selezionate, schede informative e un ambiente immersivo navigabile.";
 
-  const publishedDate = gallery.published_at
-    ? new Date(gallery.published_at).toLocaleDateString("it-IT")
-    : null;
+  const publishedDate = formatPublishedDate(gallery.published_at);
 
   const positionedPublicArtworks = publicArtworks.filter(
     (item) => item.wallKey && item.wallKey.trim().length > 0
@@ -236,111 +273,104 @@ export default async function PublicGalleryDetailPage({
   const featuredArtwork = selectedArtwork || publicArtworks[0] || null;
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-50">
-      <section className="relative isolate overflow-hidden border-b border-neutral-800">
+    <main className="museum-page min-h-screen overflow-hidden">
+      <MuseumHeader />
+
+      <section className="relative isolate overflow-hidden border-b border-[var(--museum-border)]">
         {gallery.cover_image_url && (
           <div className="absolute inset-0 -z-10">
             <img
               src={gallery.cover_image_url}
               alt={gallery.title}
-              className="h-full w-full scale-105 object-cover opacity-35 blur-[1px]"
+              className="h-full w-full scale-105 object-cover opacity-25 blur-[1px]"
             />
 
-            <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/40 via-neutral-950/80 to-neutral-950" />
-            <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/85 to-neutral-950/35" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,7,5,0.38),rgba(8,7,5,0.96)),linear-gradient(90deg,rgba(8,7,5,0.98),rgba(8,7,5,0.78),rgba(8,7,5,0.46))]" />
           </div>
         )}
 
         {!gallery.cover_image_url && (
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.08),_transparent_28%)]" />
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(168,121,69,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(216,205,187,0.08),transparent_28%)]" />
         )}
 
-        <div className="relative mx-auto max-w-7xl px-5 py-10 lg:px-8 lg:py-20">
-          <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+        <div className="relative mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
+          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.8fr] lg:items-end">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-white/80 backdrop-blur">
+                <span className="museum-pill rounded-full px-3 py-1 text-xs uppercase tracking-[0.16em]">
                   Virtual exhibition
                 </span>
 
-                <span className="rounded-full border border-green-900 bg-green-950/40 px-3 py-1 text-xs uppercase tracking-[0.18em] text-green-300">
+                <span className="rounded-full border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-3 py-1 text-xs uppercase tracking-[0.16em] text-[var(--museum-success)]">
                   Galleria pubblica
                 </span>
 
                 {publishedDate && (
-                  <span className="text-sm text-neutral-400">
+                  <span className="text-sm text-[var(--museum-stone-muted)]">
                     Pubblicata il {publishedDate}
                   </span>
                 )}
               </div>
 
-              <h1 className="mt-7 max-w-5xl text-5xl font-semibold leading-[0.95] tracking-tight md:text-7xl">
+              <h1 className="museum-title mt-7 max-w-5xl text-6xl text-[var(--museum-ivory)] md:text-8xl">
                 {gallery.title}
               </h1>
 
-              <p className="mt-7 max-w-3xl text-base leading-8 text-neutral-300 md:text-lg">
+              <p className="museum-subtitle mt-7 max-w-3xl text-base leading-8 text-[var(--museum-stone)] md:text-lg">
                 {heroDescription}
               </p>
 
               <div className="mt-9 flex flex-wrap gap-3">
-                <a
-                  href="#viewer"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-                >
-                  Entra nello spazio 3D
+                <a href="#viewer" className="museum-button-primary px-6 py-3">
+                  Entra nello spazio immersivo
                 </a>
 
-                <a
-                  href="#catalogo"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-neutral-600 px-6 text-sm font-medium text-neutral-100 transition hover:border-neutral-300"
-                >
+                <a href="#catalogo" className="museum-button-secondary px-6 py-3">
                   Sfoglia le opere
                 </a>
 
-                <a
-                  href="#richiesta"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-neutral-700 px-6 text-sm font-medium text-neutral-300 transition hover:border-neutral-400 hover:text-white"
-                >
+                <a href="#richiesta" className="museum-button-secondary px-6 py-3">
                   Richiedi informazioni
                 </a>
+
                 <FavoriteGalleryButton galleryId={gallery.id} />
               </div>
 
               <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">
-                <div className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-5 backdrop-blur">
-                  <p className="text-3xl font-semibold">
+                <div className="museum-stat-card rounded-[1.5rem] p-5">
+                  <p className="font-editorial text-4xl text-[var(--museum-ivory)]">
                     {publicArtworks.length}
                   </p>
 
-                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
                     Opere pubbliche
                   </p>
                 </div>
 
-                <div className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-5 backdrop-blur">
-                  <p className="text-3xl font-semibold">
+                <div className="museum-stat-card rounded-[1.5rem] p-5">
+                  <p className="font-editorial text-4xl text-[var(--museum-ivory)]">
                     {positionedPublicArtworks}
                   </p>
 
-                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
-                    Allestite in 3D
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
+                    In allestimento
                   </p>
                 </div>
 
-                <div className="rounded-3xl border border-neutral-800 bg-neutral-900/70 p-5 backdrop-blur">
-                  <p className="text-3xl font-semibold">
+                <div className="museum-stat-card rounded-[1.5rem] p-5">
+                  <p className="font-editorial text-4xl text-[var(--museum-ivory)]">
                     {forSalePublicArtworks}
                   </p>
 
-                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-neutral-500">
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
                     Disponibili
                   </p>
                 </div>
               </div>
             </div>
 
-            <aside className="rounded-[2rem] border border-neutral-800 bg-neutral-900/80 p-4 shadow-2xl backdrop-blur">
-              <div className="overflow-hidden rounded-[1.5rem] border border-neutral-800 bg-neutral-950">
+            <aside className="museum-card rounded-[2rem] p-4 shadow-[var(--museum-shadow-soft)]">
+              <div className="overflow-hidden rounded-[1.5rem] border border-[var(--museum-border)] bg-[var(--museum-black)]">
                 {featuredArtwork ? (
                   <img
                     src={
@@ -350,48 +380,53 @@ export default async function PublicGalleryDetailPage({
                     alt={featuredArtwork.artwork.title}
                     className="aspect-[4/3] w-full object-cover"
                   />
-                ) : gallery.cover_image_url ? (
-                  <img
+                ) : (
+                  <GalleryImagePreview
                     src={gallery.cover_image_url}
                     alt={gallery.title}
-                    className="aspect-[4/3] w-full object-cover"
                   />
-                ) : (
-                  <div className="flex aspect-[4/3] items-center justify-center bg-neutral-950 text-sm text-neutral-600">
-                    Anteprima non disponibile
-                  </div>
                 )}
               </div>
 
               <div className="p-3">
-                <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-                  Opera in evidenza
-                </p>
+                <p className="museum-label">Opera in evidenza</p>
 
-                <h2 className="mt-3 text-2xl font-medium">
+                <h2 className="mt-3 font-editorial text-4xl font-medium leading-tight text-[var(--museum-ivory)]">
                   {featuredArtwork?.artwork.title || gallery.title}
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-neutral-400">
+                <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
                   {featuredArtwork
                     ? getArtworkAuthorLine(featuredArtwork.artwork)
-                    : "Esperienza digitale visitabile via browser."}
+                    : "Esperienza immersiva visitabile via browser."}
                 </p>
 
-                <div className="mt-5 grid gap-3 text-sm">
-                  <div className="flex justify-between gap-4 border-t border-neutral-800 pt-3">
-                    <span className="text-neutral-500">Esperienza</span>
-                    <span className="text-neutral-100">Unity WebGL</span>
+                <div className="mt-6 grid gap-3 text-sm">
+                  <div className="flex justify-between gap-4 border-t border-[var(--museum-border)] pt-3">
+                    <span className="text-[var(--museum-stone-muted)]">
+                      Formato
+                    </span>
+                    <span className="text-[var(--museum-ivory-soft)]">
+                      Galleria immersiva
+                    </span>
                   </div>
 
-                  <div className="flex justify-between gap-4 border-t border-neutral-800 pt-3">
-                    <span className="text-neutral-500">Accesso</span>
-                    <span className="text-neutral-100">Browser</span>
+                  <div className="flex justify-between gap-4 border-t border-[var(--museum-border)] pt-3">
+                    <span className="text-[var(--museum-stone-muted)]">
+                      Accesso
+                    </span>
+                    <span className="text-[var(--museum-ivory-soft)]">
+                      Browser
+                    </span>
                   </div>
 
-                  <div className="flex justify-between gap-4 border-t border-neutral-800 pt-3">
-                    <span className="text-neutral-500">Fallback</span>
-                    <span className="text-neutral-100">Catalogo + form</span>
+                  <div className="flex justify-between gap-4 border-t border-[var(--museum-border)] pt-3">
+                    <span className="text-[var(--museum-stone-muted)]">
+                      Contatto
+                    </span>
+                    <span className="text-[var(--museum-ivory-soft)]">
+                      Catalogo + richieste
+                    </span>
                   </div>
                 </div>
               </div>
@@ -400,64 +435,56 @@ export default async function PublicGalleryDetailPage({
         </div>
       </section>
 
-      <section id="viewer" className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
+      <section id="viewer" className="mx-auto max-w-7xl px-4 py-12 md:px-8">
         <div className="mb-7 grid gap-5 lg:grid-cols-[0.8fr_0.2fr] lg:items-end">
           <div>
-            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Esperienza immersiva
-            </p>
+            <p className="museum-label">Esperienza immersiva</p>
 
-            <h2 className="text-3xl font-semibold md:text-4xl">
-              Entra nello spazio virtuale
+            <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
+              Entra nello spazio virtuale.
             </h2>
 
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
-              Visita l’allestimento 3D, muoviti tra le pareti e clicca sulle
-              opere per aprire le schede informative. Il catalogo sotto resta
-              sempre disponibile come fallback pubblico.
+            <p className="museum-subtitle mt-5 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
+              Visita l’allestimento, muoviti tra le pareti e clicca sulle opere
+              per aprire le schede informative. Il catalogo sotto resta sempre
+              disponibile come accesso alternativo.
             </p>
           </div>
 
-          <a
-            href="#richiesta"
-            className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
-          >
+          <a href="#richiesta" className="museum-button-secondary px-5 py-2.5">
             Contatta
           </a>
         </div>
 
-        <UnityGalleryViewer galleryId={gallery.id} mode="visitor" />
+        <div className="overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)]">
+          <UnityGalleryViewer galleryId={gallery.id} mode="visitor" />
+        </div>
 
-        <div className="mt-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <div className="museum-card mt-6 rounded-[1.75rem] p-6">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-neutral-500">
-                Accesso alternativo
-              </p>
+              <p className="museum-label">Accesso alternativo</p>
 
-              <h3 className="text-xl font-medium text-neutral-100">
-                Se il 3D non si carica, la galleria resta consultabile
+              <h3 className="mt-3 font-editorial text-3xl font-medium text-[var(--museum-ivory)]">
+                Se lo spazio immersivo non si carica, la galleria resta
+                consultabile.
               </h3>
 
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-                Unity WebGL può richiedere qualche secondo al primo avvio o non
-                essere disponibile su alcuni browser/dispositivi. Puoi comunque
-                vedere tutte le opere pubbliche nel catalogo e inviare una
-                richiesta informazioni.
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
+                Alcuni dispositivi o browser possono richiedere più tempo per
+                avviare l’esperienza 3D. Puoi comunque vedere tutte le opere
+                pubbliche nel catalogo e inviare una richiesta informazioni.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-              <a
-                href="#catalogo"
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-              >
+              <a href="#catalogo" className="museum-button-primary px-5 py-2.5">
                 Vai al catalogo
               </a>
 
               <a
                 href="#richiesta"
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm font-medium text-neutral-100 transition hover:border-neutral-400"
+                className="museum-button-secondary px-5 py-2.5"
               >
                 Richiedi informazioni
               </a>
@@ -466,158 +493,130 @@ export default async function PublicGalleryDetailPage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-10 md:px-8">
         <div className="grid gap-6 lg:grid-cols-3">
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-              01
-            </p>
+          {[
+            [
+              "01",
+              "Visita libera",
+              "La galleria è navigabile direttamente da browser. Non serve installare nulla: basta entrare nello spazio e iniziare la visita.",
+            ],
+            [
+              "02",
+              "Schede opera",
+              "Ogni opera può essere approfondita con titolo, artista, tecnica, dimensioni, disponibilità e descrizione.",
+            ],
+            [
+              "03",
+              "Richieste dirette",
+              "Dal viewer o dal catalogo puoi inviare una richiesta specifica sulla galleria o su una singola opera.",
+            ],
+          ].map(([number, title, description]) => (
+            <article
+              key={number}
+              className="museum-card rounded-[1.75rem] p-6"
+            >
+              <p className="museum-label">{number}</p>
 
-            <h3 className="text-xl font-medium">Visita libera</h3>
+              <h3 className="mt-4 font-editorial text-3xl font-medium text-[var(--museum-ivory)]">
+                {title}
+              </h3>
 
-            <p className="mt-3 text-sm leading-7 text-neutral-400">
-              La galleria è navigabile direttamente da browser. Non serve
-              installare nulla: basta entrare nello spazio e iniziare la visita.
-            </p>
-          </article>
-
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-              02
-            </p>
-
-            <h3 className="text-xl font-medium">Schede opera</h3>
-
-            <p className="mt-3 text-sm leading-7 text-neutral-400">
-              Ogni opera può essere approfondita con titolo, artista, tecnica,
-              dimensioni, disponibilità e descrizione.
-            </p>
-          </article>
-
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-              03
-            </p>
-
-            <h3 className="text-xl font-medium">Richieste dirette</h3>
-
-            <p className="mt-3 text-sm leading-7 text-neutral-400">
-              Dal viewer o dal catalogo puoi inviare una richiesta specifica
-              sulla galleria o su una singola opera.
-            </p>
-          </article>
+              <p className="mt-3 text-sm leading-7 text-[var(--museum-stone)]">
+                {description}
+              </p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-8">
-            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Il progetto
-            </p>
+          <div className="museum-card rounded-[2rem] p-8">
+            <p className="museum-label">Il progetto</p>
 
-            <h2 className="text-3xl font-semibold md:text-4xl">
-              Una galleria pensata per essere visitata anche a distanza
+            <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)]">
+              Una galleria pensata per essere visitata anche a distanza.
             </h2>
 
-            <p className="mt-5 text-sm leading-8 text-neutral-400">
+            <p className="mt-5 text-sm leading-8 text-[var(--museum-stone)]">
               Questa pagina unisce allestimento virtuale, catalogo opere e
               richiesta diretta di informazioni. Il visitatore può entrare nello
-              spazio 3D, leggere le schede delle opere e contattare il
-              gallerista senza uscire dall’esperienza.
+              spazio, leggere le schede delle opere e contattare il gallerista
+              senza uscire dall’esperienza.
             </p>
 
-            <p className="mt-4 text-sm leading-8 text-neutral-400">
+            <p className="mt-4 text-sm leading-8 text-[var(--museum-stone)]">
               Il viewer immersivo offre la dimensione spaziale della mostra,
               mentre il catalogo sottostante garantisce sempre un accesso
-              semplice e consultabile anche quando il 3D non è disponibile.
+              semplice e consultabile anche quando l’esperienza 3D non è
+              disponibile.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="#viewer"
-                className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-              >
-                Visita in 3D
+              <a href="#viewer" className="museum-button-primary px-5 py-2.5">
+                Visita lo spazio
               </a>
 
-              <a
-                href="#catalogo"
-                className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
-              >
+              <a href="#catalogo" className="museum-button-secondary px-5 py-2.5">
                 Consulta catalogo
               </a>
             </div>
           </div>
 
           <div className="grid gap-4">
-            <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-                Come visitare
-              </p>
+            {[
+              [
+                "Come visitare",
+                "Entra, muoviti, clicca sulle opere",
+                "Apri il viewer, clicca per entrare nella visita, usa i comandi di movimento e seleziona le opere per visualizzarne le schede.",
+              ],
+              [
+                "Catalogo e disponibilità",
+                "Ogni opera resta consultabile",
+                "Il catalogo pubblico raccoglie immagini, dati tecnici, artista, anno, prezzo o disponibilità. Da ogni scheda puoi inviare una richiesta dedicata.",
+              ],
+              [
+                "Contatto diretto",
+                "Dal visitatore al gallerista",
+                "Il form raccoglie richieste su opere, disponibilità, prezzi, appuntamenti o informazioni generali sull’allestimento.",
+              ],
+            ].map(([eyebrow, title, description]) => (
+              <article
+                key={eyebrow}
+                className="museum-card rounded-[1.75rem] p-6"
+              >
+                <p className="museum-label">{eyebrow}</p>
 
-              <h3 className="mt-3 text-xl font-medium">
-                Entra, muoviti, clicca sulle opere
-              </h3>
+                <h3 className="mt-3 font-editorial text-3xl font-medium text-[var(--museum-ivory)]">
+                  {title}
+                </h3>
 
-              <p className="mt-3 text-sm leading-7 text-neutral-400">
-                Apri il viewer, clicca per entrare nella visita, usa i comandi
-                di movimento e seleziona le opere per visualizzarne le schede.
-              </p>
-            </article>
-
-            <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-                Catalogo e disponibilità
-              </p>
-
-              <h3 className="mt-3 text-xl font-medium">
-                Ogni opera resta consultabile
-              </h3>
-
-              <p className="mt-3 text-sm leading-7 text-neutral-400">
-                Il catalogo pubblico raccoglie immagini, dati tecnici, artista,
-                anno, prezzo o disponibilità. Da ogni scheda puoi inviare una
-                richiesta dedicata.
-              </p>
-            </article>
-
-            <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-                Contatto diretto
-              </p>
-
-              <h3 className="mt-3 text-xl font-medium">
-                Dal visitatore al gallerista
-              </h3>
-
-              <p className="mt-3 text-sm leading-7 text-neutral-400">
-                Il form raccoglie richieste su opere, disponibilità, prezzi,
-                appuntamenti o informazioni generali sull’allestimento.
-              </p>
-            </article>
+                <p className="mt-3 text-sm leading-7 text-[var(--museum-stone)]">
+                  {description}
+                </p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="catalogo" className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
+      <section id="catalogo" className="mx-auto max-w-7xl px-4 py-12 md:px-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Catalogo opere
-            </p>
+            <p className="museum-label">Catalogo opere</p>
 
-            <h2 className="text-3xl font-semibold md:text-4xl">
-              Opere esposte
+            <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
+              Opere esposte.
             </h2>
 
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
+            <p className="museum-subtitle mt-5 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
               Consulta le opere visibili al pubblico. Ogni scheda permette di
               richiedere informazioni, disponibilità o dettagli commerciali.
             </p>
           </div>
 
-          <p className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm text-neutral-400">
+          <p className="museum-pill rounded-full px-4 py-2 text-sm">
             {publicArtworks.length} opere pubbliche
           </p>
         </div>
@@ -664,10 +663,10 @@ export default async function PublicGalleryDetailPage({
               return (
                 <article
                   key={galleryArtworkId}
-                  className="group overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-900 transition hover:border-neutral-600"
+                  className="group overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)] transition hover:border-[var(--museum-bronze)]"
                 >
                   <div className="grid gap-0 md:grid-cols-[260px_1fr]">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-neutral-950 md:aspect-auto">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-[var(--museum-black)] md:aspect-auto">
                       <img
                         src={artwork.thumbnail_url || artwork.image_url}
                         alt={artwork.title}
@@ -676,7 +675,7 @@ export default async function PublicGalleryDetailPage({
 
                       <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                         {artwork.is_for_sale && (
-                          <span className="rounded-full border border-blue-900 bg-blue-950/80 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-200 backdrop-blur">
+                          <span className="rounded-full border border-[rgba(197,151,94,0.45)] bg-[rgba(168,121,69,0.14)] px-3 py-1 text-xs uppercase tracking-[0.15em] text-[var(--museum-bronze-light)] backdrop-blur">
                             Disponibile
                           </span>
                         )}
@@ -684,33 +683,33 @@ export default async function PublicGalleryDetailPage({
                     </div>
 
                     <div className="p-6">
-                      <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+                      <p className="museum-label">
                         Opera #{String(galleryArtworkId).slice(0, 8)}
                       </p>
 
-                      <h3 className="mt-3 text-2xl font-medium leading-tight">
+                      <h3 className="mt-3 font-editorial text-3xl font-medium leading-tight text-[var(--museum-ivory)]">
                         {artwork.title}
                       </h3>
 
                       <div className="mt-4">
-  <FavoriteArtworkButton artworkId={artwork.id} />
-</div>
+                        <FavoriteArtworkButton artworkId={artwork.id} />
+                      </div>
 
-                      <p className="mt-2 text-sm text-neutral-400">
+                      <p className="mt-3 text-sm text-[var(--museum-stone)]">
                         {getArtworkAuthorLine(artwork)}
                       </p>
 
-                      <div className="mt-5 inline-flex rounded-full border border-neutral-800 bg-neutral-950 px-4 py-2 text-sm text-neutral-200">
+                      <div className="mt-5 inline-flex rounded-full border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] px-4 py-2 text-sm text-[var(--museum-ivory-soft)]">
                         {availabilityLabel}
                       </div>
 
-                      <dl className="mt-5 space-y-2 text-sm text-neutral-500">
+                      <dl className="mt-5 space-y-2 text-sm text-[var(--museum-stone-muted)]">
                         {artwork.technique && (
                           <div>
-                            <dt className="inline text-neutral-600">
+                            <dt className="inline text-[var(--museum-stone-muted)]">
                               Tecnica:{" "}
                             </dt>
-                            <dd className="inline text-neutral-300">
+                            <dd className="inline text-[var(--museum-ivory-soft)]">
                               {artwork.technique}
                             </dd>
                           </div>
@@ -718,10 +717,10 @@ export default async function PublicGalleryDetailPage({
 
                         {artwork.dimensions && (
                           <div>
-                            <dt className="inline text-neutral-600">
+                            <dt className="inline text-[var(--museum-stone-muted)]">
                               Dimensioni:{" "}
                             </dt>
-                            <dd className="inline text-neutral-300">
+                            <dd className="inline text-[var(--museum-ivory-soft)]">
                               {artwork.dimensions}
                             </dd>
                           </div>
@@ -729,7 +728,7 @@ export default async function PublicGalleryDetailPage({
                       </dl>
 
                       {artwork.description && (
-                        <p className="mt-5 line-clamp-3 text-sm leading-7 text-neutral-400">
+                        <p className="mt-5 line-clamp-3 text-sm leading-7 text-[var(--museum-stone)]">
                           {artwork.description}
                         </p>
                       )}
@@ -737,21 +736,21 @@ export default async function PublicGalleryDetailPage({
                       <div className="mt-6 flex flex-wrap gap-3">
                         <a
                           href={inquiryHref}
-                          className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                          className="museum-button-primary px-5 py-2.5"
                         >
                           Richiedi informazioni
                         </a>
 
                         <a
                           href="#viewer"
-                          className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
+                          className="museum-button-secondary px-5 py-2.5"
                         >
-                          Vedi nel 3D
+                          Vedi nello spazio
                         </a>
                       </div>
 
-                      <details className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-                        <summary className="cursor-pointer text-sm font-medium text-neutral-100">
+                      <details className="mt-6 rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
+                        <summary className="cursor-pointer text-sm font-medium text-[var(--museum-ivory-soft)]">
                           Apri form rapido per quest’opera
                         </summary>
 
@@ -774,48 +773,44 @@ export default async function PublicGalleryDetailPage({
         )}
       </section>
 
-      <section id="richiesta" className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
+      <section id="richiesta" className="mx-auto max-w-7xl px-4 py-12 md:px-8">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-8">
-            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Contatto
-            </p>
+          <div className="museum-card rounded-[2rem] p-8">
+            <p className="museum-label">Contatto</p>
 
-            <h2 className="text-3xl font-semibold md:text-4xl">
+            <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)]">
               {selectedArtwork
-                ? "Richiesta per l’opera selezionata"
+                ? "Richiesta per l’opera selezionata."
                 : "Vuoi informazioni sulla galleria?"}
             </h2>
 
-            <p className="mt-5 text-sm leading-7 text-neutral-400">
+            <p className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
               {selectedArtwork
                 ? `Il form è stato predisposto per l’opera "${selectedArtwork.artwork.title}". Puoi modificare liberamente il messaggio prima dell’invio.`
                 : "Usa il form per chiedere disponibilità, prezzi, dettagli sulle opere, appuntamenti o informazioni sull’allestimento."}
             </p>
 
             {selectedArtwork && (
-              <div className="mt-6 rounded-2xl border border-blue-900 bg-blue-950/30 p-5">
-                <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
-                  Opera selezionata
-                </p>
+              <div className="mt-6 rounded-2xl border border-[rgba(197,151,94,0.45)] bg-[rgba(168,121,69,0.08)] p-5">
+                <p className="museum-label">Opera selezionata</p>
 
-                <p className="mt-2 text-base font-medium text-neutral-100">
+                <p className="mt-3 font-editorial text-3xl text-[var(--museum-ivory)]">
                   {selectedArtwork.artwork.title}
                 </p>
 
-                <p className="mt-1 text-sm text-neutral-400">
+                <p className="mt-2 text-sm text-[var(--museum-stone)]">
                   {getArtworkAuthorLine(selectedArtwork.artwork)}
                 </p>
               </div>
             )}
 
             <div className="mt-6 grid gap-3">
-              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5">
-                <p className="text-sm font-medium text-neutral-100">
+              <div className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
+                <p className="text-sm font-medium text-[var(--museum-ivory-soft)]">
                   Cosa puoi chiedere
                 </p>
 
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-neutral-400">
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-[var(--museum-stone)]">
                   <li>• informazioni su prezzo e disponibilità</li>
                   <li>• dettagli tecnici o documentazione dell’opera</li>
                   <li>• appuntamenti, visite o contatto diretto</li>
@@ -823,21 +818,21 @@ export default async function PublicGalleryDetailPage({
                 </ul>
               </div>
 
-              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5">
-                <p className="text-sm leading-7 text-neutral-400">
+              <div className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
+                <p className="text-sm leading-7 text-[var(--museum-stone)]">
                   I dati inviati saranno usati solo per rispondere alla tua
                   richiesta. Puoi leggere l’informativa completa nella pagina
                   privacy.
                 </p>
 
-                <a
-                  href="/privacy"
+                <Link
+                  href="/legal/privacy"
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 inline-flex text-sm text-neutral-100 underline underline-offset-4 hover:text-white"
+                  className="museum-link mt-4 inline-flex text-sm underline-offset-4 hover:underline"
                 >
                   Leggi informativa privacy
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -852,42 +847,35 @@ export default async function PublicGalleryDetailPage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 pb-12 pt-4 lg:px-8">
-        <div className="flex flex-col justify-between gap-4 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 md:flex-row md:items-center">
+      <section className="mx-auto max-w-7xl px-4 pb-12 pt-4 md:px-8">
+        <div className="flex flex-col justify-between gap-4 rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-6 md:flex-row md:items-center">
           <div>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-[var(--museum-stone)]">
               Stai visualizzando una galleria pubblica.
             </p>
 
-            <p className="mt-1 text-xs text-neutral-600">
+            <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
               /gallerie/{gallery.slug}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <a
-              href="#viewer"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-            >
+            <a href="#viewer" className="museum-button-primary px-5 py-2.5">
               Torna al viewer
             </a>
 
-            <a
-              href="#catalogo"
-              className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
+            <a href="#catalogo" className="museum-button-secondary px-5 py-2.5">
               Catalogo opere
             </a>
 
-            <a
-              href="/gallerie"
-              className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 px-5 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
+            <Link href="/gallerie" className="museum-button-secondary px-5 py-2.5">
               Altre gallerie
-            </a>
+            </Link>
           </div>
         </div>
       </section>
+
+      <LegalFooter />
     </main>
   );
 }
