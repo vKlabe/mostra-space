@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   bytesToMb,
   formatLimitValue,
@@ -144,35 +145,87 @@ export default function CreateArtworkForm({
     }
 
     setIsLoading(true);
-    setMessage("");
+    setMessage("Preparazione upload...");
 
     try {
-      const formData = new FormData();
+      const metadataPayload = {
+        title,
+        artist_name: artistName,
+        year,
+        technique,
+        dimensions,
+        width_cm: widthCm,
+        height_cm: heightCm,
+        depth_cm: depthCm,
+        price,
+        currency,
+        description,
+        is_for_sale: String(isForSale),
+        is_public: String(isPublic),
+      };
 
-      formData.append("title", title);
-      formData.append("artist_name", artistName);
-      formData.append("year", year);
-      formData.append("technique", technique);
-      formData.append("dimensions", dimensions);
-      formData.append("width_cm", widthCm);
-      formData.append("height_cm", heightCm);
-      formData.append("depth_cm", depthCm);
-      formData.append("price", price);
-      formData.append("currency", currency);
-      formData.append("description", description);
-      formData.append("is_for_sale", String(isForSale));
-      formData.append("is_public", String(isPublic));
-      formData.append("image_file", file);
-
-      const response = await fetch("/api/dashboard/artworks", {
+      const prepareResponse = await fetch("/api/dashboard/artworks", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "prepare-upload",
+          fileName: file.name,
+          fileType: file.type,
+          fileSizeBytes: file.size,
+        }),
       });
 
-      const data = await response.json();
+      const prepareData = await prepareResponse.json().catch(() => null);
 
-      if (!response.ok) {
-        setMessage(data.error || "Errore creazione opera.");
+      if (!prepareResponse.ok || !prepareData?.uploadToken) {
+        setMessage(
+          prepareData?.error || "Errore preparazione upload immagine."
+        );
+        return;
+      }
+
+      setMessage("Caricamento immagine...");
+
+      const supabase = createClient();
+
+      const { error: uploadError } = await supabase.storage
+        .from("artworks")
+        .uploadToSignedUrl(
+          prepareData.storagePath,
+          prepareData.uploadToken,
+          file,
+          {
+            contentType: file.type,
+          }
+        );
+
+      if (uploadError) {
+        setMessage(uploadError.message || "Errore upload immagine.");
+        return;
+      }
+
+      setMessage("Salvataggio opera...");
+
+      const createResponse = await fetch("/api/dashboard/artworks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "create-artwork",
+          ...metadataPayload,
+          storagePath: prepareData.storagePath,
+          fileSizeBytes: file.size,
+          fileType: file.type,
+        }),
+      });
+
+      const createData = await createResponse.json().catch(() => null);
+
+      if (!createResponse.ok) {
+        setMessage(createData?.error || "Errore creazione opera.");
         return;
       }
 
