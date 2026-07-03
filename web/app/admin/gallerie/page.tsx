@@ -1,6 +1,7 @@
 import AdminGalleryControls from "@/components/admin/AdminGalleryControls";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import PublicGalleryShowcaseForm from "@/components/admin/PublicGalleryShowcaseForm";
 
 type GalleryStatus = "draft" | "published" | "archived";
 
@@ -253,6 +254,8 @@ export default async function AdminGalleriesPage() {
           </p>
         </article>
       </div>
+
+      <PublicGalleryShowcaseForm />
 
       <section className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">

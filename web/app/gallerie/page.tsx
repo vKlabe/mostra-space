@@ -17,10 +17,11 @@ type PublicGallery = {
   created_at: string;
 };
 
-type EditorialGalleryConfig = {
-  slug: string;
-  location: string;
-  worksLabel: string;
+type PublicGallerySlotKey = "main" | "featured_1" | "featured_2" | "featured_3";
+
+type PublicGallerySlot = {
+  slot_key: PublicGallerySlotKey;
+  gallery_id: string | null;
 };
 
 type EditorialGallery = PublicGallery & {
@@ -28,28 +29,12 @@ type EditorialGallery = PublicGallery & {
   editorialWorksLabel: string;
 };
 
-const selectedGalleryConfig: EditorialGalleryConfig = {
-  slug: "aaa",
-  location: "Roma, Italia",
-  worksLabel: "2 opere",
-};
+const fallbackMainGallerySlug = "aaa";
 
-const featuredGalleryConfigs: EditorialGalleryConfig[] = [
-  {
-    slug: "aaa",
-    location: "Roma, Italia",
-    worksLabel: "2 opere",
-  },
-  {
-    slug: "x",
-    location: "Spazio virtuale",
-    worksLabel: "0 opere",
-  },
-  {
-    slug: "prima-galleria-definitiva",
-    location: "Italia",
-    worksLabel: "0 opere",
-  },
+const fallbackFeaturedGallerySlugs = [
+  "aaa",
+  "x",
+  "prima-galleria-definitiva",
 ];
 
 function formatDate(value: string | null) {
@@ -170,30 +155,69 @@ export default async function PublicGalleriesIndexPage() {
     .eq("status", "published")
     .order("published_at", { ascending: false });
 
+  const { data: gallerySlots } = await supabase
+    .from("public_gallery_slots")
+    .select("slot_key, gallery_id");
+
   const safeGalleries = (galleries || []) as PublicGallery[];
+  const safeGallerySlots = (gallerySlots || []) as PublicGallerySlot[];
+
+  const galleriesById = new Map(
+    safeGalleries.map((gallery) => [gallery.id, gallery])
+  );
+
+  const galleriesBySlug = new Map(
+    safeGalleries.map((gallery) => [gallery.slug, gallery])
+  );
+
+  const slotGalleryIds = new Map(
+    safeGallerySlots.map((slot) => [slot.slot_key, slot.gallery_id])
+  );
+
+  function toEditorialGallery(gallery: PublicGallery): EditorialGallery {
+    return {
+      ...gallery,
+      editorialLocation: "Spazio virtuale",
+      editorialWorksLabel: "Galleria pubblica",
+    };
+  }
+
+  function getGalleryFromSlot(slotKey: PublicGallerySlotKey) {
+    const galleryId = slotGalleryIds.get(slotKey);
+
+    if (!galleryId) {
+      return null;
+    }
+
+    return galleriesById.get(galleryId) || null;
+  }
 
   const selectedGallery =
-    safeGalleries.find(
-      (gallery) => gallery.slug === selectedGalleryConfig.slug
-    ) || null;
+    getGalleryFromSlot("main") ||
+    galleriesBySlug.get(fallbackMainGallerySlug) ||
+    safeGalleries[0] ||
+    null;
 
-  const editorialFeaturedGalleries = featuredGalleryConfigs
-    .map((config) => {
-      const gallery = safeGalleries.find(
-        (item) => item.slug === config.slug
-      );
+  const slotFeaturedGalleries = (
+    ["featured_1", "featured_2", "featured_3"] as PublicGallerySlotKey[]
+  )
+    .map((slotKey) => getGalleryFromSlot(slotKey))
+    .filter((gallery): gallery is PublicGallery => Boolean(gallery));
 
-      if (!gallery) {
-        return null;
-      }
+  const fallbackFeaturedGalleries = fallbackFeaturedGallerySlugs
+    .map((slug) => galleriesBySlug.get(slug) || null)
+    .filter((gallery): gallery is PublicGallery => Boolean(gallery));
 
-      return {
-        ...gallery,
-        editorialLocation: config.location,
-        editorialWorksLabel: config.worksLabel,
-      };
+  const editorialFeaturedGalleries = [
+    ...slotFeaturedGalleries,
+    ...fallbackFeaturedGalleries,
+    ...safeGalleries,
+  ]
+    .filter((gallery, index, galleriesList) => {
+      return galleriesList.findIndex((item) => item.id === gallery.id) === index;
     })
-    .filter((gallery): gallery is EditorialGallery => gallery !== null);
+    .slice(0, 3)
+    .map(toEditorialGallery);
 
   return (
     <main className="museum-page min-h-screen overflow-hidden">
@@ -346,9 +370,9 @@ export default async function PublicGalleriesIndexPage() {
                   </h3>
 
                   <div className="mt-5 flex flex-wrap gap-3 text-sm text-[var(--museum-stone-muted)]">
-                    <span>{selectedGalleryConfig.location}</span>
+                    <span>Spazio virtuale</span>
                     <span>•</span>
-                    <span>{selectedGalleryConfig.worksLabel}</span>
+                    <span>Galleria pubblica</span>
                   </div>
 
                   <p className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
