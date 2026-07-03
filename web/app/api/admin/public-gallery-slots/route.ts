@@ -9,17 +9,27 @@ const SLOT_KEYS = ["main", "featured_1", "featured_2", "featured_3"] as const;
 
 type SlotKey = (typeof SLOT_KEYS)[number];
 
+type SlotsMap = Record<SlotKey, string | null>;
+
 type Profile = {
   id: string;
   role: "user" | "gallerist" | "admin";
 };
 
-type PublicGallerySlot = {
-  slot_key: SlotKey;
+type PublicGallerySlotRow = {
+  slot_key: string;
   gallery_id: string | null;
+  updated_at?: string | null;
 };
 
-function emptySlots(): Record<SlotKey, string | null> {
+type ShowcaseRequestBody = {
+  mainGalleryId?: unknown;
+  featuredGalleryIds?: unknown;
+  slots?: unknown;
+  slotMap?: unknown;
+};
+
+function emptySlots(): SlotsMap {
   return {
     main: null,
     featured_1: null,
@@ -28,7 +38,14 @@ function emptySlots(): Record<SlotKey, string | null> {
   };
 }
 
-function normalizeGalleryId(value: unknown) {
+function isSlotKey(value: unknown): value is SlotKey {
+  return (
+    typeof value === "string" &&
+    (SLOT_KEYS as readonly string[]).includes(value)
+  );
+}
+
+function cleanNullableId(value: unknown) {
   if (typeof value !== "string") {
     return null;
   }
@@ -36,6 +53,85 @@ function normalizeGalleryId(value: unknown) {
   const cleaned = value.trim();
 
   return cleaned.length > 0 ? cleaned : null;
+}
+
+function slotsMapToRows(slots: SlotsMap) {
+  return SLOT_KEYS.map((slotKey) => ({
+    slot_key: slotKey,
+    gallery_id: slots[slotKey],
+  }));
+}
+
+function normalizeSlotsPayload(body: ShowcaseRequestBody): SlotsMap {
+  const slots = emptySlots();
+
+  // Questo è il formato usato dal componente attuale:
+  // { mainGalleryId, featuredGalleryIds: [...] }
+  if (
+    "mainGalleryId" in body ||
+    "featuredGalleryIds" in body
+  ) {
+    const featuredGalleryIds = Array.isArray(body.featuredGalleryIds)
+      ? body.featuredGalleryIds
+      : [];
+
+    slots.main = cleanNullableId(body.mainGalleryId);
+    slots.featured_1 = cleanNullableId(featuredGalleryIds[0]);
+    slots.featured_2 = cleanNullableId(featuredGalleryIds[1]);
+    slots.featured_3 = cleanNullableId(featuredGalleryIds[2]);
+
+    return slots;
+  }
+
+  // Formato alternativo: { slots: [...] }
+  if (Array.isArray(body.slots)) {
+    for (const item of body.slots) {
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+
+      const record = item as {
+        slot_key?: unknown;
+        slotKey?: unknown;
+        gallery_id?: unknown;
+        galleryId?: unknown;
+      };
+
+      const slotKey = record.slot_key || record.slotKey;
+
+      if (!isSlotKey(slotKey)) {
+        continue;
+      }
+
+      slots[slotKey] = cleanNullableId(
+        record.gallery_id || record.galleryId
+      );
+    }
+
+    return slots;
+  }
+
+  // Formato alternativo: { slots: { main, featured_1... } }
+  if (body.slots && typeof body.slots === "object") {
+    const record = body.slots as Partial<Record<SlotKey, unknown>>;
+
+    for (const slotKey of SLOT_KEYS) {
+      slots[slotKey] = cleanNullableId(record[slotKey]);
+    }
+
+    return slots;
+  }
+
+  // Formato alternativo: { slotMap: { main, featured_1... } }
+  if (body.slotMap && typeof body.slotMap === "object") {
+    const record = body.slotMap as Partial<Record<SlotKey, unknown>>;
+
+    for (const slotKey of SLOT_KEYS) {
+      slots[slotKey] = cleanNullableId(record[slotKey]);
+    }
+  }
+
+  return slots;
 }
 
 async function requireAdmin() {
@@ -117,8 +213,8 @@ export async function GET() {
 
   const { data: slotRows, error: slotsError } = await admin
     .from("public_gallery_slots")
-    .select("slot_key, gallery_id")
-    .in("slot_key", SLOT_KEYS as unknown as string[]);
+    .select("slot_key, gallery_id, updated_at")
+    .in("slot_key", [...SLOT_KEYS]);
 
   if (slotsError) {
     return NextResponse.json(
@@ -130,33 +226,32 @@ export async function GET() {
     );
   }
 
-  const slots = emptySlots();
+  const slotMap = emptySlots();
 
-  for (const row of (slotRows || []) as PublicGallerySlot[]) {
-    if (SLOT_KEYS.includes(row.slot_key)) {
-      slots[row.slot_key] = row.gallery_id;
+  for (const row of (slotRows || []) as PublicGallerySlotRow[]) {
+    if (isSlotKey(row.slot_key)) {
+      slotMap[row.slot_key] = row.gallery_id;
     }
   }
 
   return NextResponse.json({
     galleries: galleries || [],
-    slots,
+    slots: slotsMapToRows(slotMap),
+    slotMap,
   });
 }
 
-export async function POST(request: Request) {
+async function saveSlots(request: Request) {
   const { user, admin, error } = await requireAdmin();
 
   if (error) {
     return error;
   }
 
-  let body: {
-    slots?: Partial<Record<SlotKey, string | null>>;
-  };
+  let body: ShowcaseRequestBody;
 
   try {
-    body = await request.json();
+    body = (await request.json()) as ShowcaseRequestBody;
   } catch {
     return NextResponse.json(
       { error: "JSON non valido." },
@@ -164,43 +259,44 @@ export async function POST(request: Request) {
     );
   }
 
-  const requestedSlots = body.slots || {};
+  const normalizedSlots = normalizeSlotsPayload(body);
 
-  const normalizedSlots = {
-    main: normalizeGalleryId(requestedSlots.main),
-    featured_1: normalizeGalleryId(requestedSlots.featured_1),
-    featured_2: normalizeGalleryId(requestedSlots.featured_2),
-    featured_3: normalizeGalleryId(requestedSlots.featured_3),
-  } satisfies Record<SlotKey, string | null>;
-
-  const selectedIds = Object.values(normalizedSlots).filter(Boolean) as string[];
+  const selectedIds = Array.from(
+    new Set(Object.values(normalizedSlots).filter(Boolean))
+  ) as string[];
 
   if (selectedIds.length > 0) {
-    const { data: publishedGalleries, error: validationError } = await admin
-      .from("galleries")
-      .select("id")
-      .eq("status", "published")
-      .in("id", selectedIds);
+    const { data: selectedGalleries, error: selectedGalleriesError } =
+      await admin
+        .from("galleries")
+        .select("id, status")
+        .in("id", selectedIds);
 
-    if (validationError) {
+    if (selectedGalleriesError) {
       return NextResponse.json(
         {
-          error: "Errore validazione gallerie.",
-          details: validationError.message,
+          error: "Errore controllo gallerie selezionate.",
+          details: selectedGalleriesError.message,
         },
         { status: 500 }
       );
     }
 
-    const validIds = new Set((publishedGalleries || []).map((gallery) => gallery.id));
+    const publishedGalleryIds = new Set(
+      (selectedGalleries || [])
+        .filter((gallery) => gallery.status === "published")
+        .map((gallery) => gallery.id)
+    );
 
-    const invalidIds = selectedIds.filter((id) => !validIds.has(id));
+    const invalidGalleryIds = selectedIds.filter(
+      (galleryId) => !publishedGalleryIds.has(galleryId)
+    );
 
-    if (invalidIds.length > 0) {
+    if (invalidGalleryIds.length > 0) {
       return NextResponse.json(
         {
           error: "Puoi selezionare solo gallerie pubblicate.",
-          invalidIds,
+          invalidGalleryIds,
         },
         { status: 400 }
       );
@@ -230,6 +326,19 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     success: true,
-    slots: normalizedSlots,
+    slots: slotsMapToRows(normalizedSlots),
+    slotMap: normalizedSlots,
   });
+}
+
+export async function POST(request: Request) {
+  return saveSlots(request);
+}
+
+export async function PUT(request: Request) {
+  return saveSlots(request);
+}
+
+export async function PATCH(request: Request) {
+  return saveSlots(request);
 }
