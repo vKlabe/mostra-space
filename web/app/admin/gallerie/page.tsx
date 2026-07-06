@@ -1,4 +1,5 @@
 import AdminGalleryControls from "@/components/admin/AdminGalleryControls";
+import AdminGalleryDeleteButton from "@/components/admin/AdminGalleryDeleteButton";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import PublicGalleryShowcaseForm from "@/components/admin/PublicGalleryShowcaseForm";
@@ -269,9 +270,9 @@ export default async function AdminGalleriesPage() {
             </h2>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-              Da qui puoi pubblicare, riportare in bozza o archiviare una
-              galleria. Per ora la cancellazione globale admin non e attiva per
-              evitare rimozioni accidentali.
+              Da qui puoi pubblicare, riportare in bozza, archiviare o cancellare
+              definitivamente una galleria. Usa la cancellazione solo per duplicati,
+              test o contenuti creati per errore.
             </p>
           </div>
 
@@ -482,6 +483,11 @@ export default async function AdminGalleriesPage() {
                           sicura per sospendere contenuti.
                         </p>
                       </div>
+
+                      <AdminGalleryDeleteButton
+                        galleryId={gallery.id}
+                        galleryTitle={gallery.title}
+                      />
                     </div>
                   </div>
                 </article>

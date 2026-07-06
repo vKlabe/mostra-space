@@ -246,13 +246,22 @@ export default async function DashboardArtworksPage({
       subtitle="Qui carichi, organizzi e modifichi le opere che poi potranno essere inserite nelle gallerie virtuali e posizionate negli spazi espositivi."
       activeSection="opere"
       actions={
-        <a
-          href="/dashboard/gallerie"
-          className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-        >
-          Gallerie
-        </a>
-      }
+  <div className="flex flex-wrap gap-3">
+    <a
+      href="/dashboard/opere/inventario"
+      className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+    >
+      Gestione rapida opere
+    </a>
+
+    <a
+      href="/dashboard/gallerie"
+      className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+    >
+      Gallerie
+    </a>
+  </div>
+}
     >
       {artworksError && (
         <div className="mb-6">

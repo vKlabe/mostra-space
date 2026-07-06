@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   parseDimensionCm,
   parseOptionalDepthCm,
 } from "@/lib/artworks/dimensions";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 type RouteContext = {
   params: Promise<{
@@ -13,21 +15,81 @@ type RouteContext = {
   }>;
 };
 
+type Profile = {
+  id: string;
+  role: "user" | "gallerist" | "admin";
+};
+
+type ArtworkPermissionRow = {
+  id: string;
+  owner_id: string;
+  title: string;
+  image_url: string | null;
+  thumbnail_url: string | null;
+  storage_path: string | null;
+};
+
 type UpdateArtworkPayload = {
   title?: unknown;
+
   artistName?: unknown;
+  artist_name?: unknown;
+
   year?: unknown;
   technique?: unknown;
   dimensions?: unknown;
+
   widthCm?: unknown;
+  width_cm?: unknown;
+
   heightCm?: unknown;
+  height_cm?: unknown;
+
   depthCm?: unknown;
+  depth_cm?: unknown;
+
   description?: unknown;
+
   price?: unknown;
   currency?: unknown;
+
   isForSale?: unknown;
+  is_for_sale?: unknown;
+
   isPublic?: unknown;
+  is_public?: unknown;
 };
+
+type ArtworkUpdate = {
+  title?: string;
+  artist_name?: string | null;
+  year?: string | null;
+  technique?: string | null;
+  dimensions?: string | null;
+  width_cm?: number | null;
+  height_cm?: number | null;
+  depth_cm?: number | null;
+  description?: string | null;
+  price?: number | null;
+  currency?: string;
+  is_for_sale?: boolean;
+  is_public?: boolean;
+  updated_at: string;
+};
+
+function hasOwn(object: object, key: string) {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function getFirstDefined(...values: unknown[]) {
+  for (const value of values) {
+    if (value !== undefined) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
 
 function cleanText(value: unknown) {
   if (typeof value !== "string") {
@@ -48,13 +110,56 @@ function cleanNullableText(value: unknown) {
 }
 
 function cleanBoolean(value: unknown) {
-  return value === true;
+  return (
+    value === true ||
+    value === "true" ||
+    value === "on" ||
+    value === "1"
+  );
 }
 
-async function getUserAndPermission(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  artworkId: string
-) {
+function cleanPrice(value: unknown) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value >= 0 ? value : null;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const cleaned = value.trim().replace(",", ".");
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const numberValue = Number(cleaned);
+
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    return null;
+  }
+
+  return numberValue;
+}
+
+function cleanCurrency(value: unknown) {
+  const cleaned = cleanText(value).toUpperCase();
+
+  if (!cleaned) {
+    return "EUR";
+  }
+
+  return cleaned.slice(0, 3);
+}
+
+async function getUserAndPermission(artworkId: string) {
+  const supabase = await createClient();
+  const admin = createAdminClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -65,41 +170,71 @@ async function getUserAndPermission(
       status: 401,
       error: "Unauthorized",
       user: null,
+      admin,
       artwork: null,
     };
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await admin
     .from("profiles")
     .select("id, role")
     .eq("id", user.id)
-    .single();
+    .single<Profile>();
 
-  const { data: artwork, error: artworkError } = await supabase
+  if (profileError || !profile) {
+    return {
+      ok: false,
+      status: 404,
+      error: "Profilo non trovato.",
+      user,
+      admin,
+      artwork: null,
+    };
+  }
+
+  const canManage =
+    profile.role === "gallerist" || profile.role === "admin";
+
+  if (!canManage) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Solo i galleristi possono modificare opere.",
+      user,
+      admin,
+      artwork: null,
+    };
+  }
+
+  const { data: artwork, error: artworkError } = await admin
     .from("artworks")
-    .select("id, owner_id, title, image_url, thumbnail_url")
+    .select(
+      "id, owner_id, title, image_url, thumbnail_url, storage_path"
+    )
     .eq("id", artworkId)
-    .single();
+    .single<ArtworkPermissionRow>();
 
   if (artworkError || !artwork) {
     return {
       ok: false,
       status: 404,
-      error: "Artwork not found",
+      error: "Opera non trovata.",
       user,
+      admin,
       artwork: null,
     };
   }
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile.role === "admin";
   const isOwner = artwork.owner_id === user.id;
 
   if (!isAdmin && !isOwner) {
     return {
       ok: false,
       status: 403,
-      error: "Forbidden",
+      error: "Non hai i permessi per modificare questa opera.",
       user,
+      admin,
       artwork,
     };
   }
@@ -109,6 +244,7 @@ async function getUserAndPermission(
     status: 200,
     error: null,
     user,
+    admin,
     artwork,
   };
 }
@@ -129,7 +265,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     body = (await request.json()) as UpdateArtworkPayload;
   } catch {
     return NextResponse.json(
-      { error: "Invalid JSON body" },
+      { error: "JSON non valido." },
       { status: 400 }
     );
   }
@@ -138,14 +274,12 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (!title) {
     return NextResponse.json(
-      { error: "Il titolo è obbligatorio." },
+      { error: "Il titolo dell'opera è obbligatorio." },
       { status: 400 }
     );
   }
 
-  const supabase = await createClient();
-
-  const permission = await getUserAndPermission(supabase, artworkId);
+  const permission = await getUserAndPermission(artworkId);
 
   if (!permission.ok || !permission.artwork) {
     return NextResponse.json(
@@ -154,28 +288,74 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  const widthCm = parseDimensionCm(cleanText(body.widthCm));
-  const heightCm = parseDimensionCm(cleanText(body.heightCm));
-  const depthCm = parseOptionalDepthCm(cleanText(body.depthCm));
+  const updatePayload: ArtworkUpdate = {
+    title,
+    updated_at: new Date().toISOString(),
+  };
 
-  const { data: updated, error: updateError } = await supabase
+  if (hasOwn(body, "artistName") || hasOwn(body, "artist_name")) {
+    updatePayload.artist_name = cleanNullableText(
+      getFirstDefined(body.artistName, body.artist_name)
+    );
+  }
+
+  if (hasOwn(body, "year")) {
+    updatePayload.year = cleanNullableText(body.year);
+  }
+
+  if (hasOwn(body, "technique")) {
+    updatePayload.technique = cleanNullableText(body.technique);
+  }
+
+  if (hasOwn(body, "dimensions")) {
+    updatePayload.dimensions = cleanNullableText(body.dimensions);
+  }
+
+  if (hasOwn(body, "widthCm") || hasOwn(body, "width_cm")) {
+    updatePayload.width_cm = parseDimensionCm(
+      cleanText(getFirstDefined(body.widthCm, body.width_cm))
+    );
+  }
+
+  if (hasOwn(body, "heightCm") || hasOwn(body, "height_cm")) {
+    updatePayload.height_cm = parseDimensionCm(
+      cleanText(getFirstDefined(body.heightCm, body.height_cm))
+    );
+  }
+
+  if (hasOwn(body, "depthCm") || hasOwn(body, "depth_cm")) {
+    updatePayload.depth_cm = parseOptionalDepthCm(
+      cleanText(getFirstDefined(body.depthCm, body.depth_cm))
+    );
+  }
+
+  if (hasOwn(body, "description")) {
+    updatePayload.description = cleanNullableText(body.description);
+  }
+
+  if (hasOwn(body, "price")) {
+    updatePayload.price = cleanPrice(body.price);
+  }
+
+  if (hasOwn(body, "currency")) {
+    updatePayload.currency = cleanCurrency(body.currency);
+  }
+
+  if (hasOwn(body, "isForSale") || hasOwn(body, "is_for_sale")) {
+    updatePayload.is_for_sale = cleanBoolean(
+      getFirstDefined(body.isForSale, body.is_for_sale)
+    );
+  }
+
+  if (hasOwn(body, "isPublic") || hasOwn(body, "is_public")) {
+    updatePayload.is_public = cleanBoolean(
+      getFirstDefined(body.isPublic, body.is_public)
+    );
+  }
+
+  const { data: updated, error: updateError } = await permission.admin
     .from("artworks")
-    .update({
-      title,
-      artist_name: cleanNullableText(body.artistName),
-      year: cleanNullableText(body.year),
-      technique: cleanNullableText(body.technique),
-      dimensions: cleanNullableText(body.dimensions),
-      width_cm: widthCm,
-      height_cm: heightCm,
-      depth_cm: depthCm,
-      description: cleanNullableText(body.description),
-      price: cleanNullableText(body.price),
-      currency: cleanNullableText(body.currency) || "EUR",
-      is_for_sale: cleanBoolean(body.isForSale),
-      is_public: cleanBoolean(body.isPublic),
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", permission.artwork.id)
     .select(
       `
@@ -191,10 +371,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       depth_cm,
       description,
       image_url,
+      thumbnail_url,
+      storage_path,
+      file_size_bytes,
       price,
       currency,
       is_for_sale,
       is_public,
+      created_at,
       updated_at
       `
     )
@@ -203,7 +387,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (updateError || !updated) {
     return NextResponse.json(
       {
-        error: "Update failed",
+        error: "Errore aggiornamento opera.",
         details: updateError?.message || null,
       },
       { status: 500 }
@@ -226,9 +410,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     );
   }
 
-  const supabase = await createClient();
-
-  const permission = await getUserAndPermission(supabase, artworkId);
+  const permission = await getUserAndPermission(artworkId);
 
   if (!permission.ok || !permission.artwork) {
     return NextResponse.json(
@@ -237,49 +419,51 @@ export async function DELETE(_request: Request, context: RouteContext) {
     );
   }
 
-  const { data: linkedRows, error: linkedRowsError } = await supabase
+  const { error: galleryArtworkDeleteError } = await permission.admin
     .from("gallery_artworks")
-    .select("id, gallery_id")
+    .delete()
     .eq("artwork_id", permission.artwork.id);
 
-  if (linkedRowsError) {
+  if (galleryArtworkDeleteError) {
     return NextResponse.json(
       {
-        error: "Errore controllo collegamenti galleria.",
-        details: linkedRowsError.message,
+        error: "Errore rimozione opera dalle gallerie.",
+        details: galleryArtworkDeleteError.message,
       },
       { status: 500 }
     );
   }
 
-  if (linkedRows && linkedRows.length > 0) {
-    return NextResponse.json(
-      {
-        error:
-          "Questa opera è collegata a una o più gallerie. Rimuovila prima dalle gallerie, poi potrai eliminarla.",
-        linkedCount: linkedRows.length,
-      },
-      { status: 409 }
-    );
-  }
-
-  const { error: deleteError } = await supabase
+  const { error: artworkDeleteError } = await permission.admin
     .from("artworks")
     .delete()
     .eq("id", permission.artwork.id);
 
-  if (deleteError) {
+  if (artworkDeleteError) {
     return NextResponse.json(
       {
-        error: "Delete failed",
-        details: deleteError.message,
+        error: "Errore eliminazione opera.",
+        details: artworkDeleteError.message,
       },
       { status: 500 }
     );
+  }
+
+  let storageWarning: string | null = null;
+
+  if (permission.artwork.storage_path) {
+    const { error: storageError } = await permission.admin.storage
+      .from("artworks")
+      .remove([permission.artwork.storage_path]);
+
+    if (storageError) {
+      storageWarning = storageError.message;
+    }
   }
 
   return NextResponse.json({
     success: true,
     deletedArtworkId: permission.artwork.id,
+    storageWarning,
   });
 }
