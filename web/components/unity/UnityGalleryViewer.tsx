@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import GalleryLivePanel from "@/components/gallery/GalleryLivePanel";
 
 type UnityMode = "visitor" | "editor";
 
@@ -564,6 +565,10 @@ export default function UnityGalleryViewer({
             allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
             allowFullScreen
           />
+
+          {mode === "visitor" && (
+            <GalleryLivePanel galleryId={galleryId} roomId="main" />
+          )}
 
           {isMobileViewer && mode === "visitor" && (
             <div
