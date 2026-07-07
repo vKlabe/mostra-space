@@ -5,6 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const maxMessageLength = 500;
+const recentWindowSeconds = 10;
+const maxMessagesPerWindow = 3;
+const duplicateWindowSeconds = 30;
+
 type ChatPayload = {
   galleryId?: unknown;
   roomId?: unknown;
@@ -20,6 +25,12 @@ type ChatMessageRow = {
   session_id: string;
   user_id: string | null;
   visitor_name: string;
+  message: string;
+  created_at: string;
+};
+
+type RecentMessageRow = {
+  id: string;
   message: string;
   created_at: string;
 };
@@ -46,13 +57,19 @@ function cleanSessionId(value: unknown) {
 }
 
 function cleanVisitorName(value: unknown) {
-  const cleaned = cleanText(value).slice(0, 40);
+  const cleaned = cleanText(value)
+    .replace(/\s+/g, " ")
+    .slice(0, 40);
 
   return cleaned || "Ospite";
 }
 
 function cleanMessage(value: unknown) {
-  return cleanText(value).replace(/\s+/g, " ").slice(0, 500);
+  return cleanText(value).replace(/\s+/g, " ").slice(0, maxMessageLength);
+}
+
+function secondsAgo(seconds: number) {
+  return new Date(Date.now() - seconds * 1000).toISOString();
 }
 
 async function getCurrentUserId() {
@@ -96,6 +113,101 @@ function toPublicMessage(row: ChatMessageRow) {
     visitorName: row.visitor_name,
     message: row.message,
     createdAt: row.created_at,
+  };
+}
+
+async function checkChatRateLimit({
+  admin,
+  galleryId,
+  roomId,
+  sessionId,
+  message,
+}: {
+  admin: ReturnType<typeof createAdminClient>;
+  galleryId: string;
+  roomId: string;
+  sessionId: string;
+  message: string;
+}) {
+  const { data: recentRows, error: recentError } = await admin
+    .from("gallery_chat_messages")
+    .select("id, message, created_at")
+    .eq("gallery_id", galleryId)
+    .eq("room_id", roomId)
+    .eq("session_id", sessionId)
+    .gte("created_at", secondsAgo(recentWindowSeconds))
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (recentError) {
+    return {
+      allowed: false,
+      status: 500,
+      error: "Errore controllo invio messaggio.",
+      details: recentError.message,
+    };
+  }
+
+  const recentMessages = (recentRows || []) as RecentMessageRow[];
+
+  if (recentMessages.length >= maxMessagesPerWindow) {
+    return {
+      allowed: false,
+      status: 429,
+      error: "Stai scrivendo troppo velocemente. Aspetta qualche secondo.",
+      details: null,
+    };
+  }
+
+  const lastMessage = recentMessages[0];
+
+  if (lastMessage) {
+    const lastMessageAt = new Date(lastMessage.created_at).getTime();
+    const millisecondsSinceLastMessage = Date.now() - lastMessageAt;
+
+    if (millisecondsSinceLastMessage >= 0 && millisecondsSinceLastMessage < 2500) {
+      return {
+        allowed: false,
+        status: 429,
+        error: "Aspetta un attimo prima di inviare un altro messaggio.",
+        details: null,
+      };
+    }
+  }
+
+  const { data: duplicateRows, error: duplicateError } = await admin
+    .from("gallery_chat_messages")
+    .select("id, message, created_at")
+    .eq("gallery_id", galleryId)
+    .eq("room_id", roomId)
+    .eq("session_id", sessionId)
+    .eq("message", message)
+    .gte("created_at", secondsAgo(duplicateWindowSeconds))
+    .limit(1);
+
+  if (duplicateError) {
+    return {
+      allowed: false,
+      status: 500,
+      error: "Errore controllo messaggio duplicato.",
+      details: duplicateError.message,
+    };
+  }
+
+  if ((duplicateRows || []).length > 0) {
+    return {
+      allowed: false,
+      status: 429,
+      error: "Hai già inviato questo messaggio. Scrivine uno diverso.",
+      details: null,
+    };
+  }
+
+  return {
+    allowed: true,
+    status: 200,
+    error: null,
+    details: null,
   };
 }
 
@@ -181,6 +293,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (message.length > maxMessageLength) {
+    return NextResponse.json(
+      { error: `Il messaggio non può superare ${maxMessageLength} caratteri.` },
+      { status: 400 }
+    );
+  }
+
   const admin = createAdminClient();
   const galleryExists = await ensurePublishedGallery(admin, galleryId);
 
@@ -188,6 +307,24 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Galleria non trovata o non pubblicata." },
       { status: 404 }
+    );
+  }
+
+  const rateLimit = await checkChatRateLimit({
+    admin,
+    galleryId,
+    roomId,
+    sessionId,
+    message,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: rateLimit.error,
+        details: rateLimit.details,
+      },
+      { status: rateLimit.status }
     );
   }
 

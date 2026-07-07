@@ -92,6 +92,25 @@ function formatMessageTime(value: string) {
   }
 }
 
+function ChatIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+    >
+      <path
+        d="M7.5 9.25h9M7.5 12.25h6M10.25 18.25 6.5 21v-3.25H6A3.75 3.75 0 0 1 2.25 14V7A3.75 3.75 0 0 1 6 3.25h12A3.75 3.75 0 0 1 21.75 7v7A3.75 3.75 0 0 1 18 17.75h-7.75Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function GalleryLivePanel({
   galleryId,
   roomId = "main",
@@ -104,6 +123,7 @@ export default function GalleryLivePanel({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageDraft, setMessageDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -201,10 +221,22 @@ export default function GalleryLivePanel({
     });
   }, [isOpen, messages]);
 
+  useEffect(() => {
+    if (cooldownSeconds <= 0) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCooldownSeconds((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [cooldownSeconds]);
+
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!identity || isSending) {
+    if (!identity || isSending || cooldownSeconds > 0) {
       return;
     }
 
@@ -245,6 +277,8 @@ export default function GalleryLivePanel({
       } else {
         await loadMessages();
       }
+
+      setCooldownSeconds(3);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Messaggio non inviato."
@@ -255,10 +289,11 @@ export default function GalleryLivePanel({
   }
 
   const roomLabel = roomId === "main" ? "Galleria" : roomId;
+  const unreadBadgeLabel = roomCount > 99 ? "99+" : String(roomCount);
 
   return (
     <div
-      className="pointer-events-auto absolute right-4 top-4 z-[140] w-[min(23rem,calc(100%-2rem))] text-left"
+      className="pointer-events-auto absolute bottom-4 right-4 z-[140] text-left md:bottom-5 md:right-5"
       onPointerDown={(event) => event.stopPropagation()}
       onPointerUp={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
@@ -267,47 +302,57 @@ export default function GalleryLivePanel({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="ml-auto flex max-w-full items-center gap-3 rounded-2xl border border-[rgba(197,151,94,0.5)] bg-[rgba(8,7,5,0.82)] px-4 py-3 text-left text-sm text-[var(--museum-ivory)] shadow-2xl backdrop-blur-md transition hover:border-[var(--museum-bronze)]"
+          aria-label="Apri chat della galleria"
+          className="group relative flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(197,151,94,0.45)] bg-[rgba(8,7,5,0.58)] text-[var(--museum-ivory)] shadow-2xl shadow-black/35 backdrop-blur-md transition hover:border-[var(--museum-bronze)] hover:bg-[rgba(8,7,5,0.78)] md:h-16 md:w-16"
         >
-          <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.95)]" />
-          <span>
-            <span className="block text-xs uppercase tracking-[0.18em] text-[var(--museum-bronze-light)]">
-              Live
-            </span>
-            <span className="block text-sm text-[var(--museum-ivory-soft)]">
-              {roomCount} in sala · {galleryCount} nella galleria
-            </span>
+          <ChatIcon />
+
+          <span className="absolute -right-1 -top-1 min-w-6 rounded-full border border-black/40 bg-[var(--museum-bronze)] px-1.5 py-0.5 text-center text-[0.65rem] font-semibold leading-5 text-black shadow-lg">
+            {unreadBadgeLabel}
           </span>
+
+          <span className="pointer-events-none absolute right-[calc(100%+0.75rem)] hidden whitespace-nowrap rounded-full border border-[rgba(197,151,94,0.35)] bg-[rgba(8,7,5,0.72)] px-3 py-2 text-xs text-[var(--museum-ivory-soft)] opacity-0 shadow-xl backdrop-blur-md transition group-hover:opacity-100 md:block">
+            Chat live · {galleryCount} presenti
+          </span>
+
+          <span className="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.95)]" />
         </button>
       ) : (
-        <section className="overflow-hidden rounded-[1.5rem] border border-[rgba(197,151,94,0.48)] bg-[rgba(8,7,5,0.9)] text-[var(--museum-ivory)] shadow-2xl backdrop-blur-xl">
+        <section className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[1.6rem] border border-[rgba(197,151,94,0.46)] bg-[rgba(8,7,5,0.78)] text-[var(--museum-ivory)] shadow-2xl shadow-black/40 backdrop-blur-xl">
           <div className="flex items-start justify-between gap-4 border-b border-[rgba(197,151,94,0.22)] px-4 py-3">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--museum-bronze-light)]">
-                Live nella galleria
+                Chat live
               </p>
               <p className="mt-1 text-sm text-[var(--museum-ivory-soft)]">
-                {roomLabel} · {roomCount} presenti
+                {roomLabel} · {roomCount} in sala · {galleryCount} totali
               </p>
             </div>
 
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="rounded-full border border-[rgba(243,237,226,0.22)] px-3 py-1 text-xs text-[var(--museum-stone)] transition hover:text-[var(--museum-ivory)]"
+              aria-label="Chiudi chat"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(243,237,226,0.2)] text-lg leading-none text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
             >
-              Chiudi
+              ×
             </button>
           </div>
 
-          <div className="grid gap-3 p-4">
-            <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/35 p-3">
-              <p className="mb-2 text-[0.68rem] uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
-                Presenze
-              </p>
-              <div className="flex flex-wrap gap-2">
+          <div className="grid gap-3 p-3 md:p-4">
+            <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/30 p-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
+                  Presenti
+                </p>
+                <span className="rounded-full bg-[rgba(197,151,94,0.16)] px-2 py-0.5 text-[0.68rem] text-[var(--museum-bronze-light)]">
+                  {activeVisitors.length}
+                </span>
+              </div>
+
+              <div className="flex max-h-16 flex-wrap gap-2 overflow-y-auto">
                 {activeVisitors.length > 0 ? (
-                  activeVisitors.slice(0, 8).map((visitor) => (
+                  activeVisitors.slice(0, 10).map((visitor) => (
                     <span
                       key={visitor.sessionId}
                       className="rounded-full border border-[rgba(243,237,226,0.12)] bg-[rgba(243,237,226,0.05)] px-3 py-1 text-xs text-[var(--museum-ivory-soft)]"
@@ -323,7 +368,7 @@ export default function GalleryLivePanel({
               </div>
             </div>
 
-            <div className="max-h-64 space-y-3 overflow-y-auto rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/35 p-3">
+            <div className="max-h-[min(19rem,42vh)] space-y-3 overflow-y-auto rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/32 p-3">
               {messages.length > 0 ? (
                 messages.map((item) => {
                   const isMine = identity?.sessionId === item.sessionId;
@@ -333,8 +378,8 @@ export default function GalleryLivePanel({
                       key={item.id}
                       className={
                         isMine
-                          ? "rounded-2xl bg-[rgba(197,151,94,0.16)] p-3"
-                          : "rounded-2xl bg-[rgba(243,237,226,0.05)] p-3"
+                          ? "rounded-2xl bg-[rgba(197,151,94,0.17)] p-3"
+                          : "rounded-2xl bg-[rgba(243,237,226,0.06)] p-3"
                       }
                     >
                       <div className="mb-1 flex items-center justify-between gap-3 text-[0.68rem] uppercase tracking-[0.16em] text-[var(--museum-stone-muted)]">
@@ -366,15 +411,15 @@ export default function GalleryLivePanel({
                     ? `Scrivi come ${identity.visitorName}`
                     : "Scrivi un messaggio"
                 }
-                className="min-w-0 flex-1 rounded-2xl border border-[rgba(243,237,226,0.14)] bg-black/55 px-4 py-3 text-sm text-[var(--museum-ivory)] outline-none transition placeholder:text-[var(--museum-stone-muted)] focus:border-[var(--museum-bronze)]"
+                className="min-w-0 flex-1 rounded-2xl border border-[rgba(243,237,226,0.14)] bg-black/45 px-4 py-3 text-sm text-[var(--museum-ivory)] outline-none transition placeholder:text-[var(--museum-stone-muted)] focus:border-[var(--museum-bronze)]"
               />
 
               <button
                 type="submit"
-                disabled={isSending || !messageDraft.trim()}
+                disabled={isSending || cooldownSeconds > 0 || !messageDraft.trim()}
                 className="rounded-2xl bg-[var(--museum-bronze)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSending ? "..." : "Invia"}
+                {isSending ? "..." : cooldownSeconds > 0 ? `${cooldownSeconds}s` : "Invia"}
               </button>
             </form>
 
