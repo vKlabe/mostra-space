@@ -204,6 +204,20 @@ export default async function AccountPage() {
                 >
                   Esplora profili
                 </a>
+
+                <a
+                  href="/account/calendario"
+                  className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                >
+                  Il mio calendario
+                </a>
+
+                <a
+                  href="/account/notifiche"
+                  className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                >
+                  Notifiche eventi
+                </a>
               </div>
             </div>
 

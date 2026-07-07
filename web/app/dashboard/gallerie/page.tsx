@@ -278,14 +278,23 @@ export default async function DashboardGalleriesPage({
       subtitle="Crea, gestisci, pubblica e archivia le tue gallerie virtuali. Ogni galleria puo essere modificata nell'editor."
       activeSection="gallerie"
       actions={
-        <a
-          href="/gallerie"
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-        >
-          Elenco pubblico
-        </a>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="/dashboard/eventi"
+            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+          >
+            Eventi
+          </a>
+
+          <a
+            href="/gallerie"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+          >
+            Elenco pubblico
+          </a>
+        </div>
       }
     >
       {(templatesError || galleriesError) && (
