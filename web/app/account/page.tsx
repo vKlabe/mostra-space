@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import LogoutButton from "@/components/auth/LogoutButton";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import AccountProfileForm from "@/components/account/AccountProfileForm";
 
 function getRoleLabel(role?: string | null) {
   if (role === "admin") {
@@ -109,7 +109,6 @@ export default async function AccountPage() {
       subtitle="Profilo, piano, ruolo e impostazioni personali del tuo spazio su mostra.space."
       activeSection="account"
       navMode={isCreator ? "creator" : "community"}
-      actions={<LogoutButton />}
     >
       <div className="space-y-8">
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -142,39 +141,16 @@ export default async function AccountPage() {
         </section>
 
         <section className="grid gap-5 lg:grid-cols-2">
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <h2 className="text-2xl font-medium text-neutral-100">
-              Dati account
-            </h2>
-
-            <dl className="mt-6 space-y-4 text-sm">
-              <div>
-                <dt className="text-neutral-500">Email</dt>
-                <dd className="mt-1 break-all text-neutral-200">
-                  {profile.email || user.email || "Non disponibile"}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-neutral-500">Nome completo</dt>
-                <dd className="mt-1 text-neutral-200">
-                  {profile.full_name || "Non inserito"}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-neutral-500">Nome visualizzato</dt>
-                <dd className="mt-1 text-neutral-200">
-                  {profile.display_name || "Non inserito"}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-neutral-500">Creato il</dt>
-                <dd className="mt-1 text-neutral-200">{createdAt}</dd>
-              </div>
-            </dl>
-          </article>
+          <AccountProfileForm
+            profile={{
+              email: profile.email || user.email || "",
+              full_name: profile.full_name,
+              display_name: profile.display_name,
+              website_url: profile.website_url,
+              instagram_url: profile.instagram_url,
+              bio: profile.bio,
+            }}
+          />
 
           <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
             <h2 className="text-2xl font-medium text-neutral-100">
@@ -193,7 +169,12 @@ export default async function AccountPage() {
               </div>
 
               <div>
-                <dt className="text-neutral-500">Sito / social</dt>
+                <dt className="text-neutral-500">Creato il</dt>
+                <dd className="mt-1 text-neutral-200">{createdAt}</dd>
+              </div>
+
+              <div>
+                <dt className="text-neutral-500">Sito / social pubblico</dt>
                 <dd className="mt-1 break-all text-neutral-200">
                   {publicReference}
                 </dd>
@@ -201,7 +182,7 @@ export default async function AccountPage() {
 
               <div>
                 <dt className="text-neutral-500">Bio</dt>
-                <dd className="mt-1 text-neutral-200">
+                <dd className="mt-1 whitespace-pre-line text-neutral-200">
                   {profile.bio || "Non inserita"}
                 </dd>
               </div>
