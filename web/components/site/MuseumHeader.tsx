@@ -1,10 +1,10 @@
 import Link from "next/link";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 
-const navItems = [
+const navLinks = [
   {
-    href: "/gallerie",
-    label: "Esplora",
+    href: "/eventi",
+    label: "Eventi",
   },
   {
     href: "/gallerie",
@@ -34,7 +34,7 @@ export default function MuseumHeader() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {navItems.map((item) => (
+          {navLinks.map((item) => (
             <Link
               key={item.href + item.label}
               href={item.href}

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import MuseumHeader from "@/components/site/MuseumHeader";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 
 type GalleryEvent = {
@@ -279,8 +280,10 @@ export default async function PublicEventsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
-      <section className="mx-auto max-w-6xl">
+    <>
+      <MuseumHeader />
+      <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
+        <section className="mx-auto max-w-6xl">
         <p className="mb-4 text-xs uppercase tracking-[0.35em] text-amber-500">
           Calendario pubblico
         </p>
@@ -342,7 +345,8 @@ export default async function PublicEventsPage() {
             </div>
           </section>
         )}
-      </section>
-    </main>
+        </section>
+      </main>
+    </>
   );
 }
