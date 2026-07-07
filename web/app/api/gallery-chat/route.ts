@@ -9,6 +9,7 @@ const maxMessageLength = 500;
 const recentWindowSeconds = 10;
 const maxMessagesPerWindow = 3;
 const duplicateWindowSeconds = 30;
+const chatMessageRetentionHours = 24;
 
 type ChatPayload = {
   galleryId?: unknown;
@@ -35,6 +36,17 @@ type RecentMessageRow = {
   created_at: string;
 };
 
+type ProfileRow = {
+  display_name: string | null;
+  full_name: string | null;
+  email: string | null;
+};
+
+type CurrentViewer = {
+  userId: string | null;
+  visitorName: string | null;
+};
+
 function cleanText(value: unknown) {
   if (typeof value !== "string") {
     return "";
@@ -56,12 +68,24 @@ function cleanSessionId(value: unknown) {
   return cleanText(value).slice(0, 120);
 }
 
-function cleanVisitorName(value: unknown) {
-  const cleaned = cleanText(value)
-    .replace(/\s+/g, " ")
-    .slice(0, 40);
+function normalizeName(value: string | null | undefined) {
+  const cleaned = cleanText(value).replace(/\s+/g, " ").slice(0, 40);
 
-  return cleaned || "Ospite";
+  return cleaned || null;
+}
+
+function nameFromEmail(value: string | null | undefined) {
+  const email = cleanText(value);
+
+  if (!email || !email.includes("@")) {
+    return null;
+  }
+
+  return normalizeName(email.split("@")[0].replace(/[._-]+/g, " "));
+}
+
+function cleanVisitorName(value: unknown) {
+  return normalizeName(typeof value === "string" ? value : null) || "Ospite";
 }
 
 function cleanMessage(value: unknown) {
@@ -72,16 +96,48 @@ function secondsAgo(seconds: number) {
   return new Date(Date.now() - seconds * 1000).toISOString();
 }
 
-async function getCurrentUserId() {
+function hoursAgo(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+async function getCurrentViewer(
+  admin: ReturnType<typeof createAdminClient>
+): Promise<CurrentViewer> {
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    return user?.id || null;
+    if (!user) {
+      return {
+        userId: null,
+        visitorName: null,
+      };
+    }
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("display_name, full_name, email")
+      .eq("id", user.id)
+      .maybeSingle<ProfileRow>();
+
+    const visitorName =
+      normalizeName(profile?.display_name) ||
+      normalizeName(profile?.full_name) ||
+      nameFromEmail(profile?.email) ||
+      nameFromEmail(user.email) ||
+      "Utente";
+
+    return {
+      userId: user.id,
+      visitorName,
+    };
   } catch {
-    return null;
+    return {
+      userId: null,
+      visitorName: null,
+    };
   }
 }
 
@@ -101,6 +157,22 @@ async function ensurePublishedGallery(
   }
 
   return true;
+}
+
+async function cleanupOldMessages({
+  admin,
+  galleryId,
+}: {
+  admin: ReturnType<typeof createAdminClient>;
+  galleryId: string;
+}) {
+  const retentionLimit = hoursAgo(chatMessageRetentionHours);
+
+  await admin
+    .from("gallery_chat_messages")
+    .delete()
+    .eq("gallery_id", galleryId)
+    .lt("created_at", retentionLimit);
 }
 
 function toPublicMessage(row: ChatMessageRow) {
@@ -233,6 +305,8 @@ export async function GET(request: Request) {
     );
   }
 
+  await cleanupOldMessages({ admin, galleryId });
+
   const { data: rows, error: messagesError } = await admin
     .from("gallery_chat_messages")
     .select(
@@ -240,6 +314,7 @@ export async function GET(request: Request) {
     )
     .eq("gallery_id", galleryId)
     .eq("room_id", roomId)
+    .gte("created_at", hoursAgo(chatMessageRetentionHours))
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -258,6 +333,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     success: true,
     messages: safeRows.map(toPublicMessage),
+    retentionHours: chatMessageRetentionHours,
   });
 }
 
@@ -276,7 +352,7 @@ export async function POST(request: Request) {
   const galleryId = cleanText(body.galleryId);
   const roomId = cleanRoomId(body.roomId);
   const sessionId = cleanSessionId(body.sessionId);
-  const visitorName = cleanVisitorName(body.visitorName);
+  const fallbackVisitorName = cleanVisitorName(body.visitorName);
   const message = cleanMessage(body.message);
 
   if (!galleryId || !sessionId) {
@@ -310,6 +386,8 @@ export async function POST(request: Request) {
     );
   }
 
+  await cleanupOldMessages({ admin, galleryId });
+
   const rateLimit = await checkChatRateLimit({
     admin,
     galleryId,
@@ -328,7 +406,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const userId = await getCurrentUserId();
+  const viewer = await getCurrentViewer(admin);
+  const userId = viewer.userId;
+  const visitorName = viewer.visitorName || fallbackVisitorName;
 
   const { data: insertedMessage, error: insertError } = await admin
     .from("gallery_chat_messages")
@@ -358,5 +438,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     message: toPublicMessage(insertedMessage as ChatMessageRow),
+    viewerName: visitorName,
+    retentionHours: chatMessageRetentionHours,
   });
 }

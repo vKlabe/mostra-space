@@ -116,6 +116,7 @@ export default function GalleryLivePanel({
   roomId = "main",
 }: GalleryLivePanelProps) {
   const [identity, setIdentity] = useState<VisitorIdentity | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [galleryCount, setGalleryCount] = useState(0);
   const [roomCount, setRoomCount] = useState(0);
@@ -160,6 +161,10 @@ export default function GalleryLivePanel({
       setGalleryCount(result?.presence?.galleryCount || 0);
       setRoomCount(result?.presence?.roomCount || 0);
       setActiveVisitors(result?.presence?.activeVisitors || []);
+
+      if (typeof result?.presence?.viewerName === "string") {
+        setDisplayName(result.presence.viewerName);
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Presenza non disponibile."
@@ -259,7 +264,7 @@ export default function GalleryLivePanel({
           galleryId,
           roomId,
           sessionId: identity.sessionId,
-          visitorName: identity.visitorName,
+          visitorName: displayName || identity.visitorName,
           message,
         }),
       });
@@ -326,6 +331,9 @@ export default function GalleryLivePanel({
               </p>
               <p className="mt-1 text-sm text-[var(--museum-ivory-soft)]">
                 {roomLabel} · {roomCount} in sala · {galleryCount} totali
+              </p>
+              <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
+                Messaggi visibili per 24 ore.
               </p>
             </div>
 
@@ -408,7 +416,7 @@ export default function GalleryLivePanel({
                 maxLength={500}
                 placeholder={
                   identity
-                    ? `Scrivi come ${identity.visitorName}`
+                    ? `Scrivi come ${displayName || identity.visitorName}`
                     : "Scrivi un messaggio"
                 }
                 className="min-w-0 flex-1 rounded-2xl border border-[rgba(243,237,226,0.14)] bg-black/45 px-4 py-3 text-sm text-[var(--museum-ivory)] outline-none transition placeholder:text-[var(--museum-stone-muted)] focus:border-[var(--museum-bronze)]"

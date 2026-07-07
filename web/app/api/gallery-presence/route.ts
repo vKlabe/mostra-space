@@ -19,6 +19,17 @@ type PresenceRow = {
   last_seen_at: string;
 };
 
+type ProfileRow = {
+  display_name: string | null;
+  full_name: string | null;
+  email: string | null;
+};
+
+type CurrentViewer = {
+  userId: string | null;
+  visitorName: string | null;
+};
+
 function cleanText(value: unknown) {
   if (typeof value !== "string") {
     return "";
@@ -40,22 +51,64 @@ function cleanSessionId(value: unknown) {
   return cleanText(value).slice(0, 120);
 }
 
-function cleanVisitorName(value: unknown) {
-  const cleaned = cleanText(value).slice(0, 40);
+function normalizeName(value: string | null | undefined) {
+  const cleaned = cleanText(value).replace(/\s+/g, " ").slice(0, 40);
 
-  return cleaned || "Ospite";
+  return cleaned || null;
 }
 
-async function getCurrentUserId() {
+function nameFromEmail(value: string | null | undefined) {
+  const email = cleanText(value);
+
+  if (!email || !email.includes("@")) {
+    return null;
+  }
+
+  return normalizeName(email.split("@")[0].replace(/[._-]+/g, " "));
+}
+
+function cleanVisitorName(value: unknown) {
+  return normalizeName(typeof value === "string" ? value : null) || "Ospite";
+}
+
+async function getCurrentViewer(
+  admin: ReturnType<typeof createAdminClient>
+): Promise<CurrentViewer> {
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    return user?.id || null;
+    if (!user) {
+      return {
+        userId: null,
+        visitorName: null,
+      };
+    }
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("display_name, full_name, email")
+      .eq("id", user.id)
+      .maybeSingle<ProfileRow>();
+
+    const visitorName =
+      normalizeName(profile?.display_name) ||
+      normalizeName(profile?.full_name) ||
+      nameFromEmail(profile?.email) ||
+      nameFromEmail(user.email) ||
+      "Utente";
+
+    return {
+      userId: user.id,
+      visitorName,
+    };
   } catch {
-    return null;
+    return {
+      userId: null,
+      visitorName: null,
+    };
   }
 }
 
@@ -179,7 +232,7 @@ export async function POST(request: Request) {
   const galleryId = cleanText(body.galleryId);
   const roomId = cleanRoomId(body.roomId);
   const sessionId = cleanSessionId(body.sessionId);
-  const visitorName = cleanVisitorName(body.visitorName);
+  const fallbackVisitorName = cleanVisitorName(body.visitorName);
 
   if (!galleryId || !sessionId) {
     return NextResponse.json(
@@ -198,7 +251,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const userId = await getCurrentUserId();
+  const viewer = await getCurrentViewer(admin);
+  const userId = viewer.userId;
+  const visitorName = viewer.visitorName || fallbackVisitorName;
   const now = new Date().toISOString();
 
   const { error: upsertError } = await admin.from("gallery_presence").upsert(
@@ -247,6 +302,10 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     success: true,
-    presence,
+    presence: {
+      ...presence,
+      viewerName: visitorName,
+      viewerUserId: userId,
+    },
   });
 }
