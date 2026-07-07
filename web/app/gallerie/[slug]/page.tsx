@@ -11,6 +11,7 @@ import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import FavoriteGalleryButton from "@/components/galleries/FavoriteGalleryButton";
 import FavoriteArtworkButton from "@/components/galleries/FavoriteArtworkButton";
+import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 
 type PublicGalleryPageProps = {
   params: Promise<{
@@ -32,6 +33,21 @@ type Gallery = {
   cover_image_url: string | null;
   published_at: string | null;
   created_at: string;
+};
+
+type OwnerProfile = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: "user" | "gallerist" | "admin";
+  profile_slug: string | null;
+  public_profile_enabled: boolean;
+};
+
+type FollowRow = {
+  following_id: string;
 };
 
 type Artwork = {
@@ -65,6 +81,19 @@ function normalizeArtwork(value: Artwork | Artwork[] | null) {
   }
 
   return value;
+}
+
+function getOwnerDisplayName(profile: OwnerProfile | null) {
+  if (!profile) {
+    return "Gallerista";
+  }
+
+  return (
+    profile.display_name ||
+    profile.full_name ||
+    profile.email?.split("@")[0] ||
+    "Gallerista mostra.space"
+  );
 }
 
 function formatPrice(price: number | string | null, currency: string | null) {
@@ -156,6 +185,7 @@ export default async function PublicGalleryDetailPage({
   const selectedGalleryArtworkId = resolvedSearchParams.galleryArtworkId || "";
 
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
@@ -175,8 +205,6 @@ export default async function PublicGalleryDetailPage({
   } = await supabase.auth.getUser();
 
   if (currentUser) {
-    const admin = createAdminClient();
-
     await admin.from("recent_gallery_visits").upsert(
       {
         user_id: currentUser.id,
@@ -187,6 +215,46 @@ export default async function PublicGalleryDetailPage({
         onConflict: "user_id,gallery_id",
       }
     );
+  }
+
+  const { data: ownerProfileData } = await admin
+    .from("profiles")
+    .select(
+      "id, email, full_name, display_name, avatar_url, role, profile_slug, public_profile_enabled"
+    )
+    .eq("id", gallery.owner_id)
+    .maybeSingle<OwnerProfile>();
+
+  const ownerProfile =
+    ownerProfileData && ownerProfileData.public_profile_enabled
+      ? ownerProfileData
+      : null;
+
+  const ownerDisplayName = getOwnerDisplayName(ownerProfile);
+  const ownerProfileHref =
+    ownerProfile?.profile_slug ? `/profili/${ownerProfile.profile_slug}` : null;
+
+  let ownerFollowerCount = 0;
+  let isFollowingOwner = false;
+
+  if (ownerProfile) {
+    const { count } = await admin
+      .from("account_follows")
+      .select("*", { count: "exact", head: true })
+      .eq("following_id", ownerProfile.id);
+
+    ownerFollowerCount = count || 0;
+
+    if (currentUser && currentUser.id !== ownerProfile.id) {
+      const { data: followRow } = await admin
+        .from("account_follows")
+        .select("following_id")
+        .eq("follower_id", currentUser.id)
+        .eq("following_id", ownerProfile.id)
+        .maybeSingle<FollowRow>();
+
+      isFollowingOwner = Boolean(followRow);
+    }
   }
 
   const { data: galleryArtworks, error: galleryArtworksError } = await supabase
@@ -320,6 +388,25 @@ export default async function PublicGalleryDetailPage({
                 {heroDescription}
               </p>
 
+              {ownerProfile && (
+                <div className="mt-5 flex flex-wrap items-center gap-2 text-sm text-[var(--museum-stone-muted)]">
+                  <span>A cura di</span>
+
+                  {ownerProfileHref ? (
+                    <Link
+                      href={ownerProfileHref}
+                      className="rounded-full border border-[var(--museum-border-soft)] px-3 py-1 text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
+                    >
+                      {ownerDisplayName}
+                    </Link>
+                  ) : (
+                    <span className="rounded-full border border-[var(--museum-border-soft)] px-3 py-1 text-[var(--museum-ivory-soft)]">
+                      {ownerDisplayName}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div className="mt-9 flex flex-wrap gap-3">
                 <a href="#viewer" className="museum-button-primary px-6 py-3">
                   Entra nello spazio immersivo
@@ -334,6 +421,21 @@ export default async function PublicGalleryDetailPage({
                 </a>
 
                 <FavoriteGalleryButton galleryId={gallery.id} />
+
+                {ownerProfile && (
+                  <FollowProfileButton
+                    profileId={ownerProfile.id}
+                    initialIsFollowing={isFollowingOwner}
+                    initialFollowerCount={ownerFollowerCount}
+                    canFollow={Boolean(currentUser)}
+                    isOwnProfile={currentUser?.id === ownerProfile.id}
+                    label="Segui il gallerista"
+                    followingLabel="Segui già il gallerista"
+                    ownLabel="La tua galleria"
+                    showCount={false}
+                    compact
+                  />
+                )}
               </div>
 
               <div className="mt-10 grid max-w-3xl gap-3 sm:grid-cols-3">

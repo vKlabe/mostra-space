@@ -9,6 +9,12 @@ type FollowProfileButtonProps = {
   initialFollowerCount: number;
   canFollow: boolean;
   isOwnProfile: boolean;
+  label?: string;
+  followingLabel?: string;
+  ownLabel?: string;
+  showCount?: boolean;
+  compact?: boolean;
+  fullWidth?: boolean;
 };
 
 export default function FollowProfileButton({
@@ -17,12 +23,21 @@ export default function FollowProfileButton({
   initialFollowerCount,
   canFollow,
   isOwnProfile,
+  label = "Segui",
+  followingLabel = "Segui già",
+  ownLabel = "Il tuo profilo",
+  showCount = true,
+  compact = false,
+  fullWidth = false,
 }: FollowProfileButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isMutating, setIsMutating] = useState(false);
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
   const [message, setMessage] = useState<string | null>(null);
+
+  const isBusy = isPending || isMutating;
 
   async function toggleFollow() {
     setMessage(null);
@@ -40,6 +55,7 @@ export default function FollowProfileButton({
     const previousIsFollowing = isFollowing;
     const previousFollowerCount = followerCount;
 
+    setIsMutating(true);
     setIsFollowing(nextIsFollowing);
     setFollowerCount((current) =>
       nextIsFollowing ? current + 1 : Math.max(0, current - 1)
@@ -77,34 +93,54 @@ export default function FollowProfileButton({
           ? error.message
           : "Non riesco ad aggiornare il follow."
       );
+    } finally {
+      setIsMutating(false);
     }
   }
 
+  function getButtonText() {
+    if (isBusy) {
+      return "Aggiorno...";
+    }
+
+    if (isOwnProfile) {
+      return showCount ? `${ownLabel} · ${followerCount}` : ownLabel;
+    }
+
+    const baseLabel = isFollowing ? followingLabel : label;
+
+    return showCount ? `${baseLabel} · ${followerCount}` : baseLabel;
+  }
+
+  const sizeClass = compact
+    ? "px-4 py-2 text-xs uppercase tracking-[0.16em]"
+    : "px-5 py-2 text-sm";
+
+  const widthClass = fullWidth ? "w-full justify-center" : "";
+
   if (isOwnProfile) {
     return (
-      <div className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-300">
-        Il tuo profilo · {followerCount} follower
+      <div
+        className={`inline-flex rounded-full border border-neutral-700 ${sizeClass} ${widthClass} text-neutral-300`}
+      >
+        {getButtonText()}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-start gap-2">
+    <div className={fullWidth ? "w-full space-y-2" : "flex flex-col items-start gap-2"}>
       <button
         type="button"
-        disabled={isPending}
+        disabled={isBusy}
         onClick={toggleFollow}
         className={
           isFollowing
-            ? "rounded-full border border-neutral-700 bg-neutral-950/80 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60"
-            : "rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+            ? `inline-flex ${widthClass} rounded-full border border-neutral-700 bg-neutral-950/80 ${sizeClass} text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60`
+            : `inline-flex ${widthClass} rounded-full bg-white ${sizeClass} font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60`
         }
       >
-        {isPending
-          ? "Aggiorno..."
-          : isFollowing
-            ? `Segui già · ${followerCount}`
-            : `Segui · ${followerCount}`}
+        {getButtonText()}
       </button>
 
       {message && <p className="text-xs text-red-300">{message}</p>}

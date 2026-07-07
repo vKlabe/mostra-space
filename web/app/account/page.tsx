@@ -188,14 +188,23 @@ export default async function AccountPage() {
                 controllare dati account, ruolo, piano e strumenti disponibili.
               </p>
 
-              {publicProfileHref && (
+              <div className="mt-5 flex flex-wrap gap-3">
+                {publicProfileHref && (
+                  <a
+                    href={publicProfileHref}
+                    className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                  >
+                    Vedi profilo pubblico
+                  </a>
+                )}
+
                 <a
-                  href={publicProfileHref}
-                  className="mt-5 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                  href="/profili"
+                  className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                 >
-                  Vedi profilo pubblico
+                  Esplora profili
                 </a>
-              )}
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -358,7 +367,7 @@ export default async function AccountPage() {
           </article>
         </section>
 
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section id="seguiti" className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
@@ -370,9 +379,18 @@ export default async function AccountPage() {
               </h2>
             </div>
 
-            <p className="text-sm text-neutral-500">
-              {followedProfiles.length} profili seguiti
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-neutral-500">
+                {followedProfiles.length} profili seguiti
+              </p>
+
+              <a
+                href="/profili"
+                className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
+              >
+                Trova profili
+              </a>
+            </div>
           </div>
 
           {followedProfiles.length === 0 ? (
