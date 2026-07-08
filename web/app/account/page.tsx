@@ -5,22 +5,6 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import AccountProfileForm from "@/components/account/AccountProfileForm";
 import DeleteAccountPanel from "@/components/account/DeleteAccountPanel";
 
-type FollowRow = {
-  following_id: string;
-  created_at: string;
-};
-
-type FollowedProfile = {
-  id: string;
-  email: string | null;
-  full_name: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  profile_slug: string | null;
-  public_profile_enabled: boolean;
-};
-
 function getRoleLabel(role?: string | null) {
   if (role === "admin") {
     return "Admin";
@@ -65,15 +49,6 @@ function getPlanDescription(plan?: string | null) {
   return "Piano iniziale per esplorare la piattaforma e iniziare a costruire il proprio profilo.";
 }
 
-function getProfileName(profile: FollowedProfile) {
-  return (
-    profile.display_name ||
-    profile.full_name ||
-    profile.email?.split("@")[0] ||
-    "Profilo mostra.space"
-  );
-}
-
 export default async function AccountPage() {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -113,35 +88,6 @@ export default async function AccountPage() {
         </section>
       </main>
     );
-  }
-
-  const { data: followRows } = await admin
-    .from("account_follows")
-    .select("following_id, created_at")
-    .eq("follower_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const safeFollowRows = (followRows || []) as FollowRow[];
-  const followingIds = safeFollowRows.map((row) => row.following_id);
-
-  let followedProfiles: FollowedProfile[] = [];
-
-  if (followingIds.length > 0) {
-    const { data: profiles } = await admin
-      .from("profiles")
-      .select(
-        "id, email, full_name, display_name, avatar_url, bio, profile_slug, public_profile_enabled"
-      )
-      .in("id", followingIds)
-      .eq("public_profile_enabled", true);
-
-    const profileById = new Map(
-      ((profiles || []) as FollowedProfile[]).map((item) => [item.id, item])
-    );
-
-    followedProfiles = followingIds
-      .map((id) => profileById.get(id))
-      .filter(Boolean) as FollowedProfile[];
   }
 
   const isCreator = profile.role === "gallerist" || profile.role === "admin";
@@ -190,34 +136,11 @@ export default async function AccountPage() {
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                {publicProfileHref && (
-                  <a
-                    href={publicProfileHref}
-                    className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-                  >
-                    Vedi profilo pubblico
-                  </a>
-                )}
-
                 <a
-                  href="/profili"
+                  href="/dashboard/social"
                   className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                 >
-                  Esplora profili
-                </a>
-
-                <a
-                  href="/account/calendario"
-                  className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-                >
-                  Il mio calendario
-                </a>
-
-                <a
-                  href="/account/notifiche"
-                  className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-                >
-                  Notifiche eventi
+                  Vai alla sezione Social
                 </a>
               </div>
             </div>
@@ -381,86 +304,6 @@ export default async function AccountPage() {
             </div>
           </article>
         </section>
-
-        <section id="seguiti" className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
-            <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-                Community
-              </p>
-
-              <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
-                Account seguiti
-              </h2>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm text-neutral-500">
-                {followedProfiles.length} profili seguiti
-              </p>
-
-              <a
-                href="/profili"
-                className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
-              >
-                Trova profili
-              </a>
-            </div>
-          </div>
-
-          {followedProfiles.length === 0 ? (
-            <p className="mt-5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm leading-6 text-neutral-500">
-              Non segui ancora nessun profilo. Quando seguirai artisti,
-              galleristi o istituzioni, li ritroverai qui.
-            </p>
-          ) : (
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {followedProfiles.map((followed) => {
-                const followedName = getProfileName(followed);
-
-                return (
-                  <a
-                    key={followed.id}
-                    href={`/profili/${followed.profile_slug}`}
-                    className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-800 bg-black">
-                        {followed.avatar_url ? (
-                          <img
-                            src={followed.avatar_url}
-                            alt={followedName}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-medium text-neutral-300">
-                            {followedName.slice(0, 1).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <p className="font-medium text-neutral-100">
-                          {followedName}
-                        </p>
-                        <p className="mt-1 text-xs text-neutral-500">
-                          Profilo pubblico
-                        </p>
-                      </div>
-                    </div>
-
-                    {followed.bio && (
-                      <p className="mt-4 text-sm leading-6 text-neutral-500">
-                        {followed.bio}
-                      </p>
-                    )}
-                  </a>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
 
         <DeleteAccountPanel email={profile.email || user.email || ""} />
 

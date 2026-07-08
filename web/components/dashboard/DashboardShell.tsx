@@ -8,6 +8,7 @@ type DashboardShellProps = {
   eyebrow?: string;
   activeSection?:
     | "dashboard"
+    | "social"
     | "gallerie"
     | "opere"
     | "richieste"
@@ -31,6 +32,12 @@ const communityNavItems: NavItem[] = [
     description: "Spazio community",
   },
   {
+    label: "Social",
+    href: "/dashboard/social",
+    section: "social",
+    description: "Follow, preferiti, eventi",
+  },
+  {
     label: "Account",
     href: "/account",
     section: "account",
@@ -44,6 +51,12 @@ const navItems: NavItem[] = [
     href: "/dashboard",
     section: "dashboard",
     description: "Panoramica generale",
+  },
+  {
+    label: "Social",
+    href: "/dashboard/social",
+    section: "social",
+    description: "Community e attività",
   },
   {
     label: "Gallerie",
@@ -83,7 +96,7 @@ export default function DashboardShell({
   const visibleNavItems =
     navMode === "community" ? communityNavItems : navItems;
 
-    return (
+  return (
     <main className="museum-app-layout min-h-screen">
       <aside className="museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 shrink-0 flex-col overflow-y-auto px-5 py-6">
         <div>
@@ -140,17 +153,28 @@ export default function DashboardShell({
           <p className="museum-label">Pubblico</p>
 
           <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-            Controlla come appaiono le gallerie pubblicate ai visitatori.
+            Controlla come appaiono gallerie, profili ed eventi ai visitatori.
           </p>
 
-          <Link
-            href="/gallerie"
-            target="_blank"
-            rel="noreferrer"
-            className="museum-button-secondary mt-4 px-4 py-2"
-          >
-            Elenco pubblico
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/gallerie"
+              target="_blank"
+              rel="noreferrer"
+              className="museum-button-secondary px-4 py-2"
+            >
+              Gallerie
+            </Link>
+
+            <Link
+              href="/eventi"
+              target="_blank"
+              rel="noreferrer"
+              className="museum-button-secondary px-4 py-2"
+            >
+              Eventi
+            </Link>
+          </div>
         </div>
       </aside>
 
