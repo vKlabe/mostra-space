@@ -9,6 +9,7 @@ type DashboardShellProps = {
   activeSection?:
     | "dashboard"
     | "social"
+    | "analytics"
     | "gallerie"
     | "opere"
     | "richieste"
@@ -69,6 +70,12 @@ const navItems: NavItem[] = [
     href: "/dashboard/opere",
     section: "opere",
     description: "Archivio opere",
+  },
+  {
+    label: "Analytics",
+    href: "/dashboard/analytics",
+    section: "analytics",
+    description: "Visite, salvataggi, richieste",
   },
   {
     label: "Richieste",
