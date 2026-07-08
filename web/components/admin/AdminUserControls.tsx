@@ -64,9 +64,13 @@ export default function AdminUserControls({
   const [role, setRole] = useState<UserRole>(currentRole);
   const [plan, setPlan] = useState<UserPlan>(currentPlan);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteBox, setShowDeleteBox] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [message, setMessage] = useState("");
 
   const hasChanges = role !== currentRole || plan !== currentPlan;
+  const canDelete = !isCurrentAdminUser && deleteConfirmation === "ELIMINA";
 
   async function handleSave() {
     if (!hasChanges) {
@@ -109,6 +113,51 @@ export default function AdminUserControls({
       setMessage("Errore di rete durante aggiornamento utente.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (isCurrentAdminUser) {
+      setMessage(
+        "Non puoi cancellare il tuo stesso account dalla control room admin."
+      );
+      return;
+    }
+
+    if (deleteConfirmation !== "ELIMINA") {
+      setMessage("Scrivi ELIMINA per confermare la cancellazione account.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Confermi la cancellazione definitiva dell'account? Verranno eliminate gallerie, opere, eventi, notifiche e dati collegati."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setMessage(data?.error || "Errore eliminazione account.");
+        return;
+      }
+
+      setMessage("Account eliminato definitivamente.");
+      router.refresh();
+    } catch {
+      setMessage("Errore di rete durante eliminazione account.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -170,12 +219,56 @@ export default function AdminUserControls({
           {isLoading ? "Salvataggio..." : "Salva modifiche"}
         </button>
 
-        {message && (
-          <p className="text-sm text-neutral-400">
-            {message}
-          </p>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowDeleteBox((current) => !current)}
+          disabled={isLoading || isDeleting || isCurrentAdminUser}
+          className="rounded-full border border-red-900 bg-red-950/25 px-5 py-2 text-sm font-medium text-red-200 transition hover:bg-red-950/50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Delete account
+        </button>
+
+        {message && <p className="text-sm text-neutral-400">{message}</p>}
       </div>
+
+      {isCurrentAdminUser && (
+        <p className="mt-3 text-xs leading-5 text-neutral-600">
+          Per sicurezza non puoi cancellare il tuo stesso account da questa
+          schermata admin.
+        </p>
+      )}
+
+      {showDeleteBox && !isCurrentAdminUser && (
+        <div className="mt-5 rounded-2xl border border-red-950 bg-red-950/20 p-4">
+          <p className="text-sm font-medium text-red-100">
+            Cancellazione definitiva account
+          </p>
+
+          <p className="mt-2 text-xs leading-5 text-red-200/80">
+            Verranno eliminate gallerie, opere, eventi, notifiche, preferiti,
+            richieste, presenza, chat e file immagine collegati all'account.
+            Scrivi ELIMINA per confermare.
+          </p>
+
+          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+            <input
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              placeholder="Scrivi ELIMINA"
+              className="rounded-2xl border border-red-950 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-red-500"
+            />
+
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting || !canDelete}
+              className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isDeleting ? "Eliminazione..." : "Conferma delete account"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

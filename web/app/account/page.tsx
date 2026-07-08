@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import AccountProfileForm from "@/components/account/AccountProfileForm";
+import DeleteAccountPanel from "@/components/account/DeleteAccountPanel";
 
 type FollowRow = {
   following_id: string;
@@ -459,6 +460,9 @@ export default async function AccountPage() {
             </div>
           )}
         </section>
+
+
+        <DeleteAccountPanel email={profile.email || user.email || ""} />
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">

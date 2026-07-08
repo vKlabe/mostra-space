@@ -6,6 +6,7 @@ import {
   apiUnauthorized,
 } from "@/lib/api/responses";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
+import { deleteUserAccount } from "@/lib/account/deleteAccount";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,6 +49,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return apiForbidden(current.error);
   }
 
+  const admin = current.admin;
+
+  if (!admin) {
+    return apiForbidden("Accesso admin non autorizzato.");
+  }
+
   let body: RequestBody;
 
   try {
@@ -76,7 +83,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     );
   }
 
-  const { data: updatedProfile, error: updateError } = await current.admin
+  const { data: updatedProfile, error: updateError } = await admin
     .from("profiles")
     .update({
       role: body.role,
@@ -97,4 +104,80 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   return apiSuccess({
     profile: updatedProfile,
   });
+}
+
+export async function DELETE(_request: Request, { params }: RouteParams) {
+  const { userId } = await params;
+
+  if (!userId) {
+    return apiBadRequest("User ID mancante.");
+  }
+
+  const current = await requireAdminApi();
+
+  if (!current.ok) {
+    if (current.status === 401) {
+      return apiUnauthorized(current.error);
+    }
+
+    return apiForbidden(current.error);
+  }
+
+  const admin = current.admin;
+
+  if (!admin) {
+    return apiForbidden("Accesso admin non autorizzato.");
+  }
+
+  if (userId === current.user.id) {
+    return apiBadRequest(
+      "Non puoi cancellare il tuo stesso account dalla control room admin. Usa la pagina Account oppure un altro admin."
+    );
+  }
+
+  const { data: targetProfile, error: targetError } = await admin
+    .from("profiles")
+    .select("id, email, display_name, full_name, role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (targetError) {
+    return apiError("Errore lettura utente da eliminare.", {
+      status: 500,
+      code: "ADMIN_USER_DELETE_LOOKUP_FAILED",
+      details: targetError,
+    });
+  }
+
+  if (!targetProfile) {
+    return apiError("Utente non trovato.", {
+      status: 404,
+      code: "ADMIN_USER_NOT_FOUND",
+    });
+  }
+
+  try {
+    const result = await deleteUserAccount({
+      admin,
+      userId,
+      deleteAuthUser: true,
+    });
+
+    return apiSuccess({
+      deletedUserId: userId,
+      deletedProfile: targetProfile,
+      cleanup: {
+        galleries: result.galleryIds.length,
+        artworks: result.artworkIds.length,
+        events: result.eventIds.length,
+        steps: result.steps,
+      },
+    });
+  } catch (error) {
+    return apiError("Errore eliminazione account.", {
+      status: 500,
+      code: "ADMIN_USER_DELETE_FAILED",
+      details: error instanceof Error ? error.message : error,
+    });
+  }
 }
