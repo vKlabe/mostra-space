@@ -23,6 +23,7 @@ type Profile = {
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
   plan: PlanName;
+  stripe_customer_id: string | null;
   stripe_subscription_status: string | null;
   stripe_current_period_end: string | null;
   stripe_cancel_at_period_end: boolean | null;
@@ -35,6 +36,10 @@ const STRIPE_CHECKOUT_PLANS: StripeCheckoutPlan[] = [
   "business",
   "diamond",
 ];
+
+const STANDARD_PLAN_NAMES: PlanName[] = PLAN_ORDER.filter(
+  (planName) => planName !== "institution"
+);
 
 const planHighlights: Record<PlanName, string[]> = {
   free: [
@@ -168,6 +173,7 @@ export default async function PricingPage() {
           "full_name",
           "role",
           "plan",
+          "stripe_customer_id",
           "stripe_subscription_status",
           "stripe_current_period_end",
           "stripe_cancel_at_period_end",
@@ -181,7 +187,14 @@ export default async function PricingPage() {
 
   const currentPlan = profile ? normalizePlanName(profile.plan) : null;
   const billingDate = formatDate(profile?.stripe_current_period_end);
-  const isPaidCurrentPlan = currentPlan !== null && currentPlan !== "free";
+  const hasStripeCustomer = Boolean(profile?.stripe_customer_id);
+  const isPaidCurrentPlan =
+    currentPlan !== null &&
+    currentPlan !== "free" &&
+    currentPlan !== "institution";
+
+  const institutionPlan = PLAN_LIMITS.institution;
+  const isInstitutionCurrent = currentPlan === "institution";
 
   return (
     <main className="museum-page overflow-hidden">
@@ -257,7 +270,7 @@ export default async function PricingPage() {
                       Dashboard
                     </Link>
 
-                    {isPaidCurrentPlan && (
+                    {isPaidCurrentPlan && hasStripeCustomer && (
                       <CustomerPortalButton className="museum-button-primary px-5 py-2.5">
                         Gestisci abbonamento
                       </CustomerPortalButton>
@@ -300,8 +313,8 @@ export default async function PricingPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-          {PLAN_ORDER.map((planName) => {
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {STANDARD_PLAN_NAMES.map((planName) => {
             const plan = PLAN_LIMITS[planName];
             const isCurrent = currentPlan === planName;
             const isFeatured = plan.name === "pro" || plan.name === "diamond";
@@ -371,14 +384,10 @@ export default async function PricingPage() {
                     >
                       <T textKey="pricing.basePlan" fallback="Piano base" />
                     </button>
-                  ) : plan.name === "institution" ? (
-                    <Link
-                      href="/contatti"
-                      className="museum-button-secondary w-full px-5 py-3"
-                    >
-                      Contattaci
-                    </Link>
-                  ) : profile && currentPlan && currentPlan !== "free" ? (
+                  ) : profile &&
+                    hasStripeCustomer &&
+                    isPaidCurrentPlan &&
+                    isStripeCheckoutPlan(plan.name) ? (
                     <CustomerPortalButton className="museum-button-primary w-full px-5 py-3">
                       <T
                         textKey="pricing.manageSubscription"
@@ -484,7 +493,7 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      WebGL/sala
+                      Opere visibili per sala
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatLimitValue(plan.maxArtworksVisiblePerRoom)}
@@ -496,20 +505,135 @@ export default async function PricingPage() {
           })}
         </div>
 
+        <section
+          className={
+            isInstitutionCurrent
+              ? "mt-6 rounded-[1.75rem] border border-[var(--museum-bronze-light)] bg-[rgba(168,121,69,0.12)] p-6 shadow-[var(--museum-shadow-bronze)] md:p-8"
+              : "mt-6 rounded-[1.75rem] border border-[rgba(216,205,187,0.24)] bg-[rgba(23,21,17,0.74)] p-6 shadow-[var(--museum-shadow-soft)] md:p-8"
+          }
+        >
+          <div className="grid gap-8 lg:grid-cols-[0.75fr_1.35fr_0.65fr] lg:items-center">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="museum-label">
+                  {getPlanEyebrow(institutionPlan.name)}
+                </p>
+
+                {isInstitutionCurrent && (
+                  <span className="rounded-full border border-[var(--museum-bronze-light)] bg-[var(--museum-bronze)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-black)]">
+                    Attuale
+                  </span>
+                )}
+              </div>
+
+              <span
+                className={`mt-5 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getPlanBadgeClass(
+                  institutionPlan.name,
+                  isInstitutionCurrent
+                )}`}
+              >
+                {institutionPlan.label}
+              </span>
+
+              <h2 className="mt-6 font-editorial text-5xl font-medium leading-none text-[var(--museum-ivory)] md:text-6xl">
+                {institutionPlan.monthlyPriceLabel}
+              </h2>
+
+              <p className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
+                {getPlanDescription(institutionPlan.name)}
+              </p>
+            </div>
+
+            <div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
+                  <p className="font-medium text-[var(--museum-ivory)]">
+                    Limiti personalizzati
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
+                    Gallerie, opere, storage e richieste definiti in base al
+                    progetto.
+                  </p>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
+                  <p className="font-medium text-[var(--museum-ivory)]">
+                    Supporto dedicato
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
+                    Onboarding, configurazione e assistenza per realtà complesse.
+                  </p>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
+                  <p className="font-medium text-[var(--museum-ivory)]">
+                    Branding su misura
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
+                    Esperienza più coerente con identità, archivio e progetto
+                    culturale.
+                  </p>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
+                  <p className="font-medium text-[var(--museum-ivory)]">
+                    Sale e template dedicati
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
+                    Possibilità di ambienti, configurazioni e funzioni su
+                    richiesta.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:text-right">
+              {isInstitutionCurrent ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full rounded-none border border-[var(--museum-border)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--museum-stone-muted)] lg:w-auto"
+                >
+                  Piano attuale
+                </button>
+              ) : (
+                <a
+                  href="mailto:info@mostra.space?subject=Richiesta%20piano%20Institution%20MostraSpace"
+                  className="museum-button-secondary inline-flex w-full justify-center px-5 py-3 lg:w-auto"
+                >
+                  Contattaci
+                </a>
+              )}
+
+              <div className="mt-6 space-y-3 border-t border-[var(--museum-border)] pt-6 text-left lg:text-right">
+                {planHighlights.institution.map((item) => (
+                  <div
+                    key={item}
+                    className="flex gap-3 text-sm text-[var(--museum-stone)] lg:justify-end"
+                  >
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--museum-bronze-light)] lg:order-2" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="museum-card mt-10 rounded-[1.75rem] p-6 md:p-8">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
-              <p className="museum-label">Nota tecnica</p>
+              <p className="museum-label">Nota sui limiti</p>
 
               <h2 className="museum-title mt-4 text-4xl text-[var(--museum-ivory)] md:text-5xl">
-                Storage account ≠ runtime WebGL.
+                Storage account e opere visibili non sono la stessa cosa.
               </h2>
 
               <p className="museum-subtitle mt-5 text-sm text-[var(--museum-stone)]">
                 Lo storage indica quante opere puoi archiviare sul tuo account.
-                Il runtime WebGL indica invece quante opere vengono caricate
-                nella singola sala quando un visitatore apre il viewer. Questo
-                evita di appesantire browser e computer dei visitatori.
+                Le opere visibili per sala indicano invece quante opere vengono
+                caricate in una singola galleria visitabile, così l’esperienza
+                resta fluida e accessibile.
               </p>
             </div>
 
