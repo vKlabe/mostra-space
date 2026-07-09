@@ -11,7 +11,7 @@ type Profile = {
   display_name: string | null;
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: "free" | "pro" | "business" | "diamond" | "institution";
   stripe_subscription_status: string | null;
   stripe_current_period_end: string | null;
   stripe_cancel_at_period_end: boolean | null;

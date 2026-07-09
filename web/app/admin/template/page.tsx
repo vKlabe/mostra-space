@@ -2,8 +2,9 @@ import AdminShell from "@/components/admin/AdminShell";
 import AdminTemplateControls from "@/components/admin/AdminTemplateControls";
 import AdminCreateTemplateForm from "@/components/admin/AdminCreateTemplateForm";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import { normalizePlanName, type PlanName } from "@/lib/plans";
 
-type TemplatePlan = "free" | "pro" | "business" | "institution";
+type TemplatePlan = PlanName;
 
 type Template = {
   id: string;
@@ -35,21 +36,16 @@ function formatDate(value: string | null) {
 }
 
 function normalizeTemplatePlan(value: unknown): TemplatePlan {
-  if (
-    value === "free" ||
-    value === "pro" ||
-    value === "business" ||
-    value === "institution"
-  ) {
-    return value;
-  }
-
-  return "free";
+  return normalizePlanName(value);
 }
 
 function getPlanLabel(plan: TemplatePlan) {
   if (plan === "institution") {
     return "Institution";
+  }
+
+  if (plan === "diamond") {
+    return "Diamond";
   }
 
   if (plan === "business") {
@@ -66,6 +62,10 @@ function getPlanLabel(plan: TemplatePlan) {
 function getPlanBadgeClass(plan: TemplatePlan) {
   if (plan === "institution") {
     return "border-red-900 bg-red-950/40 text-red-300";
+  }
+
+  if (plan === "diamond") {
+    return "border-white/30 bg-white/10 text-white";
   }
 
   if (plan === "business") {
@@ -107,12 +107,36 @@ export default async function AdminTemplatesPage() {
     return plan === "free";
   }).length;
 
-  const proOrHigherCount = templates.filter((item) => {
+  const proCount = templates.filter((item) => {
     const plan = normalizeTemplatePlan(
       item.available_from_plan || (item.is_free ? "free" : "pro")
     );
 
-    return plan !== "free";
+    return plan === "pro";
+  }).length;
+
+  const businessCount = templates.filter((item) => {
+    const plan = normalizeTemplatePlan(
+      item.available_from_plan || (item.is_free ? "free" : "pro")
+    );
+
+    return plan === "business";
+  }).length;
+
+  const diamondCount = templates.filter((item) => {
+    const plan = normalizeTemplatePlan(
+      item.available_from_plan || (item.is_free ? "free" : "pro")
+    );
+
+    return plan === "diamond";
+  }).length;
+
+  const institutionCount = templates.filter((item) => {
+    const plan = normalizeTemplatePlan(
+      item.available_from_plan || (item.is_free ? "free" : "pro")
+    );
+
+    return plan === "institution";
   }).length;
 
   return (
@@ -139,29 +163,17 @@ export default async function AdminTemplatesPage() {
         </div>
       )}
 
-      <div className="grid gap-5 md:grid-cols-5">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             Totale template
           </p>
 
           <p className="text-4xl font-semibold">{templates.length}</p>
-        </article>
 
-        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Attivi
+          <p className="mt-3 text-sm text-neutral-400">
+            {activeCount} attivi · {featuredCount} featured
           </p>
-
-          <p className="text-4xl font-semibold">{activeCount}</p>
-        </article>
-
-        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            In evidenza
-          </p>
-
-          <p className="text-4xl font-semibold">{featuredCount}</p>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -170,14 +182,46 @@ export default async function AdminTemplatesPage() {
           </p>
 
           <p className="text-4xl font-semibold">{freeCount}</p>
+
+          <p className="mt-3 text-sm text-neutral-400">
+            Visibili a tutti
+          </p>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Premium
+            Pro / Business
           </p>
 
-          <p className="text-4xl font-semibold">{proOrHigherCount}</p>
+          <p className="text-4xl font-semibold">{proCount + businessCount}</p>
+
+          <p className="mt-3 text-sm text-neutral-400">
+            {proCount} pro · {businessCount} business
+          </p>
+        </article>
+
+        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+            Diamond
+          </p>
+
+          <p className="text-4xl font-semibold">{diamondCount}</p>
+
+          <p className="mt-3 text-sm text-neutral-400">
+            Template premium
+          </p>
+        </article>
+
+        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
+            Institution
+          </p>
+
+          <p className="text-4xl font-semibold">{institutionCount}</p>
+
+          <p className="mt-3 text-sm text-neutral-400">
+            Template istituzionali
+          </p>
         </article>
       </div>
 

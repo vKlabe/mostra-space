@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { PlanName } from "@/lib/plans";
 
-type TemplatePlan = "free" | "pro" | "business" | "institution";
+type TemplatePlan = PlanName;
 
 type AdminTemplateControlsProps = {
   templateId: string;
@@ -30,6 +31,10 @@ const ALLOWED_PREVIEW_TYPES = [
 function getPlanLabel(plan: TemplatePlan) {
   if (plan === "institution") {
     return "Institution";
+  }
+
+  if (plan === "diamond") {
+    return "Diamond";
   }
 
   if (plan === "business") {
@@ -409,9 +414,10 @@ export default function AdminTemplateControls({
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="free">Free</option>
-            <option value="pro">Pro</option>
-            <option value="business">Business</option>
-            <option value="institution">Institution</option>
+<option value="pro">Pro</option>
+<option value="business">Business</option>
+<option value="diamond">Diamond</option>
+<option value="institution">Institution</option>
           </select>
 
           <p className="mt-2 text-xs leading-5 text-neutral-500">

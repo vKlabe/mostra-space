@@ -1,4 +1,9 @@
-export type PlanName = "free" | "pro" | "business" | "institution";
+export type PlanName =
+  | "free"
+  | "pro"
+  | "business"
+  | "diamond"
+  | "institution";
 
 export type AnalyticsLevel = "basic" | "standard" | "advanced";
 
@@ -51,6 +56,7 @@ export const PLAN_ORDER: PlanName[] = [
   "free",
   "pro",
   "business",
+  "diamond",
   "institution",
 ];
 
@@ -80,14 +86,14 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
   pro: {
     name: "pro",
     label: "Pro",
-    monthlyPrice: 19,
-    monthlyPriceLabel: "19€/mese",
+    monthlyPrice: 14.9,
+    monthlyPriceLabel: "14,90€/mese",
     selectableTemplates: 10,
-    maxGalleries: 3,
+    maxGalleries: 5,
     maxArtworksTotal: 150,
     maxArtworksPerGallery: 50,
     maxArtworksVisiblePerRoom: 30,
-    maxStorageMb: 250,
+    maxStorageMb: 500,
     maxArtworkFileMb: 4,
     maxRequestsPerMonth: 200,
     analytics: "standard",
@@ -102,16 +108,16 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
   business: {
     name: "business",
     label: "Business",
-    monthlyPrice: 59,
-    monthlyPriceLabel: "59€/mese",
+    monthlyPrice: 24.9,
+    monthlyPriceLabel: "24,90€/mese",
     selectableTemplates: 20,
-    maxGalleries: 5,
-    maxArtworksTotal: 500,
-    maxArtworksPerGallery: 100,
+    maxGalleries: 10,
+    maxArtworksTotal: 250,
+    maxArtworksPerGallery: 80,
     maxArtworksVisiblePerRoom: 40,
     maxStorageMb: 1024,
     maxArtworkFileMb: 8,
-    maxRequestsPerMonth: null,
+    maxRequestsPerMonth: 500,
     analytics: "advanced",
     customBranding: "full",
     pdfExport: "branded",
@@ -121,17 +127,39 @@ export const PLAN_LIMITS: Record<PlanName, PlanLimits> = {
     prioritySupport: false,
   },
 
+  diamond: {
+    name: "diamond",
+    label: "Diamond",
+    monthlyPrice: 49,
+    monthlyPriceLabel: "49€/mese",
+    selectableTemplates: null,
+    maxGalleries: 15,
+    maxArtworksTotal: 500,
+    maxArtworksPerGallery: 120,
+    maxArtworksVisiblePerRoom: 50,
+    maxStorageMb: 2048,
+    maxArtworkFileMb: 12,
+    maxRequestsPerMonth: null,
+    analytics: "advanced",
+    customBranding: "full",
+    pdfExport: "advanced",
+    privateRooms: true,
+    embed: true,
+    customRooms: false,
+    prioritySupport: true,
+  },
+
   institution: {
     name: "institution",
     label: "Institution",
-    monthlyPrice: 199,
-    monthlyPriceLabel: "da 199€/mese",
+    monthlyPrice: null,
+    monthlyPriceLabel: "Su richiesta",
     selectableTemplates: null,
     maxGalleries: null,
     maxArtworksTotal: null,
     maxArtworksPerGallery: null,
     maxArtworksVisiblePerRoom: null,
-    maxStorageMb: 10240,
+    maxStorageMb: null,
     maxArtworkFileMb: 25,
     maxRequestsPerMonth: null,
     analytics: "advanced",
@@ -149,6 +177,7 @@ export function normalizePlanName(value: unknown): PlanName {
     value === "free" ||
     value === "pro" ||
     value === "business" ||
+    value === "diamond" ||
     value === "institution"
   ) {
     return value;
@@ -181,6 +210,10 @@ export function getUpgradeTarget(plan: PlanName): PlanName | null {
   }
 
   if (plan === "business") {
+    return "diamond";
+  }
+
+  if (plan === "diamond") {
     return "institution";
   }
 
@@ -197,7 +230,7 @@ export function formatLimitValue(value: number | null) {
 
 export function formatMb(value: number | null) {
   if (value === null) {
-    return "Illimitato";
+    return "Personalizzato";
   }
 
   if (value >= 1024) {

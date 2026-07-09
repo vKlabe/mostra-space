@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+﻿import { notFound, redirect } from "next/navigation";
 import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -15,7 +15,7 @@ type Profile = {
   display_name: string | null;
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: "free" | "pro" | "business" | "diamond" | "institution";
 };
 
 type Artwork = {

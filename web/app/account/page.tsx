@@ -4,6 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import AccountProfileForm from "@/components/account/AccountProfileForm";
 import DeleteAccountPanel from "@/components/account/DeleteAccountPanel";
+import {
+  PLAN_LIMITS,
+  formatLimitValue,
+  formatMb,
+  normalizePlanName,
+  type PlanName,
+} from "@/lib/plans";
 
 function getRoleLabel(role?: string | null) {
   if (role === "admin") {
@@ -18,35 +25,59 @@ function getRoleLabel(role?: string | null) {
 }
 
 function getPlanLabel(plan?: string | null) {
-  if (plan === "institution") {
-    return "Institution";
-  }
-
-  if (plan === "business") {
-    return "Business";
-  }
-
-  if (plan === "pro") {
-    return "Pro";
-  }
-
-  return "Free";
+  return PLAN_LIMITS[normalizePlanName(plan)].label;
 }
 
 function getPlanDescription(plan?: string | null) {
-  if (plan === "institution") {
-    return "Piano pensato per istituzioni, fondazioni, musei e progetti espositivi complessi.";
+  const normalizedPlan = normalizePlanName(plan);
+
+  if (normalizedPlan === "institution") {
+    return "Piano personalizzato per istituzioni, fondazioni, musei, fiere e progetti espositivi complessi.";
   }
 
-  if (plan === "business") {
-    return "Piano pensato per gallerie strutturate, studi e realta professionali.";
+  if (normalizedPlan === "diamond") {
+    return "Piano premium per gallerie strutturate, cataloghi ampi e attività espositive digitali più intense.";
   }
 
-  if (plan === "pro") {
-    return "Piano pensato per creator, artisti e gallerie che vogliono piu spazio e piu strumenti.";
+  if (normalizedPlan === "business") {
+    return "Piano pensato per gallerie strutturate, studi e realtà professionali.";
+  }
+
+  if (normalizedPlan === "pro") {
+    return "Piano pensato per creator, artisti e gallerie che vogliono più spazio e più strumenti.";
   }
 
   return "Piano iniziale per esplorare la piattaforma e iniziare a costruire il proprio profilo.";
+}
+
+function getPlanBadgeClass(plan?: string | null) {
+  const normalizedPlan = normalizePlanName(plan);
+
+  if (normalizedPlan === "institution") {
+    return "border-red-900 bg-red-950/40 text-red-300";
+  }
+
+  if (normalizedPlan === "diamond") {
+    return "border-white/30 bg-white/10 text-white";
+  }
+
+  if (normalizedPlan === "business") {
+    return "border-purple-900 bg-purple-950/40 text-purple-300";
+  }
+
+  if (normalizedPlan === "pro") {
+    return "border-blue-900 bg-blue-950/40 text-blue-300";
+  }
+
+  return "border-green-900 bg-green-950/40 text-green-300";
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Date(value).toLocaleString("it-IT");
 }
 
 export default async function AccountPage() {
@@ -90,6 +121,9 @@ export default async function AccountPage() {
     );
   }
 
+  const normalizedPlan = normalizePlanName(profile.plan);
+  const planLimits = PLAN_LIMITS[normalizedPlan];
+
   const isCreator = profile.role === "gallerist" || profile.role === "admin";
   const isAdmin = profile.role === "admin";
   const roleLabel = getRoleLabel(profile.role);
@@ -103,7 +137,7 @@ export default async function AccountPage() {
     profile.website_url || profile.instagram_url || "Non inserito";
 
   const createdAt = profile.created_at
-    ? new Date(profile.created_at).toLocaleString("it-IT")
+    ? formatDate(profile.created_at)
     : "Non disponibile";
 
   const publicProfileHref =
@@ -131,7 +165,7 @@ export default async function AccountPage() {
               </h2>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
-                Questa e la tua identita dentro mostra.space. Da qui puoi
+                Questa è la tua identità dentro mostra.space. Da qui puoi
                 controllare dati account, ruolo, piano e strumenti disponibili.
               </p>
 
@@ -150,7 +184,11 @@ export default async function AccountPage() {
                 {roleLabel}
               </span>
 
-              <span className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-200">
+              <span
+                className={`rounded-full border px-4 py-2 text-sm ${getPlanBadgeClass(
+                  profile.plan
+                )}`}
+              >
                 Piano {planLabel}
               </span>
             </div>
@@ -237,8 +275,8 @@ export default async function AccountPage() {
 
             <p className="mt-3 text-sm leading-6 text-neutral-400">
               {isCreator
-                ? "Questo account puo creare e gestire gallerie, opere, richieste e spazi espositivi. Mantiene comunque tutti gli strumenti community."
-                : "Questo account puo esplorare la piattaforma, salvare preferiti, inviare richieste e costruire il proprio profilo personale."}
+                ? "Questo account può creare e gestire gallerie, opere, richieste e spazi espositivi. Mantiene comunque tutti gli strumenti community."
+                : "Questo account può esplorare la piattaforma, salvare preferiti, inviare richieste e costruire il proprio profilo personale."}
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -296,11 +334,51 @@ export default async function AccountPage() {
                 Limiti account
               </p>
 
-              <p className="mt-2 text-sm leading-6 text-neutral-500">
-                In questa fase mostriamo il piano attuale. Nella prossima fase
-                collegheremo qui limiti reali su gallerie, opere, storage,
-                template disponibili e richieste.
-              </p>
+              <dl className="mt-4 grid gap-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">Gallerie</dt>
+                  <dd className="text-neutral-200">
+                    {formatLimitValue(planLimits.maxGalleries)}
+                  </dd>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">Opere totali</dt>
+                  <dd className="text-neutral-200">
+                    {formatLimitValue(planLimits.maxArtworksTotal)}
+                  </dd>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">Storage</dt>
+                  <dd className="text-neutral-200">
+                    {formatMb(planLimits.maxStorageMb)}
+                  </dd>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">Peso file</dt>
+                  <dd className="text-neutral-200">
+                    {formatMb(planLimits.maxArtworkFileMb)}
+                  </dd>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">Richieste/mese</dt>
+                  <dd className="text-neutral-200">
+                    {formatLimitValue(planLimits.maxRequestsPerMonth)}
+                  </dd>
+                </div>
+
+                <div className="flex justify-between gap-4">
+                  <dt className="text-neutral-500">Template</dt>
+                  <dd className="text-neutral-200">
+                    {planLimits.selectableTemplates === null
+                      ? "Tutti"
+                      : planLimits.selectableTemplates}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </article>
         </section>
@@ -316,7 +394,7 @@ export default async function AccountPage() {
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
               <p className="font-medium text-neutral-200">Sicurezza</p>
               <p className="mt-2 text-sm leading-6 text-neutral-500">
-                Gestione password, magic link e sessioni verra aggiunta nelle
+                Gestione password, magic link e sessioni verrà aggiunta nelle
                 prossime fasi.
               </p>
             </div>

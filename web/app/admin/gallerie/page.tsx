@@ -26,7 +26,7 @@ type Profile = {
   display_name: string | null;
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: "free" | "pro" | "business" | "diamond" | "institution";
 };
 
 type GalleryArtwork = {
@@ -78,9 +78,13 @@ function getStatusBadgeClass(status: GalleryStatus) {
   return "border-neutral-700 bg-neutral-950 text-neutral-400";
 }
 
-function getPlanLabel(plan: string) {
+function getPlanLabel(plan?: string | null) {
   if (plan === "institution") {
     return "Institution";
+  }
+
+  if (plan === "diamond") {
+    return "Diamond";
   }
 
   if (plan === "business") {

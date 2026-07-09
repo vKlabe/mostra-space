@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -16,7 +16,7 @@ type PublicProfile = {
   display_name: string | null;
   avatar_url: string | null;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: "free" | "pro" | "business" | "diamond" | "institution";
   bio: string | null;
   website_url: string | null;
   instagram_url: string | null;

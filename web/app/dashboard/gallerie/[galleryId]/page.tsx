@@ -13,6 +13,7 @@ import {
   canUseTemplateByPlan,
   getPlanLimits,
   normalizePlanName,
+  type PlanName,
 } from "@/lib/plans";
 import { validateGalleryForPublish } from "@/lib/gallery/validateGalleryForPublish";
 
@@ -25,7 +26,7 @@ type GalleryDetailPageProps = {
 type Profile = {
   id: string;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: PlanName;
 };
 
 type Gallery = {
@@ -155,6 +156,10 @@ function getStatusBadgeClass(status: Gallery["status"]) {
 function getTemplatePlanLabel(value: string | null | undefined) {
   if (value === "institution") {
     return "Institution";
+  }
+
+  if (value === "diamond") {
+    return "Diamond";
   }
 
   if (value === "business") {

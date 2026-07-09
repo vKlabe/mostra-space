@@ -67,6 +67,10 @@ function getPlanByPriceId(priceId: string | null | undefined): PaidPlan | null {
     return "business";
   }
 
+  if (priceId === process.env.STRIPE_PRICE_DIAMOND) {
+    return "diamond";
+  }
+
   if (priceId === process.env.STRIPE_PRICE_INSTITUTION) {
     return "institution";
   }

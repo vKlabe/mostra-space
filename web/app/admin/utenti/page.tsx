@@ -3,7 +3,7 @@ import AdminUserControls from "@/components/admin/AdminUserControls";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 
 type UserRole = "user" | "gallerist" | "admin";
-type UserPlan = "free" | "pro" | "business" | "institution";
+type UserPlan = "free" | "pro" | "business" | "diamond" | "institution";
 
 type Profile = {
   id: string;

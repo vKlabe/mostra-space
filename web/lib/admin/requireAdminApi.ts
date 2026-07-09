@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 type AdminApiProfile = {
   id: string;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: "free" | "pro" | "business" | "diamond" | "institution";
 };
 
 export async function requireAdminApi() {

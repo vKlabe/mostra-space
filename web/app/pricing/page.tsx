@@ -22,49 +22,66 @@ type Profile = {
   display_name: string | null;
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: PlanName;
   stripe_subscription_status: string | null;
   stripe_current_period_end: string | null;
   stripe_cancel_at_period_end: boolean | null;
 };
 
+type StripeCheckoutPlan = Extract<PlanName, "pro" | "business" | "diamond">;
+
+const STRIPE_CHECKOUT_PLANS: StripeCheckoutPlan[] = [
+  "pro",
+  "business",
+  "diamond",
+];
+
 const planHighlights: Record<PlanName, string[]> = {
   free: [
     "1 galleria pubblicabile",
-    "Perfetto per testare il viewer",
-    "Accesso alla community",
+    "15 opere totali",
+    "25 MB di storage",
   ],
   pro: [
-    "Più spazio per opere e gallerie",
-    "Ideale per artisti e piccoli studi",
-    "Upgrade automatico con Stripe",
+    "5 gallerie pubblicabili",
+    "150 opere totali",
+    "500 MB di storage",
   ],
   business: [
-    "Pensato per gallerie strutturate",
-    "Più storage e più richieste",
-    "Uso professionale continuativo",
+    "10 gallerie pubblicabili",
+    "250 opere totali",
+    "1 GB di storage",
+  ],
+  diamond: [
+    "15 gallerie pubblicabili",
+    "500 opere totali",
+    "2 GB di storage",
   ],
   institution: [
-    "Per musei, fondazioni e fiere",
-    "Limiti estesi e supporto dedicato",
-    "Progetti espositivi ad alto volume",
+    "Piano personalizzato",
+    "Features su misura",
+    "Per musei, fondazioni e istituzioni",
   ],
 };
 
 function getPlanDescription(plan: PlanName) {
   if (plan === "free") {
-    return "Per esplorare il portale, creare una prima galleria e capire il flusso espositivo digitale.";
+    return "Per iniziare, testare la piattaforma e pubblicare una prima galleria virtuale.";
   }
 
   if (plan === "pro") {
-    return "Per artisti, curatori indipendenti e piccoli studi che vogliono usare mostra.space in modo continuativo.";
+    return "Per artisti, curatori indipendenti e piccoli studi che vogliono creare più gallerie e archiviare più opere.";
   }
 
   if (plan === "business") {
-    return "Per gallerie strutturate, progetti commerciali e cataloghi più ampi con più opere, richieste e spazi.";
+    return "Per gallerie e progetti professionali che hanno bisogno di più spazio, più opere e più continuità operativa.";
   }
 
-  return "Per musei, fondazioni, istituzioni, fiere e progetti custom ad alto volume.";
+  if (plan === "diamond") {
+    return "Per gallerie strutturate, cataloghi ampi e attività espositive digitali più intense.";
+  }
+
+  return "Per musei, fondazioni, fiere, istituzioni e progetti speciali con esigenze, limiti e funzionalità personalizzate.";
 }
 
 function getPlanEyebrow(plan: PlanName) {
@@ -78,6 +95,10 @@ function getPlanEyebrow(plan: PlanName) {
 
   if (plan === "business") {
     return "Gallerista";
+  }
+
+  if (plan === "diamond") {
+    return "Premium";
   }
 
   return "Istituzione";
@@ -100,6 +121,10 @@ function getPlanBadgeClass(plan: PlanName, isCurrent: boolean) {
     return "border-[rgba(197,151,94,0.42)] bg-[rgba(197,151,94,0.12)] text-[var(--museum-ivory-soft)]";
   }
 
+  if (plan === "diamond") {
+    return "border-[rgba(255,255,255,0.45)] bg-[rgba(255,255,255,0.1)] text-[var(--museum-ivory)]";
+  }
+
   return "border-[rgba(216,205,187,0.28)] bg-[rgba(216,205,187,0.08)] text-[var(--museum-ivory)]";
 }
 
@@ -117,6 +142,10 @@ function formatDate(value?: string | null) {
     month: "2-digit",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function isStripeCheckoutPlan(plan: PlanName): plan is StripeCheckoutPlan {
+  return STRIPE_CHECKOUT_PLANS.includes(plan as StripeCheckoutPlan);
 }
 
 export default async function PricingPage() {
@@ -174,7 +203,7 @@ export default async function PricingPage() {
               <p className="museum-subtitle mt-7 max-w-3xl text-base text-[var(--museum-stone)] md:text-lg">
                 <T
                   textKey="pricing.subtitle"
-                  fallback="Parti gratis, poi passa a un piano superiore quando hai bisogno di più gallerie, opere, storage e richieste."
+                  fallback="Parti gratis, poi passa a un piano superiore quando hai bisogno di più gallerie, opere e storage."
                 />
               </p>
             </div>
@@ -271,11 +300,11 @@ export default async function PricingPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-        <div className="grid gap-5 lg:grid-cols-4">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
           {PLAN_ORDER.map((planName) => {
             const plan = PLAN_LIMITS[planName];
             const isCurrent = currentPlan === planName;
-            const isFeatured = plan.name === "pro" || plan.name === "business";
+            const isFeatured = plan.name === "pro" || plan.name === "diamond";
 
             return (
               <article
@@ -297,6 +326,12 @@ export default async function PricingPage() {
                 {plan.name === "pro" && !isCurrent && (
                   <div className="absolute right-5 top-5 rounded-full border border-[var(--museum-bronze-dark)] bg-[rgba(168,121,69,0.12)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-bronze-light)]">
                     Consigliato
+                  </div>
+                )}
+
+                {plan.name === "diamond" && !isCurrent && (
+                  <div className="absolute right-5 top-5 rounded-full border border-[rgba(255,255,255,0.4)] bg-[rgba(255,255,255,0.1)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-ivory)]">
+                    Premium
                   </div>
                 )}
 
@@ -336,6 +371,13 @@ export default async function PricingPage() {
                     >
                       <T textKey="pricing.basePlan" fallback="Piano base" />
                     </button>
+                  ) : plan.name === "institution" ? (
+                    <Link
+                      href="/contatti"
+                      className="museum-button-secondary w-full px-5 py-3"
+                    >
+                      Contattaci
+                    </Link>
                   ) : profile && currentPlan && currentPlan !== "free" ? (
                     <CustomerPortalButton className="museum-button-primary w-full px-5 py-3">
                       <T
@@ -343,9 +385,9 @@ export default async function PricingPage() {
                         fallback="Gestisci abbonamento"
                       />
                     </CustomerPortalButton>
-                  ) : profile ? (
+                  ) : profile && isStripeCheckoutPlan(plan.name) ? (
                     <CheckoutButton
-                      plan={plan.name as Exclude<PlanName, "free">}
+                      plan={plan.name}
                       className="museum-button-primary w-full px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <T textKey="pricing.upgradeTo" fallback="Passa a" />{" "}
@@ -356,7 +398,10 @@ export default async function PricingPage() {
                       href="/auth/login"
                       className="museum-button-primary w-full px-5 py-3"
                     >
-                      <T textKey="pricing.activate" fallback="Accedi per attivare" />
+                      <T
+                        textKey="pricing.activate"
+                        fallback="Accedi per attivare"
+                      />
                     </Link>
                   )}
                 </div>
@@ -470,10 +515,11 @@ export default async function PricingPage() {
 
             <div className="rounded-[1.35rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.46)] p-6">
               <p className="text-sm leading-7 text-[var(--museum-stone)]">
-                I pagamenti sono gestiti tramite Stripe. Puoi attivare un piano,
-                aggiornare metodo di pagamento, consultare rinnovi e cancellare
-                l’abbonamento dal portale di gestione. La cancellazione mantiene
-                il piano attivo fino alla fine del periodo già pagato.
+                I pagamenti dei piani Pro, Business e Diamond sono gestiti
+                tramite Stripe. Puoi attivare un piano, aggiornare metodo di
+                pagamento, consultare rinnovi e cancellare l’abbonamento dal
+                portale di gestione. Il piano Institution è personalizzato e
+                richiede contatto diretto.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">

@@ -7,6 +7,7 @@ import {
 } from "@/lib/api/responses";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
 import { deleteUserAccount } from "@/lib/account/deleteAccount";
+import type { PlanName } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,7 +19,7 @@ type RouteParams = {
 };
 
 type UserRole = "user" | "gallerist" | "admin";
-type UserPlan = "free" | "pro" | "business" | "institution";
+type UserPlan = PlanName;
 
 type RequestBody = {
   role?: unknown;
@@ -26,7 +27,13 @@ type RequestBody = {
 };
 
 const validRoles: UserRole[] = ["user", "gallerist", "admin"];
-const validPlans: UserPlan[] = ["free", "pro", "business", "institution"];
+const validPlans: UserPlan[] = [
+  "free",
+  "pro",
+  "business",
+  "diamond",
+  "institution",
+];
 
 function isValidRole(value: unknown): value is UserRole {
   return typeof value === "string" && validRoles.includes(value as UserRole);

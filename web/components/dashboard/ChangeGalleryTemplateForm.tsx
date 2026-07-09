@@ -2,6 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  normalizePlanName,
+  PLAN_LIMITS,
+  type PlanName,
+} from "@/lib/plans";
 
 type GalleryTemplateForChange = {
   id: string;
@@ -25,7 +30,7 @@ type ChangeGalleryTemplateFormProps = {
   unpositionedArtworkCount: number;
 };
 
-type TemplatePlan = "free" | "pro" | "business" | "institution";
+type TemplatePlan = PlanName;
 
 const PLAN_GROUPS: Array<{
   key: TemplatePlan;
@@ -48,6 +53,11 @@ const PLAN_GROUPS: Array<{
     description: "Template professionali per progetti più articolati.",
   },
   {
+    key: "diamond",
+    label: "Diamond",
+    description: "Template premium per gallerie strutturate e cataloghi più ampi.",
+  },
+  {
     key: "institution",
     label: "Institution",
     description: "Spazi riservati a istituzioni e progetti avanzati.",
@@ -55,29 +65,31 @@ const PLAN_GROUPS: Array<{
 ];
 
 function normalizePlan(plan: string | null | undefined): TemplatePlan {
-  if (plan === "institution") return "institution";
-  if (plan === "business") return "business";
-  if (plan === "pro") return "pro";
-  return "free";
+  return normalizePlanName(plan);
 }
 
 function getPlanLabel(plan: string | null | undefined) {
-  if (plan === "institution") return "Institution";
-  if (plan === "business") return "Business";
-  if (plan === "pro") return "Pro";
-  return "Free";
+  const normalized = normalizePlanName(plan);
+
+  return PLAN_LIMITS[normalized].label;
 }
 
 function getPlanBadgeClass(plan: string | null | undefined) {
-  if (plan === "institution") {
+  const normalized = normalizePlanName(plan);
+
+  if (normalized === "institution") {
     return "border-red-900 bg-red-950/40 text-red-300";
   }
 
-  if (plan === "business") {
+  if (normalized === "diamond") {
+    return "border-neutral-300/40 bg-white/10 text-neutral-100";
+  }
+
+  if (normalized === "business") {
     return "border-purple-900 bg-purple-950/40 text-purple-300";
   }
 
-  if (plan === "pro") {
+  if (normalized === "pro") {
     return "border-blue-900 bg-blue-950/40 text-blue-300";
   }
 

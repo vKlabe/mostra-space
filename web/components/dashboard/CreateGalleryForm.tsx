@@ -58,6 +58,10 @@ function getPlanBadgeClass(plan: unknown) {
     return "border-red-900 bg-red-950/40 text-red-300";
   }
 
+  if (normalized === "diamond") {
+    return "border-neutral-300/40 bg-white/10 text-neutral-100";
+  }
+
   if (normalized === "business") {
     return "border-purple-900 bg-purple-950/40 text-purple-300";
   }

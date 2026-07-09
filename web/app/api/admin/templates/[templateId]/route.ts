@@ -6,11 +6,12 @@ import {
   apiUnauthorized,
 } from "@/lib/api/responses";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
+import type { PlanName } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type TemplatePlan = "free" | "pro" | "business" | "institution";
+type TemplatePlan = PlanName;
 
 type RouteParams = {
   params: Promise<{
@@ -32,6 +33,14 @@ type RequestBody = {
   sortOrder?: unknown;
 };
 
+const validTemplatePlans: TemplatePlan[] = [
+  "free",
+  "pro",
+  "business",
+  "diamond",
+  "institution",
+];
+
 function cleanText(value: unknown) {
   if (typeof value !== "string") {
     return "";
@@ -52,10 +61,8 @@ function cleanNullableText(value: unknown) {
 
 function isValidTemplatePlan(value: unknown): value is TemplatePlan {
   return (
-    value === "free" ||
-    value === "pro" ||
-    value === "business" ||
-    value === "institution"
+    typeof value === "string" &&
+    validTemplatePlans.includes(value as TemplatePlan)
   );
 }
 

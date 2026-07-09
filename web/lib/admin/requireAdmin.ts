@@ -8,7 +8,7 @@ export type AdminProfile = {
   display_name: string | null;
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: "free" | "pro" | "business" | "diamond" | "institution";
 };
 
 export async function requireAdmin() {

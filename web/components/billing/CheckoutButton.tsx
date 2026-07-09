@@ -3,13 +3,38 @@
 import { useState } from "react";
 import type { PlanName } from "@/lib/plans";
 
-type PaidPlan = Exclude<PlanName, "free">;
+type PaidPlan = Exclude<PlanName, "free" | "institution">;
 
 type CheckoutButtonProps = {
   plan: PaidPlan;
   children: React.ReactNode;
   className?: string;
 };
+
+async function readResponseSafely(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return {
+      url: null,
+      error: `Risposta vuota dal server. Status: ${response.status}`,
+    };
+  }
+
+  try {
+    return JSON.parse(text) as {
+      url?: string;
+      error?: string;
+      details?: string;
+    };
+  } catch {
+    return {
+      url: null,
+      error: `Risposta non JSON dal server. Status: ${response.status}`,
+      details: text.slice(0, 500),
+    };
+  }
+}
 
 export default function CheckoutButton({
   plan,
@@ -32,13 +57,13 @@ export default function CheckoutButton({
         body: JSON.stringify({ plan }),
       });
 
-      const data = (await response.json()) as {
-        url?: string;
-        error?: string;
-      };
+      const data = await readResponseSafely(response);
 
       if (!response.ok || !data.url) {
-        throw new Error(data.error || "Errore apertura checkout Stripe.");
+        throw new Error(
+          [data.error, data.details].filter(Boolean).join(" — ") ||
+            "Errore apertura checkout Stripe."
+        );
       }
 
       window.location.href = data.url;

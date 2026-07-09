@@ -17,7 +17,7 @@ type DashboardInquiriesPageProps = {
 type Profile = {
   id: string;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: "free" | "pro" | "business" | "diamond" | "institution";
 };
 
 type InquiryStatus = "new" | "read" | "closed";

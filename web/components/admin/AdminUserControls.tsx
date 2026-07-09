@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { PlanName } from "@/lib/plans";
 
 type UserRole = "user" | "gallerist" | "admin";
-type UserPlan = "free" | "pro" | "business" | "institution";
+type UserPlan = PlanName;
 
 type AdminUserControlsProps = {
   userId: string;
@@ -46,6 +47,10 @@ const planOptions: Array<{
   {
     value: "business",
     label: "Business",
+  },
+  {
+    value: "diamond",
+    label: "Diamond",
   },
   {
     value: "institution",

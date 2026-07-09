@@ -10,6 +10,7 @@ import {
   canUseTemplateByPlan,
   getPlanLimits,
   normalizePlanName,
+  type PlanName,
 } from "@/lib/plans";
 
 type DashboardGalleriesPageProps = {
@@ -24,7 +25,7 @@ type Profile = {
   display_name: string | null;
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
-  plan: "free" | "pro" | "business" | "institution";
+  plan: PlanName;
 };
 
 type GalleryStatus = "draft" | "published" | "archived";
@@ -117,6 +118,10 @@ function getFilterLabel(status: StatusFilter) {
 function getTemplatePlanLabel(value: string | null | undefined) {
   if (value === "institution") {
     return "Institution";
+  }
+
+  if (value === "diamond") {
+    return "Diamond";
   }
 
   if (value === "business") {
