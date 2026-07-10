@@ -10,6 +10,16 @@ import {
   type PlanName,
 } from "@/lib/plans";
 
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_LONG_SIDE_PX = 2048;
+
+type ImageValidationResult = {
+  ok: boolean;
+  message?: string;
+  width?: number;
+  height?: number;
+};
+
 type CreateArtworkFormProps = {
   plan: PlanName | string;
   currentArtworkCount: number;
@@ -20,6 +30,57 @@ type CreateArtworkFormProps = {
   canUpload: boolean;
   limitMessage?: string;
 };
+
+function readImageSize(file: File) {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      const result = {
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      };
+
+      URL.revokeObjectURL(objectUrl);
+      resolve(result);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Impossibile leggere le dimensioni dell’immagine."));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+async function validateArtworkImage(file: File): Promise<ImageValidationResult> {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return {
+      ok: false,
+      message: "Formato non supportato. Usa solo JPG, PNG o WEBP.",
+    };
+  }
+
+  const { width, height } = await readImageSize(file);
+  const longestSide = Math.max(width, height);
+
+  if (longestSide > MAX_IMAGE_LONG_SIDE_PX) {
+    return {
+      ok: false,
+      width,
+      height,
+      message: `Immagine troppo grande: ${width}×${height}px. Il lato lungo massimo consentito è ${MAX_IMAGE_LONG_SIDE_PX}px.`,
+    };
+  }
+
+  return {
+    ok: true,
+    width,
+    height,
+  };
+}
 
 export default function CreateArtworkForm({
   plan,
@@ -47,7 +108,12 @@ export default function CreateArtworkForm({
   const [description, setDescription] = useState("");
   const [isForSale, setIsForSale] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
+
   const [selectedFileSize, setSelectedFileSize] = useState<number | null>(null);
+  const [selectedImagePixels, setSelectedImagePixels] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -75,14 +141,18 @@ export default function CreateArtworkForm({
     setIsForSale(false);
     setIsPublic(true);
     setSelectedFileSize(null);
+    setSelectedImagePixels(null);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   }
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+
+    setMessage("");
+    setSelectedImagePixels(null);
 
     if (!file) {
       setSelectedFileSize(null);
@@ -90,6 +160,13 @@ export default function CreateArtworkForm({
     }
 
     setSelectedFileSize(file.size);
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setMessage("Formato non supportato. Usa solo JPG, PNG o WEBP.");
+      event.target.value = "";
+      setSelectedFileSize(null);
+      return;
+    }
 
     if (
       maxArtworkFileMb !== null &&
@@ -100,8 +177,33 @@ export default function CreateArtworkForm({
           2
         )} MB. Il tuo piano consente massimo ${maxArtworkFileMb} MB per opera.`
       );
-    } else {
-      setMessage("");
+      return;
+    }
+
+    try {
+      const validation = await validateArtworkImage(file);
+
+      if (!validation.ok) {
+        setMessage(validation.message || "Immagine non valida.");
+        event.target.value = "";
+        setSelectedFileSize(null);
+        setSelectedImagePixels(null);
+        return;
+      }
+
+      if (validation.width && validation.height) {
+        setSelectedImagePixels({
+          width: validation.width,
+          height: validation.height,
+        });
+      }
+    } catch {
+      setMessage(
+        "Impossibile leggere l’immagine. Prova con un altro file JPG, PNG o WEBP."
+      );
+      event.target.value = "";
+      setSelectedFileSize(null);
+      setSelectedImagePixels(null);
     }
   }
 
@@ -144,6 +246,13 @@ export default function CreateArtworkForm({
       return;
     }
 
+    const imageValidation = await validateArtworkImage(file);
+
+    if (!imageValidation.ok) {
+      setMessage(imageValidation.message || "Immagine non valida.");
+      return;
+    }
+
     setIsLoading(true);
     setMessage("Preparazione upload...");
 
@@ -164,6 +273,9 @@ export default function CreateArtworkForm({
         is_public: String(isPublic),
       };
 
+      const imageWidth = selectedImagePixels?.width || imageValidation.width;
+      const imageHeight = selectedImagePixels?.height || imageValidation.height;
+
       const prepareResponse = await fetch("/api/dashboard/artworks", {
         method: "POST",
         headers: {
@@ -174,6 +286,8 @@ export default function CreateArtworkForm({
           fileName: file.name,
           fileType: file.type,
           fileSizeBytes: file.size,
+          imageWidth,
+          imageHeight,
         }),
       });
 
@@ -219,6 +333,8 @@ export default function CreateArtworkForm({
           storagePath: prepareData.storagePath,
           fileSizeBytes: file.size,
           fileType: file.type,
+          imageWidth,
+          imageHeight,
         }),
       });
 
@@ -248,7 +364,7 @@ export default function CreateArtworkForm({
         Nuova opera
       </p>
 
-      <h2 className="text-2xl font-medium">Carica un opera</h2>
+      <h2 className="text-2xl font-medium">Carica un’opera</h2>
 
       <p className="mt-3 text-sm leading-6 text-neutral-400">
         Piano attuale:{" "}
@@ -307,12 +423,21 @@ export default function CreateArtworkForm({
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-50"
             required
           />
+
+          <p className="mt-2 text-xs leading-5 text-neutral-500">
+            Formati accettati: JPG, PNG, WEBP. Lato lungo massimo: 2048px.
+          </p>
+
+          {selectedImagePixels && (
+            <p className="mt-2 text-xs text-neutral-400">
+              Dimensioni immagine: {selectedImagePixels.width} ×{" "}
+              {selectedImagePixels.height}px
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
-            Titolo
-          </label>
+          <label className="mb-2 block text-sm text-neutral-300">Titolo</label>
 
           <input
             value={title}
@@ -325,9 +450,7 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
-            Artista
-          </label>
+          <label className="mb-2 block text-sm text-neutral-300">Artista</label>
 
           <input
             value={artistName}
@@ -340,9 +463,7 @@ export default function CreateArtworkForm({
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">
-              Anno
-            </label>
+            <label className="mb-2 block text-sm text-neutral-300">Anno</label>
 
             <input
               value={year}
@@ -374,7 +495,8 @@ export default function CreateArtworkForm({
           </p>
 
           <p className="mb-4 text-sm leading-6 text-neutral-400">
-            Inserisci larghezza e altezza reali dell’opera in centimetri. Se non le inserisci, l’editor userà un formato iniziale di 50 × 50 cm.
+            Inserisci larghezza e altezza reali dell’opera in centimetri. Se non
+            le inserisci, l’editor userà un formato iniziale di 50 × 50 cm.
           </p>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -432,9 +554,7 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
-            Tecnica
-          </label>
+          <label className="mb-2 block text-sm text-neutral-300">Tecnica</label>
 
           <input
             value={technique}
@@ -447,9 +567,7 @@ export default function CreateArtworkForm({
 
         <div className="grid gap-4 md:grid-cols-[1fr_120px]">
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">
-              Prezzo
-            </label>
+            <label className="mb-2 block text-sm text-neutral-300">Prezzo</label>
 
             <input
               value={price}
@@ -461,9 +579,7 @@ export default function CreateArtworkForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">
-              Valuta
-            </label>
+            <label className="mb-2 block text-sm text-neutral-300">Valuta</label>
 
             <input
               value={currency}
@@ -485,7 +601,7 @@ export default function CreateArtworkForm({
             onChange={(event) => setDescription(event.target.value)}
             disabled={!canUpload || isLoading}
             className="min-h-28 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="Descrizione dell opera"
+            placeholder="Descrizione dell’opera"
           />
         </div>
 
@@ -530,11 +646,7 @@ export default function CreateArtworkForm({
           {isLoading ? "Caricamento..." : "Carica opera"}
         </button>
 
-        {message && (
-          <p className="text-sm text-neutral-300">
-            {message}
-          </p>
-        )}
+        {message && <p className="text-sm text-neutral-300">{message}</p>}
       </div>
     </form>
   );

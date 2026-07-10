@@ -45,6 +45,8 @@ type JsonArtworkPayload = {
   fileType?: unknown;
   fileSizeBytes?: unknown;
   storagePath?: unknown;
+  imageWidth?: unknown;
+  imageHeight?: unknown;
 };
 
 function cleanText(value: unknown) {
@@ -106,6 +108,38 @@ function isAllowedImageContentType(contentType: string) {
 
 function isAllowedImageFile(file: File) {
   return isAllowedImageContentType(file.type);
+}
+
+const MAX_IMAGE_LONG_SIDE_PX = 2048;
+
+function getImagePixelSizeFromBody(body: JsonArtworkPayload) {
+  return {
+    width: cleanPositiveInteger(body.imageWidth),
+    height: cleanPositiveInteger(body.imageHeight),
+  };
+}
+
+function validateImagePixelSize(width: number, height: number) {
+  if (width <= 0 || height <= 0) {
+    return {
+      ok: false,
+      error: "Dimensioni immagine mancanti. Ricarica il file e riprova.",
+    };
+  }
+
+  const longestSide = Math.max(width, height);
+
+  if (longestSide > MAX_IMAGE_LONG_SIDE_PX) {
+    return {
+      ok: false,
+      error: `Immagine troppo grande: ${width}×${height}px. Il lato lungo massimo consentito è ${MAX_IMAGE_LONG_SIDE_PX}px.`,
+    };
+  }
+
+  return {
+    ok: true,
+    error: null,
+  };
 }
 
 function cleanPositiveInteger(value: unknown) {
@@ -267,6 +301,19 @@ async function handlePrepareUpload({
     );
   }
 
+  const imagePixelSize = getImagePixelSizeFromBody(body);
+const imagePixelCheck = validateImagePixelSize(
+  imagePixelSize.width,
+  imagePixelSize.height
+);
+
+if (!imagePixelCheck.ok) {
+  return NextResponse.json(
+    { error: imagePixelCheck.error },
+    { status: 400 }
+  );
+}
+
   const limitCheck = await checkUploadLimits({
     admin,
     userId,
@@ -372,6 +419,21 @@ async function handleCreateArtworkFromUploadedFile({
       { status: 400 }
     );
   }
+
+  const imagePixelSize = getImagePixelSizeFromBody(body);
+const imagePixelCheck = validateImagePixelSize(
+  imagePixelSize.width,
+  imagePixelSize.height
+);
+
+if (!imagePixelCheck.ok) {
+  await admin.storage.from("artworks").remove([storagePath]);
+
+  return NextResponse.json(
+    { error: imagePixelCheck.error },
+    { status: 400 }
+  );
+}
 
   const limitCheck = await checkUploadLimits({
     admin,

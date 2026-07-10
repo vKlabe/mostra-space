@@ -46,6 +46,9 @@ type ArtworkRecord = {
   dimensions: string | null;
   description: string | null;
   image_url: string | null;
+  thumbnail_url: string | null;
+  optimized_url: string | null;
+  webgl_url: string | null;
   price: number | string | null;
   currency: string | null;
   is_for_sale: boolean | null;
@@ -116,12 +119,23 @@ function formatPrice(value: number | string | null | undefined) {
   return String(value);
 }
 
+function getUnityImageUrl(artwork: ArtworkRecord) {
+  return (
+    artwork.webgl_url ||
+    artwork.optimized_url ||
+    artwork.thumbnail_url ||
+    artwork.image_url ||
+    ""
+  );
+}
+
 function normalizePlan(value: string | null | undefined) {
   const cleaned = (value || "free").trim().toLowerCase();
 
   if (
     cleaned === "pro" ||
     cleaned === "business" ||
+    cleaned === "diamond" ||
     cleaned === "institution"
   ) {
     return cleaned;
@@ -135,7 +149,12 @@ function canUseAdvancedMode(plan: string, role?: string | null) {
     return true;
   }
 
-  return plan === "pro" || plan === "business" || plan === "institution";
+  return (
+    plan === "pro" ||
+    plan === "business" ||
+    plan === "diamond" ||
+    plan === "institution"
+  );
 }
 
 function isDevTokenValid(request: Request) {
@@ -281,22 +300,25 @@ export async function GET(request: Request, context: RouteContext) {
       sort_order,
 
       artworks (
-        id,
-        title,
-        artist_name,
-        year,
-        technique,
-        dimensions,
-        description,
-        image_url,
-        price,
-        currency,
-        is_for_sale,
-        is_public,
-        width_cm,
-        height_cm,
-        depth_cm
-      )
+  id,
+  title,
+  artist_name,
+  year,
+  technique,
+  dimensions,
+  description,
+  image_url,
+  thumbnail_url,
+  optimized_url,
+  webgl_url,
+  price,
+  currency,
+  is_for_sale,
+  is_public,
+  width_cm,
+  height_cm,
+  depth_cm
+)
     `
     )
     .eq("gallery_id", gallery.id)
@@ -327,9 +349,11 @@ export async function GET(request: Request, context: RouteContext) {
         return null;
       }
 
-      if (!artwork.image_url) {
-        return null;
-      }
+      const unityImageUrl = getUnityImageUrl(artwork);
+
+if (!unityImageUrl) {
+  return null;
+}
 
       const artworkWidthCm = toNumber(artwork.width_cm, 0);
       const artworkHeightCm = toNumber(artwork.height_cm, 0);
@@ -366,7 +390,11 @@ export async function GET(request: Request, context: RouteContext) {
         price: formatPrice(artwork.price),
         currency: artwork.currency || "EUR",
         description: artwork.description || "",
-        imageUrl: artwork.image_url || "",
+        imageUrl: unityImageUrl,
+originalImageUrl: artwork.image_url || "",
+thumbnailUrl: artwork.thumbnail_url || "",
+optimizedUrl: artwork.optimized_url || "",
+webglUrl: artwork.webgl_url || "",
 
         isForSale: artwork.is_for_sale === true,
         isPublic: artwork.is_public === true,

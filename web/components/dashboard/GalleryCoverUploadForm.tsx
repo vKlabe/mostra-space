@@ -19,6 +19,33 @@ function sanitizeFileName(fileName: string) {
     .replace(/[^a-z0-9.\-_]/g, "");
 }
 
+const ALLOWED_COVER_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_COVER_LONG_SIDE_PX = 2048;
+
+function readImageSize(file: File) {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      const result = {
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      };
+
+      URL.revokeObjectURL(objectUrl);
+      resolve(result);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Impossibile leggere l’immagine."));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
 export default function GalleryCoverUploadForm({
   galleryId,
   ownerId,
@@ -36,36 +63,57 @@ export default function GalleryCoverUploadForm({
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  const file = event.target.files?.[0];
 
-    setMessage("");
+  setMessage("");
 
-    if (!file) {
-      setSelectedFile(null);
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      setSelectedFile(null);
-      setMessage("Seleziona un file immagine valido.");
-      return;
-    }
-
-    const maxSizeMb = 8;
-    const maxSizeBytes = maxSizeMb * 1024 * 1024;
-
-    if (file.size > maxSizeBytes) {
-      setSelectedFile(null);
-      setMessage(`Il file è troppo pesante. Massimo ${maxSizeMb} MB.`);
-      return;
-    }
-
-    setSelectedFile(file);
-
-    const localPreviewUrl = URL.createObjectURL(file);
-    setPreviewUrl(localPreviewUrl);
+  if (!file) {
+    setSelectedFile(null);
+    return;
   }
+
+  if (!ALLOWED_COVER_TYPES.includes(file.type)) {
+    setSelectedFile(null);
+    setMessage("Formato non supportato. Usa solo JPG, PNG o WEBP.");
+    event.target.value = "";
+    return;
+  }
+
+  const maxSizeMb = 8;
+  const maxSizeBytes = maxSizeMb * 1024 * 1024;
+
+  if (file.size > maxSizeBytes) {
+    setSelectedFile(null);
+    setMessage(`Il file è troppo pesante. Massimo ${maxSizeMb} MB.`);
+    event.target.value = "";
+    return;
+  }
+
+  try {
+    const { width, height } = await readImageSize(file);
+    const longestSide = Math.max(width, height);
+
+    if (longestSide > MAX_COVER_LONG_SIDE_PX) {
+      setSelectedFile(null);
+      setMessage(
+        `Immagine troppo grande: ${width}×${height}px. Il lato lungo massimo consentito è ${MAX_COVER_LONG_SIDE_PX}px.`
+      );
+      event.target.value = "";
+      return;
+    }
+  } catch {
+    setSelectedFile(null);
+    setMessage("Impossibile leggere l’immagine. Usa JPG, PNG o WEBP.");
+    event.target.value = "";
+    return;
+  }
+
+  setSelectedFile(file);
+
+  const localPreviewUrl = URL.createObjectURL(file);
+  setPreviewUrl(localPreviewUrl);
+}
 
   async function handleUpload() {
     if (!selectedFile) {
@@ -151,13 +199,13 @@ export default function GalleryCoverUploadForm({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={handleFileChange}
             className="block w-full cursor-pointer rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-300 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-neutral-950"
           />
 
           <p className="mt-2 text-xs text-neutral-500">
-            Consigliato: immagine orizzontale 16:10 o 16:9, massimo 8 MB.
+            Consigliato: immagine orizzontale 16:10 o 16:9. Formati JPG, PNG o WEBP. Lato lungo massimo 2048px. Massimo 8 MB.
           </p>
         </div>
 
