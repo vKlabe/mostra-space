@@ -33,6 +33,13 @@ type ProfileUpdate = {
 
 type WebhookLogStatus = "received" | "processing" | "processed" | "failed";
 
+type GalleryTemplatePurchaseTemplate = {
+  id: string;
+  available_from_plan: string | null;
+  marketplace_price_cents: number | null;
+  marketplace_currency: string | null;
+};
+
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
 const DOWNGRADE_STATUSES = new Set(["unpaid", "incomplete_expired"]);
 
@@ -102,6 +109,20 @@ function getSubscriptionId(subscription: string | Stripe.Subscription | null) {
   }
 
   return subscription.id;
+}
+
+function getPaymentIntentId(
+  paymentIntent: string | Stripe.PaymentIntent | null
+) {
+  if (!paymentIntent) {
+    return null;
+  }
+
+  if (typeof paymentIntent === "string") {
+    return paymentIntent;
+  }
+
+  return paymentIntent.id;
 }
 
 function getFirstSubscriptionItem(subscription: Stripe.Subscription) {
@@ -181,11 +202,19 @@ function getEventUserId(event: Stripe.Event) {
     return object.metadata.user_id;
   }
 
+  if ("metadata" in object && object.metadata?.userId) {
+    return object.metadata.userId;
+  }
+
   if ("client_reference_id" in object && object.client_reference_id) {
     return object.client_reference_id;
   }
 
   return null;
+}
+
+function isGalleryTemplatePurchaseSession(session: Stripe.Checkout.Session) {
+  return session.metadata?.type === "gallery_template_purchase";
 }
 
 async function findProfileForStripeData({
@@ -381,10 +410,114 @@ async function updateProfileFromSubscription(
   }
 }
 
+async function handleGalleryTemplatePurchase(
+  session: Stripe.Checkout.Session,
+  event: Stripe.Event
+) {
+  const admin = createAdminClient();
+
+  const userId = session.metadata?.userId || session.metadata?.user_id || null;
+  const templateId = session.metadata?.templateId || null;
+
+  if (!userId) {
+    throw new Error("Marketplace purchase missing userId metadata.");
+  }
+
+  if (!templateId) {
+    throw new Error("Marketplace purchase missing templateId metadata.");
+  }
+
+  if (session.payment_status && session.payment_status !== "paid") {
+    console.warn("Stripe webhook: marketplace checkout not paid yet", {
+      sessionId: session.id,
+      paymentStatus: session.payment_status,
+    });
+
+    return;
+  }
+
+  const { data: templateData, error: templateError } = await admin
+    .from("gallery_templates")
+    .select("id, available_from_plan, marketplace_price_cents, marketplace_currency")
+    .eq("id", templateId)
+    .maybeSingle<GalleryTemplatePurchaseTemplate>();
+
+  if (templateError) {
+    throw new Error(
+      `Marketplace template lookup failed: ${templateError.message}`
+    );
+  }
+
+  if (!templateData?.id) {
+    throw new Error(`Marketplace template not found: ${templateId}`);
+  }
+
+  if (templateData.available_from_plan !== "marketplace") {
+    throw new Error(`Template is not a marketplace template: ${templateId}`);
+  }
+
+  const customerId = getCustomerId(session.customer);
+  const paymentIntentId = getPaymentIntentId(session.payment_intent);
+  const amountTotal =
+    typeof session.amount_total === "number"
+      ? session.amount_total
+      : templateData.marketplace_price_cents || 0;
+  const currency =
+    session.currency || templateData.marketplace_currency || "eur";
+
+  const { error: purchaseError } = await admin
+    .from("gallery_template_purchases")
+    .upsert(
+      {
+        user_id: userId,
+        template_id: templateId,
+        stripe_checkout_session_id: session.id,
+        stripe_payment_intent_id: paymentIntentId,
+        stripe_customer_id: customerId,
+        amount_total: amountTotal,
+        currency,
+        status: "paid",
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "user_id,template_id",
+      }
+    );
+
+  if (purchaseError) {
+    throw new Error(
+      `Marketplace purchase upsert failed: ${purchaseError.message}`
+    );
+  }
+
+  if (customerId) {
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({
+        stripe_customer_id: customerId,
+        stripe_last_event_id: event.id,
+        stripe_last_event_type: event.type,
+        stripe_last_event_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (profileError) {
+      throw new Error(
+        `Marketplace profile customer update failed: ${profileError.message}`
+      );
+    }
+  }
+}
+
 async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
   event: Stripe.Event
 ) {
+  if (isGalleryTemplatePurchaseSession(session)) {
+    await handleGalleryTemplatePurchase(session, event);
+    return;
+  }
+
   const stripe = getStripe();
 
   const subscriptionId = getSubscriptionId(session.subscription);
@@ -484,7 +617,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, duplicate: true });
     }
 
-    if (event.type === "checkout.session.completed") {
+    if (
+      event.type === "checkout.session.completed" ||
+      event.type === "checkout.session.async_payment_succeeded"
+    ) {
       await handleCheckoutCompleted(
         event.data.object as Stripe.Checkout.Session,
         event

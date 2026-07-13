@@ -2,16 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { PlanName } from "@/lib/plans";
+import {
+  getTemplateAccessPlanLabel,
+  type TemplateAccessPlan,
+} from "@/lib/plans";
 
-type TemplatePlan = PlanName;
+type TemplatePlan = TemplateAccessPlan;
 
 const MAX_PREVIEW_SIZE_BYTES = 2 * 1024 * 1024;
-const ALLOWED_PREVIEW_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
+const ALLOWED_PREVIEW_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function slugify(value: string) {
   return value
@@ -27,6 +26,10 @@ function slugify(value: string) {
 }
 
 function getPlanDescription(plan: TemplatePlan) {
+  if (plan === "marketplace") {
+    return "Venduto nel marketplace. Non viene sbloccato dai piani.";
+  }
+
   if (plan === "institution") {
     return "Visibile solo agli account Institution.";
   }
@@ -66,6 +69,28 @@ function validatePreviewFile(file: File) {
   return "";
 }
 
+function euroInputToCents(value: string) {
+  const cleaned = value.trim().replace(",", ".");
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const parsed = Number(cleaned);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return Math.round(parsed * 100);
+}
+
+function normalizeCurrency(value: string) {
+  const cleaned = value.trim().toLowerCase();
+
+  return cleaned || "eur";
+}
+
 export default function AdminCreateTemplateForm() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,9 +108,18 @@ export default function AdminCreateTemplateForm() {
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [previewLocalUrl, setPreviewLocalUrl] = useState("");
 
+  const [marketplacePrice, setMarketplacePrice] = useState("");
+  const [marketplaceCurrency, setMarketplaceCurrency] = useState("eur");
+  const [marketplaceIsActive, setMarketplaceIsActive] = useState(false);
+  const [marketplaceDescription, setMarketplaceDescription] = useState("");
+  const [marketplacePreviewImageUrl, setMarketplacePreviewImageUrl] =
+    useState("");
+
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
+
+  const isMarketplace = availableFromPlan === "marketplace";
 
   useEffect(() => {
     if (!previewFile) {
@@ -144,6 +178,11 @@ export default function AdminCreateTemplateForm() {
     setMaxArtworks(20);
     setSortOrder(100);
     setPreviewFile(null);
+    setMarketplacePrice("");
+    setMarketplaceCurrency("eur");
+    setMarketplaceIsActive(false);
+    setMarketplaceDescription("");
+    setMarketplacePreviewImageUrl("");
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -183,6 +222,16 @@ export default function AdminCreateTemplateForm() {
       return;
     }
 
+    const marketplacePriceCents = isMarketplace
+      ? euroInputToCents(marketplacePrice)
+      : null;
+
+    if (isMarketplace && !marketplacePriceCents) {
+      setMessageType("error");
+      setMessage("Per i template marketplace devi inserire un prezzo valido.");
+      return;
+    }
+
     if (previewFile) {
       const validationError = validatePreviewFile(previewFile);
 
@@ -213,6 +262,13 @@ export default function AdminCreateTemplateForm() {
           isFeatured,
           maxArtworks,
           sortOrder,
+          marketplacePriceCents,
+          marketplaceCurrency: normalizeCurrency(marketplaceCurrency),
+          marketplaceIsActive: isMarketplace && marketplaceIsActive,
+          marketplaceDescription: isMarketplace ? marketplaceDescription : "",
+          marketplacePreviewImageUrl: isMarketplace
+            ? marketplacePreviewImageUrl
+            : "",
         }),
       });
 
@@ -372,7 +428,7 @@ export default function AdminCreateTemplateForm() {
 
         <div>
           <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
-            Piano minimo
+            Piano minimo / Accesso
           </label>
 
           <select
@@ -384,10 +440,11 @@ export default function AdminCreateTemplateForm() {
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="free">Free</option>
-<option value="pro">Pro</option>
-<option value="business">Business</option>
-<option value="diamond">Diamond</option>
-<option value="institution">Institution</option>
+            <option value="pro">Pro</option>
+            <option value="business">Business</option>
+            <option value="diamond">Diamond</option>
+            <option value="institution">Institution</option>
+            <option value="marketplace">Marketplace</option>
           </select>
 
           <p className="mt-2 text-xs leading-5 text-neutral-500">
@@ -413,6 +470,100 @@ export default function AdminCreateTemplateForm() {
             Numeri più bassi appaiono prima.
           </p>
         </div>
+
+        {isMarketplace && (
+          <div className="md:col-span-2 rounded-2xl border border-amber-900/60 bg-amber-950/20 p-4">
+            <p className="mb-4 text-xs uppercase tracking-[0.22em] text-amber-300">
+              Marketplace
+            </p>
+
+            <div className="grid gap-4 md:grid-cols-[1fr_140px]">
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Prezzo
+                </label>
+
+                <input
+                  value={marketplacePrice}
+                  onChange={(event) => setMarketplacePrice(event.target.value)}
+                  disabled={isLoading}
+                  placeholder="39,00"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+
+                <p className="mt-2 text-xs leading-5 text-neutral-500">
+                  Inserisci il prezzo in euro. Esempio: 19,00 oppure 39,00.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Valuta
+                </label>
+
+                <input
+                  value={marketplaceCurrency}
+                  onChange={(event) =>
+                    setMarketplaceCurrency(event.target.value.toLowerCase())
+                  }
+                  disabled={isLoading}
+                  placeholder="eur"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm text-neutral-300">
+              <input
+                type="checkbox"
+                checked={marketplaceIsActive}
+                onChange={(event) =>
+                  setMarketplaceIsActive(event.target.checked)
+                }
+                disabled={isLoading}
+                className="mt-1"
+              />
+
+              <span>Pubblica questo template nel marketplace</span>
+            </label>
+
+            <div className="mt-4">
+              <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                Descrizione marketplace
+              </label>
+
+              <textarea
+                value={marketplaceDescription}
+                onChange={(event) =>
+                  setMarketplaceDescription(event.target.value)
+                }
+                disabled={isLoading}
+                className="min-h-24 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Descrizione commerciale del template per la pagina marketplace."
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                Immagine preview marketplace
+              </label>
+
+              <input
+                value={marketplacePreviewImageUrl}
+                onChange={(event) =>
+                  setMarketplacePreviewImageUrl(event.target.value)
+                }
+                disabled={isLoading}
+                className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Lascia vuoto per usare la preview normale"
+              />
+
+              <p className="mt-2 text-xs leading-5 text-neutral-500">
+                Puoi lasciare vuoto questo campo: useremo la preview standard.
+              </p>
+            </div>
+          </div>
+        )}
 
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm text-neutral-300">
           <input

@@ -35,6 +35,17 @@ export type PlanLimits = {
   prioritySupport: boolean;
 };
 
+export type TemplateAccessPlan = PlanName | "marketplace";
+
+export const TEMPLATE_ACCESS_ORDER: TemplateAccessPlan[] = [
+  "free",
+  "pro",
+  "business",
+  "diamond",
+  "institution",
+  "marketplace",
+];
+
 export type PlanFeatureName =
   | "analytics"
   | "customBranding"
@@ -184,6 +195,43 @@ export function normalizePlanName(value: unknown): PlanName {
   }
 
   return "free";
+}
+
+export function normalizeTemplateAccessPlan(
+  value: unknown
+): TemplateAccessPlan {
+  if (typeof value !== "string") {
+    return "free";
+  }
+
+  const cleaned = value.trim().toLowerCase();
+
+  if (
+    cleaned === "free" ||
+    cleaned === "pro" ||
+    cleaned === "business" ||
+    cleaned === "diamond" ||
+    cleaned === "institution" ||
+    cleaned === "marketplace"
+  ) {
+    return cleaned;
+  }
+
+  return "free";
+}
+
+export function getTemplateAccessPlanLabel(value: unknown) {
+  const normalized = normalizeTemplateAccessPlan(value);
+
+  if (normalized === "marketplace") {
+    return "Marketplace";
+  }
+
+  return PLAN_LIMITS[normalized].label;
+}
+
+export function isMarketplaceTemplate(value: unknown) {
+  return normalizeTemplateAccessPlan(value) === "marketplace";
 }
 
 export function getPlanLimits(plan: unknown): PlanLimits {
@@ -441,11 +489,24 @@ export function canUseTemplateByPlan(
   templateAvailableFromPlan: unknown
 ): LimitCheckResult {
   const userPlan = normalizePlanName(profilePlan);
-  const requiredPlan = normalizePlanName(templateAvailableFromPlan);
+  const templateAccessPlan =
+    normalizeTemplateAccessPlan(templateAvailableFromPlan);
 
   const userIndex = PLAN_ORDER.indexOf(userPlan);
-  const requiredIndex = PLAN_ORDER.indexOf(requiredPlan);
 
+  if (templateAccessPlan === "marketplace") {
+    return {
+      allowed: false,
+      current: userIndex,
+      limit: null,
+      upgradeTo: null,
+      reason:
+        "Questo template è disponibile solo tramite acquisto nel marketplace.",
+    };
+  }
+
+  const requiredPlan = templateAccessPlan;
+  const requiredIndex = PLAN_ORDER.indexOf(requiredPlan);
   const allowed = userIndex >= requiredIndex;
 
   return {

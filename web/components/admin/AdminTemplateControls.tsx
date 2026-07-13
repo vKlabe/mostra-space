@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { PlanName } from "@/lib/plans";
+import {
+  getTemplateAccessPlanLabel,
+  type TemplateAccessPlan,
+} from "@/lib/plans";
 
-type TemplatePlan = PlanName;
+type TemplatePlan = TemplateAccessPlan;
 
 type AdminTemplateControlsProps = {
   templateId: string;
@@ -19,34 +22,15 @@ type AdminTemplateControlsProps = {
   currentPreviewImageUrl: string | null;
   currentIsFeatured: boolean;
   currentSortOrder: number;
+  currentMarketplacePriceCents: number | null;
+  currentMarketplaceCurrency: string | null;
+  currentMarketplaceIsActive: boolean;
+  currentMarketplaceDescription: string | null;
+  currentMarketplacePreviewImageUrl: string | null;
 };
 
 const MAX_PREVIEW_SIZE_BYTES = 2 * 1024 * 1024;
-const ALLOWED_PREVIEW_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
-
-function getPlanLabel(plan: TemplatePlan) {
-  if (plan === "institution") {
-    return "Institution";
-  }
-
-  if (plan === "diamond") {
-    return "Diamond";
-  }
-
-  if (plan === "business") {
-    return "Business";
-  }
-
-  if (plan === "pro") {
-    return "Pro";
-  }
-
-  return "Free";
-}
+const ALLOWED_PREVIEW_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function getReadableFileSize(size: number) {
   return `${(size / 1024 / 1024).toFixed(2)} MB`;
@@ -68,6 +52,36 @@ function validatePreviewFile(file: File) {
   return "";
 }
 
+function centsToEuroInput(value: number | null | undefined) {
+  if (!value || value <= 0) {
+    return "";
+  }
+
+  return (value / 100).toFixed(2).replace(".", ",");
+}
+
+function euroInputToCents(value: string) {
+  const cleaned = value.trim().replace(",", ".");
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const parsed = Number(cleaned);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return Math.round(parsed * 100);
+}
+
+function normalizeCurrency(value: string | null | undefined) {
+  const cleaned = (value || "eur").trim().toLowerCase();
+
+  return cleaned || "eur";
+}
+
 export default function AdminTemplateControls({
   templateId,
   currentName,
@@ -81,6 +95,11 @@ export default function AdminTemplateControls({
   currentPreviewImageUrl,
   currentIsFeatured,
   currentSortOrder,
+  currentMarketplacePriceCents,
+  currentMarketplaceCurrency,
+  currentMarketplaceIsActive,
+  currentMarketplaceDescription,
+  currentMarketplacePreviewImageUrl,
 }: AdminTemplateControlsProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +117,23 @@ export default function AdminTemplateControls({
   const [previewImageUrl, setPreviewImageUrl] = useState(
     currentPreviewImageUrl || ""
   );
+
+  const [marketplacePrice, setMarketplacePrice] = useState(
+    centsToEuroInput(currentMarketplacePriceCents)
+  );
+  const [marketplaceCurrency, setMarketplaceCurrency] = useState(
+    normalizeCurrency(currentMarketplaceCurrency)
+  );
+  const [marketplaceIsActive, setMarketplaceIsActive] = useState(
+    currentMarketplaceIsActive
+  );
+  const [marketplaceDescription, setMarketplaceDescription] = useState(
+    currentMarketplaceDescription || ""
+  );
+  const [marketplacePreviewImageUrl, setMarketplacePreviewImageUrl] = useState(
+    currentMarketplacePreviewImageUrl || ""
+  );
+
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [previewLocalUrl, setPreviewLocalUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -108,7 +144,21 @@ export default function AdminTemplateControls({
     "success" | "error" | ""
   >("");
 
+  const isMarketplace = availableFromPlan === "marketplace";
   const nextIsFree = availableFromPlan === "free";
+  const nextMarketplacePriceCents = isMarketplace
+    ? euroInputToCents(marketplacePrice)
+    : null;
+  const nextMarketplaceCurrency = isMarketplace
+    ? normalizeCurrency(marketplaceCurrency)
+    : "eur";
+  const nextMarketplaceIsActive = isMarketplace && marketplaceIsActive;
+  const nextMarketplaceDescription = isMarketplace
+    ? marketplaceDescription.trim()
+    : "";
+  const nextMarketplacePreviewImageUrl = isMarketplace
+    ? marketplacePreviewImageUrl.trim()
+    : "";
 
   const hasChanges =
     name !== currentName ||
@@ -120,7 +170,13 @@ export default function AdminTemplateControls({
     isActive !== currentIsActive ||
     isFeatured !== currentIsFeatured ||
     maxArtworks !== currentMaxArtworks ||
-    sortOrder !== currentSortOrder;
+    sortOrder !== currentSortOrder ||
+    nextMarketplacePriceCents !== currentMarketplacePriceCents ||
+    nextMarketplaceCurrency !== normalizeCurrency(currentMarketplaceCurrency) ||
+    nextMarketplaceIsActive !== currentMarketplaceIsActive ||
+    nextMarketplaceDescription !== (currentMarketplaceDescription || "") ||
+    nextMarketplacePreviewImageUrl !==
+      (currentMarketplacePreviewImageUrl || "");
 
   useEffect(() => {
     setPreviewImageUrl(currentPreviewImageUrl || "");
@@ -300,6 +356,11 @@ export default function AdminTemplateControls({
       return;
     }
 
+    if (isMarketplace && !nextMarketplacePriceCents) {
+      setMessage("Per i template marketplace devi inserire un prezzo valido.");
+      return;
+    }
+
     setIsLoading(true);
     setMessage("");
 
@@ -321,6 +382,11 @@ export default function AdminTemplateControls({
           maxArtworks,
           sortOrder,
           previewImageUrl,
+          marketplacePriceCents: nextMarketplacePriceCents,
+          marketplaceCurrency: nextMarketplaceCurrency,
+          marketplaceIsActive: nextMarketplaceIsActive,
+          marketplaceDescription: nextMarketplaceDescription,
+          marketplacePreviewImageUrl: nextMarketplacePreviewImageUrl,
         }),
       });
 
@@ -402,7 +468,7 @@ export default function AdminTemplateControls({
 
         <div>
           <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
-            Piano minimo
+            Piano minimo / Accesso
           </label>
 
           <select
@@ -414,15 +480,19 @@ export default function AdminTemplateControls({
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="free">Free</option>
-<option value="pro">Pro</option>
-<option value="business">Business</option>
-<option value="diamond">Diamond</option>
-<option value="institution">Institution</option>
+            <option value="pro">Pro</option>
+            <option value="business">Business</option>
+            <option value="diamond">Diamond</option>
+            <option value="institution">Institution</option>
+            <option value="marketplace">Marketplace</option>
           </select>
 
           <p className="mt-2 text-xs leading-5 text-neutral-500">
-            Il template sarà disponibile da {getPlanLabel(availableFromPlan)} in
-            su.
+            {isMarketplace
+              ? "Il template sarà venduto nel marketplace e non sarà sbloccato dai piani."
+              : `Il template sarà disponibile da ${getTemplateAccessPlanLabel(
+                  availableFromPlan
+                )} in su.`}
           </p>
         </div>
 
@@ -444,6 +514,98 @@ export default function AdminTemplateControls({
             Numeri più bassi appaiono prima.
           </p>
         </div>
+
+        {isMarketplace && (
+          <div className="md:col-span-2 rounded-2xl border border-amber-900/60 bg-amber-950/20 p-4">
+            <p className="mb-4 text-xs uppercase tracking-[0.22em] text-amber-300">
+              Marketplace
+            </p>
+
+            <div className="grid gap-4 md:grid-cols-[1fr_140px]">
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Prezzo
+                </label>
+
+                <input
+                  value={marketplacePrice}
+                  onChange={(event) => setMarketplacePrice(event.target.value)}
+                  disabled={controlsDisabled}
+                  placeholder="39,00"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+
+                <p className="mt-2 text-xs leading-5 text-neutral-500">
+                  Inserisci il prezzo in euro. Esempio: 19,00 oppure 39,00.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Valuta
+                </label>
+
+                <input
+                  value={marketplaceCurrency}
+                  onChange={(event) =>
+                    setMarketplaceCurrency(event.target.value.toLowerCase())
+                  }
+                  disabled={controlsDisabled}
+                  placeholder="eur"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
+              <input
+                type="checkbox"
+                checked={marketplaceIsActive}
+                onChange={(event) => setMarketplaceIsActive(event.target.checked)}
+                disabled={controlsDisabled}
+                className="mt-1"
+              />
+
+              <span>Pubblica questo template nel marketplace</span>
+            </label>
+
+            <div className="mt-4">
+              <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                Descrizione marketplace
+              </label>
+
+              <textarea
+                value={marketplaceDescription}
+                onChange={(event) =>
+                  setMarketplaceDescription(event.target.value)
+                }
+                disabled={controlsDisabled}
+                className="min-h-24 w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Descrizione commerciale del template per la pagina marketplace."
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                Immagine preview marketplace
+              </label>
+
+              <input
+                value={marketplacePreviewImageUrl}
+                onChange={(event) =>
+                  setMarketplacePreviewImageUrl(event.target.value)
+                }
+                disabled={controlsDisabled}
+                className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Lascia vuoto per usare la preview normale del template"
+              />
+
+              <p className="mt-2 text-xs leading-5 text-neutral-500">
+                Puoi lasciare vuoto questo campo: useremo la preview standard.
+              </p>
+            </div>
+          </div>
+        )}
 
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
           <input

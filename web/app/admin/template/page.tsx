@@ -2,9 +2,13 @@ import AdminShell from "@/components/admin/AdminShell";
 import AdminTemplateControls from "@/components/admin/AdminTemplateControls";
 import AdminCreateTemplateForm from "@/components/admin/AdminCreateTemplateForm";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
-import { normalizePlanName, type PlanName } from "@/lib/plans";
+import {
+  getTemplateAccessPlanLabel,
+  normalizeTemplateAccessPlan,
+  type TemplateAccessPlan,
+} from "@/lib/plans";
 
-type TemplatePlan = PlanName;
+type TemplatePlan = TemplateAccessPlan;
 
 type Template = {
   id: string;
@@ -20,6 +24,12 @@ type Template = {
   is_featured: boolean;
   sort_order: number;
   created_at: string;
+
+  marketplace_price_cents: number | null;
+  marketplace_currency: string | null;
+  marketplace_is_active: boolean;
+  marketplace_description: string | null;
+  marketplace_preview_image_url: string | null;
 };
 
 type Gallery = {
@@ -36,30 +46,18 @@ function formatDate(value: string | null) {
 }
 
 function normalizeTemplatePlan(value: unknown): TemplatePlan {
-  return normalizePlanName(value);
+  return normalizeTemplateAccessPlan(value);
 }
 
 function getPlanLabel(plan: TemplatePlan) {
-  if (plan === "institution") {
-    return "Institution";
-  }
-
-  if (plan === "diamond") {
-    return "Diamond";
-  }
-
-  if (plan === "business") {
-    return "Business";
-  }
-
-  if (plan === "pro") {
-    return "Pro";
-  }
-
-  return "Free";
+  return getTemplateAccessPlanLabel(plan);
 }
 
 function getPlanBadgeClass(plan: TemplatePlan) {
+  if (plan === "marketplace") {
+    return "border-amber-900 bg-amber-950/40 text-amber-300";
+  }
+
   if (plan === "institution") {
     return "border-red-900 bg-red-950/40 text-red-300";
   }
@@ -79,6 +77,17 @@ function getPlanBadgeClass(plan: TemplatePlan) {
   return "border-green-900 bg-green-950/40 text-green-300";
 }
 
+function formatMarketplacePrice(cents: number | null, currency: string | null) {
+  if (!cents || cents <= 0) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: (currency || "eur").toUpperCase(),
+  }).format(cents / 100);
+}
+
 export default async function AdminTemplatesPage() {
   const { admin } = await requireAdmin();
 
@@ -86,15 +95,34 @@ export default async function AdminTemplatesPage() {
     admin
       .from("gallery_templates")
       .select(
-        "id, name, slug, description, unity_scene_key, is_free, is_active, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order, created_at"
+        [
+          "id",
+          "name",
+          "slug",
+          "description",
+          "unity_scene_key",
+          "is_free",
+          "is_active",
+          "max_artworks",
+          "available_from_plan",
+          "preview_image_url",
+          "is_featured",
+          "sort_order",
+          "created_at",
+          "marketplace_price_cents",
+          "marketplace_currency",
+          "marketplace_is_active",
+          "marketplace_description",
+          "marketplace_preview_image_url",
+        ].join(", ")
       )
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true }),
     admin.from("galleries").select("id, template_id"),
   ]);
 
-  const templates = (templatesResult.data || []) as Template[];
-  const galleries = (galleriesResult.data || []) as Gallery[];
+  const templates = (templatesResult.data || []) as unknown as Template[];
+const galleries = (galleriesResult.data || []) as unknown as Gallery[];
 
   const activeCount = templates.filter((item) => item.is_active).length;
   const featuredCount = templates.filter((item) => item.is_featured).length;
@@ -139,10 +167,18 @@ export default async function AdminTemplatesPage() {
     return plan === "institution";
   }).length;
 
+  const marketplaceCount = templates.filter((item) => {
+    const plan = normalizeTemplatePlan(
+      item.available_from_plan || (item.is_free ? "free" : "pro")
+    );
+
+    return plan === "marketplace";
+  }).length;
+
   return (
     <AdminShell
       title="Template"
-      subtitle="Gestisci il registry dei template: preview, piano minimo, limite opere, scena Unity e disponibilità nel portale."
+      subtitle="Gestisci il registry dei template: preview, piano minimo, marketplace, limite opere, scena Unity e disponibilità nel portale."
       activeSection="templates"
     >
       {(templatesResult.error || galleriesResult.error) && (
@@ -163,7 +199,7 @@ export default async function AdminTemplatesPage() {
         </div>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             Totale template
@@ -183,9 +219,7 @@ export default async function AdminTemplatesPage() {
 
           <p className="text-4xl font-semibold">{freeCount}</p>
 
-          <p className="mt-3 text-sm text-neutral-400">
-            Visibili a tutti
-          </p>
+          <p className="mt-3 text-sm text-neutral-400">Visibili a tutti</p>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -207,9 +241,7 @@ export default async function AdminTemplatesPage() {
 
           <p className="text-4xl font-semibold">{diamondCount}</p>
 
-          <p className="mt-3 text-sm text-neutral-400">
-            Template premium
-          </p>
+          <p className="mt-3 text-sm text-neutral-400">Template premium</p>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -221,6 +253,18 @@ export default async function AdminTemplatesPage() {
 
           <p className="mt-3 text-sm text-neutral-400">
             Template istituzionali
+          </p>
+        </article>
+
+        <article className="rounded-3xl border border-amber-900/60 bg-amber-950/20 p-6">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-300">
+            Marketplace
+          </p>
+
+          <p className="text-4xl font-semibold">{marketplaceCount}</p>
+
+          <p className="mt-3 text-sm text-neutral-400">
+            Template acquistabili
           </p>
         </article>
       </div>
@@ -239,8 +283,8 @@ export default async function AdminTemplatesPage() {
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
             Da qui decidi quali ambienti 3D sono attivi, quale preview mostrano,
-            quale chiave Unity usano, quante opere possono contenere e da quale
-            piano diventano disponibili.
+            quale chiave Unity usano, quante opere possono contenere, da quale
+            piano diventano disponibili o se vengono venduti nel marketplace.
           </p>
         </div>
 
@@ -261,6 +305,8 @@ export default async function AdminTemplatesPage() {
                 template.available_from_plan ||
                   (template.is_free ? "free" : "pro")
               );
+
+              const isMarketplace = accessPlan === "marketplace";
 
               return (
                 <article
@@ -307,8 +353,16 @@ export default async function AdminTemplatesPage() {
                             accessPlan
                           )}`}
                         >
-                          Da {getPlanLabel(accessPlan)}
+                          {isMarketplace
+                            ? "Marketplace"
+                            : `Da ${getPlanLabel(accessPlan)}`}
                         </span>
+
+                        {isMarketplace && template.marketplace_is_active && (
+                          <span className="rounded-full border border-amber-900 bg-amber-950/50 px-3 py-1 text-xs uppercase tracking-[0.15em] text-amber-300">
+                            In vendita
+                          </span>
+                        )}
 
                         {template.is_featured && (
                           <span className="rounded-full border border-white/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-950">
@@ -343,7 +397,7 @@ export default async function AdminTemplatesPage() {
 
                         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
                           <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                            Piano minimo
+                            Accesso
                           </dt>
                           <dd className="mt-2 text-xl font-semibold text-neutral-100">
                             {getPlanLabel(accessPlan)}
@@ -367,6 +421,25 @@ export default async function AdminTemplatesPage() {
                             {template.sort_order}
                           </dd>
                         </div>
+
+                        {isMarketplace && (
+                          <div className="rounded-2xl border border-amber-900/50 bg-amber-950/20 p-4 md:col-span-2">
+                            <dt className="text-xs uppercase tracking-[0.18em] text-amber-300">
+                              Prezzo marketplace
+                            </dt>
+                            <dd className="mt-2 text-xl font-semibold text-neutral-100">
+                              {formatMarketplacePrice(
+                                template.marketplace_price_cents,
+                                template.marketplace_currency
+                              )}
+                            </dd>
+                            <p className="mt-1 text-xs text-neutral-500">
+                              {template.marketplace_is_active
+                                ? "Visibile nella futura pagina marketplace."
+                                : "Marketplace non ancora attivo per questo template."}
+                            </p>
+                          </div>
+                        )}
 
                         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
                           <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
@@ -399,6 +472,21 @@ export default async function AdminTemplatesPage() {
                       currentPreviewImageUrl={template.preview_image_url}
                       currentIsFeatured={template.is_featured}
                       currentSortOrder={template.sort_order}
+                      currentMarketplacePriceCents={
+                        template.marketplace_price_cents
+                      }
+                      currentMarketplaceCurrency={
+                        template.marketplace_currency
+                      }
+                      currentMarketplaceIsActive={
+                        template.marketplace_is_active
+                      }
+                      currentMarketplaceDescription={
+                        template.marketplace_description
+                      }
+                      currentMarketplacePreviewImageUrl={
+                        template.marketplace_preview_image_url
+                      }
                     />
                   </div>
                 </article>
