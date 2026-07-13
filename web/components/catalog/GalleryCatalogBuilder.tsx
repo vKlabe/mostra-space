@@ -144,6 +144,7 @@ export default function GalleryCatalogBuilder({
   const [settingsMessageType, setSettingsMessageType] = useState<
     "success" | "error" | ""
   >("");
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   const displayedArtworks = useMemo(() => {
     if (includePrivateArtworks) {
@@ -159,6 +160,81 @@ export default function GalleryCatalogBuilder({
   function handlePrint() {
     window.print();
   }
+
+  async function handleDownloadDirectPdf() {
+  setIsDownloadingPdf(true);
+  setSettingsMessage("");
+  setSettingsMessageType("");
+
+  try {
+    const saveResponse = await fetch(
+      `/api/dashboard/galleries/${gallery.id}/catalog-settings`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: catalogTitle,
+          subtitle: catalogSubtitle,
+          curatorName,
+          galleryName,
+          introText,
+          contactEmail,
+          website,
+          includeDescriptions,
+          includePrices,
+          includePublicLink,
+          includePrivateArtworks,
+        }),
+      }
+    );
+
+    const saveData = await saveResponse.json();
+
+    if (!saveResponse.ok) {
+      setSettingsMessageType("error");
+      setSettingsMessage(
+        saveData.error || "Errore salvataggio impostazioni catalogo."
+      );
+      return;
+    }
+
+    const pdfResponse = await fetch(
+      `/api/dashboard/galleries/${gallery.id}/catalog-pdf`
+    );
+
+    if (!pdfResponse.ok) {
+      const errorData = await pdfResponse.json().catch(() => null);
+
+      setSettingsMessageType("error");
+      setSettingsMessage(
+        errorData?.error || "Errore generazione PDF catalogo."
+      );
+      return;
+    }
+
+    const blob = await pdfResponse.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = blobUrl;
+    link.download = `catalogo-${gallery.slug}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(blobUrl);
+
+    setSettingsMessageType("success");
+    setSettingsMessage("PDF catalogo generato correttamente.");
+  } catch {
+    setSettingsMessageType("error");
+    setSettingsMessage("Errore di rete durante la generazione del PDF.");
+  } finally {
+    setIsDownloadingPdf(false);
+  }
+}
 
     async function handleSaveSettings() {
     setIsSavingSettings(true);
@@ -339,21 +415,31 @@ export default function GalleryCatalogBuilder({
             </a>
 
             <button
-              type="button"
-              onClick={handleSaveSettings}
-              disabled={isSavingSettings}
-              className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSavingSettings ? "Salvataggio..." : "Salva impostazioni"}
-            </button>
+  type="button"
+  onClick={handleSaveSettings}
+  disabled={isSavingSettings || isDownloadingPdf}
+  className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+>
+  {isSavingSettings ? "Salvataggio..." : "Salva impostazioni"}
+</button>
 
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-            >
-              Esporta PDF
-            </button>
+<button
+  type="button"
+  onClick={handleDownloadDirectPdf}
+  disabled={isDownloadingPdf || isSavingSettings}
+  className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+>
+  {isDownloadingPdf ? "Creo PDF..." : "Scarica PDF diretto"}
+</button>
+
+<button
+  type="button"
+  onClick={handlePrint}
+  disabled={isDownloadingPdf}
+  className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+>
+  Esporta con stampa
+</button>
           </div>
         </div>
 
