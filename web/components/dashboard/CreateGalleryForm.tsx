@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   formatLimitValue,
+  getTemplateAccessPlanLabel,
+  isMarketplaceTemplate,
   normalizePlanName,
   PLAN_LIMITS,
   type PlanName,
@@ -21,6 +23,7 @@ type GalleryTemplate = {
   preview_image_url?: string | null;
   is_featured?: boolean | null;
   sort_order?: number | null;
+  is_purchased_template?: boolean | null;
 };
 
 type CreateGalleryFormProps = {
@@ -45,14 +48,42 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function getPlanLabel(plan: unknown) {
+function getAccountPlanLabel(plan: unknown) {
   const normalized = normalizePlanName(plan);
 
   return PLAN_LIMITS[normalized].label;
 }
 
-function getPlanBadgeClass(plan: unknown) {
-  const normalized = normalizePlanName(plan);
+function getTemplateAccessLabel(template: GalleryTemplate) {
+  const accessPlan = template.available_from_plan || "free";
+
+  if (isMarketplaceTemplate(accessPlan)) {
+    return template.is_purchased_template
+      ? "Marketplace acquistato"
+      : "Marketplace";
+  }
+
+  return `Da ${getTemplateAccessPlanLabel(accessPlan)}`;
+}
+
+function getTemplateAccessShortLabel(template: GalleryTemplate) {
+  const accessPlan = template.available_from_plan || "free";
+
+  if (isMarketplaceTemplate(accessPlan)) {
+    return template.is_purchased_template ? "Acquistato" : "Marketplace";
+  }
+
+  return getTemplateAccessPlanLabel(accessPlan);
+}
+
+function getTemplateBadgeClass(template: GalleryTemplate) {
+  const accessPlan = template.available_from_plan || "free";
+
+  if (isMarketplaceTemplate(accessPlan)) {
+    return "border-amber-900 bg-amber-950/40 text-amber-300";
+  }
+
+  const normalized = normalizePlanName(accessPlan);
 
   if (normalized === "institution") {
     return "border-red-900 bg-red-950/40 text-red-300";
@@ -171,8 +202,7 @@ export default function CreateGalleryForm({
 
     if (!canCreate) {
       setMessage(
-        limitMessage ||
-          "Hai raggiunto il limite di gallerie del tuo piano."
+        limitMessage || "Hai raggiunto il limite di gallerie del tuo piano."
       );
       return;
     }
@@ -235,7 +265,7 @@ export default function CreateGalleryForm({
       <p className="mt-3 text-sm leading-6 text-neutral-400">
         Piano attuale:{" "}
         <span className="capitalize text-neutral-100">
-          {getPlanLabel(plan)}
+          {getAccountPlanLabel(plan)}
         </span>
       </p>
 
@@ -261,9 +291,7 @@ export default function CreateGalleryForm({
 
       <div className="mt-6 space-y-4">
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
-            Titolo
-          </label>
+          <label className="mb-2 block text-sm text-neutral-300">Titolo</label>
 
           <input
             value={title}
@@ -328,9 +356,16 @@ export default function CreateGalleryForm({
           {templates.length === 0 && (
             <div className="rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
               <p className="text-sm leading-6 text-yellow-100">
-                Nessun template disponibile per il tuo piano. Controlla i
-                template attivi o passa a un piano superiore.
+                Nessun template disponibile per il tuo piano o per i tuoi
+                acquisti marketplace.
               </p>
+
+              <a
+                href="/marketplace"
+                className="mt-3 inline-flex rounded-full border border-amber-800 px-4 py-2 text-sm text-amber-200 transition hover:border-amber-500"
+              >
+                Vai al marketplace
+              </a>
             </div>
           )}
 
@@ -338,7 +373,6 @@ export default function CreateGalleryForm({
             <div className="grid gap-3">
               {templates.map((template) => {
                 const isSelected = template.id === templateId;
-                const requiredPlan = template.available_from_plan || "free";
 
                 return (
                   <button
@@ -386,11 +420,11 @@ export default function CreateGalleryForm({
                       <div className="p-5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getPlanBadgeClass(
-                              requiredPlan
+                            className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getTemplateBadgeClass(
+                              template
                             )}`}
                           >
-                            Da {getPlanLabel(requiredPlan)}
+                            {getTemplateAccessLabel(template)}
                           </span>
 
                           {template.is_featured && (
@@ -489,11 +523,9 @@ export default function CreateGalleryForm({
                   </div>
 
                   <div>
-                    <dt className="text-neutral-600">Piano minimo</dt>
+                    <dt className="text-neutral-600">Accesso</dt>
                     <dd className="mt-1 text-neutral-200">
-                      {getPlanLabel(
-                        selectedTemplate.available_from_plan || "free"
-                      )}
+                      {getTemplateAccessShortLabel(selectedTemplate)}
                     </dd>
                   </div>
 

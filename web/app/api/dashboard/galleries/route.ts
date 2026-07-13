@@ -5,6 +5,7 @@ import {
   canCreateGallery,
   canUseTemplateByPlan,
   getPlanLimits,
+  isMarketplaceTemplate,
   normalizePlanName,
 } from "@/lib/plans";
 
@@ -60,16 +61,33 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+async function userHasPurchasedTemplate(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  userId: string;
+  templateId: string;
+}) {
+  const { data, error } = await params.admin
+    .from("gallery_template_purchases")
+    .select("id")
+    .eq("user_id", params.userId)
+    .eq("template_id", params.templateId)
+    .eq("status", "paid")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Errore controllo acquisto template: ${error.message}`);
+  }
+
+  return Boolean(data?.id);
+}
+
 export async function POST(request: Request) {
   let body: CreateGalleryPayload;
 
   try {
     body = (await request.json()) as CreateGalleryPayload;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const title = cleanText(body.title);
@@ -94,10 +112,7 @@ export async function POST(request: Request) {
   const slug = slugify(rawSlug || title);
 
   if (!slug) {
-    return NextResponse.json(
-      { error: "Slug non valido." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Slug non valido." }, { status: 400 });
   }
 
   const supabase = await createClient();
@@ -108,10 +123,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { data: profile, error: profileError } = await admin
@@ -203,18 +215,40 @@ export async function POST(request: Request) {
     );
   }
 
-  const templatePlanCheck = canUseTemplateByPlan(
-    plan,
-    selectedTemplate.available_from_plan || "free"
-  );
+  const isAdmin = profile.role === "admin";
+  const templateAccessPlan = selectedTemplate.available_from_plan || "free";
+  const templatePlanCheck = canUseTemplateByPlan(plan, templateAccessPlan);
 
-  if (!templatePlanCheck.allowed) {
+  let canUseTemplate = isAdmin || templatePlanCheck.allowed;
+
+  if (!canUseTemplate && isMarketplaceTemplate(templateAccessPlan)) {
+    try {
+      canUseTemplate = await userHasPurchasedTemplate({
+        admin,
+        userId: user.id,
+        templateId: selectedTemplate.id,
+      });
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error: "Errore controllo acquisto template.",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (!canUseTemplate) {
+    const isMarketplace = isMarketplaceTemplate(templateAccessPlan);
+
     return NextResponse.json(
       {
-        error:
-          templatePlanCheck.reason ||
-          "Questo template non è disponibile per il tuo piano.",
-        upgradeTo: templatePlanCheck.upgradeTo,
+        error: isMarketplace
+          ? "Questo template marketplace non risulta acquistato dal tuo account."
+          : templatePlanCheck.reason ||
+            "Questo template non è disponibile per il tuo piano.",
+        upgradeTo: isMarketplace ? null : templatePlanCheck.upgradeTo,
       },
       { status: 403 }
     );

@@ -9,6 +9,8 @@ import {
   canCreateGallery,
   canUseTemplateByPlan,
   getPlanLimits,
+  getTemplateAccessPlanLabel,
+  isMarketplaceTemplate,
   normalizePlanName,
   type PlanName,
 } from "@/lib/plans";
@@ -42,6 +44,11 @@ type GalleryTemplate = {
   preview_image_url: string | null;
   is_featured: boolean;
   sort_order: number;
+  is_purchased_template?: boolean;
+};
+
+type TemplatePurchase = {
+  template_id: string;
 };
 
 type Gallery = {
@@ -115,24 +122,15 @@ function getFilterLabel(status: StatusFilter) {
   return "Tutte";
 }
 
-function getTemplatePlanLabel(value: string | null | undefined) {
-  if (value === "institution") {
-    return "Institution";
+function getTemplatePlanLabel(
+  value: string | null | undefined,
+  isPurchased?: boolean
+) {
+  if (isMarketplaceTemplate(value)) {
+    return isPurchased ? "Marketplace acquistato" : "Marketplace";
   }
 
-  if (value === "diamond") {
-    return "Diamond";
-  }
-
-  if (value === "business") {
-    return "Business";
-  }
-
-  if (value === "pro") {
-    return "Pro";
-  }
-
-  return "Free";
+  return getTemplateAccessPlanLabel(value || "free");
 }
 
 export default async function DashboardGalleriesPage({
@@ -195,28 +193,50 @@ export default async function DashboardGalleriesPage({
     );
   }
 
+  const isAdmin = profile.role === "admin";
   const plan = normalizePlanName(profile.plan);
   const limits = getPlanLimits(plan);
 
-  const { data: templates, error: templatesError } = await supabase
-    .from("gallery_templates")
-    .select(
-  "id, name, slug, description, unity_scene_key, is_free, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order"
-)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-.order("created_at", { ascending: true });
+  const [templatesResult, galleriesResult, purchasesResult] =
+    await Promise.all([
+      supabase
+        .from("gallery_templates")
+        .select(
+          "id, name, slug, description, unity_scene_key, is_free, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order"
+        )
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
 
-  const { data: galleries, error: galleriesError } = await supabase
-    .from("galleries")
-    .select(
-      "id, title, slug, description, status, cover_image_url, created_at, updated_at, published_at, template_id"
+      supabase
+        .from("galleries")
+        .select(
+          "id, title, slug, description, status, cover_image_url, created_at, updated_at, published_at, template_id"
+        )
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false }),
+
+      supabase
+        .from("gallery_template_purchases")
+        .select("template_id")
+        .eq("user_id", user.id)
+        .eq("status", "paid"),
+    ]);
+
+  const purchasedTemplateIds = new Set(
+    ((purchasesResult.data || []) as unknown as TemplatePurchase[]).map(
+      (purchase) => purchase.template_id
     )
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
+  );
 
-  const safeTemplates = (templates || []) as GalleryTemplate[];
-  const safeGalleries = (galleries || []) as Gallery[];
+  const safeTemplates = (
+    (templatesResult.data || []) as unknown as GalleryTemplate[]
+  ).map((template) => ({
+    ...template,
+    is_purchased_template: purchasedTemplateIds.has(template.id),
+  }));
+
+  const safeGalleries = (galleriesResult.data || []) as unknown as Gallery[];
 
   const availableTemplates = safeTemplates.filter((template) => {
     const byPlan = canUseTemplateByPlan(
@@ -224,10 +244,14 @@ export default async function DashboardGalleriesPage({
       template.available_from_plan || "free"
     );
 
-    return byPlan.allowed;
+    return isAdmin || byPlan.allowed || template.is_purchased_template === true;
   });
 
   const lockedTemplates = safeTemplates.filter((template) => {
+    if (isAdmin || template.is_purchased_template) {
+      return false;
+    }
+
     const byPlan = canUseTemplateByPlan(
       plan,
       template.available_from_plan || "free"
@@ -235,6 +259,12 @@ export default async function DashboardGalleriesPage({
 
     return !byPlan.allowed;
   });
+
+  const purchasedMarketplaceTemplates = safeTemplates.filter(
+    (template) =>
+      template.is_purchased_template &&
+      isMarketplaceTemplate(template.available_from_plan)
+  );
 
   const galleryCreateCheck = canCreateGallery(plan, safeGalleries.length);
 
@@ -285,6 +315,13 @@ export default async function DashboardGalleriesPage({
       actions={
         <div className="flex flex-wrap gap-3">
           <a
+            href="/marketplace"
+            className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
+          >
+            Marketplace
+          </a>
+
+          <a
             href="/dashboard/eventi"
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
@@ -302,14 +339,15 @@ export default async function DashboardGalleriesPage({
         </div>
       }
     >
-      {(templatesError || galleriesError) && (
+      {(templatesResult.error || galleriesResult.error || purchasesResult.error) && (
         <div className="mb-6">
           <DataErrorCard
             title="Non riesco a caricare le gallerie"
             message="Una o piu query verso Supabase non hanno risposto correttamente. Puoi ricaricare la pagina oppure tornare alla dashboard."
             details={[
-              getErrorMessage(templatesError, ""),
-              getErrorMessage(galleriesError, ""),
+              getErrorMessage(templatesResult.error, ""),
+              getErrorMessage(galleriesResult.error, ""),
+              getErrorMessage(purchasesResult.error, ""),
             ]
               .filter(Boolean)
               .join(" | ")}
@@ -332,18 +370,29 @@ export default async function DashboardGalleriesPage({
 
             <p className="mt-2 text-sm text-neutral-400">
               Gallerie create: {safeGalleries.length} /{" "}
-              {limits.maxGalleries === null ? "Illimitato" : limits.maxGalleries}
+              {limits.maxGalleries === null
+                ? "Illimitato"
+                : limits.maxGalleries}
             </p>
 
             <p className="mt-1 text-sm text-neutral-500">
-              Template disponibili per il tuo piano:{" "}
+              Template disponibili per te:{" "}
               <span className="text-neutral-200">
                 {availableTemplates.length}
               </span>
+              {purchasedMarketplaceTemplates.length > 0 && (
+                <>
+                  {" "}
+                  · Marketplace acquistati:{" "}
+                  <span className="text-amber-200">
+                    {purchasedMarketplaceTemplates.length}
+                  </span>
+                </>
+              )}
               {lockedTemplates.length > 0 && (
                 <>
                   {" "}
-                  · Template bloccati da upgrade:{" "}
+                  · Template bloccati:{" "}
                   <span className="text-neutral-400">
                     {lockedTemplates.length}
                   </span>
@@ -352,8 +401,8 @@ export default async function DashboardGalleriesPage({
             </p>
 
             <p className="mt-1 text-xs leading-5 text-neutral-600">
-              I template sono filtrati tramite il campo{" "}
-              <span className="text-neutral-400">available_from_plan</span>.
+              I template marketplace acquistati restano collegati al tuo account
+              e sono disponibili anche se il piano attivo è Free.
             </p>
           </div>
 
@@ -412,7 +461,9 @@ export default async function DashboardGalleriesPage({
                 >
                   {getFilterLabel(filter.status)}{" "}
                   <span
-                    className={isActive ? "text-neutral-700" : "text-neutral-600"}
+                    className={
+                      isActive ? "text-neutral-700" : "text-neutral-600"
+                    }
                   >
                     {filter.count}
                   </span>
@@ -421,7 +472,7 @@ export default async function DashboardGalleriesPage({
             })}
           </div>
 
-          {!galleriesError && safeGalleries.length === 0 && (
+          {!galleriesResult.error && safeGalleries.length === 0 && (
             <div className="mt-8">
               <EmptyStateCard
                 eyebrow="Archivio vuoto"
@@ -431,7 +482,7 @@ export default async function DashboardGalleriesPage({
             </div>
           )}
 
-          {!galleriesError &&
+          {!galleriesResult.error &&
             safeGalleries.length > 0 &&
             visibleGalleries.length === 0 && (
               <div className="mt-8">
@@ -478,11 +529,14 @@ export default async function DashboardGalleriesPage({
                         </p>
 
                         {template && (
-  <p className="mt-1 text-xs text-neutral-600">
-    Piano minimo template:{" "}
-    {getTemplatePlanLabel(template.available_from_plan || "free")}
-  </p>
-)}
+                          <p className="mt-1 text-xs text-neutral-600">
+                            Accesso template:{" "}
+                            {getTemplatePlanLabel(
+                              template.available_from_plan || "free",
+                              template.is_purchased_template
+                            )}
+                          </p>
+                        )}
 
                         {gallery.description && (
                           <p className="mt-3 text-sm leading-6 text-neutral-400">
@@ -547,14 +601,12 @@ export default async function DashboardGalleriesPage({
                         )}
 
                         <a
-  href={`/dashboard/gallerie-editor/${gallery.id}`}
-  className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
->
-  Editor
-</a>
-
-                        
-</div>
+                          href={`/dashboard/gallerie-editor/${gallery.id}`}
+                          className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                        >
+                          Editor
+                        </a>
+                      </div>
                     </div>
                   </article>
                 );
@@ -571,48 +623,73 @@ export default async function DashboardGalleriesPage({
           </p>
 
           <h2 className="text-2xl font-medium">
-            Template disponibili con upgrade
+            Template disponibili con upgrade o marketplace
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
             Questi template esistono nel registry e sono attivi, ma richiedono
-            un piano superiore rispetto al tuo piano attuale.
+            un piano superiore oppure un acquisto marketplace.
           </p>
 
           <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {lockedTemplates.map((template) => (
-              <article
-                key={template.id}
-                className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5"
-              >
-                <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                  Richiede {getTemplatePlanLabel(template.available_from_plan)}
-                </p>
+            {lockedTemplates.map((template) => {
+              const isMarketplace = isMarketplaceTemplate(
+                template.available_from_plan
+              );
 
-                <h3 className="mt-3 text-lg font-medium text-neutral-100">
-                  {template.name}
-                </h3>
+              return (
+                <article
+                  key={template.id}
+                  className="rounded-2xl border border-neutral-800 bg-neutral-950 p-5"
+                >
+                  <p
+                    className={
+                      isMarketplace
+                        ? "text-xs uppercase tracking-[0.18em] text-amber-300"
+                        : "text-xs uppercase tracking-[0.18em] text-neutral-600"
+                    }
+                  >
+                    {isMarketplace
+                      ? "Marketplace"
+                      : `Richiede ${getTemplatePlanLabel(
+                          template.available_from_plan
+                        )}`}
+                  </p>
 
-                <p className="mt-2 text-sm leading-6 text-neutral-500">
-                  {template.description || "Nessuna descrizione disponibile."}
-                </p>
+                  <h3 className="mt-3 text-lg font-medium text-neutral-100">
+                    {template.name}
+                  </h3>
 
-                <dl className="mt-4 space-y-1 text-xs text-neutral-500">
-  <div>
-    <dt className="inline">Max opere: </dt>
-    <dd className="inline">{template.max_artworks}</dd>
-  </div>
-</dl>
-              </article>
-            ))}
+                  <p className="mt-2 text-sm leading-6 text-neutral-500">
+                    {template.description || "Nessuna descrizione disponibile."}
+                  </p>
+
+                  <dl className="mt-4 space-y-1 text-xs text-neutral-500">
+                    <div>
+                      <dt className="inline">Max opere: </dt>
+                      <dd className="inline">{template.max_artworks}</dd>
+                    </div>
+                  </dl>
+                </article>
+              );
+            })}
           </div>
 
-          <a
-            href="/pricing"
-            className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-          >
-            Vedi piani e upgrade
-          </a>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a
+              href="/pricing"
+              className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+            >
+              Vedi piani e upgrade
+            </a>
+
+            <a
+              href="/marketplace"
+              className="inline-flex rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
+            >
+              Vai al marketplace
+            </a>
+          </div>
         </section>
       )}
     </DashboardShell>

@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
-  normalizePlanName,
-  PLAN_LIMITS,
-  type PlanName,
+  getTemplateAccessPlanLabel,
+  isMarketplaceTemplate,
+  normalizeTemplateAccessPlan,
+  type TemplateAccessPlan,
 } from "@/lib/plans";
 
 type GalleryTemplateForChange = {
@@ -19,6 +20,7 @@ type GalleryTemplateForChange = {
   preview_image_url?: string | null;
   is_featured?: boolean | null;
   sort_order?: number | null;
+  is_purchased_template?: boolean | null;
 };
 
 type ChangeGalleryTemplateFormProps = {
@@ -30,7 +32,7 @@ type ChangeGalleryTemplateFormProps = {
   unpositionedArtworkCount: number;
 };
 
-type TemplatePlan = PlanName;
+type TemplatePlan = TemplateAccessPlan;
 
 const PLAN_GROUPS: Array<{
   key: TemplatePlan;
@@ -55,27 +57,48 @@ const PLAN_GROUPS: Array<{
   {
     key: "diamond",
     label: "Diamond",
-    description: "Template premium per gallerie strutturate e cataloghi più ampi.",
+    description:
+      "Template premium per gallerie strutturate e cataloghi più ampi.",
   },
   {
     key: "institution",
     label: "Institution",
     description: "Spazi riservati a istituzioni e progetti avanzati.",
   },
+  {
+    key: "marketplace",
+    label: "Marketplace",
+    description:
+      "Template acquistati singolarmente e collegati permanentemente al tuo account.",
+  },
 ];
 
 function normalizePlan(plan: string | null | undefined): TemplatePlan {
-  return normalizePlanName(plan);
+  return normalizeTemplateAccessPlan(plan || "free");
 }
 
 function getPlanLabel(plan: string | null | undefined) {
-  const normalized = normalizePlanName(plan);
+  return getTemplateAccessPlanLabel(plan || "free");
+}
 
-  return PLAN_LIMITS[normalized].label;
+function getTemplateAccessLabel(template: GalleryTemplateForChange) {
+  const accessPlan = template.available_from_plan || "free";
+
+  if (isMarketplaceTemplate(accessPlan)) {
+    return template.is_purchased_template
+      ? "Marketplace acquistato"
+      : "Marketplace";
+  }
+
+  return getPlanLabel(accessPlan);
 }
 
 function getPlanBadgeClass(plan: string | null | undefined) {
-  const normalized = normalizePlanName(plan);
+  const normalized = normalizeTemplateAccessPlan(plan || "free");
+
+  if (normalized === "marketplace") {
+    return "border-amber-900 bg-amber-950/40 text-amber-300";
+  }
 
   if (normalized === "institution") {
     return "border-red-900 bg-red-950/40 text-red-300";
@@ -154,14 +177,14 @@ export default function ChangeGalleryTemplateForm({
   const router = useRouter();
 
   const currentTemplate = templates.find(
-    (template) => template.id === currentTemplateId,
+    (template) => template.id === currentTemplateId
   );
 
   const [selectedTemplateId, setSelectedTemplateId] = useState(
-    currentTemplateId || templates[0]?.id || "",
+    currentTemplateId || templates[0]?.id || ""
   );
   const [openPlan, setOpenPlan] = useState<TemplatePlan | null>(
-    normalizePlan(currentTemplate?.available_from_plan),
+    normalizePlan(currentTemplate?.available_from_plan)
   );
   const [confirmTemplateChange, setConfirmTemplateChange] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -169,13 +192,13 @@ export default function ChangeGalleryTemplateForm({
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
 
   const selectedTemplate = templates.find(
-    (template) => template.id === selectedTemplateId,
+    (template) => template.id === selectedTemplateId
   );
 
   const groupedTemplates = PLAN_GROUPS.map((group) => ({
     ...group,
     templates: templates.filter(
-      (template) => normalizePlan(template.available_from_plan) === group.key,
+      (template) => normalizePlan(template.available_from_plan) === group.key
     ),
   })).filter((group) => group.templates.length > 0);
 
@@ -214,7 +237,7 @@ export default function ChangeGalleryTemplateForm({
     if (hasExistingLayout && !confirmTemplateChange) {
       setMessageType("error");
       setMessage(
-        "Conferma di voler cambiare template: la galleria ha già opere o posizioni salvate.",
+        "Conferma di voler cambiare template: la galleria ha già opere o posizioni salvate."
       );
       return;
     }
@@ -244,7 +267,7 @@ export default function ChangeGalleryTemplateForm({
 
       setMessageType("success");
       setMessage(
-        "Template aggiornato. Apri l’editor 3D e controlla l’allestimento.",
+        "Template aggiornato. Apri l’editor 3D e controlla l’allestimento."
       );
       setConfirmTemplateChange(false);
       router.refresh();
@@ -297,6 +320,15 @@ export default function ChangeGalleryTemplateForm({
           <p className="mt-1 break-all text-xs text-neutral-500">
             {currentTemplate?.unity_scene_key || "N/D"}
           </p>
+
+          {currentTemplate && (
+            <p className="mt-3 text-xs text-neutral-500">
+              Accesso:{" "}
+              <span className="text-neutral-300">
+                {getTemplateAccessLabel(currentTemplate)}
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
@@ -329,8 +361,16 @@ export default function ChangeGalleryTemplateForm({
       {templates.length === 0 && (
         <div className="mt-6 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
           <p className="text-sm leading-6 text-yellow-100">
-            Nessun template disponibile per il tuo piano.
+            Nessun template disponibile per il tuo piano o per i tuoi acquisti
+            marketplace.
           </p>
+
+          <a
+            href="/marketplace"
+            className="mt-3 inline-flex rounded-full border border-amber-800 px-4 py-2 text-sm text-amber-200 transition hover:border-amber-500"
+          >
+            Vai al marketplace
+          </a>
         </div>
       )}
 
@@ -339,10 +379,10 @@ export default function ChangeGalleryTemplateForm({
           {groupedTemplates.map((group) => {
             const isOpen = openPlan === group.key;
             const groupContainsCurrent = group.templates.some(
-              (template) => template.id === currentTemplateId,
+              (template) => template.id === currentTemplateId
             );
             const groupContainsSelected = group.templates.some(
-              (template) => template.id === selectedTemplateId,
+              (template) => template.id === selectedTemplateId
             );
 
             return (
@@ -363,7 +403,7 @@ export default function ChangeGalleryTemplateForm({
                   <div className="flex min-w-0 items-center gap-3">
                     <span
                       className={`shrink-0 rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getPlanBadgeClass(
-                        group.key,
+                        group.key
                       )}`}
                     >
                       {group.label}
@@ -427,7 +467,7 @@ export default function ChangeGalleryTemplateForm({
                           >
                             <div
                               className={`relative aspect-[16/9] overflow-hidden ${getTemplatePreviewClass(
-                                template,
+                                template
                               )}`}
                             >
                               {template.preview_image_url ? (
@@ -490,10 +530,10 @@ export default function ChangeGalleryTemplateForm({
 
                                 <span
                                   className={`rounded-full border px-2.5 py-1 uppercase tracking-[0.12em] ${getPlanBadgeClass(
-                                    requiredPlan,
+                                    requiredPlan
                                   )}`}
                                 >
-                                  {getPlanLabel(requiredPlan)}
+                                  {getTemplateAccessLabel(template)}
                                 </span>
                               </div>
                             </div>
@@ -522,9 +562,9 @@ export default function ChangeGalleryTemplateForm({
               </h3>
 
               <p className="mt-1 text-sm text-neutral-400">
-                Piano minimo:{" "}
+                Accesso:{" "}
                 <span className="text-neutral-100">
-                  {getPlanLabel(selectedTemplate.available_from_plan)}
+                  {getTemplateAccessLabel(selectedTemplate)}
                 </span>{" "}
                 · Max opere:{" "}
                 <span className="text-neutral-100">

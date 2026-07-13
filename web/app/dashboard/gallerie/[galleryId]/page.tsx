@@ -12,6 +12,8 @@ import {
   canAddArtworkToGallery,
   canUseTemplateByPlan,
   getPlanLimits,
+  getTemplateAccessPlanLabel,
+  isMarketplaceTemplate,
   normalizePlanName,
   type PlanName,
 } from "@/lib/plans";
@@ -56,6 +58,11 @@ type GalleryTemplate = {
   preview_image_url: string | null;
   is_featured: boolean;
   sort_order: number;
+  is_purchased_template?: boolean;
+};
+
+type TemplatePurchase = {
+  template_id: string;
 };
 
 type Artwork = {
@@ -153,24 +160,15 @@ function getStatusBadgeClass(status: Gallery["status"]) {
   return "border-neutral-700 bg-neutral-950 text-neutral-400";
 }
 
-function getTemplatePlanLabel(value: string | null | undefined) {
-  if (value === "institution") {
-    return "Institution";
+function getTemplatePlanLabel(
+  value: string | null | undefined,
+  isPurchased?: boolean
+) {
+  if (isMarketplaceTemplate(value)) {
+    return isPurchased ? "Marketplace acquistato" : "Marketplace";
   }
 
-  if (value === "diamond") {
-    return "Diamond";
-  }
-
-  if (value === "business") {
-    return "Business";
-  }
-
-  if (value === "pro") {
-    return "Pro";
-  }
-
-  return "Free";
+  return getTemplateAccessPlanLabel(value || "free");
 }
 
 function getEffectiveLimit(
@@ -442,15 +440,34 @@ export default async function DashboardGalleryDetailPage({
     );
   }
 
-  const { data: templates } = await supabase
-    .from("gallery_templates")
-    .select(
-  "id, name, slug, description, unity_scene_key, is_free, is_active, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order"
-)
-    .order("sort_order", { ascending: true })
-.order("created_at", { ascending: true });
+  const [templatesResult, purchasesResult] = await Promise.all([
+    supabase
+      .from("gallery_templates")
+      .select(
+        "id, name, slug, description, unity_scene_key, is_free, is_active, max_artworks, available_from_plan, preview_image_url, is_featured, sort_order"
+      )
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
 
-  const safeTemplates = (templates || []) as GalleryTemplate[];
+    supabase
+      .from("gallery_template_purchases")
+      .select("template_id")
+      .eq("user_id", user.id)
+      .eq("status", "paid"),
+  ]);
+
+  const purchasedTemplateIds = new Set(
+    ((purchasesResult.data || []) as unknown as TemplatePurchase[]).map(
+      (purchase) => purchase.template_id
+    )
+  );
+
+  const safeTemplates = (
+    (templatesResult.data || []) as unknown as GalleryTemplate[]
+  ).map((template) => ({
+    ...template,
+    is_purchased_template: purchasedTemplateIds.has(template.id),
+  }));
 
   const template =
     safeTemplates.find((item) => item.id === gallery.template_id) || null;
@@ -469,7 +486,7 @@ export default async function DashboardGalleryDetailPage({
       item.available_from_plan || "free"
     );
 
-    return check.allowed;
+    return check.allowed || item.is_purchased_template === true;
   });
 
   const { data: artworks } = await supabase
@@ -603,6 +620,13 @@ export default async function DashboardGalleryDetailPage({
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
             Tutte le gallerie
+          </a>
+
+          <a
+            href="/marketplace"
+            className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
+          >
+            Marketplace
           </a>
 
           <a
@@ -858,9 +882,12 @@ export default async function DashboardGalleryDetailPage({
             </div>
 
             <div>
-              <dt className="text-neutral-500">Piano minimo template</dt>
+              <dt className="text-neutral-500">Accesso template</dt>
               <dd className="mt-1 text-neutral-200">
-                {getTemplatePlanLabel(template?.available_from_plan || "free")}
+                {getTemplatePlanLabel(
+                  template?.available_from_plan || "free",
+                  template?.is_purchased_template
+                )}
               </dd>
             </div>
 

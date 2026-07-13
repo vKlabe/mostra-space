@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { canUseTemplateByPlan, normalizePlanName } from "@/lib/plans";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  canUseTemplateByPlan,
+  isMarketplaceTemplate,
+  normalizePlanName,
+} from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -133,6 +138,26 @@ async function getUserAndGalleryPermission(
   };
 }
 
+async function userHasPurchasedTemplate(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  userId: string;
+  templateId: string;
+}) {
+  const { data, error } = await params.admin
+    .from("gallery_template_purchases")
+    .select("id")
+    .eq("user_id", params.userId)
+    .eq("template_id", params.templateId)
+    .eq("status", "paid")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Errore controllo acquisto template: ${error.message}`);
+  }
+
+  return Boolean(data?.id);
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const { galleryId } = await context.params;
 
@@ -155,10 +180,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const permission = await getUserAndGalleryPermission(supabase, galleryId);
 
-  if (!permission.ok || !permission.gallery || !permission.profile) {
+  if (
+    !permission.ok ||
+    !permission.gallery ||
+    !permission.profile ||
+    !permission.user
+  ) {
     return NextResponse.json(
       { error: permission.error },
       { status: permission.status }
@@ -221,12 +252,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const { data: existingSlugOwner, error: existingSlugError } = await supabase
-      .from("galleries")
-      .select("id")
-      .eq("slug", slug)
-      .neq("id", permission.gallery.id)
-      .maybeSingle();
+    const { data: existingSlugOwner, error: existingSlugError } =
+      await supabase
+        .from("galleries")
+        .select("id")
+        .eq("slug", slug)
+        .neq("id", permission.gallery.id)
+        .maybeSingle();
 
     if (existingSlugError) {
       return NextResponse.json(
@@ -265,7 +297,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const { data: template, error: templateError } = await supabase
+    const { data: template, error: templateError } = await admin
       .from("gallery_templates")
       .select("id, name, is_active, available_from_plan")
       .eq("id", templateId)
@@ -289,18 +321,39 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     if (!isAdmin) {
       const plan = normalizePlanName(permission.profile.plan);
-      const templateCheck = canUseTemplateByPlan(
-        plan,
-        template.available_from_plan || "free"
-      );
+      const templateAccessPlan = template.available_from_plan || "free";
+      const templateCheck = canUseTemplateByPlan(plan, templateAccessPlan);
 
-      if (!templateCheck.allowed) {
+      let canUseTemplate = templateCheck.allowed;
+
+      if (!canUseTemplate && isMarketplaceTemplate(templateAccessPlan)) {
+        try {
+          canUseTemplate = await userHasPurchasedTemplate({
+            admin,
+            userId: permission.user.id,
+            templateId: template.id,
+          });
+        } catch (error) {
+          return NextResponse.json(
+            {
+              error: "Errore controllo acquisto template.",
+              details: error instanceof Error ? error.message : String(error),
+            },
+            { status: 500 }
+          );
+        }
+      }
+
+      if (!canUseTemplate) {
+        const isMarketplace = isMarketplaceTemplate(templateAccessPlan);
+
         return NextResponse.json(
           {
-            error:
-              templateCheck.reason ||
-              "Questo template non è disponibile per il tuo piano.",
-            upgradeTo: templateCheck.upgradeTo,
+            error: isMarketplace
+              ? "Questo template marketplace non risulta acquistato dal tuo account."
+              : templateCheck.reason ||
+                "Questo template non è disponibile per il tuo piano.",
+            upgradeTo: isMarketplace ? null : templateCheck.upgradeTo,
           },
           { status: 403 }
         );
