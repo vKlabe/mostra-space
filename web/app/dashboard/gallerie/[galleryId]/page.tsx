@@ -623,6 +623,13 @@ export default async function DashboardGalleryDetailPage({
           </a>
 
           <a
+  href={`/dashboard/gallerie/${gallery.id}/catalogo`}
+  className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
+>
+  Crea catalogo
+</a>
+
+          <a
             href="/marketplace"
             className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
           >
