@@ -32,11 +32,26 @@ type CatalogArtwork = {
   sortOrder: number;
 };
 
+type CatalogSettings = {
+  title: string | null;
+  subtitle: string | null;
+  curatorName: string | null;
+  galleryName: string | null;
+  introText: string | null;
+  contactEmail: string | null;
+  website: string | null;
+  includeDescriptions: boolean;
+  includePrices: boolean;
+  includePublicLink: boolean;
+  includePrivateArtworks: boolean;
+};
+
 type GalleryCatalogBuilderProps = {
   gallery: CatalogGallery;
   artworks: CatalogArtwork[];
   defaultCuratorName: string;
   defaultContactEmail: string;
+  initialSettings: CatalogSettings | null;
 };
 
 function formatPrice(value: number | string | null, currency: string) {
@@ -89,18 +104,46 @@ export default function GalleryCatalogBuilder({
   artworks,
   defaultCuratorName,
   defaultContactEmail,
+  initialSettings,
 }: GalleryCatalogBuilderProps) {
-  const [catalogTitle, setCatalogTitle] = useState(gallery.title);
-  const [catalogSubtitle, setCatalogSubtitle] = useState("Catalogo mostra");
-  const [curatorName, setCuratorName] = useState(defaultCuratorName);
-  const [galleryName, setGalleryName] = useState("MostraSpace");
-  const [introText, setIntroText] = useState(gallery.description || "");
-  const [contactEmail, setContactEmail] = useState(defaultContactEmail);
-  const [website, setWebsite] = useState(gallery.publicUrl);
-  const [includeDescriptions, setIncludeDescriptions] = useState(true);
-  const [includePrices, setIncludePrices] = useState(true);
-  const [includePublicLink, setIncludePublicLink] = useState(true);
-  const [includePrivateArtworks, setIncludePrivateArtworks] = useState(true);
+    const [catalogTitle, setCatalogTitle] = useState(
+    initialSettings?.title || gallery.title
+  );
+  const [catalogSubtitle, setCatalogSubtitle] = useState(
+    initialSettings?.subtitle || "Catalogo mostra"
+  );
+  const [curatorName, setCuratorName] = useState(
+    initialSettings?.curatorName || defaultCuratorName
+  );
+  const [galleryName, setGalleryName] = useState(
+    initialSettings?.galleryName || "MostraSpace"
+  );
+  const [introText, setIntroText] = useState(
+    initialSettings?.introText || gallery.description || ""
+  );
+  const [contactEmail, setContactEmail] = useState(
+    initialSettings?.contactEmail || defaultContactEmail
+  );
+  const [website, setWebsite] = useState(
+    initialSettings?.website || gallery.publicUrl
+  );
+  const [includeDescriptions, setIncludeDescriptions] = useState(
+    initialSettings?.includeDescriptions ?? true
+  );
+  const [includePrices, setIncludePrices] = useState(
+    initialSettings?.includePrices ?? true
+  );
+  const [includePublicLink, setIncludePublicLink] = useState(
+    initialSettings?.includePublicLink ?? true
+  );
+  const [includePrivateArtworks, setIncludePrivateArtworks] = useState(
+    initialSettings?.includePrivateArtworks ?? true
+  );
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState("");
+  const [settingsMessageType, setSettingsMessageType] = useState<
+    "success" | "error" | ""
+  >("");
 
   const displayedArtworks = useMemo(() => {
     if (includePrivateArtworks) {
@@ -115,6 +158,55 @@ export default function GalleryCatalogBuilder({
 
   function handlePrint() {
     window.print();
+  }
+
+    async function handleSaveSettings() {
+    setIsSavingSettings(true);
+    setSettingsMessage("");
+    setSettingsMessageType("");
+
+    try {
+      const response = await fetch(
+        `/api/dashboard/galleries/${gallery.id}/catalog-settings`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: catalogTitle,
+            subtitle: catalogSubtitle,
+            curatorName,
+            galleryName,
+            introText,
+            contactEmail,
+            website,
+            includeDescriptions,
+            includePrices,
+            includePublicLink,
+            includePrivateArtworks,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setSettingsMessageType("error");
+        setSettingsMessage(
+          data.error || "Errore salvataggio impostazioni catalogo."
+        );
+        return;
+      }
+
+      setSettingsMessageType("success");
+      setSettingsMessage("Impostazioni catalogo salvate correttamente.");
+    } catch {
+      setSettingsMessageType("error");
+      setSettingsMessage("Errore di rete durante il salvataggio.");
+    } finally {
+      setIsSavingSettings(false);
+    }
   }
 
   return (
@@ -238,13 +330,22 @@ export default function GalleryCatalogBuilder({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3">
             <a
               href={`/dashboard/gallerie/${gallery.id}`}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
               Torna alla galleria
             </a>
+
+            <button
+              type="button"
+              onClick={handleSaveSettings}
+              disabled={isSavingSettings}
+              className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSavingSettings ? "Salvataggio..." : "Salva impostazioni"}
+            </button>
 
             <button
               type="button"
@@ -255,6 +356,18 @@ export default function GalleryCatalogBuilder({
             </button>
           </div>
         </div>
+
+                {settingsMessage && (
+          <div
+            className={
+              settingsMessageType === "success"
+                ? "mb-6 rounded-2xl border border-green-900 bg-green-950/30 p-4 text-sm text-green-200"
+                : "mb-6 rounded-2xl border border-red-900 bg-red-950/30 p-4 text-sm text-red-200"
+            }
+          >
+            {settingsMessage}
+          </div>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
           <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import GalleryCatalogBuilder from "@/components/catalog/GalleryCatalogBuilder";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +59,22 @@ type GalleryArtworkRow = {
   artworks: ArtworkRelation | ArtworkRelation[] | null;
 };
 
+type CatalogSettingsRecord = {
+  id: string;
+  gallery_id: string;
+  title: string | null;
+  subtitle: string | null;
+  curator_name: string | null;
+  gallery_name: string | null;
+  intro_text: string | null;
+  contact_email: string | null;
+  website: string | null;
+  include_descriptions: boolean;
+  include_prices: boolean;
+  include_public_link: boolean;
+  include_private_artworks: boolean;
+};
+
 function normalizeArtworkRelation(
   value: ArtworkRelation | ArtworkRelation[] | null
 ) {
@@ -101,6 +118,7 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
   const { galleryId } = await params;
 
   const supabase = await createClient();
+    const admin = createAdminClient();
 
   const {
     data: { user },
@@ -255,8 +273,46 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
   ];
 });
 
-  const appUrl = getAppUrl();
+    const appUrl = getAppUrl();
   const publicUrl = `${appUrl}/gallerie/${gallery.slug}`;
+
+  const { data: catalogSettingsData } = await admin
+    .from("gallery_catalog_settings")
+    .select(
+      [
+        "id",
+        "gallery_id",
+        "title",
+        "subtitle",
+        "curator_name",
+        "gallery_name",
+        "intro_text",
+        "contact_email",
+        "website",
+        "include_descriptions",
+        "include_prices",
+        "include_public_link",
+        "include_private_artworks",
+      ].join(", ")
+    )
+    .eq("gallery_id", gallery.id)
+    .maybeSingle<CatalogSettingsRecord>();
+
+  const catalogSettings = catalogSettingsData
+    ? {
+        title: catalogSettingsData.title,
+        subtitle: catalogSettingsData.subtitle,
+        curatorName: catalogSettingsData.curator_name,
+        galleryName: catalogSettingsData.gallery_name,
+        introText: catalogSettingsData.intro_text,
+        contactEmail: catalogSettingsData.contact_email,
+        website: catalogSettingsData.website,
+        includeDescriptions: catalogSettingsData.include_descriptions,
+        includePrices: catalogSettingsData.include_prices,
+        includePublicLink: catalogSettingsData.include_public_link,
+        includePrivateArtworks: catalogSettingsData.include_private_artworks,
+      }
+    : null;
 
   return (
     <GalleryCatalogBuilder
@@ -270,8 +326,9 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
         publicUrl,
       }}
       artworks={artworks}
-      defaultCuratorName={profile.full_name || profile.display_name || ""}
+            defaultCuratorName={profile.full_name || profile.display_name || ""}
       defaultContactEmail={profile.email || user.email || ""}
+      initialSettings={catalogSettings}
     />
   );
 }
