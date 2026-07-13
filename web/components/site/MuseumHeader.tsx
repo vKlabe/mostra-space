@@ -11,6 +11,10 @@ const navLinks = [
     label: "Gallerie",
   },
   {
+    href: "/marketplace",
+    label: "Marketplace",
+  },
+  {
     href: "/pricing",
     label: "Prezzi",
   },

@@ -35,6 +35,10 @@ const footerNav = [
     label: "Gallerie",
   },
   {
+    href: "/marketplace",
+    label: "Marketplace",
+  },
+  {
     href: "/pricing",
     label: "Prezzi",
   },
@@ -92,6 +96,7 @@ export default function LegalFooter() {
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between md:flex-col md:items-start">
               <div>
                 <p className="museum-label">Lingua</p>
+
                 <div className="mt-4">
                   <LanguageSwitcher />
                 </div>
