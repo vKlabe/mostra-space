@@ -1009,14 +1009,10 @@ export default function GalleryCatalogBuilder({
               className="catalog-page flex flex-col"
             >
               <p className="catalog-small-caps text-[#8b6a43]">
-                Catalogo opere · {galleryName || "MostraSpace"}
-              </p>
+  Catalogo opere · {galleryName || "MostraSpace"}
+</p>
 
-              <h2 className="mt-6 text-[30px] font-normal leading-tight">
-                {catalogTitle || gallery.title}
-              </h2>
-
-              <div className="mt-8 grid flex-1 gap-6">
+<div className="mt-8 grid flex-1 gap-6">
                 {chunk.map((artwork, index) => {
                   const absoluteIndex = pageIndex * 2 + index;
                   const artworkPrice = formatPrice(
@@ -1120,14 +1116,10 @@ export default function GalleryCatalogBuilder({
           chunkItems(displayedArtworks, 6).map((chunk, pageIndex) => (
             <section key={`list-${pageIndex}`} className="catalog-page">
               <p className="catalog-small-caps text-[#8b6a43]">
-                Listino opere · {galleryName || "MostraSpace"}
-              </p>
+  Listino opere · {galleryName || "MostraSpace"}
+</p>
 
-              <h2 className="mt-6 text-[30px] font-normal leading-tight">
-                {catalogTitle || gallery.title}
-              </h2>
-
-              <div className="mt-8 grid grid-cols-2 gap-4">
+<div className="mt-8 grid grid-cols-2 gap-4">
                 {chunk.map((artwork, index) => {
                   const absoluteIndex = pageIndex * 6 + index;
                   const artworkPrice = formatPrice(

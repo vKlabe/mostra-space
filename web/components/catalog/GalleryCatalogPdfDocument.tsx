@@ -524,14 +524,10 @@ export default function GalleryCatalogPdfDocument({
     return chunkItems(artworks, 2).map((chunk, pageIndex) => (
       <Page key={`compact-${pageIndex}`} size="A4" style={styles.pageLight}>
         <Text style={styles.smallCapsLight}>
-          Catalogo opere · {settings.galleryName || "MostraSpace"}
-        </Text>
+  Catalogo opere · {settings.galleryName || "MostraSpace"}
+</Text>
 
-        <Text style={styles.sheetTitle}>
-          {settings.title || gallery.title}
-        </Text>
-
-        <View style={{ marginTop: 30 }}>
+<View style={{ marginTop: 30 }}>
           {chunk.map((artwork, index) => {
             const absoluteIndex = pageIndex * 2 + index;
 
@@ -585,14 +581,10 @@ export default function GalleryCatalogPdfDocument({
     return chunkItems(artworks, 6).map((chunk, pageIndex) => (
       <Page key={`list-${pageIndex}`} size="A4" style={styles.pageLight}>
         <Text style={styles.smallCapsLight}>
-          Listino opere · {settings.galleryName || "MostraSpace"}
-        </Text>
+  Listino opere · {settings.galleryName || "MostraSpace"}
+</Text>
 
-        <Text style={styles.sheetTitle}>
-          {settings.title || gallery.title}
-        </Text>
-
-        <View style={styles.listGrid}>
+<View style={styles.listGrid}>
           {chunk.map((artwork, index) => {
             const absoluteIndex = pageIndex * 6 + index;
             const artworkPrice = formatPrice(artwork.price, artwork.currency);
