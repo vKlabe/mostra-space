@@ -65,27 +65,62 @@ const featureNotes = [
 
 const plans = [
   {
-    name: "Collezionista",
-    price: "Gratuito",
-    description: "Esplora le gallerie, salva opere e crea le tue collezioni.",
+    name: "Free",
+    price: "0€",
+    description: "1 galleria, 15 opere e anteprima catalogo PDF.",
     href: "/auth/register",
     featured: false,
+    badge: "Ingresso",
   },
   {
-    name: "Artista",
-    price: "€19",
+    name: "Pro",
+    price: "14,90€",
     suffix: "/mese",
-    description: "Mostra le tue opere in una galleria personale immersiva.",
+    description: "5 gallerie, 150 opere e PDF elegante per le tue mostre.",
     href: "/pricing",
     featured: true,
+    badge: "Più popolare",
   },
   {
-    name: "Gallerista",
-    price: "€49",
+    name: "Business",
+    price: "24,90€",
     suffix: "/mese",
-    description: "Uno spazio professionale per la tua galleria.",
+    description: "10 gallerie, 250 opere e cataloghi PDF con tutti i layout.",
     href: "/pricing",
     featured: false,
+    badge: "Gallerie",
+  },
+  {
+    name: "Diamond",
+    price: "49€",
+    suffix: "/mese",
+    description: "15 gallerie, 500 opere e massima capacità espositiva.",
+    href: "/pricing",
+    featured: false,
+    badge: "Premium",
+  },
+];
+
+const platformPillars = [
+  {
+    title: "Mostre online vere",
+    detail:
+      "Non una semplice pagina portfolio: uno spazio espositivo visitabile, ordinato e condivisibile.",
+  },
+  {
+    title: "Opere, schede e richieste",
+    detail:
+      "Carichi le opere, costruisci la galleria, ricevi contatti e tieni tutto sotto controllo.",
+  },
+  {
+    title: "Cataloghi PDF",
+    detail:
+      "Dalla galleria digitale puoi generare cataloghi professionali con QR, testi e layout diversi.",
+  },
+  {
+    title: "Marketplace di spazi",
+    detail:
+      "Template e ambienti acquistabili per dare alla mostra una forma visiva più forte.",
   },
 ];
 
@@ -282,7 +317,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               {plans.map((plan) => (
                 <Link
                   key={plan.name}
@@ -299,6 +334,12 @@ export default function HomePage() {
                     </span>
                   )}
 
+                  {!plan.featured && plan.badge && (
+                    <span className="mb-4 inline-flex rounded-full border border-[var(--museum-border)] px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-stone-muted)]">
+                      {plan.badge}
+                    </span>
+                  )}
+
                   <p className="font-editorial text-xl text-[var(--museum-ivory-soft)]">
                     {plan.name}
                   </p>
@@ -312,7 +353,7 @@ export default function HomePage() {
                     )}
                   </p>
 
-                  <p className="mt-4 min-h-16 text-xs leading-5 text-[var(--museum-stone)]">
+                  <p className="mt-4 min-h-20 text-xs leading-5 text-[var(--museum-stone)]">
                     {plan.description}
                   </p>
 
@@ -323,10 +364,85 @@ export default function HomePage() {
                         : "museum-button-secondary mt-6 w-full px-4 py-3"
                     }
                   >
-                    Inizia ora
+                    {plan.name === "Free" ? "Inizia gratis" : "Vedi il piano"}
                   </span>
                 </Link>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-[var(--museum-border)]">
+        <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-18">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <p className="museum-label">Cos’è mostra.space</p>
+
+              <h2 className="museum-title mt-5 max-w-3xl text-5xl text-[var(--museum-ivory)] md:text-6xl">
+                La tua mostra online, pronta da visitare, condividere e vendere.
+              </h2>
+
+              <p className="museum-subtitle mt-6 max-w-2xl text-sm text-[var(--museum-stone)] md:text-base">
+                MostraSpace trasforma opere, testi, immagini e identità visiva
+                in uno spazio espositivo digitale completo: una galleria
+                immersiva da browser, una dashboard per gestirla e strumenti
+                professionali per presentarla al pubblico.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href="/auth/register"
+                  className="museum-button-primary px-7 py-3.5"
+                >
+                  Crea il tuo spazio
+                </Link>
+
+                <Link
+                  href="/marketplace"
+                  className="museum-button-secondary px-7 py-3.5"
+                >
+                  Scopri il marketplace
+                </Link>
+              </div>
+            </div>
+
+            <div className="museum-card-soft rounded-[1.75rem] p-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {platformPillars.map((item, index) => (
+                  <div
+                    key={item.title}
+                    className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--museum-bronze-light)]">
+                      {String(index + 1).padStart(2, "0")}
+                    </p>
+
+                    <h3 className="mt-5 font-editorial text-2xl leading-tight text-[var(--museum-ivory)]">
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-3 text-xs leading-6 text-[var(--museum-stone)]">
+                      {item.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[rgba(197,151,94,0.34)] bg-[rgba(168,121,69,0.08)] p-5">
+                <p className="museum-label">Dal portfolio alla mostra</p>
+
+                <p className="mt-4 font-editorial text-3xl leading-tight text-[var(--museum-ivory)]">
+                  Carichi le opere. Scegli lo spazio. Pubblici la galleria.
+                  Generi il catalogo.
+                </p>
+
+                <p className="mt-4 text-sm leading-7 text-[var(--museum-stone)]">
+                  Tutto in un unico flusso: più rapido di un sito su misura, più
+                  professionale di un semplice portfolio, più immersivo di una
+                  pagina statica.
+                </p>
+              </div>
             </div>
           </div>
         </div>
