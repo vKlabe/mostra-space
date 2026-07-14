@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import * as QRCode from "qrcode";
+
+type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
 
 type CatalogGallery = {
   id: string;
@@ -55,7 +58,15 @@ type GalleryCatalogBuilderProps = {
   initialSettings: CatalogSettings | null;
 };
 
-type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
 
 function formatPrice(value: number | string | null, currency: string) {
   if (value === null || value === undefined || value === "") {
@@ -102,6 +113,18 @@ function getArtworkCaption(artwork: CatalogArtwork) {
   return `${title}${year}`;
 }
 
+function getLayoutLabel(layoutVariant: CatalogLayoutVariant) {
+  if (layoutVariant === "compact") {
+    return "Compatto · 2 opere per pagina";
+  }
+
+  if (layoutVariant === "price_list") {
+    return "Listino · fino a 6 opere per pagina";
+  }
+
+  return "Elegante · 1 opera per pagina";
+}
+
 export default function GalleryCatalogBuilder({
   gallery,
   artworks,
@@ -109,7 +132,7 @@ export default function GalleryCatalogBuilder({
   defaultContactEmail,
   initialSettings,
 }: GalleryCatalogBuilderProps) {
-    const [catalogTitle, setCatalogTitle] = useState(
+  const [catalogTitle, setCatalogTitle] = useState(
     initialSettings?.title || gallery.title
   );
   const [catalogSubtitle, setCatalogSubtitle] = useState(
@@ -131,8 +154,8 @@ export default function GalleryCatalogBuilder({
     initialSettings?.website || gallery.publicUrl
   );
   const [layoutVariant, setLayoutVariant] = useState<CatalogLayoutVariant>(
-  initialSettings?.layoutVariant || "elegant"
-);
+    initialSettings?.layoutVariant || "elegant"
+  );
   const [includeDescriptions, setIncludeDescriptions] = useState(
     initialSettings?.includeDescriptions ?? true
   );
@@ -151,6 +174,7 @@ export default function GalleryCatalogBuilder({
     "success" | "error" | ""
   >("");
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
 
   const displayedArtworks = useMemo(() => {
     if (includePrivateArtworks) {
@@ -163,87 +187,124 @@ export default function GalleryCatalogBuilder({
   const coverImageUrl =
     gallery.coverImageUrl || displayedArtworks[0]?.imageUrl || "";
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function generateQrCode() {
+      if (!gallery.publicUrl || !includePublicLink) {
+        setQrCodeDataUrl("");
+        return;
+      }
+
+      try {
+        const dataUrl = await QRCode.toDataURL(gallery.publicUrl, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 420,
+          color: {
+            dark: "#15120e",
+            light: "#ffffff",
+          },
+        });
+
+        if (isMounted) {
+          setQrCodeDataUrl(dataUrl);
+        }
+      } catch {
+        if (isMounted) {
+          setQrCodeDataUrl("");
+        }
+      }
+    }
+
+    generateQrCode();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [gallery.publicUrl, includePublicLink]);
+
   function handlePrint() {
     window.print();
   }
 
   async function handleDownloadDirectPdf() {
-  setIsDownloadingPdf(true);
-  setSettingsMessage("");
-  setSettingsMessageType("");
+    setIsDownloadingPdf(true);
+    setSettingsMessage("");
+    setSettingsMessageType("");
 
-  try {
-    const saveResponse = await fetch(
-      `/api/dashboard/galleries/${gallery.id}/catalog-settings`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: catalogTitle,
-          subtitle: catalogSubtitle,
-          curatorName,
-          galleryName,
-          introText,
-          contactEmail,
-          website,
-          layoutVariant,
-          includeDescriptions,
-          includePrices,
-          includePublicLink,
-          includePrivateArtworks,
-        }),
+    try {
+      const saveResponse = await fetch(
+        `/api/dashboard/galleries/${gallery.id}/catalog-settings`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: catalogTitle,
+            subtitle: catalogSubtitle,
+            curatorName,
+            galleryName,
+            introText,
+            contactEmail,
+            website,
+            layoutVariant,
+            includeDescriptions,
+            includePrices,
+            includePublicLink,
+            includePrivateArtworks,
+          }),
+        }
+      );
+
+      const saveData = await saveResponse.json();
+
+      if (!saveResponse.ok) {
+        setSettingsMessageType("error");
+        setSettingsMessage(
+          saveData.error || "Errore salvataggio impostazioni catalogo."
+        );
+        return;
       }
-    );
 
-    const saveData = await saveResponse.json();
-
-    if (!saveResponse.ok) {
-      setSettingsMessageType("error");
-      setSettingsMessage(
-        saveData.error || "Errore salvataggio impostazioni catalogo."
+      const pdfResponse = await fetch(
+        `/api/dashboard/galleries/${gallery.id}/catalog-pdf`
       );
-      return;
-    }
 
-    const pdfResponse = await fetch(
-      `/api/dashboard/galleries/${gallery.id}/catalog-pdf`
-    );
+      if (!pdfResponse.ok) {
+        const errorData = await pdfResponse.json().catch(() => null);
 
-    if (!pdfResponse.ok) {
-      const errorData = await pdfResponse.json().catch(() => null);
+        setSettingsMessageType("error");
+        setSettingsMessage(
+          errorData?.error || "Errore generazione PDF catalogo."
+        );
+        return;
+      }
 
+      const blob = await pdfResponse.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = blobUrl;
+      link.download = `catalogo-${gallery.slug}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(blobUrl);
+
+      setSettingsMessageType("success");
+      setSettingsMessage("PDF catalogo generato correttamente.");
+    } catch {
       setSettingsMessageType("error");
-      setSettingsMessage(
-        errorData?.error || "Errore generazione PDF catalogo."
-      );
-      return;
+      setSettingsMessage("Errore di rete durante la generazione del PDF.");
+    } finally {
+      setIsDownloadingPdf(false);
     }
-
-    const blob = await pdfResponse.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = blobUrl;
-    link.download = `catalogo-${gallery.slug}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    window.URL.revokeObjectURL(blobUrl);
-
-    setSettingsMessageType("success");
-    setSettingsMessage("PDF catalogo generato correttamente.");
-  } catch {
-    setSettingsMessageType("error");
-    setSettingsMessage("Errore di rete durante la generazione del PDF.");
-  } finally {
-    setIsDownloadingPdf(false);
   }
-}
 
-    async function handleSaveSettings() {
+  async function handleSaveSettings() {
     setIsSavingSettings(true);
     setSettingsMessage("");
     setSettingsMessageType("");
@@ -308,7 +369,7 @@ export default function GalleryCatalogBuilder({
           overflow: hidden;
           background: #f7f2e8;
           color: #16120d;
-          padding: 20mm;
+          padding: 12mm;
           font-family: Georgia, "Times New Roman", serif;
         }
 
@@ -408,13 +469,12 @@ export default function GalleryCatalogBuilder({
             </h1>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-              Compila i dati, controlla l’anteprima A4 e usa il pulsante
-              “Esporta PDF”. Il browser aprirà la stampa: scegli “Salva come
-              PDF”.
+              Compila i dati, controlla l’anteprima A4 e usa “Scarica PDF
+              diretto” per generare automaticamente il file.
             </p>
           </div>
 
-                    <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
             <a
               href={`/dashboard/gallerie/${gallery.id}`}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -423,35 +483,35 @@ export default function GalleryCatalogBuilder({
             </a>
 
             <button
-  type="button"
-  onClick={handleSaveSettings}
-  disabled={isSavingSettings || isDownloadingPdf}
-  className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
->
-  {isSavingSettings ? "Salvataggio..." : "Salva impostazioni"}
-</button>
+              type="button"
+              onClick={handleSaveSettings}
+              disabled={isSavingSettings || isDownloadingPdf}
+              className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSavingSettings ? "Salvataggio..." : "Salva impostazioni"}
+            </button>
 
-<button
-  type="button"
-  onClick={handleDownloadDirectPdf}
-  disabled={isDownloadingPdf || isSavingSettings}
-  className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
->
-  {isDownloadingPdf ? "Creo PDF..." : "Scarica PDF diretto"}
-</button>
+            <button
+              type="button"
+              onClick={handleDownloadDirectPdf}
+              disabled={isDownloadingPdf || isSavingSettings}
+              className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isDownloadingPdf ? "Creo PDF..." : "Scarica PDF diretto"}
+            </button>
 
-<button
-  type="button"
-  onClick={handlePrint}
-  disabled={isDownloadingPdf}
-  className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
->
-  Esporta con stampa
-</button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={isDownloadingPdf}
+              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Esporta con stampa
+            </button>
           </div>
         </div>
 
-                {settingsMessage && (
+        {settingsMessage && (
           <div
             className={
               settingsMessageType === "success"
@@ -556,49 +616,54 @@ export default function GalleryCatalogBuilder({
               </div>
 
               <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-  <p className="mb-3 text-xs uppercase tracking-[0.18em] text-neutral-600">
-    Layout catalogo
-  </p>
+                <p className="mb-3 text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Layout catalogo
+                </p>
 
-  <div className="grid gap-3">
-    {[
-      {
-        key: "elegant",
-        label: "Elegante",
-        description: "1 opera per pagina. Più editoriale, pulito e museale.",
-      },
-      {
-        key: "compact",
-        label: "Compatto",
-        description: "2 opere per pagina. Utile per mostre con molte opere.",
-      },
-      {
-        key: "price_list",
-        label: "Listino",
-        description: "Fino a 6 opere per pagina. Pensato per vendita e invio rapido.",
-      },
-    ].map((layout) => (
-      <button
-        key={layout.key}
-        type="button"
-        onClick={() => setLayoutVariant(layout.key as CatalogLayoutVariant)}
-        className={
-          layoutVariant === layout.key
-            ? "rounded-2xl border border-amber-600 bg-amber-950/30 p-4 text-left"
-            : "rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-left transition hover:border-neutral-600"
-        }
-      >
-        <p className="text-sm font-medium text-neutral-100">
-          {layout.label}
-        </p>
+                <div className="grid gap-3">
+                  {[
+                    {
+                      key: "elegant",
+                      label: "Elegante",
+                      description:
+                        "1 opera per pagina. Più editoriale, pulito e museale.",
+                    },
+                    {
+                      key: "compact",
+                      label: "Compatto",
+                      description:
+                        "2 opere per pagina. Utile per mostre con molte opere.",
+                    },
+                    {
+                      key: "price_list",
+                      label: "Listino",
+                      description:
+                        "Fino a 6 opere per pagina. Pensato per vendita e invio rapido.",
+                    },
+                  ].map((layout) => (
+                    <button
+                      key={layout.key}
+                      type="button"
+                      onClick={() =>
+                        setLayoutVariant(layout.key as CatalogLayoutVariant)
+                      }
+                      className={
+                        layoutVariant === layout.key
+                          ? "rounded-2xl border border-amber-600 bg-amber-950/30 p-4 text-left"
+                          : "rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-left transition hover:border-neutral-600"
+                      }
+                    >
+                      <p className="text-sm font-medium text-neutral-100">
+                        {layout.label}
+                      </p>
 
-        <p className="mt-1 text-xs leading-5 text-neutral-500">
-          {layout.description}
-        </p>
-      </button>
-    ))}
-  </div>
-</div>
+                      <p className="mt-1 text-xs leading-5 text-neutral-500">
+                        {layout.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="space-y-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
@@ -634,7 +699,7 @@ export default function GalleryCatalogBuilder({
                     }
                     className="mt-1"
                   />
-                  <span>Mostra link alla galleria online</span>
+                  <span>Mostra link e QR alla galleria online</span>
                 </label>
 
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
@@ -664,13 +729,8 @@ export default function GalleryCatalogBuilder({
                 </p>
 
                 <p className="mt-3 text-xs leading-5 text-neutral-500">
-  Layout selezionato:{" "}
-  {layoutVariant === "compact"
-    ? "Compatto · 2 opere per pagina"
-    : layoutVariant === "price_list"
-      ? "Listino · fino a 6 opere per pagina"
-      : "Elegante · 1 opera per pagina"}
-</p>
+                  Layout selezionato: {getLayoutLabel(layoutVariant)}
+                </p>
               </div>
             </div>
           </section>
@@ -681,9 +741,8 @@ export default function GalleryCatalogBuilder({
             </p>
 
             <p className="text-sm leading-6 text-neutral-400">
-              L’anteprima qui sotto è la stessa che verrà stampata. Per un PDF
-              pulito, nella finestra di stampa scegli formato A4 e “Salva come
-              PDF”.
+              L’anteprima qui sotto cambia in base al layout selezionato:
+              Elegante, Compatto o Listino.
             </p>
           </section>
         </div>
@@ -758,8 +817,10 @@ export default function GalleryCatalogBuilder({
                 </div>
 
                 <div className="grid grid-cols-[42mm_1fr] gap-6">
-                  <dt className="catalog-small-caps text-[#8b6a43]">Stato</dt>
-                  <dd>{gallery.status}</dd>
+                  <dt className="catalog-small-caps text-[#8b6a43]">
+                    Layout
+                  </dt>
+                  <dd>{getLayoutLabel(layoutVariant)}</dd>
                 </div>
 
                 {includePublicLink && (
@@ -771,6 +832,33 @@ export default function GalleryCatalogBuilder({
                   </div>
                 )}
               </dl>
+
+              {includePublicLink && qrCodeDataUrl && (
+                <div className="mt-8 flex items-center gap-6 border border-[#d8c9b0] p-5">
+                  <div className="h-[32mm] w-[32mm] shrink-0 bg-white p-2">
+                    <img
+                      src={qrCodeDataUrl}
+                      alt="QR code galleria online"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+
+                  <div>
+                    <p className="catalog-small-caps text-[#8b6a43]">
+                      QR galleria online
+                    </p>
+
+                    <p className="catalog-body-text mt-3">
+                      Scansiona il codice per aprire direttamente la galleria
+                      digitale online.
+                    </p>
+
+                    <p className="mt-3 break-all text-[10px] leading-5 text-[#5c4b39]">
+                      {gallery.publicUrl}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-12">
                 <p className="catalog-small-caps text-[#8b6a43]">
@@ -806,110 +894,299 @@ export default function GalleryCatalogBuilder({
           </section>
         )}
 
-        {displayedArtworks.map((artwork, index) => {
-          const artworkPrice = formatPrice(artwork.price, artwork.currency);
-          const artworkDimensions = formatDimensions(artwork);
+        {displayedArtworks.length > 0 &&
+          layoutVariant === "elegant" &&
+          displayedArtworks.map((artwork, index) => {
+            const artworkPrice = formatPrice(artwork.price, artwork.currency);
+            const artworkDimensions = formatDimensions(artwork);
 
-          return (
-            <section
-              key={artwork.galleryArtworkId}
-              className="catalog-page flex flex-col"
-            >
-              <div className="mb-8 flex items-start justify-between gap-8">
-                <div>
-                  <p className="catalog-small-caps text-[#8b6a43]">
-                    Opera {String(index + 1).padStart(2, "0")}
-                  </p>
-
-                  <h2 className="mt-4 text-[30px] font-normal leading-tight">
-                    {artwork.title || "Opera senza titolo"}
-                  </h2>
-
-                  {artwork.artistName && (
-                    <p className="mt-3 text-[18px] text-[#5c4b39]">
-                      {artwork.artistName}
+            return (
+              <section
+                key={artwork.galleryArtworkId}
+                className="catalog-page flex flex-col"
+              >
+                <div className="mb-8 flex items-start justify-between gap-8">
+                  <div>
+                    <p className="catalog-small-caps text-[#8b6a43]">
+                      Opera {String(index + 1).padStart(2, "0")}
                     </p>
+
+                    <h2 className="mt-4 text-[30px] font-normal leading-tight">
+                      {artwork.title || "Opera senza titolo"}
+                    </h2>
+
+                    {artwork.artistName && (
+                      <p className="mt-3 text-[18px] text-[#5c4b39]">
+                        {artwork.artistName}
+                      </p>
+                    )}
+                  </div>
+
+                  <p className="catalog-small-caps text-[#8b6a43]">
+                    {galleryName || "MostraSpace"}
+                  </p>
+                </div>
+
+                <div className="flex flex-1 items-center justify-center border border-[#d8c9b0] bg-[#eee6d8] p-4">
+                  {artwork.imageUrl ? (
+                    <img
+                      src={artwork.imageUrl}
+                      alt={getArtworkCaption(artwork)}
+                      className="catalog-artwork-image"
+                    />
+                  ) : (
+                    <div className="flex h-[120mm] w-full items-center justify-center text-sm text-[#8b6a43]">
+                      Immagine non disponibile
+                    </div>
                   )}
                 </div>
 
-                <p className="catalog-small-caps text-[#8b6a43]">
-                  {galleryName || "MostraSpace"}
-                </p>
-              </div>
+                <div className="mt-8 grid gap-8 md:grid-cols-[55mm_1fr]">
+                  <dl className="space-y-3 text-sm">
+                    {artwork.year && (
+                      <div>
+                        <dt className="catalog-small-caps text-[#8b6a43]">
+                          Anno
+                        </dt>
+                        <dd className="mt-1">{artwork.year}</dd>
+                      </div>
+                    )}
 
-              <div className="flex flex-1 items-center justify-center border border-[#d8c9b0] bg-[#eee6d8] p-4">
-                {artwork.imageUrl ? (
-                  <img
-                    src={artwork.imageUrl}
-                    alt={getArtworkCaption(artwork)}
-                    className="catalog-artwork-image"
-                  />
-                ) : (
-                  <div className="flex h-[120mm] w-full items-center justify-center text-sm text-[#8b6a43]">
-                    Immagine non disponibile
-                  </div>
-                )}
-              </div>
+                    {artwork.technique && (
+                      <div>
+                        <dt className="catalog-small-caps text-[#8b6a43]">
+                          Tecnica
+                        </dt>
+                        <dd className="mt-1">{artwork.technique}</dd>
+                      </div>
+                    )}
 
-              <div className="mt-8 grid gap-8 md:grid-cols-[55mm_1fr]">
-                <dl className="space-y-3 text-sm">
-                  {artwork.year && (
+                    {artworkDimensions && (
+                      <div>
+                        <dt className="catalog-small-caps text-[#8b6a43]">
+                          Dimensioni
+                        </dt>
+                        <dd className="mt-1">{artworkDimensions}</dd>
+                      </div>
+                    )}
+
+                    {includePrices && (
+                      <div>
+                        <dt className="catalog-small-caps text-[#8b6a43]">
+                          Disponibilità
+                        </dt>
+                        <dd className="mt-1">
+                          {artwork.isForSale
+                            ? artworkPrice || "Prezzo su richiesta"
+                            : "Non in vendita"}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {includeDescriptions && (
                     <div>
-                      <dt className="catalog-small-caps text-[#8b6a43]">
-                        Anno
-                      </dt>
-                      <dd className="mt-1">{artwork.year}</dd>
+                      <p className="catalog-small-caps text-[#8b6a43]">
+                        Descrizione
+                      </p>
+
+                      <p className="catalog-body-text mt-3 whitespace-pre-line">
+                        {artwork.description ||
+                          "Descrizione non inserita per questa opera."}
+                      </p>
                     </div>
                   )}
+                </div>
+              </section>
+            );
+          })}
 
-                  {artwork.technique && (
-                    <div>
-                      <dt className="catalog-small-caps text-[#8b6a43]">
-                        Tecnica
-                      </dt>
-                      <dd className="mt-1">{artwork.technique}</dd>
+        {displayedArtworks.length > 0 &&
+          layoutVariant === "compact" &&
+          chunkItems(displayedArtworks, 2).map((chunk, pageIndex) => (
+            <section
+              key={`compact-${pageIndex}`}
+              className="catalog-page flex flex-col"
+            >
+              <p className="catalog-small-caps text-[#8b6a43]">
+                Catalogo opere · {galleryName || "MostraSpace"}
+              </p>
+
+              <h2 className="mt-6 text-[30px] font-normal leading-tight">
+                {catalogTitle || gallery.title}
+              </h2>
+
+              <div className="mt-8 grid flex-1 gap-6">
+                {chunk.map((artwork, index) => {
+                  const absoluteIndex = pageIndex * 2 + index;
+                  const artworkPrice = formatPrice(
+                    artwork.price,
+                    artwork.currency
+                  );
+                  const artworkDimensions = formatDimensions(artwork);
+
+                  return (
+                    <div
+                      key={artwork.galleryArtworkId}
+                      className="grid grid-cols-[58mm_1fr] gap-6 border-b border-[#d8c9b0] pb-6"
+                    >
+                      <div className="flex h-[82mm] items-center justify-center border border-[#d8c9b0] bg-[#eee6d8] p-2">
+                        {artwork.imageUrl ? (
+                          <img
+                            src={artwork.imageUrl}
+                            alt={getArtworkCaption(artwork)}
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <div className="text-xs text-[#8b6a43]">
+                            Immagine non disponibile
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="catalog-small-caps text-[#8b6a43]">
+                          Opera {String(absoluteIndex + 1).padStart(2, "0")}
+                        </p>
+
+                        <h3 className="mt-3 text-[23px] font-normal leading-tight">
+                          {artwork.title || "Opera senza titolo"}
+                        </h3>
+
+                        {artwork.artistName && (
+                          <p className="mt-2 text-[15px] text-[#5c4b39]">
+                            {artwork.artistName}
+                          </p>
+                        )}
+
+                        <dl className="mt-4 grid gap-2 text-[11px] leading-5">
+                          {artwork.year && (
+                            <div>
+                              <dt className="catalog-small-caps text-[#8b6a43]">
+                                Anno
+                              </dt>
+                              <dd>{artwork.year}</dd>
+                            </div>
+                          )}
+
+                          {artwork.technique && (
+                            <div>
+                              <dt className="catalog-small-caps text-[#8b6a43]">
+                                Tecnica
+                              </dt>
+                              <dd>{artwork.technique}</dd>
+                            </div>
+                          )}
+
+                          {artworkDimensions && (
+                            <div>
+                              <dt className="catalog-small-caps text-[#8b6a43]">
+                                Dimensioni
+                              </dt>
+                              <dd>{artworkDimensions}</dd>
+                            </div>
+                          )}
+
+                          {includePrices && (
+                            <div>
+                              <dt className="catalog-small-caps text-[#8b6a43]">
+                                Disponibilità
+                              </dt>
+                              <dd>
+                                {artwork.isForSale
+                                  ? artworkPrice || "Prezzo su richiesta"
+                                  : "Non in vendita"}
+                              </dd>
+                            </div>
+                          )}
+                        </dl>
+
+                        {includeDescriptions && (
+                          <p className="mt-4 text-[11px] leading-5">
+                            {artwork.description ||
+                              "Descrizione non inserita per questa opera."}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
-
-                  {artworkDimensions && (
-                    <div>
-                      <dt className="catalog-small-caps text-[#8b6a43]">
-                        Dimensioni
-                      </dt>
-                      <dd className="mt-1">{artworkDimensions}</dd>
-                    </div>
-                  )}
-
-                  {includePrices && (
-                    <div>
-                      <dt className="catalog-small-caps text-[#8b6a43]">
-                        Disponibilità
-                      </dt>
-                      <dd className="mt-1">
-                        {artwork.isForSale
-                          ? artworkPrice || "Prezzo su richiesta"
-                          : "Non in vendita"}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-
-                {includeDescriptions && (
-                  <div>
-                    <p className="catalog-small-caps text-[#8b6a43]">
-                      Descrizione
-                    </p>
-
-                    <p className="catalog-body-text mt-3 whitespace-pre-line">
-                      {artwork.description ||
-                        "Descrizione non inserita per questa opera."}
-                    </p>
-                  </div>
-                )}
+                  );
+                })}
               </div>
             </section>
-          );
-        })}
+          ))}
+
+        {displayedArtworks.length > 0 &&
+          layoutVariant === "price_list" &&
+          chunkItems(displayedArtworks, 6).map((chunk, pageIndex) => (
+            <section key={`list-${pageIndex}`} className="catalog-page">
+              <p className="catalog-small-caps text-[#8b6a43]">
+                Listino opere · {galleryName || "MostraSpace"}
+              </p>
+
+              <h2 className="mt-6 text-[30px] font-normal leading-tight">
+                {catalogTitle || gallery.title}
+              </h2>
+
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                {chunk.map((artwork, index) => {
+                  const absoluteIndex = pageIndex * 6 + index;
+                  const artworkPrice = formatPrice(
+                    artwork.price,
+                    artwork.currency
+                  );
+                  const artworkDimensions = formatDimensions(artwork);
+
+                  return (
+                    <div
+                      key={artwork.galleryArtworkId}
+                      className="min-h-[70mm] border border-[#d8c9b0] p-3"
+                    >
+                      <div className="flex h-[30mm] items-center justify-center bg-[#eee6d8] p-1">
+                        {artwork.imageUrl ? (
+                          <img
+                            src={artwork.imageUrl}
+                            alt={getArtworkCaption(artwork)}
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-[10px] text-[#8b6a43]">
+                            No image
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-2 text-[10px] text-[#8b6a43]">
+                        {String(absoluteIndex + 1).padStart(2, "0")}
+                      </p>
+
+                      <h3 className="mt-1 text-[14px] font-normal leading-tight">
+                        {artwork.title || "Opera senza titolo"}
+                      </h3>
+
+                      <p className="mt-2 text-[9px] leading-4 text-[#5c4b39]">
+                        {[
+                          artwork.artistName,
+                          artwork.year,
+                          artwork.technique,
+                          artworkDimensions,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+
+                      {includePrices && (
+                        <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#8b6a43]">
+                          {artwork.isForSale
+                            ? artworkPrice || "Prezzo su richiesta"
+                            : "Non in vendita"}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
 
         <section className="catalog-page catalog-page-dark flex flex-col justify-between">
           <div>

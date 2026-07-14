@@ -2,6 +2,7 @@ import React from "react";
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import sharp from "sharp";
+import * as QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import GalleryCatalogPdfDocument, {
@@ -192,6 +193,26 @@ async function imageUrlToJpegDataUrl(url: string) {
     return "";
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+async function createQrCodeDataUrl(url: string) {
+  if (!url) {
+    return "";
+  }
+
+  try {
+    return await QRCode.toDataURL(url, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: 420,
+      color: {
+        dark: "#15120e",
+        light: "#ffffff",
+      },
+    });
+  } catch {
+    return "";
   }
 }
 
@@ -398,6 +419,8 @@ export async function GET(_request: Request, context: RouteContext) {
     gallery.cover_image_url || artworks[0]?.imageUrl || ""
   );
 
+  const qrCodeDataUrl = await createQrCodeDataUrl(publicUrl);
+
   const pdfArtworks = await Promise.all(
     artworks.map(async (artwork) => ({
       ...artwork,
@@ -406,14 +429,15 @@ export async function GET(_request: Request, context: RouteContext) {
   );
 
   const pdfGallery: PdfCatalogGallery = {
-    id: gallery.id,
-    title: gallery.title,
-    slug: gallery.slug,
-    description: gallery.description || "",
-    coverImageUrl,
-    status: gallery.status,
-    publicUrl,
-  };
+  id: gallery.id,
+  title: gallery.title,
+  slug: gallery.slug,
+  description: gallery.description || "",
+  coverImageUrl,
+  qrCodeDataUrl,
+  status: gallery.status,
+  publicUrl,
+};
 
   try {
   const pdfDocument = React.createElement(GalleryCatalogPdfDocument, {

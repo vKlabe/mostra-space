@@ -15,6 +15,7 @@ export type PdfCatalogGallery = {
   slug: string;
   description: string;
   coverImageUrl: string;
+  qrCodeDataUrl: string;
   status: "draft" | "published" | "archived";
   publicUrl: string;
 };
@@ -110,13 +111,13 @@ function formatDimensions(artwork: PdfCatalogArtwork) {
 
 const styles = StyleSheet.create({
   pageLight: {
-    padding: 56,
+    padding: 34,
     backgroundColor: "#f7f2e8",
     color: "#16120d",
     fontFamily: "Times-Roman",
   },
   pageDark: {
-    padding: 56,
+    padding: 34,
     backgroundColor: "#15120e",
     color: "#f7f2e8",
     fontFamily: "Times-Roman",
@@ -381,6 +382,40 @@ const styles = StyleSheet.create({
     lineHeight: 1.5,
     color: "#8e7f6c",
   },
+  qrSection: {
+  marginTop: 28,
+  padding: 18,
+  borderWidth: 1,
+  borderColor: "#d8c9b0",
+  flexDirection: "row",
+  alignItems: "center",
+},
+qrImageBox: {
+  width: 88,
+  height: 88,
+  backgroundColor: "#ffffff",
+  padding: 6,
+},
+qrImage: {
+  width: "100%",
+  height: "100%",
+},
+qrTextBox: {
+  flex: 1,
+  paddingLeft: 18,
+},
+qrTitle: {
+  fontFamily: "Helvetica",
+  fontSize: 8,
+  letterSpacing: 2,
+  textTransform: "uppercase",
+  color: "#8b6a43",
+},
+qrText: {
+  marginTop: 8,
+  fontSize: 10,
+  lineHeight: 1.5,
+},
 });
 
 function renderArtworkFacts(
@@ -726,6 +761,23 @@ export default function GalleryCatalogPdfDocument({
                 </View>
               ) : null}
             </View>
+
+            {settings.includePublicLink && gallery.qrCodeDataUrl ? (
+  <View style={styles.qrSection}>
+    <View style={styles.qrImageBox}>
+      <Image src={gallery.qrCodeDataUrl} style={styles.qrImage} />
+    </View>
+
+    <View style={styles.qrTextBox}>
+      <Text style={styles.qrTitle}>QR galleria online</Text>
+      <Text style={styles.qrText}>
+        Scansiona il codice per aprire direttamente la galleria digitale
+        online.
+      </Text>
+      <Text style={styles.qrText}>{gallery.publicUrl}</Text>
+    </View>
+  </View>
+) : null}
 
             <View style={{ marginTop: 46 }}>
               <Text style={styles.smallCapsLight}>Testo curatoriale</Text>
