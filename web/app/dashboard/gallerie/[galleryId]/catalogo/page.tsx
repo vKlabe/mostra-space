@@ -330,19 +330,20 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
 
   return (
     <GalleryCatalogBuilder
-      gallery={{
-        id: gallery.id,
-        title: gallery.title,
-        slug: gallery.slug,
-        description: gallery.description,
-        coverImageUrl: gallery.cover_image_url,
-        status: gallery.status,
-        publicUrl,
-      }}
-      artworks={artworks}
-            defaultCuratorName={profile.full_name || profile.display_name || ""}
-      defaultContactEmail={profile.email || user.email || ""}
-      initialSettings={catalogSettings}
-    />
+  gallery={{
+    id: gallery.id,
+    title: gallery.title,
+    slug: gallery.slug,
+    description: gallery.description,
+    coverImageUrl: gallery.cover_image_url,
+    status: gallery.status,
+    publicUrl,
+  }}
+  artworks={artworks}
+  defaultCuratorName={profile.full_name || profile.display_name || ""}
+  defaultContactEmail={profile.email || user.email || ""}
+  initialSettings={catalogSettings}
+  userPlan={profile.plan || "free"}
+/>
   );
 }
