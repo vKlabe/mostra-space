@@ -111,13 +111,13 @@ function formatDimensions(artwork: PdfCatalogArtwork) {
 
 const styles = StyleSheet.create({
   pageLight: {
-    padding: 34,
+    padding: 15,
     backgroundColor: "#f7f2e8",
     color: "#16120d",
     fontFamily: "Times-Roman",
   },
   pageDark: {
-    padding: 34,
+    padding: 15,
     backgroundColor: "#15120e",
     color: "#f7f2e8",
     fontFamily: "Times-Roman",
