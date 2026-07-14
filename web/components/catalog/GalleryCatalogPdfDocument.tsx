@@ -7,6 +7,8 @@ import {
   View,
 } from "@react-pdf/renderer";
 
+export type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+
 export type PdfCatalogGallery = {
   id: string;
   title: string;
@@ -45,6 +47,7 @@ export type PdfCatalogSettings = {
   introText: string;
   contactEmail: string;
   website: string;
+  layoutVariant: CatalogLayoutVariant;
   includeDescriptions: boolean;
   includePrices: boolean;
   includePublicLink: boolean;
@@ -56,6 +59,16 @@ type GalleryCatalogPdfDocumentProps = {
   artworks: PdfCatalogArtwork[];
   settings: PdfCatalogSettings;
 };
+
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
 
 function formatPrice(value: number | string | null, currency: string) {
   if (value === null || value === undefined || value === "") {
@@ -261,6 +274,83 @@ const styles = StyleSheet.create({
   descriptionBlock: {
     flex: 1,
   },
+
+  compactItem: {
+    flexDirection: "row",
+    minHeight: 320,
+    paddingBottom: 24,
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: "#d8c9b0",
+  },
+  compactImageBox: {
+    width: 220,
+    height: 250,
+    borderWidth: 1,
+    borderColor: "#d8c9b0",
+    backgroundColor: "#eee6d8",
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  compactInfo: {
+    flex: 1,
+    paddingLeft: 24,
+  },
+  compactTitle: {
+    fontSize: 22,
+    lineHeight: 1.15,
+    fontWeight: "normal",
+  },
+  compactArtist: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#5c4b39",
+  },
+  compactDescription: {
+    marginTop: 12,
+    fontSize: 10,
+    lineHeight: 1.55,
+  },
+
+  listGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 24,
+  },
+  listCard: {
+    width: "48%",
+    height: 205,
+    marginRight: 10,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#d8c9b0",
+    padding: 10,
+  },
+  listImageBox: {
+    height: 92,
+    backgroundColor: "#eee6d8",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  listTitle: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 1.15,
+  },
+  listMeta: {
+    marginTop: 4,
+    fontSize: 8.5,
+    lineHeight: 1.35,
+    color: "#5c4b39",
+  },
+  listPrice: {
+    marginTop: 6,
+    fontFamily: "Helvetica",
+    fontSize: 8,
+    color: "#8b6a43",
+  },
+
   finalTitle: {
     marginTop: 32,
     maxWidth: 440,
@@ -293,13 +383,255 @@ const styles = StyleSheet.create({
   },
 });
 
+function renderArtworkFacts(
+  artwork: PdfCatalogArtwork,
+  settings: PdfCatalogSettings
+) {
+  const artworkPrice = formatPrice(artwork.price, artwork.currency);
+  const artworkDimensions = formatDimensions(artwork);
+
+  return (
+    <View>
+      {artwork.year ? (
+        <View style={styles.factBlock}>
+          <Text style={styles.factLabel}>Anno</Text>
+          <Text style={styles.factValue}>{artwork.year}</Text>
+        </View>
+      ) : null}
+
+      {artwork.technique ? (
+        <View style={styles.factBlock}>
+          <Text style={styles.factLabel}>Tecnica</Text>
+          <Text style={styles.factValue}>{artwork.technique}</Text>
+        </View>
+      ) : null}
+
+      {artworkDimensions ? (
+        <View style={styles.factBlock}>
+          <Text style={styles.factLabel}>Dimensioni</Text>
+          <Text style={styles.factValue}>{artworkDimensions}</Text>
+        </View>
+      ) : null}
+
+      {settings.includePrices ? (
+        <View style={styles.factBlock}>
+          <Text style={styles.factLabel}>Disponibilità</Text>
+          <Text style={styles.factValue}>
+            {artwork.isForSale
+              ? artworkPrice || "Prezzo su richiesta"
+              : "Non in vendita"}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export default function GalleryCatalogPdfDocument({
   gallery,
   artworks,
   settings,
 }: GalleryCatalogPdfDocumentProps) {
-  const coverImageUrl =
-    gallery.coverImageUrl || artworks[0]?.imageUrl || "";
+  const coverImageUrl = gallery.coverImageUrl || artworks[0]?.imageUrl || "";
+
+  function renderElegantPages() {
+    return artworks.map((artwork, index) => (
+      <Page key={artwork.galleryArtworkId} size="A4" style={styles.pageLight}>
+        <View style={styles.artworkHeader}>
+          <View>
+            <Text style={styles.artworkNumber}>
+              Opera {String(index + 1).padStart(2, "0")}
+            </Text>
+
+            <Text style={styles.artworkTitle}>
+              {artwork.title || "Opera senza titolo"}
+            </Text>
+
+            {artwork.artistName ? (
+              <Text style={styles.artworkArtist}>{artwork.artistName}</Text>
+            ) : null}
+          </View>
+
+          <Text style={styles.smallCapsLight}>
+            {settings.galleryName || "MostraSpace"}
+          </Text>
+        </View>
+
+        <View style={styles.artworkImageBox}>
+          {artwork.imageUrl ? (
+            <Image src={artwork.imageUrl} style={styles.artworkImage} />
+          ) : (
+            <Text style={styles.missingImage}>Immagine non disponibile</Text>
+          )}
+        </View>
+
+        <View style={styles.artworkInfoGrid}>
+          <View style={styles.artworkFacts}>
+            {renderArtworkFacts(artwork, settings)}
+          </View>
+
+          {settings.includeDescriptions ? (
+            <View style={styles.descriptionBlock}>
+              <Text style={styles.factLabel}>Descrizione</Text>
+
+              <Text style={[styles.bodyText, { marginTop: 10 }]}>
+                {artwork.description ||
+                  "Descrizione non inserita per questa opera."}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </Page>
+    ));
+  }
+
+  function renderCompactPages() {
+    return chunkItems(artworks, 2).map((chunk, pageIndex) => (
+      <Page key={`compact-${pageIndex}`} size="A4" style={styles.pageLight}>
+        <Text style={styles.smallCapsLight}>
+          Catalogo opere · {settings.galleryName || "MostraSpace"}
+        </Text>
+
+        <Text style={styles.sheetTitle}>
+          {settings.title || gallery.title}
+        </Text>
+
+        <View style={{ marginTop: 30 }}>
+          {chunk.map((artwork, index) => {
+            const absoluteIndex = pageIndex * 2 + index;
+
+            return (
+              <View key={artwork.galleryArtworkId} style={styles.compactItem}>
+                <View style={styles.compactImageBox}>
+                  {artwork.imageUrl ? (
+                    <Image src={artwork.imageUrl} style={styles.artworkImage} />
+                  ) : (
+                    <Text style={styles.missingImage}>
+                      Immagine non disponibile
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.compactInfo}>
+                  <Text style={styles.artworkNumber}>
+                    Opera {String(absoluteIndex + 1).padStart(2, "0")}
+                  </Text>
+
+                  <Text style={styles.compactTitle}>
+                    {artwork.title || "Opera senza titolo"}
+                  </Text>
+
+                  {artwork.artistName ? (
+                    <Text style={styles.compactArtist}>
+                      {artwork.artistName}
+                    </Text>
+                  ) : null}
+
+                  <View style={{ marginTop: 12 }}>
+                    {renderArtworkFacts(artwork, settings)}
+                  </View>
+
+                  {settings.includeDescriptions ? (
+                    <Text style={styles.compactDescription}>
+                      {artwork.description ||
+                        "Descrizione non inserita per questa opera."}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </Page>
+    ));
+  }
+
+  function renderPriceListPages() {
+    return chunkItems(artworks, 6).map((chunk, pageIndex) => (
+      <Page key={`list-${pageIndex}`} size="A4" style={styles.pageLight}>
+        <Text style={styles.smallCapsLight}>
+          Listino opere · {settings.galleryName || "MostraSpace"}
+        </Text>
+
+        <Text style={styles.sheetTitle}>
+          {settings.title || gallery.title}
+        </Text>
+
+        <View style={styles.listGrid}>
+          {chunk.map((artwork, index) => {
+            const absoluteIndex = pageIndex * 6 + index;
+            const artworkPrice = formatPrice(artwork.price, artwork.currency);
+            const artworkDimensions = formatDimensions(artwork);
+
+            return (
+              <View key={artwork.galleryArtworkId} style={styles.listCard}>
+                <View style={styles.listImageBox}>
+                  {artwork.imageUrl ? (
+                    <Image src={artwork.imageUrl} style={styles.artworkImage} />
+                  ) : (
+                    <Text style={styles.missingImage}>No image</Text>
+                  )}
+                </View>
+
+                <Text style={styles.listMeta}>
+                  {String(absoluteIndex + 1).padStart(2, "0")}
+                </Text>
+
+                <Text style={styles.listTitle}>
+                  {artwork.title || "Opera senza titolo"}
+                </Text>
+
+                <Text style={styles.listMeta}>
+                  {[
+                    artwork.artistName,
+                    artwork.year,
+                    artwork.technique,
+                    artworkDimensions,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+
+                {settings.includePrices ? (
+                  <Text style={styles.listPrice}>
+                    {artwork.isForSale
+                      ? artworkPrice || "Prezzo su richiesta"
+                      : "Non in vendita"}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+      </Page>
+    ));
+  }
+
+  function renderSelectedLayoutPages() {
+    if (artworks.length === 0) {
+      return (
+        <Page size="A4" style={styles.pageLight}>
+          <Text style={styles.smallCapsLight}>Catalogo opere</Text>
+
+          <Text style={styles.sheetTitle}>Nessuna opera inclusa</Text>
+
+          <Text style={[styles.bodyText, { marginTop: 28 }]}>
+            Non ci sono opere selezionabili per questo catalogo.
+          </Text>
+        </Page>
+      );
+    }
+
+    if (settings.layoutVariant === "compact") {
+      return renderCompactPages();
+    }
+
+    if (settings.layoutVariant === "price_list") {
+      return renderPriceListPages();
+    }
+
+    return renderElegantPages();
+  }
 
   return (
     <Document
@@ -367,9 +699,7 @@ export default function GalleryCatalogPdfDocument({
               {settings.curatorName ? (
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Curatore</Text>
-                  <Text style={styles.infoValue}>
-                    {settings.curatorName}
-                  </Text>
+                  <Text style={styles.infoValue}>{settings.curatorName}</Text>
                 </View>
               ) : null}
 
@@ -379,8 +709,14 @@ export default function GalleryCatalogPdfDocument({
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Stato</Text>
-                <Text style={styles.infoValue}>{gallery.status}</Text>
+                <Text style={styles.infoLabel}>Layout</Text>
+                <Text style={styles.infoValue}>
+                  {settings.layoutVariant === "compact"
+                    ? "Compatto · 2 opere per pagina"
+                    : settings.layoutVariant === "price_list"
+                      ? "Listino · fino a 6 opere per pagina"
+                      : "Elegante · 1 opera per pagina"}
+                </Text>
               </View>
 
               {settings.includePublicLink ? (
@@ -407,111 +743,7 @@ export default function GalleryCatalogPdfDocument({
         </View>
       </Page>
 
-      {artworks.length === 0 ? (
-        <Page size="A4" style={styles.pageLight}>
-          <Text style={styles.smallCapsLight}>Catalogo opere</Text>
-
-          <Text style={styles.sheetTitle}>Nessuna opera inclusa</Text>
-
-          <Text style={[styles.bodyText, { marginTop: 28 }]}>
-            Non ci sono opere selezionabili per questo catalogo.
-          </Text>
-        </Page>
-      ) : null}
-
-      {artworks.map((artwork, index) => {
-        const artworkPrice = formatPrice(artwork.price, artwork.currency);
-        const artworkDimensions = formatDimensions(artwork);
-
-        return (
-          <Page
-            key={artwork.galleryArtworkId}
-            size="A4"
-            style={styles.pageLight}
-          >
-            <View style={styles.artworkHeader}>
-              <View>
-                <Text style={styles.artworkNumber}>
-                  Opera {String(index + 1).padStart(2, "0")}
-                </Text>
-
-                <Text style={styles.artworkTitle}>
-                  {artwork.title || "Opera senza titolo"}
-                </Text>
-
-                {artwork.artistName ? (
-                  <Text style={styles.artworkArtist}>
-                    {artwork.artistName}
-                  </Text>
-                ) : null}
-              </View>
-
-              <Text style={styles.smallCapsLight}>
-                {settings.galleryName || "MostraSpace"}
-              </Text>
-            </View>
-
-            <View style={styles.artworkImageBox}>
-              {artwork.imageUrl ? (
-                <Image src={artwork.imageUrl} style={styles.artworkImage} />
-              ) : (
-                <Text style={styles.missingImage}>
-                  Immagine non disponibile
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.artworkInfoGrid}>
-              <View style={styles.artworkFacts}>
-                {artwork.year ? (
-                  <View style={styles.factBlock}>
-                    <Text style={styles.factLabel}>Anno</Text>
-                    <Text style={styles.factValue}>{artwork.year}</Text>
-                  </View>
-                ) : null}
-
-                {artwork.technique ? (
-                  <View style={styles.factBlock}>
-                    <Text style={styles.factLabel}>Tecnica</Text>
-                    <Text style={styles.factValue}>{artwork.technique}</Text>
-                  </View>
-                ) : null}
-
-                {artworkDimensions ? (
-                  <View style={styles.factBlock}>
-                    <Text style={styles.factLabel}>Dimensioni</Text>
-                    <Text style={styles.factValue}>
-                      {artworkDimensions}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {settings.includePrices ? (
-                  <View style={styles.factBlock}>
-                    <Text style={styles.factLabel}>Disponibilità</Text>
-                    <Text style={styles.factValue}>
-                      {artwork.isForSale
-                        ? artworkPrice || "Prezzo su richiesta"
-                        : "Non in vendita"}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {settings.includeDescriptions ? (
-                <View style={styles.descriptionBlock}>
-                  <Text style={styles.factLabel}>Descrizione</Text>
-
-                  <Text style={[styles.bodyText, { marginTop: 10 }]}>
-                    {artwork.description ||
-                      "Descrizione non inserita per questa opera."}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </Page>
-        );
-      })}
+      {renderSelectedLayoutPages()}
 
       <Page size="A4" style={styles.pageDark}>
         <View style={styles.pageBetween}>

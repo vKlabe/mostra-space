@@ -69,6 +69,7 @@ type CatalogSettingsRecord = {
   intro_text: string | null;
   contact_email: string | null;
   website: string | null;
+  layout_variant: string | null;
   include_descriptions: boolean;
   include_prices: boolean;
   include_public_link: boolean;
@@ -112,6 +113,18 @@ function getAppUrl() {
     "https://mostra.space";
 
   return rawUrl.replace(/\/$/, "");
+}
+
+type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+
+function normalizeCatalogLayout(
+  value: string | null | undefined
+): CatalogLayoutVariant {
+  if (value === "compact" || value === "price_list" || value === "elegant") {
+    return value;
+  }
+
+  return "elegant";
 }
 
 export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
@@ -307,6 +320,7 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
         introText: catalogSettingsData.intro_text,
         contactEmail: catalogSettingsData.contact_email,
         website: catalogSettingsData.website,
+        layoutVariant: normalizeCatalogLayout(catalogSettingsData.layout_variant),
         includeDescriptions: catalogSettingsData.include_descriptions,
         includePrices: catalogSettingsData.include_prices,
         includePublicLink: catalogSettingsData.include_public_link,

@@ -76,6 +76,7 @@ type CatalogSettingsRecord = {
   intro_text: string | null;
   contact_email: string | null;
   website: string | null;
+  layout_variant: string | null;
   include_descriptions: boolean;
   include_prices: boolean;
   include_public_link: boolean;
@@ -119,6 +120,18 @@ function getAppUrl() {
     "https://mostra.space";
 
   return rawUrl.replace(/\/$/, "");
+}
+
+type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+
+function normalizeCatalogLayout(
+  value: string | null | undefined
+): CatalogLayoutVariant {
+  if (value === "compact" || value === "price_list" || value === "elegant") {
+    return value;
+  }
+
+  return "elegant";
 }
 
 function slugify(value: string) {
@@ -264,6 +277,7 @@ export async function GET(_request: Request, context: RouteContext) {
         "intro_text",
         "contact_email",
         "website",
+        "layout_variant",
         "include_descriptions",
         "include_prices",
         "include_public_link",
@@ -290,6 +304,7 @@ export async function GET(_request: Request, context: RouteContext) {
     contactEmail:
       catalogSettingsData?.contact_email || profile.email || user.email || "",
     website: catalogSettingsData?.website || publicUrl,
+    layoutVariant: normalizeCatalogLayout(catalogSettingsData?.layout_variant),
     includeDescriptions:
       catalogSettingsData?.include_descriptions ?? true,
     includePrices: catalogSettingsData?.include_prices ?? true,

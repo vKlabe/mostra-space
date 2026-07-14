@@ -40,6 +40,7 @@ type CatalogSettings = {
   introText: string | null;
   contactEmail: string | null;
   website: string | null;
+  layoutVariant: CatalogLayoutVariant | null;
   includeDescriptions: boolean;
   includePrices: boolean;
   includePublicLink: boolean;
@@ -53,6 +54,8 @@ type GalleryCatalogBuilderProps = {
   defaultContactEmail: string;
   initialSettings: CatalogSettings | null;
 };
+
+type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
 
 function formatPrice(value: number | string | null, currency: string) {
   if (value === null || value === undefined || value === "") {
@@ -127,6 +130,9 @@ export default function GalleryCatalogBuilder({
   const [website, setWebsite] = useState(
     initialSettings?.website || gallery.publicUrl
   );
+  const [layoutVariant, setLayoutVariant] = useState<CatalogLayoutVariant>(
+  initialSettings?.layoutVariant || "elegant"
+);
   const [includeDescriptions, setIncludeDescriptions] = useState(
     initialSettings?.includeDescriptions ?? true
   );
@@ -182,6 +188,7 @@ export default function GalleryCatalogBuilder({
           introText,
           contactEmail,
           website,
+          layoutVariant,
           includeDescriptions,
           includePrices,
           includePublicLink,
@@ -257,6 +264,7 @@ export default function GalleryCatalogBuilder({
             introText,
             contactEmail,
             website,
+            layoutVariant,
             includeDescriptions,
             includePrices,
             includePublicLink,
@@ -547,6 +555,51 @@ export default function GalleryCatalogBuilder({
                 />
               </div>
 
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+  <p className="mb-3 text-xs uppercase tracking-[0.18em] text-neutral-600">
+    Layout catalogo
+  </p>
+
+  <div className="grid gap-3">
+    {[
+      {
+        key: "elegant",
+        label: "Elegante",
+        description: "1 opera per pagina. Più editoriale, pulito e museale.",
+      },
+      {
+        key: "compact",
+        label: "Compatto",
+        description: "2 opere per pagina. Utile per mostre con molte opere.",
+      },
+      {
+        key: "price_list",
+        label: "Listino",
+        description: "Fino a 6 opere per pagina. Pensato per vendita e invio rapido.",
+      },
+    ].map((layout) => (
+      <button
+        key={layout.key}
+        type="button"
+        onClick={() => setLayoutVariant(layout.key as CatalogLayoutVariant)}
+        className={
+          layoutVariant === layout.key
+            ? "rounded-2xl border border-amber-600 bg-amber-950/30 p-4 text-left"
+            : "rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-left transition hover:border-neutral-600"
+        }
+      >
+        <p className="text-sm font-medium text-neutral-100">
+          {layout.label}
+        </p>
+
+        <p className="mt-1 text-xs leading-5 text-neutral-500">
+          {layout.description}
+        </p>
+      </button>
+    ))}
+  </div>
+</div>
+
               <div className="space-y-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
                   <input
@@ -611,8 +664,13 @@ export default function GalleryCatalogBuilder({
                 </p>
 
                 <p className="mt-3 text-xs leading-5 text-neutral-500">
-                  Layout MVP: A4 verticale, una opera per pagina.
-                </p>
+  Layout selezionato:{" "}
+  {layoutVariant === "compact"
+    ? "Compatto · 2 opere per pagina"
+    : layoutVariant === "price_list"
+      ? "Listino · fino a 6 opere per pagina"
+      : "Elegante · 1 opera per pagina"}
+</p>
               </div>
             </div>
           </section>

@@ -20,6 +20,8 @@ type GalleryRecord = {
   owner_id: string;
 };
 
+type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+
 type CatalogSettingsPayload = {
   title?: unknown;
   subtitle?: unknown;
@@ -28,6 +30,7 @@ type CatalogSettingsPayload = {
   introText?: unknown;
   contactEmail?: unknown;
   website?: unknown;
+  layoutVariant?: unknown;
   includeDescriptions?: unknown;
   includePrices?: unknown;
   includePublicLink?: unknown;
@@ -52,6 +55,14 @@ function cleanBoolean(value: unknown, fallback: boolean) {
   return fallback;
 }
 
+function cleanLayoutVariant(value: unknown): CatalogLayoutVariant {
+  if (value === "compact" || value === "price_list" || value === "elegant") {
+    return value;
+  }
+
+  return "elegant";
+}
+
 async function requireGalleryPermission(galleryId: string) {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -65,7 +76,6 @@ async function requireGalleryPermission(galleryId: string) {
       ok: false,
       status: 401,
       error: "Unauthorized",
-      userId: null,
       gallery: null,
       admin,
     };
@@ -82,7 +92,6 @@ async function requireGalleryPermission(galleryId: string) {
       ok: false,
       status: 404,
       error: "Profilo non trovato.",
-      userId: user.id,
       gallery: null,
       admin,
     };
@@ -99,7 +108,6 @@ async function requireGalleryPermission(galleryId: string) {
       ok: false,
       status: 404,
       error: "Galleria non trovata.",
-      userId: user.id,
       gallery: null,
       admin,
     };
@@ -113,7 +121,6 @@ async function requireGalleryPermission(galleryId: string) {
       ok: false,
       status: 403,
       error: "Non puoi modificare le impostazioni catalogo di questa galleria.",
-      userId: user.id,
       gallery,
       admin,
     };
@@ -123,11 +130,29 @@ async function requireGalleryPermission(galleryId: string) {
     ok: true,
     status: 200,
     error: null,
-    userId: user.id,
     gallery,
     admin,
   };
 }
+
+const CATALOG_SELECT = [
+  "id",
+  "gallery_id",
+  "title",
+  "subtitle",
+  "curator_name",
+  "gallery_name",
+  "intro_text",
+  "contact_email",
+  "website",
+  "layout_variant",
+  "include_descriptions",
+  "include_prices",
+  "include_public_link",
+  "include_private_artworks",
+  "created_at",
+  "updated_at",
+].join(", ");
 
 export async function GET(_request: Request, context: RouteContext) {
   const { galleryId } = await context.params;
@@ -150,25 +175,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { data: settings, error: settingsError } = await permission.admin
     .from("gallery_catalog_settings")
-    .select(
-      [
-        "id",
-        "gallery_id",
-        "title",
-        "subtitle",
-        "curator_name",
-        "gallery_name",
-        "intro_text",
-        "contact_email",
-        "website",
-        "include_descriptions",
-        "include_prices",
-        "include_public_link",
-        "include_private_artworks",
-        "created_at",
-        "updated_at",
-      ].join(", ")
-    )
+    .select(CATALOG_SELECT)
     .eq("gallery_id", permission.gallery.id)
     .maybeSingle();
 
@@ -228,6 +235,7 @@ export async function PUT(request: Request, context: RouteContext) {
     intro_text: cleanNullableText(body.introText),
     contact_email: cleanNullableText(body.contactEmail),
     website: cleanNullableText(body.website),
+    layout_variant: cleanLayoutVariant(body.layoutVariant),
 
     include_descriptions: cleanBoolean(body.includeDescriptions, true),
     include_prices: cleanBoolean(body.includePrices, true),
@@ -240,25 +248,7 @@ export async function PUT(request: Request, context: RouteContext) {
     .upsert(payload, {
       onConflict: "gallery_id",
     })
-    .select(
-      [
-        "id",
-        "gallery_id",
-        "title",
-        "subtitle",
-        "curator_name",
-        "gallery_name",
-        "intro_text",
-        "contact_email",
-        "website",
-        "include_descriptions",
-        "include_prices",
-        "include_public_link",
-        "include_private_artworks",
-        "created_at",
-        "updated_at",
-      ].join(", ")
-    )
+    .select(CATALOG_SELECT)
     .single();
 
   if (upsertError || !settings) {
