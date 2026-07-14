@@ -26,6 +26,7 @@ type Profile = {
   display_name: string | null;
   full_name: string | null;
   role: "user" | "gallerist" | "admin";
+  plan: string | null;
 };
 
 type Gallery = {
@@ -84,6 +85,10 @@ type CatalogSettingsRecord = {
   include_private_artworks: boolean;
 };
 
+type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+
+type CatalogPlan = "free" | "pro" | "business" | "diamond" | "institution";
+
 function normalizeArtworkRelation(
   value: ArtworkRelation | ArtworkRelation[] | null
 ) {
@@ -123,13 +128,50 @@ function getAppUrl() {
   return rawUrl.replace(/\/$/, "");
 }
 
-type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
-
 function normalizeCatalogLayout(
   value: string | null | undefined
 ): CatalogLayoutVariant {
   if (value === "compact" || value === "price_list" || value === "elegant") {
     return value;
+  }
+
+  return "elegant";
+}
+
+function normalizeCatalogPlan(value: string | null | undefined): CatalogPlan {
+  if (
+    value === "pro" ||
+    value === "business" ||
+    value === "diamond" ||
+    value === "institution"
+  ) {
+    return value;
+  }
+
+  return "free";
+}
+
+function canExportCatalogPdf(plan: CatalogPlan) {
+  return plan !== "free";
+}
+
+function canUseCatalogLayout(
+  plan: CatalogPlan,
+  layoutVariant: CatalogLayoutVariant
+) {
+  if (layoutVariant === "elegant") {
+    return plan !== "free";
+  }
+
+  return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getAllowedCatalogLayout(
+  plan: CatalogPlan,
+  layoutVariant: CatalogLayoutVariant
+): CatalogLayoutVariant {
+  if (canUseCatalogLayout(plan, layoutVariant)) {
+    return layoutVariant;
   }
 
   return "elegant";
@@ -234,15 +276,12 @@ export async function GET(_request: Request, context: RouteContext) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("id, email, display_name, full_name, role")
+    .select("id, email, display_name, full_name, role, plan")
     .eq("id", user.id)
     .single<Profile>();
 
@@ -285,6 +324,20 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
+  const normalizedPlan = isAdmin
+    ? "institution"
+    : normalizeCatalogPlan(profile.plan);
+
+  if (!canExportCatalogPdf(normalizedPlan)) {
+    return NextResponse.json(
+      {
+        error:
+          "L’export PDF del catalogo è disponibile dal piano Pro. Con il piano Free puoi usare l’anteprima, ma non scaricare il PDF.",
+      },
+      { status: 403 }
+    );
+  }
+
   const { data: catalogSettingsData } = await admin
     .from("gallery_catalog_settings")
     .select(
@@ -311,6 +364,11 @@ export async function GET(_request: Request, context: RouteContext) {
   const appUrl = getAppUrl();
   const publicUrl = `${appUrl}/gallerie/${gallery.slug}`;
 
+  const selectedLayout = getAllowedCatalogLayout(
+    normalizedPlan,
+    normalizeCatalogLayout(catalogSettingsData?.layout_variant)
+  );
+
   const settings: PdfCatalogSettings = {
     title: catalogSettingsData?.title || gallery.title,
     subtitle: catalogSettingsData?.subtitle || "Catalogo mostra",
@@ -320,17 +378,14 @@ export async function GET(_request: Request, context: RouteContext) {
       profile.display_name ||
       "",
     galleryName: catalogSettingsData?.gallery_name || "MostraSpace",
-    introText:
-      catalogSettingsData?.intro_text || gallery.description || "",
+    introText: catalogSettingsData?.intro_text || gallery.description || "",
     contactEmail:
       catalogSettingsData?.contact_email || profile.email || user.email || "",
     website: catalogSettingsData?.website || publicUrl,
-    layoutVariant: normalizeCatalogLayout(catalogSettingsData?.layout_variant),
-    includeDescriptions:
-      catalogSettingsData?.include_descriptions ?? true,
+    layoutVariant: selectedLayout,
+    includeDescriptions: catalogSettingsData?.include_descriptions ?? true,
     includePrices: catalogSettingsData?.include_prices ?? true,
-    includePublicLink:
-      catalogSettingsData?.include_public_link ?? true,
+    includePublicLink: catalogSettingsData?.include_public_link ?? true,
     includePrivateArtworks:
       catalogSettingsData?.include_private_artworks ?? true,
   };
@@ -429,38 +484,38 @@ export async function GET(_request: Request, context: RouteContext) {
   );
 
   const pdfGallery: PdfCatalogGallery = {
-  id: gallery.id,
-  title: gallery.title,
-  slug: gallery.slug,
-  description: gallery.description || "",
-  coverImageUrl,
-  qrCodeDataUrl,
-  status: gallery.status,
-  publicUrl,
-};
+    id: gallery.id,
+    title: gallery.title,
+    slug: gallery.slug,
+    description: gallery.description || "",
+    coverImageUrl,
+    qrCodeDataUrl,
+    status: gallery.status,
+    publicUrl,
+  };
 
   try {
-  const pdfDocument = React.createElement(GalleryCatalogPdfDocument, {
-    gallery: pdfGallery,
-    artworks: pdfArtworks,
-    settings,
-  }) as unknown as Parameters<typeof renderToBuffer>[0];
+    const pdfDocument = React.createElement(GalleryCatalogPdfDocument, {
+      gallery: pdfGallery,
+      artworks: pdfArtworks,
+      settings,
+    }) as unknown as Parameters<typeof renderToBuffer>[0];
 
-  const pdfBuffer = await renderToBuffer(pdfDocument);
+    const pdfBuffer = await renderToBuffer(pdfDocument);
 
-  const fileName = `catalogo-${slugify(
-    settings.title || gallery.slug || gallery.id
-  )}.pdf`;
+    const fileName = `catalogo-${slugify(
+      settings.title || gallery.slug || gallery.id
+    )}.pdf`;
 
-  return new NextResponse(new Uint8Array(pdfBuffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
-      "Cache-Control": "no-store",
-    },
-  });
-} catch (error) {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
     return NextResponse.json(
       {
         error: "Errore generazione PDF catalogo.",

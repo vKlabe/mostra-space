@@ -5,6 +5,8 @@ import * as QRCode from "qrcode";
 
 type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
 
+type CatalogPlan = "free" | "pro" | "business" | "diamond" | "institution";
+
 type CatalogGallery = {
   id: string;
   title: string;
@@ -56,7 +58,31 @@ type GalleryCatalogBuilderProps = {
   defaultCuratorName: string;
   defaultContactEmail: string;
   initialSettings: CatalogSettings | null;
+  userPlan: string;
 };
+
+const catalogLayouts: Array<{
+  key: CatalogLayoutVariant;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: "elegant",
+    label: "Elegante",
+    description: "1 opera per pagina. Più editoriale, pulito e museale.",
+  },
+  {
+    key: "compact",
+    label: "Compatto",
+    description: "2 opere per pagina. Utile per mostre con molte opere.",
+  },
+  {
+    key: "price_list",
+    label: "Listino",
+    description:
+      "Fino a 6 opere per pagina. Pensato per vendita e invio rapido.",
+  },
+];
 
 function chunkItems<T>(items: T[], size: number) {
   const chunks: T[][] = [];
@@ -125,13 +151,76 @@ function getLayoutLabel(layoutVariant: CatalogLayoutVariant) {
   return "Elegante · 1 opera per pagina";
 }
 
+function normalizeCatalogPlan(value: string | null | undefined): CatalogPlan {
+  if (
+    value === "pro" ||
+    value === "business" ||
+    value === "diamond" ||
+    value === "institution"
+  ) {
+    return value;
+  }
+
+  return "free";
+}
+
+function canExportCatalogPdf(plan: CatalogPlan) {
+  return plan !== "free";
+}
+
+function canUseCatalogLayout(
+  plan: CatalogPlan,
+  layoutVariant: CatalogLayoutVariant
+) {
+  if (layoutVariant === "elegant") {
+    return true;
+  }
+
+  return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getAllowedCatalogLayout(
+  plan: CatalogPlan,
+  layoutVariant: CatalogLayoutVariant
+): CatalogLayoutVariant {
+  if (canUseCatalogLayout(plan, layoutVariant)) {
+    return layoutVariant;
+  }
+
+  return "elegant";
+}
+
+function getPlanLabel(plan: CatalogPlan) {
+  if (plan === "free") {
+    return "Free";
+  }
+
+  if (plan === "pro") {
+    return "Pro";
+  }
+
+  if (plan === "business") {
+    return "Business";
+  }
+
+  if (plan === "diamond") {
+    return "Diamond";
+  }
+
+  return "Institution";
+}
+
 export default function GalleryCatalogBuilder({
   gallery,
   artworks,
   defaultCuratorName,
   defaultContactEmail,
   initialSettings,
+  userPlan,
 }: GalleryCatalogBuilderProps) {
+  const normalizedPlan = normalizeCatalogPlan(userPlan);
+  const canExportPdf = canExportCatalogPdf(normalizedPlan);
+
   const [catalogTitle, setCatalogTitle] = useState(
     initialSettings?.title || gallery.title
   );
@@ -154,7 +243,10 @@ export default function GalleryCatalogBuilder({
     initialSettings?.website || gallery.publicUrl
   );
   const [layoutVariant, setLayoutVariant] = useState<CatalogLayoutVariant>(
-    initialSettings?.layoutVariant || "elegant"
+    getAllowedCatalogLayout(
+      normalizedPlan,
+      initialSettings?.layoutVariant || "elegant"
+    )
   );
   const [includeDescriptions, setIncludeDescriptions] = useState(
     initialSettings?.includeDescriptions ?? true
@@ -176,6 +268,11 @@ export default function GalleryCatalogBuilder({
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
 
+  const allowedLayoutVariant = getAllowedCatalogLayout(
+    normalizedPlan,
+    layoutVariant
+  );
+
   const displayedArtworks = useMemo(() => {
     if (includePrivateArtworks) {
       return artworks;
@@ -186,6 +283,12 @@ export default function GalleryCatalogBuilder({
 
   const coverImageUrl =
     gallery.coverImageUrl || displayedArtworks[0]?.imageUrl || "";
+
+  useEffect(() => {
+    setLayoutVariant((currentLayout) =>
+      getAllowedCatalogLayout(normalizedPlan, currentLayout)
+    );
+  }, [normalizedPlan]);
 
   useEffect(() => {
     let isMounted = true;
@@ -225,10 +328,26 @@ export default function GalleryCatalogBuilder({
   }, [gallery.publicUrl, includePublicLink]);
 
   function handlePrint() {
+    if (!canExportPdf) {
+      setSettingsMessageType("error");
+      setSettingsMessage(
+        "L’export PDF del catalogo è disponibile dal piano Pro. Con il piano Free puoi usare l’anteprima, ma non scaricare il PDF."
+      );
+      return;
+    }
+
     window.print();
   }
 
   async function handleDownloadDirectPdf() {
+    if (!canExportPdf) {
+      setSettingsMessageType("error");
+      setSettingsMessage(
+        "L’export PDF del catalogo è disponibile dal piano Pro. Con il piano Free puoi usare l’anteprima, ma non scaricare il PDF."
+      );
+      return;
+    }
+
     setIsDownloadingPdf(true);
     setSettingsMessage("");
     setSettingsMessageType("");
@@ -249,7 +368,7 @@ export default function GalleryCatalogBuilder({
             introText,
             contactEmail,
             website,
-            layoutVariant,
+            layoutVariant: allowedLayoutVariant,
             includeDescriptions,
             includePrices,
             includePublicLink,
@@ -325,7 +444,7 @@ export default function GalleryCatalogBuilder({
             introText,
             contactEmail,
             website,
-            layoutVariant,
+            layoutVariant: allowedLayoutVariant,
             includeDescriptions,
             includePrices,
             includePublicLink,
@@ -344,6 +463,7 @@ export default function GalleryCatalogBuilder({
         return;
       }
 
+      setLayoutVariant(allowedLayoutVariant);
       setSettingsMessageType("success");
       setSettingsMessage("Impostazioni catalogo salvate correttamente.");
     } catch {
@@ -494,21 +614,44 @@ export default function GalleryCatalogBuilder({
             <button
               type="button"
               onClick={handleDownloadDirectPdf}
-              disabled={isDownloadingPdf || isSavingSettings}
+              disabled={isDownloadingPdf || isSavingSettings || !canExportPdf}
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isDownloadingPdf ? "Creo PDF..." : "Scarica PDF diretto"}
+              {isDownloadingPdf
+                ? "Creo PDF..."
+                : canExportPdf
+                  ? "Scarica PDF diretto"
+                  : "PDF dal piano Pro"}
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
-              disabled={isDownloadingPdf}
+              disabled={isDownloadingPdf || !canExportPdf}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Esporta con stampa
+              {canExportPdf ? "Esporta con stampa" : "Stampa bloccata"}
             </button>
           </div>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm leading-6 text-neutral-400">
+          {normalizedPlan === "free" ? (
+            <p>
+              Piano Free: puoi configurare e vedere l’anteprima del catalogo,
+              ma l’export PDF è disponibile dal piano Pro.
+            </p>
+          ) : normalizedPlan === "pro" ? (
+            <p>
+              Piano Pro: puoi esportare il catalogo PDF nel layout Elegante, una
+              opera per pagina, con branding MostraSpace.
+            </p>
+          ) : (
+            <p>
+              Piano {getPlanLabel(normalizedPlan)}: puoi esportare il catalogo
+              PDF con tutti i layout: Elegante, Compatto e Listino.
+            </p>
+          )}
         </div>
 
         {settingsMessage && (
@@ -621,47 +764,52 @@ export default function GalleryCatalogBuilder({
                 </p>
 
                 <div className="grid gap-3">
-                  {[
-                    {
-                      key: "elegant",
-                      label: "Elegante",
-                      description:
-                        "1 opera per pagina. Più editoriale, pulito e museale.",
-                    },
-                    {
-                      key: "compact",
-                      label: "Compatto",
-                      description:
-                        "2 opere per pagina. Utile per mostre con molte opere.",
-                    },
-                    {
-                      key: "price_list",
-                      label: "Listino",
-                      description:
-                        "Fino a 6 opere per pagina. Pensato per vendita e invio rapido.",
-                    },
-                  ].map((layout) => (
-                    <button
-                      key={layout.key}
-                      type="button"
-                      onClick={() =>
-                        setLayoutVariant(layout.key as CatalogLayoutVariant)
-                      }
-                      className={
-                        layoutVariant === layout.key
-                          ? "rounded-2xl border border-amber-600 bg-amber-950/30 p-4 text-left"
-                          : "rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-left transition hover:border-neutral-600"
-                      }
-                    >
-                      <p className="text-sm font-medium text-neutral-100">
-                        {layout.label}
-                      </p>
+                  {catalogLayouts.map((layout) => {
+                    const isAllowed = canUseCatalogLayout(
+                      normalizedPlan,
+                      layout.key
+                    );
 
-                      <p className="mt-1 text-xs leading-5 text-neutral-500">
-                        {layout.description}
-                      </p>
-                    </button>
-                  ))}
+                    return (
+                      <button
+                        key={layout.key}
+                        type="button"
+                        disabled={!isAllowed}
+                        onClick={() => {
+                          if (!isAllowed) {
+                            return;
+                          }
+
+                          setLayoutVariant(layout.key);
+                        }}
+                        className={
+                          layoutVariant === layout.key
+                            ? "rounded-2xl border border-amber-600 bg-amber-950/30 p-4 text-left"
+                            : isAllowed
+                              ? "rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-left transition hover:border-neutral-600"
+                              : "cursor-not-allowed rounded-2xl border border-neutral-900 bg-neutral-950 p-4 text-left opacity-45"
+                        }
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-neutral-100">
+                              {layout.label}
+                            </p>
+
+                            <p className="mt-1 text-xs leading-5 text-neutral-500">
+                              {layout.description}
+                            </p>
+                          </div>
+
+                          {!isAllowed && (
+                            <span className="shrink-0 rounded-full border border-neutral-800 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-neutral-500">
+                              Business
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1009,10 +1157,10 @@ export default function GalleryCatalogBuilder({
               className="catalog-page flex flex-col"
             >
               <p className="catalog-small-caps text-[#8b6a43]">
-  Catalogo opere · {galleryName || "MostraSpace"}
-</p>
+                Catalogo opere · {galleryName || "MostraSpace"}
+              </p>
 
-<div className="mt-8 grid flex-1 gap-6">
+              <div className="mt-8 grid flex-1 gap-6">
                 {chunk.map((artwork, index) => {
                   const absoluteIndex = pageIndex * 2 + index;
                   const artworkPrice = formatPrice(
@@ -1116,10 +1264,10 @@ export default function GalleryCatalogBuilder({
           chunkItems(displayedArtworks, 6).map((chunk, pageIndex) => (
             <section key={`list-${pageIndex}`} className="catalog-page">
               <p className="catalog-small-caps text-[#8b6a43]">
-  Listino opere · {galleryName || "MostraSpace"}
-</p>
+                Listino opere · {galleryName || "MostraSpace"}
+              </p>
 
-<div className="mt-8 grid grid-cols-2 gap-4">
+              <div className="mt-8 grid grid-cols-2 gap-4">
                 {chunk.map((artwork, index) => {
                   const absoluteIndex = pageIndex * 6 + index;
                   const artworkPrice = formatPrice(
