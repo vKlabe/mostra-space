@@ -137,6 +137,22 @@ function formatTemplateLimit(value: number | null) {
   return value === null ? "Tutti" : value;
 }
 
+function getCatalogPdfLabel(plan: PlanName) {
+  if (plan === "free") {
+    return "Anteprima";
+  }
+
+  if (plan === "pro") {
+    return "PDF elegante";
+  }
+
+  if (plan === "business" || plan === "diamond") {
+    return "Tutti i layout";
+  }
+
+  return "Personalizzato";
+}
+
 function formatDate(value?: string | null) {
   if (!value) {
     return null;
@@ -448,28 +464,10 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Opere/galleria
-                    </span>
-                    <span className="text-[var(--museum-ivory-soft)]">
-                      {formatLimitValue(plan.maxArtworksPerGallery)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="text-[var(--museum-stone-muted)]">
                       Storage
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatMb(plan.maxStorageMb)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="text-[var(--museum-stone-muted)]">
-                      Peso file
-                    </span>
-                    <span className="text-[var(--museum-ivory-soft)]">
-                      {formatMb(plan.maxArtworkFileMb)}
                     </span>
                   </div>
 
@@ -484,7 +482,7 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Template
+                      Template gallerie
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatTemplateLimit(plan.selectableTemplates)}
@@ -493,10 +491,10 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Opere visibili per sala
+                      Catalogo PDF
                     </span>
-                    <span className="text-[var(--museum-ivory-soft)]">
-                      {formatLimitValue(plan.maxArtworksVisiblePerRoom)}
+                    <span className="text-right text-[var(--museum-ivory-soft)]">
+                      {getCatalogPdfLabel(plan.name)}
                     </span>
                   </div>
                 </div>
