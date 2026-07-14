@@ -78,7 +78,7 @@ const plans = [
     suffix: "/mese",
     description: "5 gallerie, 150 opere e PDF elegante per le tue mostre.",
     href: "/pricing",
-    featured: true,
+    featured: false,
     badge: "Più popolare",
   },
   {
@@ -87,7 +87,7 @@ const plans = [
     suffix: "/mese",
     description: "10 gallerie, 250 opere e cataloghi PDF con tutti i layout.",
     href: "/pricing",
-    featured: false,
+    featured: true,
     badge: "Gallerie",
   },
   {
@@ -272,14 +272,14 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredGalleries.map((gallery) => (
+            <div className="grid gap-4 sm:grid-cols-2">
+  {featuredGalleries.map((gallery) => (
                 <Link
                   key={gallery.title}
                   href={gallery.href}
                   className="group overflow-hidden rounded-2xl border border-[var(--museum-border)] bg-[var(--museum-surface)] transition hover:border-[var(--museum-bronze)]"
                 >
-                  <div className="h-44">
+                  <div className="h-52">
                     <GalleryImage
                       src={gallery.imageUrl}
                       alt={gallery.title}
