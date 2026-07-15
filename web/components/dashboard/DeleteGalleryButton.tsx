@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type GalleryStatus = "draft" | "published" | "archived";
 
@@ -66,23 +67,32 @@ export default function DeleteGalleryButton({
   return (
     <div className="rounded-3xl border border-red-950 bg-red-950/20 p-6">
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-red-300">
-        Zona pericolosa
+        <T
+          textKey="dashboard.deleteGallery.header.label"
+          fallback="Zona pericolosa"
+        />
       </p>
 
       <h2 className="text-2xl font-medium text-red-50">
-        Elimina galleria
+        <T
+          textKey="dashboard.deleteGallery.header.title"
+          fallback="Elimina galleria"
+        />
       </h2>
 
       <p className="mt-3 max-w-3xl text-sm leading-6 text-red-100/80">
-        Puoi eliminare solo gallerie in bozza o archiviate. Le opere originali
-        non verranno cancellate: verra eliminato solo lo spazio galleria e il
-        suo allestimento.
+        <T
+          textKey="dashboard.deleteGallery.header.description"
+          fallback="Puoi eliminare solo gallerie in bozza o archiviate. Le opere originali non verranno cancellate: verra eliminato solo lo spazio galleria e il suo allestimento."
+        />
       </p>
 
       {!canDelete && (
         <p className="mt-4 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4 text-sm text-yellow-100">
-          Questa galleria e pubblicata. Prima riportala in bozza oppure
-          archiviala.
+          <T
+            textKey="dashboard.deleteGallery.warning.published"
+            fallback="Questa galleria e pubblicata. Prima riportala in bozza oppure archiviala."
+          />
         </p>
       )}
 
@@ -93,7 +103,17 @@ export default function DeleteGalleryButton({
           disabled={isLoading || !canDelete}
           className="rounded-full border border-red-700 px-5 py-2 text-sm text-red-100 transition hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Eliminazione..." : "Elimina definitivamente"}
+          {isLoading ? (
+            <T
+              textKey="dashboard.deleteGallery.actions.deleting"
+              fallback="Eliminazione..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.deleteGallery.actions.deletePermanently"
+              fallback="Elimina definitivamente"
+            />
+          )}
         </button>
 
         {message && (

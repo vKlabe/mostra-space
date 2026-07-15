@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import T from "@/components/i18n/T";
 import { createClient } from "@/lib/supabase/client";
 
 type GalleryCoverUploadFormProps = {
@@ -184,14 +185,24 @@ export default function GalleryCoverUploadForm({
   return (
     <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-        Cover galleria
+        <T
+          textKey="dashboard.galleryCoverUpload.header.label"
+          fallback="Cover galleria"
+        />
       </p>
 
-      <h2 className="text-2xl font-medium">Carica immagine di copertina</h2>
+      <h2 className="text-2xl font-medium">
+        <T
+          textKey="dashboard.galleryCoverUpload.header.title"
+          fallback="Carica immagine di copertina"
+        />
+      </h2>
 
       <p className="mt-3 text-sm leading-6 text-neutral-400">
-        Questa immagine verrà usata nella lista pubblica delle gallerie e come
-        anteprima della galleria.
+        <T
+          textKey="dashboard.galleryCoverUpload.header.description"
+          fallback="Questa immagine verrà usata nella lista pubblica delle gallerie e come anteprima della galleria."
+        />
       </p>
 
       <div className="mt-6 space-y-5">
@@ -205,7 +216,10 @@ export default function GalleryCoverUploadForm({
           />
 
           <p className="mt-2 text-xs text-neutral-500">
-            Consigliato: immagine orizzontale 16:10 o 16:9. Formati JPG, PNG o WEBP. Lato lungo massimo 2048px. Massimo 8 MB.
+            <T
+              textKey="dashboard.galleryCoverUpload.form.recommendations"
+              fallback="Consigliato: immagine orizzontale 16:10 o 16:9. Formati JPG, PNG o WEBP. Lato lungo massimo 2048px. Massimo 8 MB."
+            />
           </p>
         </div>
 
@@ -226,7 +240,17 @@ export default function GalleryCoverUploadForm({
             disabled={isLoading || !selectedFile}
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? "Caricamento..." : "Carica e salva cover"}
+            {isLoading ? (
+              <T
+                textKey="dashboard.galleryCoverUpload.actions.uploading"
+                fallback="Caricamento..."
+              />
+            ) : (
+              <T
+                textKey="dashboard.galleryCoverUpload.actions.uploadAndSave"
+                fallback="Carica e salva cover"
+              />
+            )}
           </button>
 
           {message && (

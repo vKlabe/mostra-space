@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 import {
   getTemplateAccessPlanLabel,
   isMarketplaceTemplate,
@@ -37,39 +38,56 @@ type TemplatePlan = TemplateAccessPlan;
 const PLAN_GROUPS: Array<{
   key: TemplatePlan;
   label: string;
+  labelKey: string;
   description: string;
+  descriptionKey: string;
 }> = [
   {
     key: "free",
     label: "Free",
+    labelKey: "dashboard.changeGalleryTemplate.plans.free.label",
     description: "Template inclusi nel piano gratuito.",
+    descriptionKey: "dashboard.changeGalleryTemplate.plans.free.description",
   },
   {
     key: "pro",
     label: "Pro",
+    labelKey: "dashboard.changeGalleryTemplate.plans.pro.label",
     description: "Spazi disponibili dal piano Pro.",
+    descriptionKey: "dashboard.changeGalleryTemplate.plans.pro.description",
   },
   {
     key: "business",
     label: "Business",
+    labelKey: "dashboard.changeGalleryTemplate.plans.business.label",
     description: "Template professionali per progetti più articolati.",
+    descriptionKey:
+      "dashboard.changeGalleryTemplate.plans.business.description",
   },
   {
     key: "diamond",
     label: "Diamond",
+    labelKey: "dashboard.changeGalleryTemplate.plans.diamond.label",
     description:
       "Template premium per gallerie strutturate e cataloghi più ampi.",
+    descriptionKey: "dashboard.changeGalleryTemplate.plans.diamond.description",
   },
   {
     key: "institution",
     label: "Institution",
+    labelKey: "dashboard.changeGalleryTemplate.plans.institution.label",
     description: "Spazi riservati a istituzioni e progetti avanzati.",
+    descriptionKey:
+      "dashboard.changeGalleryTemplate.plans.institution.description",
   },
   {
     key: "marketplace",
     label: "Marketplace",
+    labelKey: "dashboard.changeGalleryTemplate.plans.marketplace.label",
     description:
       "Template acquistati singolarmente e collegati permanentemente al tuo account.",
+    descriptionKey:
+      "dashboard.changeGalleryTemplate.plans.marketplace.description",
   },
 ];
 
@@ -287,15 +305,24 @@ export default function ChangeGalleryTemplateForm({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Template galleria
+            <T
+              textKey="dashboard.changeGalleryTemplate.header.label"
+              fallback="Template galleria"
+            />
           </p>
 
-          <h2 className="text-2xl font-medium">Cambia template</h2>
+          <h2 className="text-2xl font-medium">
+            <T
+              textKey="dashboard.changeGalleryTemplate.header.title"
+              fallback="Cambia template"
+            />
+          </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-            Scegli l’ambiente 3D della galleria. Le opere resteranno collegate,
-            ma dopo il cambio potrebbe essere necessario controllarne le
-            posizioni nell’editor.
+            <T
+              textKey="dashboard.changeGalleryTemplate.header.description"
+              fallback="Scegli l’ambiente 3D della galleria. Le opere resteranno collegate, ma dopo il cambio potrebbe essere necessario controllarne le posizioni nell’editor."
+            />
           </p>
         </div>
 
@@ -303,27 +330,50 @@ export default function ChangeGalleryTemplateForm({
           href={`/dashboard/gallerie-editor/${galleryId}`}
           className="inline-flex w-fit rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Apri editor 3D
+          <T
+            textKey="dashboard.changeGalleryTemplate.actions.openEditor"
+            fallback="Apri editor 3D"
+          />
         </a>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
           <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-            Template attuale
+            <T
+              textKey="dashboard.changeGalleryTemplate.current.title"
+              fallback="Template attuale"
+            />
           </p>
 
           <p className="mt-2 text-lg font-medium text-neutral-100">
-            {currentTemplate?.name || "Template non trovato"}
+            {currentTemplate?.name ? (
+              currentTemplate.name
+            ) : (
+              <T
+                textKey="dashboard.changeGalleryTemplate.current.notFound"
+                fallback="Template non trovato"
+              />
+            )}
           </p>
 
           <p className="mt-1 break-all text-xs text-neutral-500">
-            {currentTemplate?.unity_scene_key || "N/D"}
+            {currentTemplate?.unity_scene_key ? (
+              currentTemplate.unity_scene_key
+            ) : (
+              <T
+                textKey="dashboard.changeGalleryTemplate.current.notAvailable"
+                fallback="N/D"
+              />
+            )}
           </p>
 
           {currentTemplate && (
             <p className="mt-3 text-xs text-neutral-500">
-              Accesso:{" "}
+              <T
+                textKey="dashboard.changeGalleryTemplate.current.access"
+                fallback="Accesso:"
+              />{" "}
               <span className="text-neutral-300">
                 {getTemplateAccessLabel(currentTemplate)}
               </span>
@@ -333,7 +383,10 @@ export default function ChangeGalleryTemplateForm({
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
           <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-            Opere nella galleria
+            <T
+              textKey="dashboard.changeGalleryTemplate.artworks.title"
+              fallback="Opere nella galleria"
+            />
           </p>
 
           <p className="mt-2 text-lg font-medium text-neutral-100">
@@ -341,19 +394,32 @@ export default function ChangeGalleryTemplateForm({
           </p>
 
           <p className="mt-1 text-xs text-neutral-500">
-            {positionedArtworkCount} posizionate · {unpositionedArtworkCount}{" "}
-            non posizionate
+            {positionedArtworkCount}{" "}
+            <T
+              textKey="dashboard.changeGalleryTemplate.artworks.positioned"
+              fallback="posizionate"
+            />{" "}
+            · {unpositionedArtworkCount}{" "}
+            <T
+              textKey="dashboard.changeGalleryTemplate.artworks.unpositioned"
+              fallback="non posizionate"
+            />
           </p>
         </div>
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
           <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-            Effetto cambio
+            <T
+              textKey="dashboard.changeGalleryTemplate.effect.title"
+              fallback="Effetto cambio"
+            />
           </p>
 
           <p className="mt-2 text-sm leading-6 text-neutral-300">
-            Il catalogo resta invariato. Dopo il cambio controlla pareti e
-            posizioni nell’editor.
+            <T
+              textKey="dashboard.changeGalleryTemplate.effect.description"
+              fallback="Il catalogo resta invariato. Dopo il cambio controlla pareti e posizioni nell’editor."
+            />
           </p>
         </div>
       </div>
@@ -361,15 +427,20 @@ export default function ChangeGalleryTemplateForm({
       {templates.length === 0 && (
         <div className="mt-6 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
           <p className="text-sm leading-6 text-yellow-100">
-            Nessun template disponibile per il tuo piano o per i tuoi acquisti
-            marketplace.
+            <T
+              textKey="dashboard.changeGalleryTemplate.empty.description"
+              fallback="Nessun template disponibile per il tuo piano o per i tuoi acquisti marketplace."
+            />
           </p>
 
           <a
             href="/marketplace"
             className="mt-3 inline-flex rounded-full border border-amber-800 px-4 py-2 text-sm text-amber-200 transition hover:border-amber-500"
           >
-            Vai al marketplace
+            <T
+              textKey="dashboard.changeGalleryTemplate.actions.marketplace"
+              fallback="Vai al marketplace"
+            />
           </a>
         </div>
       )}
@@ -406,31 +477,45 @@ export default function ChangeGalleryTemplateForm({
                         group.key
                       )}`}
                     >
-                      {group.label}
+                      <T textKey={group.labelKey} fallback={group.label} />
                     </span>
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-medium text-neutral-100">
-                          Template {group.label}
+                          <T
+                            textKey="dashboard.changeGalleryTemplate.groups.templatePrefix"
+                            fallback="Template"
+                          />{" "}
+                          <T textKey={group.labelKey} fallback={group.label} />
                         </h3>
 
                         {groupContainsCurrent && (
                           <span className="rounded-full border border-green-900 bg-green-950/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-green-300">
-                            Template attuale in questo gruppo
+                            <T
+                              textKey="dashboard.changeGalleryTemplate.groups.current"
+                              fallback="Template attuale in questo gruppo"
+                            />
                           </span>
                         )}
                       </div>
 
                       <p className="mt-1 text-xs text-neutral-500">
-                        {group.description}
+                        <T
+                          textKey={group.descriptionKey}
+                          fallback={group.description}
+                        />
                       </p>
                     </div>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="text-xs text-neutral-500">
-                      {group.templates.length} template
+                      {group.templates.length}{" "}
+                      <T
+                        textKey="dashboard.changeGalleryTemplate.groups.templateCount"
+                        fallback="template"
+                      />
                     </span>
 
                     <span
@@ -485,19 +570,28 @@ export default function ChangeGalleryTemplateForm({
                               <div className="absolute left-3 top-3 flex flex-wrap gap-2">
                                 {template.is_featured && (
                                   <span className="rounded-full border border-white/20 bg-white px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-neutral-950">
-                                    In evidenza
+                                    <T
+                                      textKey="dashboard.changeGalleryTemplate.badges.featured"
+                                      fallback="In evidenza"
+                                    />
                                   </span>
                                 )}
 
                                 {isCurrent && (
                                   <span className="rounded-full border border-green-700/70 bg-green-950/80 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-green-200 backdrop-blur">
-                                    Attuale
+                                    <T
+                                      textKey="dashboard.changeGalleryTemplate.badges.current"
+                                      fallback="Attuale"
+                                    />
                                   </span>
                                 )}
 
                                 {isSelected && !isCurrent && (
                                   <span className="rounded-full border border-white/30 bg-white px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-neutral-950">
-                                    Selezionato
+                                    <T
+                                      textKey="dashboard.changeGalleryTemplate.badges.selected"
+                                      fallback="Selezionato"
+                                    />
                                   </span>
                                 )}
                               </div>
@@ -515,17 +609,29 @@ export default function ChangeGalleryTemplateForm({
 
                             <div className="p-4">
                               <p className="line-clamp-2 min-h-10 text-sm leading-5 text-neutral-400">
-                                {template.description ||
-                                  "Template 3D disponibile per questa galleria."}
+                                {template.description ? (
+                                  template.description
+                                ) : (
+                                  <T
+                                    textKey="dashboard.changeGalleryTemplate.card.defaultDescription"
+                                    fallback="Template 3D disponibile per questa galleria."
+                                  />
+                                )}
                               </p>
 
                               <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-800 pt-3 text-xs">
                                 <span className="text-neutral-500">
-                                  Max{" "}
+                                  <T
+                                    textKey="dashboard.changeGalleryTemplate.card.max"
+                                    fallback="Max"
+                                  />{" "}
                                   <span className="text-neutral-200">
                                     {template.max_artworks}
                                   </span>{" "}
-                                  opere
+                                  <T
+                                    textKey="dashboard.changeGalleryTemplate.card.artworks"
+                                    fallback="opere"
+                                  />
                                 </span>
 
                                 <span
@@ -554,7 +660,10 @@ export default function ChangeGalleryTemplateForm({
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                Nuovo template selezionato
+                <T
+                  textKey="dashboard.changeGalleryTemplate.selected.title"
+                  fallback="Nuovo template selezionato"
+                />
               </p>
 
               <h3 className="mt-2 text-lg font-medium text-neutral-100">
@@ -562,11 +671,18 @@ export default function ChangeGalleryTemplateForm({
               </h3>
 
               <p className="mt-1 text-sm text-neutral-400">
-                Accesso:{" "}
+                <T
+                  textKey="dashboard.changeGalleryTemplate.selected.access"
+                  fallback="Accesso:"
+                />{" "}
                 <span className="text-neutral-100">
                   {getTemplateAccessLabel(selectedTemplate)}
                 </span>{" "}
-                · Max opere:{" "}
+                ·{" "}
+                <T
+                  textKey="dashboard.changeGalleryTemplate.selected.maxArtworks"
+                  fallback="Max opere:"
+                />{" "}
                 <span className="text-neutral-100">
                   {selectedTemplate.max_artworks}
                 </span>
@@ -579,7 +695,10 @@ export default function ChangeGalleryTemplateForm({
               disabled={!currentTemplateId || isLoading}
               className="shrink-0 rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:border-neutral-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Annulla selezione
+              <T
+                textKey="dashboard.changeGalleryTemplate.actions.cancelSelection"
+                fallback="Annulla selezione"
+              />
             </button>
           </div>
         </div>
@@ -596,9 +715,10 @@ export default function ChangeGalleryTemplateForm({
           />
 
           <span>
-            Confermo di voler cambiare template. So che le opere resteranno
-            collegate, ma dovrò controllare l’allestimento nell’editor 3D perché
-            pareti e posizioni potrebbero non combaciare con il nuovo ambiente.
+            <T
+              textKey="dashboard.changeGalleryTemplate.confirmation.description"
+              fallback="Confermo di voler cambiare template. So che le opere resteranno collegate, ma dovrò controllare l’allestimento nell’editor 3D perché pareti e posizioni potrebbero non combaciare con il nuovo ambiente."
+            />
           </span>
         </label>
       )}
@@ -609,7 +729,17 @@ export default function ChangeGalleryTemplateForm({
           disabled={!canSubmit}
           className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Aggiornamento..." : "Aggiorna template"}
+          {isLoading ? (
+            <T
+              textKey="dashboard.changeGalleryTemplate.actions.updating"
+              fallback="Aggiornamento..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.changeGalleryTemplate.actions.update"
+              fallback="Aggiorna template"
+            />
+          )}
         </button>
 
         {message && (

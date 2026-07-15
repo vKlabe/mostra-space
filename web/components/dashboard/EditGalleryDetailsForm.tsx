@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import T from "@/components/i18n/T";
 
 type EditGalleryDetailsFormProps = {
   galleryId: string;
@@ -114,19 +115,33 @@ export default function EditGalleryDetailsForm({
       className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
     >
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-        Dati pubblici
+        <T
+          textKey="dashboard.galleryDetailsForm.header.label"
+          fallback="Dati pubblici"
+        />
       </p>
 
-      <h2 className="text-2xl font-medium">Modifica dati galleria</h2>
+      <h2 className="text-2xl font-medium">
+        <T
+          textKey="dashboard.galleryDetailsForm.header.title"
+          fallback="Modifica dati galleria"
+        />
+      </h2>
 
       <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-        Queste informazioni vengono usate nella pagina pubblica della galleria.
+        <T
+          textKey="dashboard.galleryDetailsForm.header.description"
+          fallback="Queste informazioni vengono usate nella pagina pubblica della galleria."
+        />
       </p>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div>
           <label className="mb-2 block text-sm text-neutral-300">
-            Titolo
+            <T
+              textKey="dashboard.galleryDetailsForm.fields.title"
+              fallback="Titolo"
+            />
           </label>
 
           <input
@@ -141,7 +156,10 @@ export default function EditGalleryDetailsForm({
 
         <div>
           <label className="mb-2 block text-sm text-neutral-300">
-            Slug pubblico
+            <T
+              textKey="dashboard.galleryDetailsForm.fields.publicSlug"
+              fallback="Slug pubblico"
+            />
           </label>
 
           <input
@@ -154,13 +172,20 @@ export default function EditGalleryDetailsForm({
           />
 
           <p className="mt-2 break-all text-xs text-neutral-500">
-            Link pubblico: {publicPath}
+            <T
+              textKey="dashboard.galleryDetailsForm.fields.publicLink"
+              fallback="Link pubblico:"
+            />{" "}
+            {publicPath}
           </p>
         </div>
 
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm text-neutral-300">
-            Descrizione
+            <T
+              textKey="dashboard.galleryDetailsForm.fields.description"
+              fallback="Descrizione"
+            />
           </label>
 
           <textarea
@@ -179,7 +204,17 @@ export default function EditGalleryDetailsForm({
           disabled={isLoading}
           className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Salvataggio..." : "Salva dati pubblici"}
+          {isLoading ? (
+            <T
+              textKey="dashboard.galleryDetailsForm.actions.saving"
+              fallback="Salvataggio..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.galleryDetailsForm.actions.save"
+              fallback="Salva dati pubblici"
+            />
+          )}
         </button>
 
         {message && (

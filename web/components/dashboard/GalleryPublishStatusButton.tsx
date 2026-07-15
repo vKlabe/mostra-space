@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type GalleryStatus = "draft" | "published" | "archived";
 
@@ -162,7 +163,10 @@ export default function GalleryPublishStatusButton({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Pubblicazione
+            <T
+              textKey="dashboard.galleryPublishStatus.header.label"
+              fallback="Pubblicazione"
+            />
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -194,7 +198,17 @@ export default function GalleryPublishStatusButton({
               disabled={isLoading}
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? "Controllo pubblicazione..." : "Pubblica galleria"}
+              {isLoading ? (
+                <T
+                  textKey="dashboard.galleryPublishStatus.actions.checkingPublication"
+                  fallback="Controllo pubblicazione..."
+                />
+              ) : (
+                <T
+                  textKey="dashboard.galleryPublishStatus.actions.publish"
+                  fallback="Pubblica galleria"
+                />
+              )}
             </button>
 
             <button
@@ -203,7 +217,10 @@ export default function GalleryPublishStatusButton({
               disabled={isLoading}
               className="rounded-full border border-yellow-800 px-5 py-2 text-sm text-yellow-200 transition hover:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Archivia galleria
+              <T
+                textKey="dashboard.galleryPublishStatus.actions.archive"
+                fallback="Archivia galleria"
+              />
             </button>
           </>
         )}
@@ -216,7 +233,17 @@ export default function GalleryPublishStatusButton({
               disabled={isLoading}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? "Aggiornamento..." : "Torna in bozza"}
+              {isLoading ? (
+                <T
+                  textKey="dashboard.galleryPublishStatus.actions.updating"
+                  fallback="Aggiornamento..."
+                />
+              ) : (
+                <T
+                  textKey="dashboard.galleryPublishStatus.actions.backToDraft"
+                  fallback="Torna in bozza"
+                />
+              )}
             </button>
 
             <button
@@ -225,7 +252,10 @@ export default function GalleryPublishStatusButton({
               disabled={isLoading}
               className="rounded-full border border-yellow-800 px-5 py-2 text-sm text-yellow-200 transition hover:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Archivia galleria
+              <T
+                textKey="dashboard.galleryPublishStatus.actions.archive"
+                fallback="Archivia galleria"
+              />
             </button>
           </>
         )}
@@ -237,7 +267,17 @@ export default function GalleryPublishStatusButton({
             disabled={isLoading}
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? "Ripristino..." : "Ripristina in bozza"}
+            {isLoading ? (
+              <T
+                textKey="dashboard.galleryPublishStatus.actions.restoring"
+                fallback="Ripristino..."
+              />
+            ) : (
+              <T
+                textKey="dashboard.galleryPublishStatus.actions.restoreToDraft"
+                fallback="Ripristina in bozza"
+              />
+            )}
           </button>
         )}
 
@@ -247,7 +287,10 @@ export default function GalleryPublishStatusButton({
           rel="noreferrer"
           className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
         >
-          Anteprima viewer 3D
+          <T
+            textKey="dashboard.galleryPublishStatus.actions.previewViewer"
+            fallback="Anteprima viewer 3D"
+          />
         </a>
 
         {publicPageHref && currentStatus === "published" && (
@@ -257,22 +300,29 @@ export default function GalleryPublishStatusButton({
             rel="noreferrer"
             className="rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
           >
-            Anteprima pagina pubblica
+            <T
+              textKey="dashboard.galleryPublishStatus.actions.previewPublicPage"
+              fallback="Anteprima pagina pubblica"
+            />
           </a>
         )}
 
         {publicPageHref && currentStatus !== "published" && (
           <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
-            Pagina pubblica disponibile dopo la pubblicazione
+            <T
+              textKey="dashboard.galleryPublishStatus.publicPage.availableAfterPublication"
+              fallback="Pagina pubblica disponibile dopo la pubblicazione"
+            />
           </span>
         )}
       </div>
 
       {currentStatus !== "published" && (
         <p className="mt-4 text-xs leading-5 text-neutral-500">
-          L’anteprima viewer 3D apre direttamente Unity in modalità visitatore.
-          La pagina pubblica completa sarà visibile quando la galleria sarà
-          pubblicata.
+          <T
+            textKey="dashboard.galleryPublishStatus.preview.description"
+            fallback="L’anteprima viewer 3D apre direttamente Unity in modalità visitatore. La pagina pubblica completa sarà visibile quando la galleria sarà pubblicata."
+          />
         </p>
       )}
 
@@ -284,26 +334,44 @@ export default function GalleryPublishStatusButton({
         <div className="mt-5 space-y-4">
           <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-              Controllo pubblicazione
+              <T
+                textKey="dashboard.galleryPublishStatus.validation.label"
+                fallback="Controllo pubblicazione"
+              />
             </p>
 
             <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
               <div>
-                <p className="text-neutral-500">Opere associate</p>
+                <p className="text-neutral-500">
+                  <T
+                    textKey="dashboard.galleryPublishStatus.validation.totalArtworks"
+                    fallback="Opere associate"
+                  />
+                </p>
                 <p className="mt-1 text-lg text-neutral-100">
                   {validation.summary.totalArtworks}
                 </p>
               </div>
 
               <div>
-                <p className="text-neutral-500">Opere posizionate</p>
+                <p className="text-neutral-500">
+                  <T
+                    textKey="dashboard.galleryPublishStatus.validation.positionedArtworks"
+                    fallback="Opere posizionate"
+                  />
+                </p>
                 <p className="mt-1 text-lg text-neutral-100">
                   {validation.summary.positionedArtworks}
                 </p>
               </div>
 
               <div>
-                <p className="text-neutral-500">Non posizionate</p>
+                <p className="text-neutral-500">
+                  <T
+                    textKey="dashboard.galleryPublishStatus.validation.unpositionedArtworks"
+                    fallback="Non posizionate"
+                  />
+                </p>
                 <p className="mt-1 text-lg text-neutral-100">
                   {validation.summary.unpositionedArtworks}
                 </p>
@@ -314,7 +382,10 @@ export default function GalleryPublishStatusButton({
           {validation.errors.length > 0 && (
             <div className="rounded-2xl border border-red-900 bg-red-950/30 p-4">
               <p className="text-sm font-medium text-red-200">
-                Non puoi pubblicare ancora
+                <T
+                  textKey="dashboard.galleryPublishStatus.validation.cannotPublish"
+                  fallback="Non puoi pubblicare ancora"
+                />
               </p>
 
               <ul className="mt-3 space-y-2">
@@ -331,7 +402,10 @@ export default function GalleryPublishStatusButton({
           {validation.warnings.length > 0 && (
             <div className="rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
               <p className="text-sm font-medium text-yellow-200">
-                Attenzioni non bloccanti
+                <T
+                  textKey="dashboard.galleryPublishStatus.validation.nonBlockingWarnings"
+                  fallback="Attenzioni non bloccanti"
+                />
               </p>
 
               <ul className="mt-3 space-y-2">

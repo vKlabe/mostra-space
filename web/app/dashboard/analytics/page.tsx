@@ -104,9 +104,11 @@ type PresenceRow = {
 };
 
 type MetricCardProps = {
-  label: string;
+  labelKey: string;
+  labelFallback: string;
   value: string | number;
-  description: string;
+  descriptionKey: string;
+  descriptionFallback: string;
 };
 
 type RangeOption = "7" | "30" | "90" | "all";
@@ -288,14 +290,24 @@ function getStatusBadgeClass(status: GalleryStatus | string) {
   return "border-neutral-700 bg-neutral-950 text-neutral-400";
 }
 
-function MetricCard({ label, value, description }: MetricCardProps) {
+function MetricCard({
+  labelKey,
+  labelFallback,
+  value,
+  descriptionKey,
+  descriptionFallback,
+}: MetricCardProps) {
   return (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
       <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-        {label}
+        <T textKey={labelKey} fallback={labelFallback} />
       </p>
+
       <p className="mt-3 text-3xl font-medium text-neutral-50">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-neutral-400">{description}</p>
+
+      <p className="mt-2 text-sm leading-6 text-neutral-400">
+        <T textKey={descriptionKey} fallback={descriptionFallback} />
+      </p>
     </article>
   );
 }
@@ -840,45 +852,70 @@ export default async function DashboardAnalyticsPage({
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Visite registrate"
-          value={formatNumber(visitRows.length)}
-          description="Aperture registrate nelle visite recenti delle tue gallerie."
-        />
-        <MetricCard
-          label="Visitatori unici stimati"
-          value={formatNumber(uniqueVisitorKeys.size)}
-          description="Stima da utenti, sessioni chat e presenze live disponibili."
-        />
-        <MetricCard
-          label="Gallerie salvate"
-          value={formatNumber(favoriteGalleryRows.length)}
-          description="Quante volte gli utenti hanno salvato le tue gallerie."
-        />
-        <MetricCard
-          label="Opere salvate"
-          value={formatNumber(favoriteArtworkRows.length)}
-          description="Salvataggi delle opere appartenenti al tuo archivio."
-        />
-        <MetricCard
-          label="Richieste ricevute"
-          value={formatNumber(inquiryRows.length)}
-          description="Contatti arrivati dalle tue gallerie e dalle tue opere."
-        />
-        <MetricCard
-          label="Messaggi chat"
-          value={formatNumber(chatRows.length)}
-          description="Messaggi inviati nelle chat collegate alle tue gallerie."
-        />
-        <MetricCard
-          label="Eventi creati"
-          value={formatNumber(eventRows.length)}
-          description="Eventi collegati alle tue gallerie nel periodo selezionato."
-        />
-        <MetricCard
-          label="Follower acquisiti"
-          value={formatNumber(followerRows.length)}
-          description="Nuovi utenti che hanno seguito il tuo profilo pubblico."
-        />
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Visite registrate"
+  value={formatNumber(visitRows.length)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Aperture registrate nelle visite recenti delle tue gallerie."
+/>
+
+<MetricCard
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Visitatori unici stimati"
+  value={formatNumber(uniqueVisitorKeys.size)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Stima da utenti, sessioni chat e presenze live disponibili."
+/>
+        
+<MetricCard
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Gallerie salvate"
+   value={formatNumber(favoriteGalleryRows.length)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Quante volte gli utenti hanno salvato le tue gallerie."
+/>
+
+<MetricCard
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Opere salvate"
+  value={formatNumber(favoriteArtworkRows.length)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Salvataggi delle opere appartenenti al tuo archivio."
+/>
+       
+<MetricCard
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Richieste ricevute"
+  value={formatNumber(inquiryRows.length)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Contatti arrivati dalle tue gallerie e dalle tue opere."
+/>
+      
+<MetricCard
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Messaggi chat"
+  value={formatNumber(chatRows.length)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Messaggi inviati nelle chat collegate alle tue gallerie."
+/>    
+
+<MetricCard
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Eventi creati"
+  value={formatNumber(eventRows.length)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Eventi collegati alle tue gallerie nel periodo selezionato."
+/>
+        
+       <MetricCard
+  labelKey="dashboard.analytics.metrics.registeredVisits.label"
+  labelFallback="Visite registrate"
+  value={formatNumber(followerRows.length)}
+  descriptionKey="dashboard.analytics.metrics.registeredVisits.description"
+  descriptionFallback="Aperture registrate nelle visite recenti delle tue gallerie."
+/>
+
+       
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
