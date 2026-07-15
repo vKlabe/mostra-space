@@ -157,6 +157,52 @@ function extractTEntriesFromContent(content, filePath) {
   return entries;
 }
 
+function extractKeyFallbackPairsFromContent(content, filePath) {
+  const entries = [];
+
+  const namedPairRegex =
+    /(\w+)Key\s*:\s*["']([^"']+)["'][\s\S]*?\1Fallback\s*:\s*(["'`])([\s\S]*?)\3/g;
+
+  let namedMatch;
+
+  while ((namedMatch = namedPairRegex.exec(content)) !== null) {
+    const textKey = namedMatch[2].trim();
+    const fallback = decodeJsString(namedMatch[4]);
+
+    if (!textKey || !fallback) {
+      continue;
+    }
+
+    entries.push({
+      textKey,
+      fallback,
+      filePath: path.relative(ROOT, filePath),
+    });
+  }
+
+  const genericPairRegex =
+    /textKey\s*:\s*["']([^"']+)["'][\s\S]*?fallback\s*:\s*(["'`])([\s\S]*?)\2/g;
+
+  let genericMatch;
+
+  while ((genericMatch = genericPairRegex.exec(content)) !== null) {
+    const textKey = genericMatch[1].trim();
+    const fallback = decodeJsString(genericMatch[3]);
+
+    if (!textKey || !fallback) {
+      continue;
+    }
+
+    entries.push({
+      textKey,
+      fallback,
+      filePath: path.relative(ROOT, filePath),
+    });
+  }
+
+  return entries;
+}
+
 async function extractEntries() {
   const files = [];
 
@@ -169,7 +215,10 @@ async function extractEntries() {
 
   for (const filePath of files) {
     const content = await fs.readFile(filePath, "utf8");
-    const entries = extractTEntriesFromContent(content, filePath);
+    const entries = [
+  ...extractTEntriesFromContent(content, filePath),
+  ...extractKeyFallbackPairsFromContent(content, filePath),
+];
 
     for (const entry of entries) {
       const existing = byKey.get(entry.textKey);

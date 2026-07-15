@@ -1,5 +1,6 @@
 import Link from "next/link";
 import UpdatePasswordForm from "./UpdatePasswordForm";
+import T from "@/components/i18n/T";
 
 export const dynamic = "force-dynamic";
 
@@ -15,14 +16,25 @@ export default function UpdatePasswordPage() {
           <span className="text-[var(--museum-ivory-soft)]">space</span>
         </Link>
 
-        <p className="museum-label mt-8">Sicurezza account</p>
+        <p className="museum-label mt-8">
+          <T
+            textKey="auth.updatePasswordPage.label"
+            fallback="Sicurezza account"
+          />
+        </p>
 
         <h1 className="museum-title mt-5 text-5xl text-[var(--museum-ivory)] md:text-6xl">
-          Nuova password.
+          <T
+            textKey="auth.updatePasswordPage.title"
+            fallback="Nuova password."
+          />
         </h1>
 
         <p className="museum-subtitle mt-5 text-sm text-[var(--museum-stone)]">
-          Scegli una nuova password per accedere al tuo account mostra.space.
+          <T
+            textKey="auth.updatePasswordPage.subtitle"
+            fallback="Scegli una nuova password per accedere al tuo account mostra.space."
+          />
         </p>
 
         <UpdatePasswordForm />

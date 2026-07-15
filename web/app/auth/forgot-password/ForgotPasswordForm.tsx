@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import T from "@/components/i18n/T";
 
 function getSupabaseBrowserClient() {
   return createBrowserClient(
@@ -52,7 +53,10 @@ export default function ForgotPasswordForm() {
           htmlFor="email"
           className="block text-sm text-[var(--museum-ivory-soft)]"
         >
-          Email account
+          <T
+            textKey="auth.forgotPassword.emailLabel"
+            fallback="Email account"
+          />
         </label>
 
         <input
@@ -84,7 +88,17 @@ export default function ForgotPasswordForm() {
         disabled={isSubmitting}
         className="museum-button-primary w-full px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? "Invio in corso..." : "Invia link di recupero"}
+        {isSubmitting ? (
+          <T
+            textKey="auth.forgotPassword.submitting"
+            fallback="Invio in corso..."
+          />
+        ) : (
+          <T
+            textKey="auth.forgotPassword.submit"
+            fallback="Invia link di recupero"
+          />
+        )}
       </button>
     </form>
   );

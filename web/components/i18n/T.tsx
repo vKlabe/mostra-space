@@ -5,7 +5,7 @@ import { useLanguage } from "@/components/i18n/LanguageProvider";
 import type { Messages } from "@/lib/i18n/dictionaries";
 
 type TProps = {
-  textKey: keyof Messages;
+  textKey: string;
   fallback?: string;
   className?: string;
   suffix?: ReactNode;
@@ -24,7 +24,7 @@ export default function T({
   const content = (
     <>
       {prefix}
-      {t(textKey, fallback)}
+      {t(textKey as keyof Messages, fallback)}
       {suffix}
     </>
   );

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import T from "@/components/i18n/T";
 
 type AccountType = "visitor" | "gallerist";
 
@@ -206,40 +207,66 @@ export default function RegisterPage() {
             href="/auth/login"
             className="museum-button-secondary px-5 py-2.5"
           >
-            Accedi
+            <T textKey="auth.register.actions.login" fallback="Accedi" />
           </Link>
         </div>
 
         <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <div className="lg:sticky lg:top-10">
-            <p className="museum-label">Registrazione</p>
+            <p className="museum-label">
+              <T
+                textKey="auth.register.hero.label"
+                fallback="Registrazione"
+              />
+            </p>
 
             <h1 className="museum-title mt-5 text-6xl text-[var(--museum-ivory)] md:text-7xl">
-              Crea il tuo spazio.
+              <T
+                textKey="auth.register.hero.title"
+                fallback="Crea il tuo spazio."
+              />
             </h1>
 
             <p className="museum-subtitle mt-6 max-w-xl text-sm text-[var(--museum-stone)] md:text-base">
-              Scegli come vuoi entrare nel portale: come visitatore della
-              community oppure come artista, gallerista o realtà culturale che
-              vuole creare esposizioni virtuali.
+              <T
+                textKey="auth.register.hero.subtitle"
+                fallback="Scegli come vuoi entrare nel portale: come visitatore della community oppure come artista, gallerista o realtà culturale che vuole creare esposizioni virtuali."
+              />
             </p>
 
             <div className="museum-card mt-8 rounded-[1.75rem] p-5">
-              <p className="museum-label">Due modalità</p>
+              <p className="museum-label">
+                <T
+                  textKey="auth.register.modes.label"
+                  fallback="Due modalità"
+                />
+              </p>
 
               <div className="mt-5 space-y-4 text-sm leading-7 text-[var(--museum-stone)]">
                 <p>
                   <span className="text-[var(--museum-ivory-soft)]">
-                    Visitor:
+                    <T
+                      textKey="auth.register.modes.visitorName"
+                      fallback="Visitor:"
+                    />
                   </span>{" "}
-                  salva preferiti, invia richieste e segui gallerie.
+                  <T
+                    textKey="auth.register.modes.visitorDescription"
+                    fallback="salva preferiti, invia richieste e segui gallerie."
+                  />
                 </p>
 
                 <p>
                   <span className="text-[var(--museum-ivory-soft)]">
-                    Creator:
+                    <T
+                      textKey="auth.register.modes.creatorName"
+                      fallback="Creator:"
+                    />
                   </span>{" "}
-                  carica opere, scegli template, usa l’editor e pubblica spazi.
+                  <T
+                    textKey="auth.register.modes.creatorDescription"
+                    fallback="carica opere, scegli template, usa l’editor e pubblica spazi."
+                  />
                 </p>
               </div>
             </div>
@@ -257,15 +284,25 @@ export default function RegisterPage() {
                     : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-6 text-left transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
                 }
               >
-                <p className="museum-label">Visitor</p>
+                <p className="museum-label">
+                  <T
+                    textKey="auth.register.accountTypes.visitor.label"
+                    fallback="Visitor"
+                  />
+                </p>
 
                 <h2 className="mt-3 font-editorial text-3xl text-[var(--museum-ivory)]">
-                  Voglio esplorare l’arte
+                  <T
+                    textKey="auth.register.accountTypes.visitor.title"
+                    fallback="Voglio esplorare l’arte"
+                  />
                 </h2>
 
                 <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-                  Crea un account per salvare preferiti, inviare richieste e
-                  usare i primi strumenti community.
+                  <T
+                    textKey="auth.register.accountTypes.visitor.description"
+                    fallback="Crea un account per salvare preferiti, inviare richieste e usare i primi strumenti community."
+                  />
                 </p>
               </button>
 
@@ -279,15 +316,25 @@ export default function RegisterPage() {
                     : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-6 text-left transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
                 }
               >
-                <p className="museum-label">Gallerista / Artista</p>
+                <p className="museum-label">
+                  <T
+                    textKey="auth.register.accountTypes.creator.label"
+                    fallback="Gallerista / Artista"
+                  />
+                </p>
 
                 <h2 className="mt-3 font-editorial text-3xl text-[var(--museum-ivory)]">
-                  Voglio creare esposizioni
+                  <T
+                    textKey="auth.register.accountTypes.creator.title"
+                    fallback="Voglio creare esposizioni"
+                  />
                 </h2>
 
                 <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-                  Crea un account per caricare opere, scegliere template, aprire
-                  l’editor 3D e pubblicare gallerie virtuali.
+                  <T
+                    textKey="auth.register.accountTypes.creator.description"
+                    fallback="Crea un account per caricare opere, scegliere template, aprire l’editor 3D e pubblicare gallerie virtuali."
+                  />
                 </p>
               </button>
             </div>
@@ -298,7 +345,12 @@ export default function RegisterPage() {
             >
               <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
                 <div>
-                  <p className="museum-label">Dati account</p>
+                  <p className="museum-label">
+                    <T
+                      textKey="auth.register.form.label"
+                      fallback="Dati account"
+                    />
+                  </p>
 
                   <h2 className="mt-2 font-editorial text-4xl text-[var(--museum-ivory)]">
                     {accountTitle}
@@ -306,14 +358,27 @@ export default function RegisterPage() {
                 </div>
 
                 <p className="museum-pill rounded-full px-4 py-2 text-xs uppercase tracking-[0.18em]">
-                  {isGallerist ? "Account creator" : "Account community"}
+                  {isGallerist ? (
+                    <T
+                      textKey="auth.register.form.creatorAccount"
+                      fallback="Account creator"
+                    />
+                  ) : (
+                    <T
+                      textKey="auth.register.form.communityAccount"
+                      fallback="Account community"
+                    />
+                  )}
                 </p>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
                   <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                    Nome
+                    <T
+                      textKey="auth.register.form.firstName"
+                      fallback="Nome"
+                    />
                   </label>
 
                   <input
@@ -329,7 +394,10 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                    Cognome
+                    <T
+                      textKey="auth.register.form.lastName"
+                      fallback="Cognome"
+                    />
                   </label>
 
                   <input
@@ -347,7 +415,10 @@ export default function RegisterPage() {
                   <>
                     <div>
                       <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                        Nome galleria / artista / studio
+                        <T
+                          textKey="auth.register.form.businessName"
+                          fallback="Nome galleria / artista / studio"
+                        />
                       </label>
 
                       <input
@@ -364,7 +435,10 @@ export default function RegisterPage() {
 
                     <div>
                       <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                        Telefono
+                        <T
+                          textKey="auth.register.form.phone"
+                          fallback="Telefono"
+                        />
                       </label>
 
                       <input
@@ -380,7 +454,10 @@ export default function RegisterPage() {
 
                     <div className="md:col-span-2">
                       <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                        Sito o profilo social
+                        <T
+                          textKey="auth.register.form.professionalUrl"
+                          fallback="Sito o profilo social"
+                        />
                       </label>
 
                       <input
@@ -400,7 +477,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                    Email
+                    <T textKey="auth.register.form.email" fallback="Email" />
                   </label>
 
                   <input
@@ -417,7 +494,10 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                    Password
+                    <T
+                      textKey="auth.register.form.password"
+                      fallback="Password"
+                    />
                   </label>
 
                   <input
@@ -444,8 +524,10 @@ export default function RegisterPage() {
                 />
 
                 <span>
-                  Accetto termini, privacy e trattamento dei dati per la
-                  creazione dell’account e l’utilizzo del portale.
+                  <T
+                    textKey="auth.register.form.termsAcceptance"
+                    fallback="Accetto termini, privacy e trattamento dei dati per la creazione dell’account e l’utilizzo del portale."
+                  />
                 </span>
               </label>
 
@@ -466,40 +548,72 @@ export default function RegisterPage() {
                 disabled={formDisabled}
                 className="museum-button-primary mt-6 w-full px-6 py-3 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {checkingSession
-                  ? "Controllo sessione..."
-                  : loading
-                    ? "Registrazione..."
-                    : isGallerist
-                      ? "Crea account creator"
-                      : "Crea account visitor"}
+                {checkingSession ? (
+                  <T
+                    textKey="auth.register.actions.checkingSession"
+                    fallback="Controllo sessione..."
+                  />
+                ) : loading ? (
+                  <T
+                    textKey="auth.register.actions.registering"
+                    fallback="Registrazione..."
+                  />
+                ) : isGallerist ? (
+                  <T
+                    textKey="auth.register.actions.createCreatorAccount"
+                    fallback="Crea account creator"
+                  />
+                ) : (
+                  <T
+                    textKey="auth.register.actions.createVisitorAccount"
+                    fallback="Crea account visitor"
+                  />
+                )}
               </button>
 
               <p className="mt-5 text-center text-sm text-[var(--museum-stone)]">
-                Hai già un account?{" "}
+                <T
+                  textKey="auth.register.login.hasAccount"
+                  fallback="Hai già un account?"
+                />{" "}
                 <Link
                   href="/auth/login"
                   className="text-[var(--museum-bronze-light)] underline-offset-4 hover:underline"
                 >
-                  Accedi
+                  <T
+                    textKey="auth.register.login.action"
+                    fallback="Accedi"
+                  />
                 </Link>
               </p>
             </form>
 
             <p className="mt-6 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
-              Creando un account accetti i{" "}
+              <T
+                textKey="auth.register.legal.acceptance"
+                fallback="Creando un account accetti i"
+              />{" "}
               <Link
                 href="/legal/termini"
                 className="text-[var(--museum-stone)] underline-offset-4 hover:text-[var(--museum-bronze-light)] hover:underline"
               >
-                Termini e condizioni
+                <T
+                  textKey="auth.register.legal.terms"
+                  fallback="Termini e condizioni"
+                />
               </Link>{" "}
-              e confermi di aver letto la{" "}
+              <T
+                textKey="auth.register.legal.privacyConfirmation"
+                fallback="e confermi di aver letto la"
+              />{" "}
               <Link
                 href="/legal/privacy"
                 className="text-[var(--museum-stone)] underline-offset-4 hover:text-[var(--museum-bronze-light)] hover:underline"
               >
-                Privacy Policy
+                <T
+                  textKey="auth.register.legal.privacyPolicy"
+                  fallback="Privacy Policy"
+                />
               </Link>
               .
             </p>

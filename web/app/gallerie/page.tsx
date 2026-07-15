@@ -5,6 +5,7 @@ import LegalFooter from "@/components/legal/LegalFooter";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
+import T from "@/components/i18n/T";
 
 type PublicGallery = {
   id: string;
@@ -25,8 +26,10 @@ type PublicGallerySlot = {
 };
 
 type EditorialGallery = PublicGallery & {
-  editorialLocation: string;
-  editorialWorksLabel: string;
+  editorialLocationKey: string;
+  editorialLocationFallback: string;
+  editorialWorksLabelKey: string;
+  editorialWorksLabelFallback: string;
 };
 
 const fallbackMainGallerySlug = "aaa";
@@ -68,7 +71,10 @@ function PublicGalleryCover({
   if (!src) {
     return (
       <div className="flex h-full min-h-full items-center justify-center bg-[radial-gradient(circle_at_35%_15%,rgba(243,237,226,0.26),transparent_11rem),linear-gradient(135deg,rgba(168,121,69,0.26),rgba(8,7,5,0.92))] px-6 text-center text-sm text-[var(--museum-stone)]">
-        Anteprima galleria non disponibile
+        <T
+          textKey="galleries.cover.unavailable"
+          fallback="Anteprima galleria non disponibile"
+        />
       </div>
     );
   }
@@ -102,7 +108,10 @@ function SmallEditorialGalleryCard({ gallery }: { gallery: EditorialGallery }) {
         <div className="p-6">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-3 py-1 text-xs uppercase tracking-[0.15em] text-[var(--museum-success)]">
-              Pubblicata
+              <T
+                textKey="galleries.card.published"
+                fallback="Pubblicata"
+              />
             </span>
 
             {formatDate(gallery.published_at) && (
@@ -117,25 +126,43 @@ function SmallEditorialGalleryCard({ gallery }: { gallery: EditorialGallery }) {
           </h3>
 
           <p className="mt-3 text-sm text-[var(--museum-stone-muted)]">
-            {gallery.editorialLocation}
+            <T
+              textKey={gallery.editorialLocationKey}
+              fallback={gallery.editorialLocationFallback}
+            />
           </p>
 
           <p className="mt-1 text-sm text-[var(--museum-stone-muted)]">
-            {gallery.editorialWorksLabel}
+            <T
+              textKey={gallery.editorialWorksLabelKey}
+              fallback={gallery.editorialWorksLabelFallback}
+            />
           </p>
 
           <p className="mt-4 line-clamp-3 text-sm leading-6 text-[var(--museum-stone)]">
-            {gallery.description ||
-              "Galleria virtuale visitabile direttamente dal browser."}
+            {gallery.description ? (
+              gallery.description
+            ) : (
+              <T
+                textKey="galleries.card.defaultDescription"
+                fallback="Galleria virtuale visitabile direttamente dal browser."
+              />
+            )}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-2">
             <span className="museum-button-primary px-4 py-2">
-              Apri galleria
+              <T
+                textKey="galleries.actions.openGallery"
+                fallback="Apri galleria"
+              />
             </span>
 
             <span className="museum-button-secondary px-4 py-2">
-              Catalogo
+              <T
+                textKey="galleries.actions.catalog"
+                fallback="Catalogo"
+              />
             </span>
           </div>
         </div>
@@ -177,8 +204,10 @@ export default async function PublicGalleriesIndexPage() {
   function toEditorialGallery(gallery: PublicGallery): EditorialGallery {
     return {
       ...gallery,
-      editorialLocation: "Spazio virtuale",
-      editorialWorksLabel: "Galleria pubblica",
+      editorialLocationKey: "galleries.card.virtualSpace",
+      editorialLocationFallback: "Spazio virtuale",
+      editorialWorksLabelKey: "galleries.card.publicGallery",
+      editorialWorksLabelFallback: "Galleria pubblica",
     };
   }
 
@@ -226,73 +255,115 @@ export default async function PublicGalleriesIndexPage() {
       <section className="border-b border-[var(--museum-border)]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:px-8 md:py-20 lg:grid-cols-[1.05fr_0.75fr] lg:items-end">
           <div>
-            <p className="museum-label">Gallerie virtuali</p>
+            <p className="museum-label">
+              <T
+                textKey="galleries.hero.label"
+                fallback="Gallerie virtuali"
+              />
+            </p>
 
             <h1 className="museum-title mt-6 max-w-5xl text-6xl text-[var(--museum-ivory)] md:text-7xl">
-              Esplora spazi espositivi digitali.
+              <T
+                textKey="galleries.hero.title"
+                fallback="Esplora spazi espositivi digitali."
+              />
             </h1>
 
             <p className="museum-subtitle mt-7 max-w-3xl text-base text-[var(--museum-stone)] md:text-lg">
-              Entra nelle gallerie pubblicate, visita gli ambienti 3D, consulta
-              le opere esposte e richiedi informazioni al gallerista.
+              <T
+                textKey="galleries.hero.subtitle"
+                fallback="Entra nelle gallerie pubblicate, visita gli ambienti 3D, consulta le opere esposte e richiedi informazioni al gallerista."
+              />
             </p>
 
             <div className="mt-9 flex flex-wrap gap-4">
               <a href="#gallerie" className="museum-button-primary px-7 py-3.5">
-                Sfoglia gallerie
+                <T
+                  textKey="galleries.hero.browse"
+                  fallback="Sfoglia gallerie"
+                />
               </a>
 
               <Link
                 href="/pricing"
                 className="museum-button-secondary px-7 py-3.5"
               >
-                Crea il tuo spazio
+                <T
+                  textKey="galleries.hero.createSpace"
+                  fallback="Crea il tuo spazio"
+                />
               </Link>
             </div>
           </div>
 
           <div className="museum-card rounded-[1.75rem] p-6">
-  <p className="museum-label">Esperienza pubblica</p>
+            <p className="museum-label">
+              <T
+                textKey="galleries.experience.label"
+                fallback="Esperienza pubblica"
+              />
+            </p>
 
-  <div className="mt-6 space-y-4">
-    <div className="flex justify-between gap-4 text-sm">
-      <span className="text-[var(--museum-stone-muted)]">
-        Gallerie pubbliche
-      </span>
-      <span className="text-[var(--museum-ivory-soft)]">
-        {safeGalleries.length}
-      </span>
-    </div>
+            <div className="mt-6 space-y-4">
+              <div className="flex justify-between gap-4 text-sm">
+                <span className="text-[var(--museum-stone-muted)]">
+                  <T
+                    textKey="galleries.experience.publicGalleries"
+                    fallback="Gallerie pubbliche"
+                  />
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
+                  {safeGalleries.length}
+                </span>
+              </div>
 
-    <div className="flex justify-between gap-4 text-sm">
-      <span className="text-[var(--museum-stone-muted)]">
-        Formato
-      </span>
-      <span className="text-[var(--museum-ivory-soft)]">
-        Spazi immersivi
-      </span>
-    </div>
+              <div className="flex justify-between gap-4 text-sm">
+                <span className="text-[var(--museum-stone-muted)]">
+                  <T
+                    textKey="galleries.experience.formatLabel"
+                    fallback="Formato"
+                  />
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
+                  <T
+                    textKey="galleries.experience.formatValue"
+                    fallback="Spazi immersivi"
+                  />
+                </span>
+              </div>
 
-    <div className="flex justify-between gap-4 text-sm">
-      <span className="text-[var(--museum-stone-muted)]">
-        Accesso
-      </span>
-      <span className="text-[var(--museum-ivory-soft)]">
-        Browser
-      </span>
-    </div>
+              <div className="flex justify-between gap-4 text-sm">
+                <span className="text-[var(--museum-stone-muted)]">
+                  <T
+                    textKey="galleries.experience.accessLabel"
+                    fallback="Accesso"
+                  />
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
+                  <T
+                    textKey="galleries.experience.accessValue"
+                    fallback="Browser"
+                  />
+                </span>
+              </div>
 
-    <div className="flex justify-between gap-4 text-sm">
-      <span className="text-[var(--museum-stone-muted)]">
-        Interazione
-      </span>
-      <span className="text-[var(--museum-ivory-soft)]">
-        Catalogo + richieste
-      </span>
-    </div>
-  </div>
-</div>
-</div>
+              <div className="flex justify-between gap-4 text-sm">
+                <span className="text-[var(--museum-stone-muted)]">
+                  <T
+                    textKey="galleries.experience.interactionLabel"
+                    fallback="Interazione"
+                  />
+                </span>
+                <span className="text-[var(--museum-ivory-soft)]">
+                  <T
+                    textKey="galleries.experience.interactionValue"
+                    fallback="Catalogo + richieste"
+                  />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {error && (
@@ -325,20 +396,33 @@ export default async function PublicGalleriesIndexPage() {
         <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <p className="museum-label">Scelta curatoriale</p>
+              <p className="museum-label">
+                <T
+                  textKey="galleries.selected.label"
+                  fallback="Scelta curatoriale"
+                />
+              </p>
 
               <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
-                Galleria selezionata.
+                <T
+                  textKey="galleries.selected.title"
+                  fallback="Galleria selezionata."
+                />
               </h2>
 
               <p className="museum-subtitle mt-5 max-w-3xl text-sm text-[var(--museum-stone)]">
-                Uno spazio scelto dalla redazione di mostra.space, in evidenza
-                per qualità, allestimento o progetto espositivo.
+                <T
+                  textKey="galleries.selected.subtitle"
+                  fallback="Uno spazio scelto dalla redazione di mostra.space, in evidenza per qualità, allestimento o progetto espositivo."
+                />
               </p>
             </div>
 
             <a href="#gallerie" className="museum-button-secondary px-5 py-2.5">
-              Vai all’archivio
+              <T
+                textKey="galleries.selected.goToArchive"
+                fallback="Vai all’archivio"
+              />
             </a>
           </div>
 
@@ -355,7 +439,10 @@ export default async function PublicGalleriesIndexPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-[rgba(197,151,94,0.45)] bg-[rgba(168,121,69,0.1)] px-3 py-1 text-xs uppercase tracking-[0.15em] text-[var(--museum-bronze-light)]">
-                      In homepage gallerie
+                      <T
+                        textKey="galleries.selected.homepageBadge"
+                        fallback="In homepage gallerie"
+                      />
                     </span>
 
                     {formatDate(selectedGallery.published_at) && (
@@ -370,14 +457,30 @@ export default async function PublicGalleriesIndexPage() {
                   </h3>
 
                   <div className="mt-5 flex flex-wrap gap-3 text-sm text-[var(--museum-stone-muted)]">
-                    <span>Spazio virtuale</span>
+                    <span>
+                      <T
+                        textKey="galleries.card.virtualSpace"
+                        fallback="Spazio virtuale"
+                      />
+                    </span>
                     <span>•</span>
-                    <span>Galleria pubblica</span>
+                    <span>
+                      <T
+                        textKey="galleries.card.publicGallery"
+                        fallback="Galleria pubblica"
+                      />
+                    </span>
                   </div>
 
                   <p className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
-                    {selectedGallery.description ||
-                      "Galleria virtuale visitabile direttamente dal browser, con opere, schede e ambiente 3D navigabile."}
+                    {selectedGallery.description ? (
+                      selectedGallery.description
+                    ) : (
+                      <T
+                        textKey="galleries.selected.defaultDescription"
+                        fallback="Galleria virtuale visitabile direttamente dal browser, con opere, schede e ambiente 3D navigabile."
+                      />
+                    )}
                   </p>
 
                   <p className="mt-5 break-all text-xs text-[var(--museum-stone-muted)]">
@@ -390,21 +493,30 @@ export default async function PublicGalleriesIndexPage() {
                     href={`/gallerie/${selectedGallery.slug}`}
                     className="museum-button-primary px-6 py-3"
                   >
-                    Entra nella galleria
+                    <T
+                      textKey="galleries.selected.enterGallery"
+                      fallback="Entra nella galleria"
+                    />
                   </Link>
 
                   <Link
                     href={`/gallerie/${selectedGallery.slug}#catalogo`}
                     className="museum-button-secondary px-6 py-3"
                   >
-                    Vedi catalogo
+                    <T
+                      textKey="galleries.selected.viewCatalog"
+                      fallback="Vedi catalogo"
+                    />
                   </Link>
 
                   <Link
                     href={`/gallerie/${selectedGallery.slug}#richiesta`}
                     className="museum-button-secondary px-6 py-3"
                   >
-                    Richiedi informazioni
+                    <T
+                      textKey="galleries.selected.requestInformation"
+                      fallback="Richiedi informazioni"
+                    />
                   </Link>
                 </div>
               </div>
@@ -418,15 +530,25 @@ export default async function PublicGalleriesIndexPage() {
           <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
             <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
               <div>
-                <p className="museum-label">In evidenza</p>
+                <p className="museum-label">
+                  <T
+                    textKey="galleries.featured.label"
+                    fallback="In evidenza"
+                  />
+                </p>
 
                 <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
-                  Tre spazi da visitare.
+                  <T
+                    textKey="galleries.featured.title"
+                    fallback="Tre spazi da visitare."
+                  />
                 </h2>
 
                 <p className="museum-subtitle mt-5 max-w-3xl text-sm text-[var(--museum-stone)]">
-                  Una selezione editoriale di gallerie pubbliche scelte da
-                  mostra.space.
+                  <T
+                    textKey="galleries.featured.subtitle"
+                    fallback="Una selezione editoriale di gallerie pubbliche scelte da mostra.space."
+                  />
                 </p>
               </div>
 
@@ -434,7 +556,10 @@ export default async function PublicGalleriesIndexPage() {
                 href="#gallerie"
                 className="museum-button-secondary px-5 py-2.5"
               >
-                Vedi tutte
+                <T
+                  textKey="galleries.featured.viewAll"
+                  fallback="Vedi tutte"
+                />
               </a>
             </div>
 
@@ -457,20 +582,31 @@ export default async function PublicGalleriesIndexPage() {
         >
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <p className="museum-label">Archivio pubblico</p>
+              <p className="museum-label">
+                <T
+                  textKey="galleries.archive.label"
+                  fallback="Archivio pubblico"
+                />
+              </p>
 
               <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
-                Tutte le gallerie.
+                <T
+                  textKey="galleries.archive.title"
+                  fallback="Tutte le gallerie."
+                />
               </h2>
 
               <p className="museum-subtitle mt-5 max-w-3xl text-sm text-[var(--museum-stone)]">
-                Ogni card apre una pagina dedicata con viewer 3D, catalogo opere
-                e form di richiesta informazioni.
+                <T
+                  textKey="galleries.archive.subtitle"
+                  fallback="Ogni card apre una pagina dedicata con viewer 3D, catalogo opere e form di richiesta informazioni."
+                />
               </p>
             </div>
 
             <p className="museum-pill rounded-full px-4 py-2 text-xs uppercase tracking-[0.16em]">
-              Totale: {safeGalleries.length}
+              <T textKey="galleries.archive.total" fallback="Totale:" />{" "}
+              {safeGalleries.length}
             </p>
           </div>
 
@@ -491,7 +627,10 @@ export default async function PublicGalleriesIndexPage() {
                   <div className="p-6">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-full border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-3 py-1 text-xs uppercase tracking-[0.15em] text-[var(--museum-success)]">
-                        Pubblicata
+                        <T
+                          textKey="galleries.card.published"
+                          fallback="Pubblicata"
+                        />
                       </span>
 
                       {formatDate(gallery.published_at) && (
@@ -506,8 +645,14 @@ export default async function PublicGalleriesIndexPage() {
                     </h3>
 
                     <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--museum-stone)]">
-                      {gallery.description ||
-                        "Galleria virtuale visitabile direttamente dal browser."}
+                      {gallery.description ? (
+                        gallery.description
+                      ) : (
+                        <T
+                          textKey="galleries.card.defaultDescription"
+                          fallback="Galleria virtuale visitabile direttamente dal browser."
+                        />
+                      )}
                     </p>
 
                     <p className="mt-4 break-all text-xs text-[var(--museum-stone-muted)]">
@@ -516,11 +661,17 @@ export default async function PublicGalleriesIndexPage() {
 
                     <div className="mt-6 flex flex-wrap gap-2">
                       <span className="museum-button-primary px-4 py-2">
-                        Apri galleria
+                        <T
+                          textKey="galleries.actions.openGallery"
+                          fallback="Apri galleria"
+                        />
                       </span>
 
                       <span className="museum-button-secondary px-4 py-2">
-                        Catalogo
+                        <T
+                          textKey="galleries.actions.catalog"
+                          fallback="Catalogo"
+                        />
                       </span>
                     </div>
                   </div>

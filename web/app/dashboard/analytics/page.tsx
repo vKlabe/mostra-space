@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { ComponentProps } from "react";
+
+type TTextKey = ComponentProps<typeof T>["textKey"];
 
 type DashboardAnalyticsPageProps = {
   searchParams?: Promise<{
@@ -109,23 +113,55 @@ type RangeOption = "7" | "30" | "90" | "all";
 
 const rangeOptions: Array<{
   value: RangeOption;
-  label: string;
+  labelKey: string;
+  labelFallback: string;
 }> = [
   {
     value: "7",
-    label: "7 giorni",
+    labelKey: "dashboard.analytics.range.sevenDays",
+    labelFallback: "7 giorni",
   },
   {
     value: "30",
-    label: "30 giorni",
+    labelKey: "dashboard.analytics.range.thirtyDays",
+    labelFallback: "30 giorni",
   },
   {
     value: "90",
-    label: "90 giorni",
+    labelKey: "dashboard.analytics.range.ninetyDays",
+    labelFallback: "90 giorni",
   },
   {
     value: "all",
-    label: "Tutto",
+    labelKey: "dashboard.analytics.range.all",
+    labelFallback: "Tutto",
+  },
+];
+
+const advancedTrackingItems = [
+  {
+    textKey: "dashboard.analytics.advancedTracking.artworkClicks",
+    fallback: "Click sulle opere dentro la galleria",
+  },
+  {
+    textKey: "dashboard.analytics.advancedTracking.mostViewedArtworks",
+    fallback: "Opere più viste, non solo più salvate",
+  },
+  {
+    textKey: "dashboard.analytics.advancedTracking.averageGalleryTime",
+    fallback: "Tempo medio reale dentro ogni galleria",
+  },
+  {
+    textKey: "dashboard.analytics.advancedTracking.averageArtworkTime",
+    fallback: "Tempo medio davanti a una singola opera",
+  },
+  {
+    textKey: "dashboard.analytics.advancedTracking.maximumLivePresence",
+    fallback: "Presenza live massima storica per evento/galleria",
+  },
+  {
+    textKey: "dashboard.analytics.advancedTracking.fullConversion",
+    fallback: "Conversione completa visita → opera → richiesta",
   },
 ];
 
@@ -312,11 +348,21 @@ export default async function DashboardAnalyticsPage({
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-5xl">
           <p className="mb-4 text-sm uppercase tracking-[0.35em] text-red-400">
-            Errore
+            <T textKey="dashboard.analytics.error.label" fallback="Errore" />
           </p>
-          <h1 className="text-4xl font-semibold">Profilo non trovato</h1>
+
+          <h1 className="text-4xl font-semibold">
+            <T
+              textKey="dashboard.analytics.error.profileNotFound"
+              fallback="Profilo non trovato"
+            />
+          </h1>
+
           <p className="mt-4 text-neutral-300">
-            Non riesco a leggere il profilo utente.
+            <T
+              textKey="dashboard.analytics.error.profileUnavailable"
+              fallback="Non riesco a leggere il profilo utente."
+            />
           </p>
         </section>
       </main>
@@ -336,8 +382,10 @@ export default async function DashboardAnalyticsPage({
       >
         <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-sm leading-6 text-neutral-400">
-            Il tuo account è attualmente in modalità community. Puoi continuare a
-            usare profilo, preferiti, calendario e social dashboard.
+            <T
+              textKey="dashboard.analytics.unavailable.description"
+              fallback="Il tuo account è attualmente in modalità community. Puoi continuare a usare profilo, preferiti, calendario e social dashboard."
+            />
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -345,14 +393,20 @@ export default async function DashboardAnalyticsPage({
               href="/dashboard/social"
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
-              Vai al Social
+              <T
+                textKey="dashboard.analytics.unavailable.goToSocial"
+                fallback="Vai al Social"
+              />
             </Link>
 
             <Link
               href="/pricing"
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
-              Vedi piani
+              <T
+                textKey="dashboard.analytics.unavailable.viewPlans"
+                fallback="Vedi piani"
+              />
             </Link>
           </div>
         </div>
@@ -419,8 +473,9 @@ export default async function DashboardAnalyticsPage({
       optionalWarnings.push("Salvataggi gallerie non disponibili.");
     }
 
-    favoriteGalleryRows = ((favoriteGalleriesData || []) as FavoriteGalleryRow[])
-      .filter((row) => isInRange(row.created_at, rangeStart));
+    favoriteGalleryRows = (
+      (favoriteGalleriesData || []) as FavoriteGalleryRow[]
+    ).filter((row) => isInRange(row.created_at, rangeStart));
 
     const { data: inquiriesData, error: inquiriesError } = await admin
       .from("gallery_inquiries")
@@ -478,8 +533,9 @@ export default async function DashboardAnalyticsPage({
       optionalWarnings.push("Salvataggi opere non disponibili.");
     }
 
-    favoriteArtworkRows = ((favoriteArtworksData || []) as FavoriteArtworkRow[])
-      .filter((row) => isInRange(row.created_at, rangeStart));
+    favoriteArtworkRows = (
+      (favoriteArtworksData || []) as FavoriteArtworkRow[]
+    ).filter((row) => isInRange(row.created_at, rangeStart));
   }
 
   const { data: eventsData, error: eventsError } = await admin
@@ -512,12 +568,30 @@ export default async function DashboardAnalyticsPage({
     isInRange(row.created_at, rangeStart)
   );
 
-  const visitCountByGalleryId = countById(visitRows, (row) => row.gallery_id);
-  const favoriteCountByGalleryId = countById(favoriteGalleryRows, (row) => row.gallery_id);
-  const inquiryCountByGalleryId = countById(inquiryRows, (row) => row.gallery_id);
-  const chatCountByGalleryId = countById(chatRows, (row) => row.gallery_id);
-  const liveCountByGalleryId = countById(livePresenceRows, (row) => row.gallery_id);
-  const favoriteCountByArtworkId = countById(favoriteArtworkRows, (row) => row.artwork_id);
+  const visitCountByGalleryId = countById(
+    visitRows,
+    (row) => row.gallery_id
+  );
+  const favoriteCountByGalleryId = countById(
+    favoriteGalleryRows,
+    (row) => row.gallery_id
+  );
+  const inquiryCountByGalleryId = countById(
+    inquiryRows,
+    (row) => row.gallery_id
+  );
+  const chatCountByGalleryId = countById(
+    chatRows,
+    (row) => row.gallery_id
+  );
+  const liveCountByGalleryId = countById(
+    livePresenceRows,
+    (row) => row.gallery_id
+  );
+  const favoriteCountByArtworkId = countById(
+    favoriteArtworkRows,
+    (row) => row.artwork_id
+  );
   const inquiryCountByArtworkId = countById(
     inquiryRows.filter((row) => Boolean(row.artwork_id)),
     (row) => row.artwork_id
@@ -632,7 +706,10 @@ export default async function DashboardAnalyticsPage({
                     : "rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
                 }
               >
-                {option.label}
+                <T
+  textKey={option.labelKey as TTextKey}
+  fallback={option.labelFallback}
+/>
               </Link>
             );
           })}
@@ -642,8 +719,12 @@ export default async function DashboardAnalyticsPage({
       {(galleriesError || artworksError) && (
         <div className="mb-6 rounded-3xl border border-red-900 bg-red-950/30 p-6">
           <p className="text-sm font-medium text-red-200">
-            Alcuni dati principali non sono disponibili.
+            <T
+              textKey="dashboard.analytics.errors.mainDataUnavailable"
+              fallback="Alcuni dati principali non sono disponibili."
+            />
           </p>
+
           <p className="mt-2 text-sm leading-6 text-red-100/70">
             {galleriesError?.message || artworksError?.message}
           </p>
@@ -653,20 +734,34 @@ export default async function DashboardAnalyticsPage({
       {galleries.length === 0 && (
         <div className="mb-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Nessuna galleria
+            <T
+              textKey="dashboard.analytics.emptyGalleries.label"
+              fallback="Nessuna galleria"
+            />
           </p>
+
           <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-            Crea una galleria per iniziare a raccogliere dati
+            <T
+              textKey="dashboard.analytics.emptyGalleries.title"
+              fallback="Crea una galleria per iniziare a raccogliere dati"
+            />
           </h2>
+
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Gli analytics diventano utili quando una galleria è pubblicata,
-            visitata, salvata o collegata a richieste ed eventi.
+            <T
+              textKey="dashboard.analytics.emptyGalleries.description"
+              fallback="Gli analytics diventano utili quando una galleria è pubblicata, visitata, salvata o collegata a richieste ed eventi."
+            />
           </p>
+
           <Link
             href="/dashboard/gallerie"
             className="mt-5 inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
-            Vai alle gallerie
+            <T
+              textKey="dashboard.analytics.emptyGalleries.action"
+              fallback="Vai alle gallerie"
+            />
           </Link>
         </div>
       )}
@@ -675,36 +770,68 @@ export default async function DashboardAnalyticsPage({
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Periodo
+              <T
+                textKey="dashboard.analytics.period.label"
+                fallback="Periodo"
+              />
             </p>
+
             <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-              Dati su {formatRangeLabel(selectedRange)}
+              <T
+                textKey="dashboard.analytics.period.dataOn"
+                fallback="Dati su"
+              />{" "}
+              {formatRangeLabel(selectedRange)}
             </h2>
+
             <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">
-              Questa è una prima dashboard analytics basata sui dati già presenti
-              in piattaforma. Click opere, tempo medio visita e presenze massime
-              storiche richiederanno il tracking dedicato delle sessioni.
+              <T
+                textKey="dashboard.analytics.period.description"
+                fallback="Questa è una prima dashboard analytics basata sui dati già presenti in piattaforma. Click opere, tempo medio visita e presenze massime storiche richiederanno il tracking dedicato delle sessioni."
+              />
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm md:min-w-72">
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-              <p className="text-neutral-500">Gallerie</p>
+              <p className="text-neutral-500">
+                <T
+                  textKey="dashboard.analytics.period.galleries"
+                  fallback="Gallerie"
+                />
+              </p>
+
               <p className="mt-1 text-xl text-neutral-50">
                 {formatNumber(galleries.length)}
               </p>
+
               <p className="mt-1 text-xs text-neutral-600">
-                {formatNumber(publishedGalleries)} pubblicate
+                {formatNumber(publishedGalleries)}{" "}
+                <T
+                  textKey="dashboard.analytics.period.published"
+                  fallback="pubblicate"
+                />
               </p>
             </div>
 
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-              <p className="text-neutral-500">Opere</p>
+              <p className="text-neutral-500">
+                <T
+                  textKey="dashboard.analytics.period.artworks"
+                  fallback="Opere"
+                />
+              </p>
+
               <p className="mt-1 text-xl text-neutral-50">
                 {formatNumber(artworks.length)}
               </p>
+
               <p className="mt-1 text-xs text-neutral-600">
-                {formatNumber(publicArtworks)} pubbliche
+                {formatNumber(publicArtworks)}{" "}
+                <T
+                  textKey="dashboard.analytics.period.public"
+                  fallback="pubbliche"
+                />
               </p>
             </div>
           </div>
@@ -759,23 +886,37 @@ export default async function DashboardAnalyticsPage({
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Gallerie
+                <T
+                  textKey="dashboard.analytics.galleries.label"
+                  fallback="Gallerie"
+                />
               </p>
+
               <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-                Spazi più attivi
+                <T
+                  textKey="dashboard.analytics.galleries.title"
+                  fallback="Spazi più attivi"
+                />
               </h2>
             </div>
+
             <Link
               href="/dashboard/gallerie"
               className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
             >
-              Gestisci gallerie
+              <T
+                textKey="dashboard.analytics.galleries.manage"
+                fallback="Gestisci gallerie"
+              />
             </Link>
           </div>
 
           {topGalleries.length === 0 && (
             <p className="mt-5 text-sm leading-6 text-neutral-400">
-              Nessuna galleria da analizzare nel periodo selezionato.
+              <T
+                textKey="dashboard.analytics.galleries.empty"
+                fallback="Nessuna galleria da analizzare nel periodo selezionato."
+              />
             </p>
           )}
 
@@ -784,14 +925,45 @@ export default async function DashboardAnalyticsPage({
               <table className="min-w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-[0.18em] text-neutral-500">
                   <tr>
-                    <th className="pb-3 pr-4 font-normal">Galleria</th>
-                    <th className="pb-3 pr-4 font-normal">Visite</th>
-                    <th className="pb-3 pr-4 font-normal">Salvataggi</th>
-                    <th className="pb-3 pr-4 font-normal">Richieste</th>
-                    <th className="pb-3 pr-4 font-normal">Chat</th>
-                    <th className="pb-3 font-normal">Live ora</th>
+                    <th className="pb-3 pr-4 font-normal">
+                      <T
+                        textKey="dashboard.analytics.galleries.table.gallery"
+                        fallback="Galleria"
+                      />
+                    </th>
+                    <th className="pb-3 pr-4 font-normal">
+                      <T
+                        textKey="dashboard.analytics.galleries.table.visits"
+                        fallback="Visite"
+                      />
+                    </th>
+                    <th className="pb-3 pr-4 font-normal">
+                      <T
+                        textKey="dashboard.analytics.galleries.table.saves"
+                        fallback="Salvataggi"
+                      />
+                    </th>
+                    <th className="pb-3 pr-4 font-normal">
+                      <T
+                        textKey="dashboard.analytics.galleries.table.inquiries"
+                        fallback="Richieste"
+                      />
+                    </th>
+                    <th className="pb-3 pr-4 font-normal">
+                      <T
+                        textKey="dashboard.analytics.galleries.table.chat"
+                        fallback="Chat"
+                      />
+                    </th>
+                    <th className="pb-3 font-normal">
+                      <T
+                        textKey="dashboard.analytics.galleries.table.liveNow"
+                        fallback="Live ora"
+                      />
+                    </th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-neutral-800">
                   {topGalleries.map((gallery) => (
                     <tr key={gallery.id}>
@@ -802,6 +974,7 @@ export default async function DashboardAnalyticsPage({
                         >
                           {gallery.title}
                         </Link>
+
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <span
                             className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${getStatusBadgeClass(
@@ -810,6 +983,7 @@ export default async function DashboardAnalyticsPage({
                           >
                             {getStatusLabel(gallery.status)}
                           </span>
+
                           {gallery.status === "published" && (
                             <Link
                               href={`/gallerie/${gallery.slug}`}
@@ -817,23 +991,31 @@ export default async function DashboardAnalyticsPage({
                               rel="noreferrer"
                               className="text-xs text-neutral-500 transition hover:text-neutral-200"
                             >
-                              Apri pubblica
+                              <T
+                                textKey="dashboard.analytics.galleries.openPublic"
+                                fallback="Apri pubblica"
+                              />
                             </Link>
                           )}
                         </div>
                       </td>
+
                       <td className="py-4 pr-4 text-neutral-300">
                         {formatNumber(gallery.visits)}
                       </td>
+
                       <td className="py-4 pr-4 text-neutral-300">
                         {formatNumber(gallery.saves)}
                       </td>
+
                       <td className="py-4 pr-4 text-neutral-300">
                         {formatNumber(gallery.inquiries)}
                       </td>
+
                       <td className="py-4 pr-4 text-neutral-300">
                         {formatNumber(gallery.chatMessages)}
                       </td>
+
                       <td className="py-4 text-neutral-300">
                         {formatNumber(gallery.liveNow)}
                       </td>
@@ -847,46 +1029,83 @@ export default async function DashboardAnalyticsPage({
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Conversione
+            <T
+              textKey="dashboard.analytics.conversion.label"
+              fallback="Conversione"
+            />
           </p>
+
           <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-            Segnali commerciali
+            <T
+              textKey="dashboard.analytics.conversion.title"
+              fallback="Segnali commerciali"
+            />
           </h2>
 
           <div className="mt-6 space-y-4">
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
               <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-neutral-400">Visite → richieste</p>
+                <p className="text-sm text-neutral-400">
+                  <T
+                    textKey="dashboard.analytics.conversion.visitsToInquiries"
+                    fallback="Visite → richieste"
+                  />
+                </p>
+
                 <p className="text-lg font-medium text-neutral-50">
                   {formatPercent(visitToInquiryRate)}
                 </p>
               </div>
+
               <p className="mt-2 text-xs leading-5 text-neutral-600">
-                Rapporto tra visite registrate e richieste ricevute.
+                <T
+                  textKey="dashboard.analytics.conversion.visitsDescription"
+                  fallback="Rapporto tra visite registrate e richieste ricevute."
+                />
               </p>
             </div>
 
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
               <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-neutral-400">Opere salvate → richieste</p>
+                <p className="text-sm text-neutral-400">
+                  <T
+                    textKey="dashboard.analytics.conversion.savesToInquiries"
+                    fallback="Opere salvate → richieste"
+                  />
+                </p>
+
                 <p className="text-lg font-medium text-neutral-50">
                   {formatPercent(saveToInquiryRate)}
                 </p>
               </div>
+
               <p className="mt-2 text-xs leading-5 text-neutral-600">
-                Rapporto tra salvataggi opera e richieste collegate a opere.
+                <T
+                  textKey="dashboard.analytics.conversion.savesDescription"
+                  fallback="Rapporto tra salvataggi opera e richieste collegate a opere."
+                />
               </p>
             </div>
 
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
               <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-neutral-400">Presenze live attive</p>
+                <p className="text-sm text-neutral-400">
+                  <T
+                    textKey="dashboard.analytics.conversion.livePresence"
+                    fallback="Presenze live attive"
+                  />
+                </p>
+
                 <p className="text-lg font-medium text-neutral-50">
                   {formatNumber(liveNowTotal)}
                 </p>
               </div>
+
               <p className="mt-2 text-xs leading-5 text-neutral-600">
-                Utenti o sessioni rilevate come attive negli ultimi 90 secondi.
+                <T
+                  textKey="dashboard.analytics.conversion.liveDescription"
+                  fallback="Utenti o sessioni rilevate come attive negli ultimi 90 secondi."
+                />
               </p>
             </div>
           </div>
@@ -898,69 +1117,110 @@ export default async function DashboardAnalyticsPage({
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Opere
+                <T
+                  textKey="dashboard.analytics.artworks.label"
+                  fallback="Opere"
+                />
               </p>
+
               <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-                Opere più forti
+                <T
+                  textKey="dashboard.analytics.artworks.title"
+                  fallback="Opere più forti"
+                />
               </h2>
             </div>
+
             <Link
               href="/dashboard/opere"
               className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
             >
-              Archivio opere
+              <T
+                textKey="dashboard.analytics.artworks.archive"
+                fallback="Archivio opere"
+              />
             </Link>
           </div>
 
           {topArtworks.length === 0 && (
             <p className="mt-5 text-sm leading-6 text-neutral-400">
-              Nessuna opera salvata o richiesta nel periodo selezionato.
+              <T
+                textKey="dashboard.analytics.artworks.empty"
+                fallback="Nessuna opera salvata o richiesta nel periodo selezionato."
+              />
             </p>
           )}
 
           {topArtworks.length > 0 && (
-            <div className="mt-6 space-y-3">
-              {topArtworks.map((artwork) => (
-                <article
-                  key={artwork.id}
-                  className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4"
-                >
-                  <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-                    <div>
-                      <p className="font-medium text-neutral-100">
-                        {artwork.title}
-                      </p>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        {artwork.artist_name || "Artista non indicato"}
-                      </p>
-                    </div>
+  <div className="mt-6 space-y-3">
+    {topArtworks.map((artwork) => (
+      <article
+        key={artwork.id}
+        className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4"
+      >
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+          <div>
+            <p className="font-medium text-neutral-100">
+              {artwork.title}
+            </p>
 
-                    <div className="flex flex-wrap gap-2 text-xs text-neutral-400">
-                      <span className="rounded-full border border-neutral-800 px-3 py-1">
-                        {formatNumber(artwork.saves)} salvataggi
-                      </span>
-                      <span className="rounded-full border border-neutral-800 px-3 py-1">
-                        {formatNumber(artwork.inquiries)} richieste
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+            <p className="mt-1 text-xs text-neutral-500">
+              {artwork.artist_name ? (
+                artwork.artist_name
+              ) : (
+                <T
+                  textKey="dashboard.analytics.artworks.artistMissing"
+                  fallback="Artista non indicato"
+                />
+              )}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-xs text-neutral-400">
+            <span className="rounded-full border border-neutral-800 px-3 py-1">
+              {formatNumber(artwork.saves)}{" "}
+              <T
+                textKey="dashboard.analytics.artworks.saves"
+                fallback="salvataggi"
+              />
+            </span>
+
+            <span className="rounded-full border border-neutral-800 px-3 py-1">
+              {formatNumber(artwork.inquiries)}{" "}
+              <T
+                textKey="dashboard.analytics.artworks.inquiries"
+                fallback="richieste"
+              />
+            </span>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+)}
         </section>
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Richieste
+            <T
+              textKey="dashboard.analytics.inquiries.label"
+              fallback="Richieste"
+            />
           </p>
+
           <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-            Ultimi contatti ricevuti
+            <T
+              textKey="dashboard.analytics.inquiries.title"
+              fallback="Ultimi contatti ricevuti"
+            />
           </h2>
 
           {recentInquiries.length === 0 && (
             <p className="mt-5 text-sm leading-6 text-neutral-400">
-              Nessuna richiesta ricevuta nel periodo selezionato.
+              <T
+                textKey="dashboard.analytics.inquiries.empty"
+                fallback="Nessuna richiesta ricevuta nel periodo selezionato."
+              />
             </p>
           )}
 
@@ -982,12 +1242,31 @@ export default async function DashboardAnalyticsPage({
                     <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
                       <div>
                         <p className="font-medium text-neutral-100">
-                          {gallery?.title || "Galleria non trovata"}
+                          {gallery?.title ? (
+                            gallery.title
+                          ) : (
+                            <T
+                              textKey="dashboard.analytics.common.galleryNotFound"
+                              fallback="Galleria non trovata"
+                            />
+                          )}
                         </p>
+
                         <p className="mt-1 text-xs text-neutral-500">
-                          {artwork
-                            ? `Opera: ${artwork.title}`
-                            : "Richiesta generale sulla galleria"}
+                          {artwork ? (
+                            <>
+                              <T
+                                textKey="dashboard.analytics.inquiries.artwork"
+                                fallback="Opera:"
+                              />{" "}
+                              {artwork.title}
+                            </>
+                          ) : (
+                            <T
+                              textKey="dashboard.analytics.inquiries.general"
+                              fallback="Richiesta generale sulla galleria"
+                            />
+                          )}
                         </p>
                       </div>
 
@@ -1005,7 +1284,10 @@ export default async function DashboardAnalyticsPage({
             href="/dashboard/richieste"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
           >
-            Apri richieste
+            <T
+              textKey="dashboard.analytics.inquiries.open"
+              fallback="Apri richieste"
+            />
           </Link>
         </section>
       </div>
@@ -1013,15 +1295,25 @@ export default async function DashboardAnalyticsPage({
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Eventi
+            <T
+              textKey="dashboard.analytics.events.label"
+              fallback="Eventi"
+            />
           </p>
+
           <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-            Eventi recenti e programmati
+            <T
+              textKey="dashboard.analytics.events.title"
+              fallback="Eventi recenti e programmati"
+            />
           </h2>
 
           {upcomingOrRecentEvents.length === 0 && (
             <p className="mt-5 text-sm leading-6 text-neutral-400">
-              Nessun evento creato nel periodo selezionato.
+              <T
+                textKey="dashboard.analytics.events.empty"
+                fallback="Nessun evento creato nel periodo selezionato."
+              />
             </p>
           )}
 
@@ -1042,8 +1334,17 @@ export default async function DashboardAnalyticsPage({
                         <p className="font-medium text-neutral-100">
                           {event.title}
                         </p>
+
                         <p className="mt-1 text-xs text-neutral-500">
-                          {gallery?.title || "Galleria non trovata"} · {formatDateTime(event.starts_at)}
+                          {gallery?.title ? (
+                            gallery.title
+                          ) : (
+                            <T
+                              textKey="dashboard.analytics.common.galleryNotFound"
+                              fallback="Galleria non trovata"
+                            />
+                          )}{" "}
+                          · {formatDateTime(event.starts_at)}
                         </p>
                       </div>
 
@@ -1065,40 +1366,44 @@ export default async function DashboardAnalyticsPage({
             href="/dashboard/eventi"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
           >
-            Gestisci eventi
+            <T
+              textKey="dashboard.analytics.events.manage"
+              fallback="Gestisci eventi"
+            />
           </Link>
         </section>
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Tracking avanzato
+            <T
+              textKey="dashboard.analytics.advancedTracking.label"
+              fallback="Tracking avanzato"
+            />
           </p>
+
           <h2 className="mt-3 text-2xl font-medium text-neutral-50">
-            Prossimo livello analytics
+            <T
+              textKey="dashboard.analytics.advancedTracking.title"
+              fallback="Prossimo livello analytics"
+            />
           </h2>
 
           <div className="mt-6 space-y-3">
-            {[
-              "Click sulle opere dentro la galleria",
-              "Opere più viste, non solo più salvate",
-              "Tempo medio reale dentro ogni galleria",
-              "Tempo medio davanti a una singola opera",
-              "Presenza live massima storica per evento/galleria",
-              "Conversione completa visita → opera → richiesta",
-            ].map((item) => (
+            {advancedTrackingItems.map((item) => (
               <div
-                key={item}
+                key={item.textKey}
                 className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm text-neutral-300"
               >
-                {item}
+                <T textKey={item.textKey as TTextKey} fallback={item.fallback} />
               </div>
             ))}
           </div>
 
           <p className="mt-5 text-xs leading-5 text-neutral-600">
-            Queste metriche richiedono una tabella analytics dedicata e un piccolo
-            tracking dal viewer WebGL/sito pubblico. Non sono state attivate in
-            questa prima versione per non appesantire il viewer.
+            <T
+              textKey="dashboard.analytics.advancedTracking.description"
+              fallback="Queste metriche richiedono una tabella analytics dedicata e un piccolo tracking dal viewer WebGL/sito pubblico. Non sono state attivate in questa prima versione per non appesantire il viewer."
+            />
           </p>
         </section>
       </div>
@@ -1106,8 +1411,12 @@ export default async function DashboardAnalyticsPage({
       {optionalWarnings.length > 0 && (
         <div className="mt-6 rounded-3xl border border-yellow-900 bg-yellow-950/20 p-5">
           <p className="text-sm font-medium text-yellow-200">
-            Alcune sorgenti analytics non hanno risposto.
+            <T
+              textKey="dashboard.analytics.warnings.title"
+              fallback="Alcune sorgenti analytics non hanno risposto."
+            />
           </p>
+
           <p className="mt-2 text-sm leading-6 text-yellow-100/70">
             {optionalWarnings.join(" ")}
           </p>

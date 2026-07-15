@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import T from "@/components/i18n/T";
 
 type FollowRow = {
   following_id: string;
@@ -189,50 +190,73 @@ export default async function AccountCalendarPage() {
             href="/eventi"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Calendario pubblico
+            <T
+              textKey="account.calendar.actions.publicCalendar"
+              fallback="Calendario pubblico"
+            />
           </a>
 
           <a
             href="/account/notifiche"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Notifiche
+            <T
+              textKey="account.calendar.actions.notifications"
+              fallback="Notifiche"
+            />
           </a>
         </div>
       }
     >
       <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
-          Agenda personale
+          <T
+            textKey="account.calendar.header.label"
+            fallback="Agenda personale"
+          />
         </p>
 
         <h2 className="font-serif text-3xl text-neutral-50">
-          Eventi dai tuoi interessi
+          <T
+            textKey="account.calendar.header.title"
+            fallback="Eventi dai tuoi interessi"
+          />
         </h2>
 
         <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-          Qui trovi solo gli eventi collegati ai profili che segui e alle
-          gallerie che hai salvato.
+          <T
+            textKey="account.calendar.header.subtitle"
+            fallback="Qui trovi solo gli eventi collegati ai profili che segui e alle gallerie che hai salvato."
+          />
         </p>
 
         {events.length === 0 ? (
           <div className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-950 p-6">
             <p className="text-sm text-neutral-300">
-              Non ci sono eventi nel tuo calendario personale.
+              <T
+                textKey="account.calendar.empty.message"
+                fallback="Non ci sono eventi nel tuo calendario personale."
+              />
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <a
                 href="/profili"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
-                Segui profili
+                <T
+                  textKey="account.calendar.empty.followProfiles"
+                  fallback="Segui profili"
+                />
               </a>
 
               <a
                 href="/gallerie"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
-                Esplora gallerie
+                <T
+                  textKey="account.calendar.empty.exploreGalleries"
+                  fallback="Esplora gallerie"
+                />
               </a>
             </div>
           </div>
@@ -258,7 +282,10 @@ export default async function AccountCalendarPage() {
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs uppercase tracking-[0.25em] text-neutral-600">
-                        No cover
+                        <T
+                          textKey="account.calendar.event.noCover"
+                          fallback="No cover"
+                        />
                       </div>
                     )}
                   </div>
@@ -273,7 +300,15 @@ export default async function AccountCalendarPage() {
                     </h3>
 
                     <p className="mt-2 text-sm text-neutral-500">
-                      {gallery?.title || "Galleria rimossa"} ·{" "}
+                      {gallery?.title ? (
+                        gallery.title
+                      ) : (
+                        <T
+                          textKey="account.calendar.event.galleryRemoved"
+                          fallback="Galleria rimossa"
+                        />
+                      )}{" "}
+                      ·{" "}
                       {owner?.profile_slug ? (
                         <a
                           href={`/profili/${owner.profile_slug}`}
@@ -298,11 +333,17 @@ export default async function AccountCalendarPage() {
                           href={`/gallerie/${gallery.slug}`}
                           className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                         >
-                          Apri galleria
+                          <T
+                            textKey="account.calendar.event.openGallery"
+                            fallback="Apri galleria"
+                          />
                         </a>
                       ) : (
                         <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
-                          Galleria in preparazione
+                          <T
+                            textKey="account.calendar.event.galleryInPreparation"
+                            fallback="Galleria in preparazione"
+                          />
                         </span>
                       )}
                     </div>

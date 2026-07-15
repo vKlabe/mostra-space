@@ -4,6 +4,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import CreateGalleryForm from "@/components/dashboard/CreateGalleryForm";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
+import T from "@/components/i18n/T";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import {
   canCreateGallery,
@@ -187,7 +188,10 @@ export default async function DashboardGalleriesPage({
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alla dashboard
+          <T
+            textKey="dashboard.galleries.actions.backToDashboard"
+            fallback="Torna alla dashboard"
+          />
         </a>
       </DashboardShell>
     );
@@ -318,14 +322,20 @@ export default async function DashboardGalleriesPage({
             href="/marketplace"
             className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
           >
-            Marketplace
+            <T
+              textKey="dashboard.galleries.actions.marketplace"
+              fallback="Marketplace"
+            />
           </a>
 
           <a
             href="/dashboard/eventi"
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
-            Eventi
+            <T
+              textKey="dashboard.galleries.actions.events"
+              fallback="Eventi"
+            />
           </a>
 
           <a
@@ -334,12 +344,17 @@ export default async function DashboardGalleriesPage({
             rel="noreferrer"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Elenco pubblico
+            <T
+              textKey="dashboard.galleries.actions.publicList"
+              fallback="Elenco pubblico"
+            />
           </a>
         </div>
       }
     >
-      {(templatesResult.error || galleriesResult.error || purchasesResult.error) && (
+      {(templatesResult.error ||
+        galleriesResult.error ||
+        purchasesResult.error) && (
         <div className="mb-6">
           <DataErrorCard
             title="Non riesco a caricare le gallerie"
@@ -363,36 +378,61 @@ export default async function DashboardGalleriesPage({
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Limiti piano
+              <T
+                textKey="dashboard.galleries.planLimits.label"
+                fallback="Limiti piano"
+              />
             </p>
 
             <h2 className="text-2xl font-medium">{limits.label}</h2>
 
             <p className="mt-2 text-sm text-neutral-400">
-              Gallerie create: {safeGalleries.length} /{" "}
-              {limits.maxGalleries === null
-                ? "Illimitato"
-                : limits.maxGalleries}
+              <T
+                textKey="dashboard.galleries.planLimits.createdGalleries"
+                fallback="Gallerie create:"
+              />{" "}
+              {safeGalleries.length} /{" "}
+              {limits.maxGalleries === null ? (
+                <T
+                  textKey="dashboard.galleries.planLimits.unlimited"
+                  fallback="Illimitato"
+                />
+              ) : (
+                limits.maxGalleries
+              )}
             </p>
 
             <p className="mt-1 text-sm text-neutral-500">
-              Template disponibili per te:{" "}
+              <T
+                textKey="dashboard.galleries.planLimits.availableTemplates"
+                fallback="Template disponibili per te:"
+              />{" "}
               <span className="text-neutral-200">
                 {availableTemplates.length}
               </span>
+
               {purchasedMarketplaceTemplates.length > 0 && (
                 <>
                   {" "}
-                  · Marketplace acquistati:{" "}
+                  ·{" "}
+                  <T
+                    textKey="dashboard.galleries.planLimits.purchasedMarketplace"
+                    fallback="Marketplace acquistati:"
+                  />{" "}
                   <span className="text-amber-200">
                     {purchasedMarketplaceTemplates.length}
                   </span>
                 </>
               )}
+
               {lockedTemplates.length > 0 && (
                 <>
                   {" "}
-                  · Template bloccati:{" "}
+                  ·{" "}
+                  <T
+                    textKey="dashboard.galleries.planLimits.lockedTemplates"
+                    fallback="Template bloccati:"
+                  />{" "}
                   <span className="text-neutral-400">
                     {lockedTemplates.length}
                   </span>
@@ -401,8 +441,10 @@ export default async function DashboardGalleriesPage({
             </p>
 
             <p className="mt-1 text-xs leading-5 text-neutral-600">
-              I template marketplace acquistati restano collegati al tuo account
-              e sono disponibili anche se il piano attivo è Free.
+              <T
+                textKey="dashboard.galleries.planLimits.marketplacePersistence"
+                fallback="I template marketplace acquistati restano collegati al tuo account e sono disponibili anche se il piano attivo è Free."
+              />
             </p>
           </div>
 
@@ -411,7 +453,10 @@ export default async function DashboardGalleriesPage({
               href="/pricing"
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
-              Passa a un piano superiore
+              <T
+                textKey="dashboard.galleries.actions.upgradePlan"
+                fallback="Passa a un piano superiore"
+              />
             </a>
           )}
         </div>
@@ -434,14 +479,26 @@ export default async function DashboardGalleriesPage({
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Archivio
+                <T
+                  textKey="dashboard.galleries.archive.label"
+                  fallback="Archivio"
+                />
               </p>
 
-              <h2 className="text-2xl font-medium">Gallerie create</h2>
+              <h2 className="text-2xl font-medium">
+                <T
+                  textKey="dashboard.galleries.archive.title"
+                  fallback="Gallerie create"
+                />
+              </h2>
             </div>
 
             <p className="text-sm text-neutral-500">
-              Totale: {safeGalleries.length}
+              <T
+                textKey="dashboard.galleries.archive.total"
+                fallback="Totale:"
+              />{" "}
+              {safeGalleries.length}
             </p>
           </div>
 
@@ -525,12 +582,26 @@ export default async function DashboardGalleriesPage({
                         </div>
 
                         <p className="mt-2 text-sm text-neutral-500">
-                          Template: {template?.name || "Template non trovato"}
+                          <T
+                            textKey="dashboard.galleries.gallery.template"
+                            fallback="Template:"
+                          />{" "}
+                          {template?.name ? (
+                            template.name
+                          ) : (
+                            <T
+                              textKey="dashboard.galleries.gallery.templateNotFound"
+                              fallback="Template non trovato"
+                            />
+                          )}
                         </p>
 
                         {template && (
                           <p className="mt-1 text-xs text-neutral-600">
-                            Accesso template:{" "}
+                            <T
+                              textKey="dashboard.galleries.gallery.templateAccess"
+                              fallback="Accesso template:"
+                            />{" "}
                             {getTemplatePlanLabel(
                               template.available_from_plan || "free",
                               template.is_purchased_template
@@ -546,12 +617,22 @@ export default async function DashboardGalleriesPage({
 
                         <dl className="mt-4 space-y-1 text-xs text-neutral-500">
                           <div>
-                            <dt className="inline">Slug: </dt>
+                            <dt className="inline">
+                              <T
+                                textKey="dashboard.galleries.gallery.slug"
+                                fallback="Slug:"
+                              />{" "}
+                            </dt>
                             <dd className="inline">{gallery.slug}</dd>
                           </div>
 
                           <div>
-                            <dt className="inline">Creata: </dt>
+                            <dt className="inline">
+                              <T
+                                textKey="dashboard.galleries.gallery.createdAt"
+                                fallback="Creata:"
+                              />{" "}
+                            </dt>
                             <dd className="inline">
                               {new Date(gallery.created_at).toLocaleString(
                                 "it-IT"
@@ -561,7 +642,12 @@ export default async function DashboardGalleriesPage({
 
                           {gallery.published_at && (
                             <div>
-                              <dt className="inline">Pubblicata: </dt>
+                              <dt className="inline">
+                                <T
+                                  textKey="dashboard.galleries.gallery.publishedAt"
+                                  fallback="Pubblicata:"
+                                />{" "}
+                              </dt>
                               <dd className="inline">
                                 {new Date(gallery.published_at).toLocaleString(
                                   "it-IT"
@@ -577,7 +663,10 @@ export default async function DashboardGalleriesPage({
                           href={`/dashboard/gallerie/${gallery.id}`}
                           className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                         >
-                          Gestisci
+                          <T
+                            textKey="dashboard.galleries.gallery.manage"
+                            fallback="Gestisci"
+                          />
                         </a>
 
                         {gallery.status === "published" ? (
@@ -587,7 +676,10 @@ export default async function DashboardGalleriesPage({
                             rel="noreferrer"
                             className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                           >
-                            Viewer pubblico
+                            <T
+                              textKey="dashboard.galleries.gallery.publicViewer"
+                              fallback="Viewer pubblico"
+                            />
                           </a>
                         ) : (
                           <a
@@ -596,7 +688,10 @@ export default async function DashboardGalleriesPage({
                             rel="noreferrer"
                             className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                           >
-                            Anteprima visitor
+                            <T
+                              textKey="dashboard.galleries.gallery.visitorPreview"
+                              fallback="Anteprima visitor"
+                            />
                           </a>
                         )}
 
@@ -604,7 +699,10 @@ export default async function DashboardGalleriesPage({
                           href={`/dashboard/gallerie-editor/${gallery.id}`}
                           className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                         >
-                          Editor
+                          <T
+                            textKey="dashboard.galleries.gallery.editor"
+                            fallback="Editor"
+                          />
                         </a>
                       </div>
                     </div>
@@ -619,16 +717,24 @@ export default async function DashboardGalleriesPage({
       {lockedTemplates.length > 0 && (
         <section className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Template bloccati
+            <T
+              textKey="dashboard.galleries.lockedTemplates.label"
+              fallback="Template bloccati"
+            />
           </p>
 
           <h2 className="text-2xl font-medium">
-            Template disponibili con upgrade o marketplace
+            <T
+              textKey="dashboard.galleries.lockedTemplates.title"
+              fallback="Template disponibili con upgrade o marketplace"
+            />
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-            Questi template esistono nel registry e sono attivi, ma richiedono
-            un piano superiore oppure un acquisto marketplace.
+            <T
+              textKey="dashboard.galleries.lockedTemplates.description"
+              fallback="Questi template esistono nel registry e sono attivi, ma richiedono un piano superiore oppure un acquisto marketplace."
+            />
           </p>
 
           <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -649,11 +755,20 @@ export default async function DashboardGalleriesPage({
                         : "text-xs uppercase tracking-[0.18em] text-neutral-600"
                     }
                   >
-                    {isMarketplace
-                      ? "Marketplace"
-                      : `Richiede ${getTemplatePlanLabel(
-                          template.available_from_plan
-                        )}`}
+                    {isMarketplace ? (
+                      <T
+                        textKey="dashboard.galleries.lockedTemplates.marketplace"
+                        fallback="Marketplace"
+                      />
+                    ) : (
+                      <>
+                        <T
+                          textKey="dashboard.galleries.lockedTemplates.requires"
+                          fallback="Richiede"
+                        />{" "}
+                        {getTemplatePlanLabel(template.available_from_plan)}
+                      </>
+                    )}
                   </p>
 
                   <h3 className="mt-3 text-lg font-medium text-neutral-100">
@@ -661,12 +776,24 @@ export default async function DashboardGalleriesPage({
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    {template.description || "Nessuna descrizione disponibile."}
+                    {template.description ? (
+                      template.description
+                    ) : (
+                      <T
+                        textKey="dashboard.galleries.lockedTemplates.noDescription"
+                        fallback="Nessuna descrizione disponibile."
+                      />
+                    )}
                   </p>
 
                   <dl className="mt-4 space-y-1 text-xs text-neutral-500">
                     <div>
-                      <dt className="inline">Max opere: </dt>
+                      <dt className="inline">
+                        <T
+                          textKey="dashboard.galleries.lockedTemplates.maxArtworks"
+                          fallback="Max opere:"
+                        />{" "}
+                      </dt>
                       <dd className="inline">{template.max_artworks}</dd>
                     </div>
                   </dl>
@@ -680,14 +807,20 @@ export default async function DashboardGalleriesPage({
               href="/pricing"
               className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
-              Vedi piani e upgrade
+              <T
+                textKey="dashboard.galleries.lockedTemplates.viewPlans"
+                fallback="Vedi piani e upgrade"
+              />
             </a>
 
             <a
               href="/marketplace"
               className="inline-flex rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
             >
-              Vai al marketplace
+              <T
+                textKey="dashboard.galleries.lockedTemplates.goToMarketplace"
+                fallback="Vai al marketplace"
+              />
             </a>
           </div>
         </section>

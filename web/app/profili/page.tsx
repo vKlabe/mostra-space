@@ -1,5 +1,6 @@
 import Link from "next/link";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
+import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -206,39 +207,60 @@ export default async function ProfilesIndexPage({
             href="/gallerie"
             className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
           >
-            Gallerie
+            <T
+              textKey="profiles.actions.galleries"
+              fallback="Gallerie"
+            />
           </Link>
 
           <Link
             href="/account"
             className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
           >
-            Account
+            <T
+              textKey="profiles.actions.account"
+              fallback="Account"
+            />
           </Link>
         </div>
 
         <section className="rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-6 shadow-2xl shadow-black/20 md:p-8">
-          <p className="museum-label">Community</p>
+          <p className="museum-label">
+            <T
+              textKey="profiles.hero.label"
+              fallback="Community"
+            />
+          </p>
 
           <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>
               <h1 className="font-serif text-5xl text-[var(--museum-ivory)] md:text-7xl">
-                Profili pubblici
+                <T
+                  textKey="profiles.hero.title"
+                  fallback="Profili pubblici"
+                />
               </h1>
 
               <p className="mt-5 max-w-3xl text-base leading-8 text-[var(--museum-stone)]">
-                Scopri artisti, galleristi, curatori e istituzioni presenti su
-                mostra.space. Segui i profili che ti interessano e ritrovali
-                nella tua area account.
+                <T
+                  textKey="profiles.hero.description"
+                  fallback="Scopri artisti, galleristi, curatori e istituzioni presenti su mostra.space. Segui i profili che ti interessano e ritrovali nella tua area account."
+                />
               </p>
             </div>
 
-            <form action="/profili" className="rounded-3xl border border-[var(--museum-border-soft)] bg-black/35 p-4">
+            <form
+              action="/profili"
+              className="rounded-3xl border border-[var(--museum-border-soft)] bg-black/35 p-4"
+            >
               <label
                 htmlFor="profile-search"
                 className="text-xs uppercase tracking-[0.22em] text-[var(--museum-bronze)]"
               >
-                Cerca profilo
+                <T
+                  textKey="profiles.search.label"
+                  fallback="Cerca profilo"
+                />
               </label>
 
               <div className="mt-3 flex gap-2">
@@ -254,7 +276,10 @@ export default async function ProfilesIndexPage({
                   type="submit"
                   className="rounded-2xl bg-[var(--museum-bronze)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:brightness-110"
                 >
-                  Cerca
+                  <T
+                    textKey="profiles.search.submit"
+                    fallback="Cerca"
+                  />
                 </button>
               </div>
 
@@ -263,7 +288,10 @@ export default async function ProfilesIndexPage({
                   href="/profili"
                   className="mt-3 inline-flex text-xs text-[var(--museum-stone-muted)] underline decoration-[var(--museum-border-soft)] underline-offset-4 transition hover:text-[var(--museum-ivory)]"
                 >
-                  Cancella ricerca
+                  <T
+                    textKey="profiles.search.clear"
+                    fallback="Cancella ricerca"
+                  />
                 </Link>
               )}
             </form>
@@ -272,20 +300,40 @@ export default async function ProfilesIndexPage({
 
         {profilesError && (
           <section className="mt-8 rounded-[2rem] border border-red-900 bg-red-950/30 p-6 text-red-100">
-            <p className="font-medium">Non riesco a caricare i profili.</p>
-            <p className="mt-2 text-sm text-red-200">{profilesError.message}</p>
+            <p className="font-medium">
+              <T
+                textKey="profiles.errors.loading"
+                fallback="Non riesco a caricare i profili."
+              />
+            </p>
+
+            <p className="mt-2 text-sm text-red-200">
+              {profilesError.message}
+            </p>
           </section>
         )}
 
         {!profilesError && safeProfiles.length === 0 && (
           <section className="mt-8 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-8">
-            <p className="museum-label">Nessun risultato</p>
+            <p className="museum-label">
+              <T
+                textKey="profiles.empty.label"
+                fallback="Nessun risultato"
+              />
+            </p>
+
             <h2 className="mt-3 font-serif text-3xl text-[var(--museum-ivory)]">
-              Non ci sono profili pubblici per questa ricerca.
+              <T
+                textKey="profiles.empty.title"
+                fallback="Non ci sono profili pubblici per questa ricerca."
+              />
             </h2>
+
             <p className="mt-3 text-sm leading-7 text-[var(--museum-stone-muted)]">
-              Prova con un nome, una galleria, una parola della bio oppure
-              cancella la ricerca.
+              <T
+                textKey="profiles.empty.description"
+                fallback="Prova con un nome, una galleria, una parola della bio oppure cancella la ricerca."
+              />
             </p>
           </section>
         )}
@@ -348,8 +396,14 @@ export default async function ProfilesIndexPage({
                         </div>
 
                         <p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-[var(--museum-stone-muted)]">
-                          {profile.bio ||
-                            "Profilo pubblico mostra.space. Bio non ancora inserita."}
+                          {profile.bio ? (
+                            profile.bio
+                          ) : (
+                            <T
+                              textKey="profiles.card.bioMissing"
+                              fallback="Profilo pubblico mostra.space. Bio non ancora inserita."
+                            />
+                          )}
                         </p>
 
                         <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs">
@@ -357,8 +411,12 @@ export default async function ProfilesIndexPage({
                             <p className="text-base text-[var(--museum-ivory)]">
                               {followerCount}
                             </p>
+
                             <p className="mt-1 text-[var(--museum-stone-muted)]">
-                              follower
+                              <T
+                                textKey="profiles.card.followers"
+                                fallback="follower"
+                              />
                             </p>
                           </div>
 
@@ -366,8 +424,12 @@ export default async function ProfilesIndexPage({
                             <p className="text-base text-[var(--museum-ivory)]">
                               {galleryCount}
                             </p>
+
                             <p className="mt-1 text-[var(--museum-stone-muted)]">
-                              gallerie
+                              <T
+                                textKey="profiles.card.galleries"
+                                fallback="gallerie"
+                              />
                             </p>
                           </div>
 
@@ -375,8 +437,12 @@ export default async function ProfilesIndexPage({
                             <p className="text-base text-[var(--museum-ivory)]">
                               {artworkCount}
                             </p>
+
                             <p className="mt-1 text-[var(--museum-stone-muted)]">
-                              opere
+                              <T
+                                textKey="profiles.card.artworks"
+                                fallback="opere"
+                              />
                             </p>
                           </div>
                         </div>
@@ -386,7 +452,10 @@ export default async function ProfilesIndexPage({
                             href={`/profili/${profile.profile_slug}`}
                             className="rounded-full border border-[var(--museum-border-soft)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
                           >
-                            Vedi profilo
+                            <T
+                              textKey="profiles.card.viewProfile"
+                              fallback="Vedi profilo"
+                            />
                           </Link>
 
                           <FollowProfileButton

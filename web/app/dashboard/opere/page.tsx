@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import T from "@/components/i18n/T";
 import CreateArtworkForm from "@/components/dashboard/CreateArtworkForm";
 import EditArtworkForm from "@/components/dashboard/EditArtworkForm";
 import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
@@ -159,7 +160,10 @@ export default async function DashboardArtworksPage({
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alla dashboard
+          <T
+            textKey="dashboard.artworks.actions.backToDashboard"
+            fallback="Torna alla dashboard"
+          />
         </a>
       </DashboardShell>
     );
@@ -246,22 +250,28 @@ export default async function DashboardArtworksPage({
       subtitle="Qui carichi, organizzi e modifichi le opere che poi potranno essere inserite nelle gallerie virtuali e posizionate negli spazi espositivi."
       activeSection="opere"
       actions={
-  <div className="flex flex-wrap gap-3">
-    <a
-      href="/dashboard/opere/inventario"
-      className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-    >
-      Gestione rapida opere
-    </a>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="/dashboard/opere/inventario"
+            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+          >
+            <T
+              textKey="dashboard.artworks.actions.quickManagement"
+              fallback="Gestione rapida opere"
+            />
+          </a>
 
-    <a
-      href="/dashboard/gallerie"
-      className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-    >
-      Gallerie
-    </a>
-  </div>
-}
+          <a
+            href="/dashboard/gallerie"
+            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+          >
+            <T
+              textKey="dashboard.artworks.actions.galleries"
+              fallback="Gallerie"
+            />
+          </a>
+        </div>
+      }
     >
       {artworksError && (
         <div className="mb-6">
@@ -281,30 +291,59 @@ export default async function DashboardArtworksPage({
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Limiti piano
+              <T
+                textKey="dashboard.artworks.planLimits.label"
+                fallback="Limiti piano"
+              />
             </p>
 
             <h2 className="text-2xl font-medium">{limits.label}</h2>
 
             <p className="mt-2 text-sm text-neutral-400">
-              Opere caricate: {safeArtworks.length} /{" "}
-              {limits.maxArtworksTotal === null
-                ? "Illimitato"
-                : limits.maxArtworksTotal}
+              <T
+                textKey="dashboard.artworks.planLimits.uploadedArtworks"
+                fallback="Opere caricate:"
+              />{" "}
+              {safeArtworks.length} /{" "}
+              {limits.maxArtworksTotal === null ? (
+                <T
+                  textKey="dashboard.artworks.planLimits.unlimited"
+                  fallback="Illimitato"
+                />
+              ) : (
+                limits.maxArtworksTotal
+              )}
             </p>
 
             <p className="mt-1 text-sm text-neutral-400">
-              Storage usato: {bytesToMb(storageUsedBytes).toFixed(2)} MB /{" "}
-              {limits.maxStorageMb === null
-                ? "Illimitato"
-                : `${limits.maxStorageMb} MB`}
+              <T
+                textKey="dashboard.artworks.planLimits.storageUsed"
+                fallback="Storage usato:"
+              />{" "}
+              {bytesToMb(storageUsedBytes).toFixed(2)} MB /{" "}
+              {limits.maxStorageMb === null ? (
+                <T
+                  textKey="dashboard.artworks.planLimits.unlimited"
+                  fallback="Illimitato"
+                />
+              ) : (
+                `${limits.maxStorageMb} MB`
+              )}
             </p>
 
             <p className="mt-1 text-sm text-neutral-500">
-              Peso massimo singola opera:{" "}
-              {limits.maxArtworkFileMb === null
-                ? "Illimitato"
-                : `${limits.maxArtworkFileMb} MB`}
+              <T
+                textKey="dashboard.artworks.planLimits.maxSingleArtworkSize"
+                fallback="Peso massimo singola opera:"
+              />{" "}
+              {limits.maxArtworkFileMb === null ? (
+                <T
+                  textKey="dashboard.artworks.planLimits.unlimited"
+                  fallback="Illimitato"
+                />
+              ) : (
+                `${limits.maxArtworkFileMb} MB`
+              )}
             </p>
           </div>
 
@@ -313,7 +352,10 @@ export default async function DashboardArtworksPage({
               href="/pricing"
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
-              Passa a un piano superiore
+              <T
+                textKey="dashboard.artworks.actions.upgradePlan"
+                fallback="Passa a un piano superiore"
+              />
             </a>
           )}
         </div>
@@ -338,14 +380,26 @@ export default async function DashboardArtworksPage({
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Archivio
+                <T
+                  textKey="dashboard.artworks.archive.label"
+                  fallback="Archivio"
+                />
               </p>
 
-              <h2 className="text-2xl font-medium">Opere create</h2>
+              <h2 className="text-2xl font-medium">
+                <T
+                  textKey="dashboard.artworks.archive.title"
+                  fallback="Opere create"
+                />
+              </h2>
             </div>
 
             <p className="text-sm text-neutral-500">
-              Totale: {safeArtworks.length}
+              <T
+                textKey="dashboard.artworks.archive.total"
+                fallback="Totale:"
+              />{" "}
+              {safeArtworks.length}
             </p>
           </div>
 
@@ -365,7 +419,9 @@ export default async function DashboardArtworksPage({
                 >
                   {getFilterLabel(item.filter)}{" "}
                   <span
-                    className={isActive ? "text-neutral-700" : "text-neutral-600"}
+                    className={
+                      isActive ? "text-neutral-700" : "text-neutral-600"
+                    }
                   >
                     {item.count}
                   </span>
@@ -430,18 +486,33 @@ export default async function DashboardArtworksPage({
                       href={`/dashboard/opere/${artwork.id}`}
                       className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                     >
-                      Dettaglio
+                      <T
+                        textKey="dashboard.artworks.item.details"
+                        fallback="Dettaglio"
+                      />
                     </a>
 
                     <div className="rounded-full border border-neutral-800 bg-neutral-950 px-4 py-2 text-xs text-neutral-500">
-                      Peso file:{" "}
-                      {artwork.file_size_bytes
-                        ? `${bytesToMb(artwork.file_size_bytes).toFixed(2)} MB`
-                        : "Non registrato"}
+                      <T
+                        textKey="dashboard.artworks.item.fileSize"
+                        fallback="Peso file:"
+                      />{" "}
+                      {artwork.file_size_bytes ? (
+                        `${bytesToMb(artwork.file_size_bytes).toFixed(2)} MB`
+                      ) : (
+                        <T
+                          textKey="dashboard.artworks.item.fileSizeMissing"
+                          fallback="Non registrato"
+                        />
+                      )}
                     </div>
 
                     <div className="rounded-full border border-neutral-800 bg-neutral-950 px-4 py-2 text-xs text-neutral-500">
-                      Misure: {getArtworkRealSizeLabel(artwork)}
+                      <T
+                        textKey="dashboard.artworks.item.measurements"
+                        fallback="Misure:"
+                      />{" "}
+                      {getArtworkRealSizeLabel(artwork)}
                     </div>
                   </div>
 

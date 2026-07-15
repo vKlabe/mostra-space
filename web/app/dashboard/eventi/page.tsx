@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import CreateGalleryEventForm from "@/components/events/CreateGalleryEventForm";
 import GalleryEventActions from "@/components/events/GalleryEventActions";
+import T from "@/components/i18n/T";
 
 type Profile = {
   id: string;
@@ -107,7 +108,10 @@ export default async function DashboardEventsPage() {
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alla dashboard
+          <T
+            textKey="dashboard.events.actions.backToDashboard"
+            fallback="Torna alla dashboard"
+          />
         </a>
       </DashboardShell>
     );
@@ -147,7 +151,9 @@ export default async function DashboardEventsPage() {
 
   const safeGalleries = (galleries || []) as Gallery[];
   const safeEvents = (events || []) as GalleryEvent[];
-  const galleryById = new Map(safeGalleries.map((gallery) => [gallery.id, gallery]));
+  const galleryById = new Map(
+    safeGalleries.map((gallery) => [gallery.id, gallery])
+  );
 
   const activeGalleryIds = new Set(
     safeEvents
@@ -181,14 +187,20 @@ export default async function DashboardEventsPage() {
             rel="noreferrer"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Calendario pubblico
+            <T
+              textKey="dashboard.events.actions.publicCalendar"
+              fallback="Calendario pubblico"
+            />
           </a>
 
           <a
             href="/account/calendario"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Il mio calendario
+            <T
+              textKey="dashboard.events.actions.myCalendar"
+              fallback="Il mio calendario"
+            />
           </a>
         </div>
       }
@@ -198,17 +210,25 @@ export default async function DashboardEventsPage() {
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Eventi attivi
+            <T
+              textKey="dashboard.events.active.label"
+              fallback="Eventi attivi"
+            />
           </p>
 
           <h2 className="font-serif text-3xl text-neutral-50">
-            Prossimi eventi
+            <T
+              textKey="dashboard.events.active.title"
+              fallback="Prossimi eventi"
+            />
           </h2>
 
           {upcomingEvents.length === 0 ? (
             <p className="mt-4 text-sm text-neutral-400">
-              Non hai eventi programmati. Crea un evento collegato a una
-              galleria per farlo apparire nel calendario pubblico.
+              <T
+                textKey="dashboard.events.active.empty"
+                fallback="Non hai eventi programmati. Crea un evento collegato a una galleria per farlo apparire nel calendario pubblico."
+              />
             </p>
           ) : (
             <div className="mt-6 grid gap-4">
@@ -229,7 +249,10 @@ export default async function DashboardEventsPage() {
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-xs uppercase tracking-[0.25em] text-neutral-600">
-                          No cover
+                          <T
+                            textKey="dashboard.events.active.noCover"
+                            fallback="No cover"
+                          />
                         </div>
                       )}
                     </div>
@@ -270,7 +293,10 @@ export default async function DashboardEventsPage() {
                           href={`/dashboard/gallerie/${gallery.id}`}
                           className="mt-4 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400"
                         >
-                          Gestisci galleria
+                          <T
+                            textKey="dashboard.events.active.manageGallery"
+                            fallback="Gestisci galleria"
+                          />
                         </a>
                       )}
                     </div>
@@ -290,11 +316,17 @@ export default async function DashboardEventsPage() {
         {closedEvents.length > 0 && (
           <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Archivio eventi
+              <T
+                textKey="dashboard.events.archive.label"
+                fallback="Archivio eventi"
+              />
             </p>
 
             <h2 className="font-serif text-3xl text-neutral-50">
-              Eventi chiusi
+              <T
+                textKey="dashboard.events.archive.title"
+                fallback="Eventi chiusi"
+              />
             </h2>
 
             <div className="mt-6 grid gap-3">
@@ -310,9 +342,17 @@ export default async function DashboardEventsPage() {
                       <p className="text-sm font-medium text-neutral-100">
                         {event.title}
                       </p>
+
                       <p className="mt-1 text-xs text-neutral-500">
-                        {gallery?.title || "Galleria rimossa"} ·{" "}
-                        {formatDateTime(event.starts_at)} ·{" "}
+                        {gallery?.title ? (
+                          gallery.title
+                        ) : (
+                          <T
+                            textKey="dashboard.events.archive.galleryRemoved"
+                            fallback="Galleria rimossa"
+                          />
+                        )}{" "}
+                        · {formatDateTime(event.starts_at)} ·{" "}
                         {getStatusLabel(event.status)}
                       </p>
                     </div>

@@ -5,6 +5,7 @@ import InquiryStatusButton from "@/components/dashboard/InquiryStatusButton";
 import DeleteInquiryButton from "@/components/dashboard/DeleteInquiryButton";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
+import T from "@/components/i18n/T";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import { getPlanLimits, normalizePlanName } from "@/lib/plans";
 
@@ -161,7 +162,10 @@ export default async function DashboardInquiriesPage({
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alla dashboard
+          <T
+            textKey="dashboard.inquiries.actions.backToDashboard"
+            fallback="Torna alla dashboard"
+          />
         </a>
       </DashboardShell>
     );
@@ -245,14 +249,20 @@ export default async function DashboardInquiriesPage({
             rel="noreferrer"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Elenco pubblico
+            <T
+              textKey="dashboard.inquiries.actions.publicList"
+              fallback="Elenco pubblico"
+            />
           </a>
 
           <a
             href="/api/dashboard/inquiries-export"
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
-            Scarica CSV
+            <T
+              textKey="dashboard.inquiries.actions.downloadCsv"
+              fallback="Scarica CSV"
+            />
           </a>
         </>
       }
@@ -275,20 +285,35 @@ export default async function DashboardInquiriesPage({
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Limiti piano
+              <T
+                textKey="dashboard.inquiries.planLimits.label"
+                fallback="Limiti piano"
+              />
             </p>
 
             <h2 className="text-2xl font-medium">{limits.label}</h2>
 
             <p className="mt-2 text-sm text-neutral-400">
-              Richieste ricevute questo mese: {monthlyInquiries.length} /{" "}
-              {limits.maxRequestsPerMonth === null
-                ? "Illimitato"
-                : limits.maxRequestsPerMonth}
+              <T
+                textKey="dashboard.inquiries.planLimits.monthlyReceived"
+                fallback="Richieste ricevute questo mese:"
+              />{" "}
+              {monthlyInquiries.length} /{" "}
+              {limits.maxRequestsPerMonth === null ? (
+                <T
+                  textKey="dashboard.inquiries.planLimits.unlimited"
+                  fallback="Illimitato"
+                />
+              ) : (
+                limits.maxRequestsPerMonth
+              )}
             </p>
 
             <p className="mt-1 text-sm text-neutral-500">
-              Le richieste vengono conteggiate dal primo giorno del mese.
+              <T
+                textKey="dashboard.inquiries.planLimits.monthlyCountNotice"
+                fallback="Le richieste vengono conteggiate dal primo giorno del mese."
+              />
             </p>
           </div>
 
@@ -298,7 +323,10 @@ export default async function DashboardInquiriesPage({
                 href="/pricing"
                 className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
-                Passa a un piano superiore
+                <T
+                  textKey="dashboard.inquiries.actions.upgradePlan"
+                  fallback="Passa a un piano superiore"
+                />
               </a>
             )}
         </div>
@@ -308,14 +336,26 @@ export default async function DashboardInquiriesPage({
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Inbox
+              <T
+                textKey="dashboard.inquiries.inbox.label"
+                fallback="Inbox"
+              />
             </p>
 
-            <h2 className="text-2xl font-medium">Contatti e lead</h2>
+            <h2 className="text-2xl font-medium">
+              <T
+                textKey="dashboard.inquiries.inbox.title"
+                fallback="Contatti e lead"
+              />
+            </h2>
           </div>
 
           <p className="text-sm text-neutral-500">
-            Totale: {visibleInquiries.length}
+            <T
+              textKey="dashboard.inquiries.inbox.total"
+              fallback="Totale:"
+            />{" "}
+            {visibleInquiries.length}
           </p>
         </div>
 
@@ -390,9 +430,7 @@ export default async function DashboardInquiriesPage({
                   <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-xl font-medium">
-                          {inquiry.name}
-                        </h3>
+                        <h3 className="text-xl font-medium">{inquiry.name}</h3>
 
                         <span
                           className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getStatusBadgeClass(
@@ -404,11 +442,17 @@ export default async function DashboardInquiriesPage({
 
                         {artwork ? (
                           <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
-                            Richiesta opera
+                            <T
+                              textKey="dashboard.inquiries.item.artworkInquiry"
+                              fallback="Richiesta opera"
+                            />
                           </span>
                         ) : (
                           <span className="rounded-full border border-neutral-700 bg-neutral-950 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-400">
-                            Richiesta galleria
+                            <T
+                              textKey="dashboard.inquiries.item.galleryInquiry"
+                              fallback="Richiesta galleria"
+                            />
                           </span>
                         )}
                       </div>
@@ -430,15 +474,32 @@ export default async function DashboardInquiriesPage({
 
                       <dl className="mt-4 space-y-1 text-xs text-neutral-500">
                         <div>
-                          <dt className="inline">Galleria: </dt>
+                          <dt className="inline">
+                            <T
+                              textKey="dashboard.inquiries.item.gallery"
+                              fallback="Galleria:"
+                            />{" "}
+                          </dt>
                           <dd className="inline">
-                            {gallery ? gallery.title : "Galleria non trovata"}
+                            {gallery ? (
+                              gallery.title
+                            ) : (
+                              <T
+                                textKey="dashboard.inquiries.item.galleryNotFound"
+                                fallback="Galleria non trovata"
+                              />
+                            )}
                           </dd>
                         </div>
 
                         {gallery && (
                           <div>
-                            <dt className="inline">Link pubblico: </dt>
+                            <dt className="inline">
+                              <T
+                                textKey="dashboard.inquiries.item.publicLink"
+                                fallback="Link pubblico:"
+                              />{" "}
+                            </dt>
                             <dd className="inline">
                               <a
                                 href={`/gallerie/${gallery.slug}`}
@@ -454,7 +515,12 @@ export default async function DashboardInquiriesPage({
 
                         {artwork && (
                           <div>
-                            <dt className="inline">Opera richiesta: </dt>
+                            <dt className="inline">
+                              <T
+                                textKey="dashboard.inquiries.item.requestedArtwork"
+                                fallback="Opera richiesta:"
+                              />{" "}
+                            </dt>
                             <dd className="inline text-neutral-300">
                               {artwork.title}
                               {artwork.artist_name
@@ -466,7 +532,12 @@ export default async function DashboardInquiriesPage({
                         )}
 
                         <div>
-                          <dt className="inline">Ricevuta: </dt>
+                          <dt className="inline">
+                            <T
+                              textKey="dashboard.inquiries.item.receivedAt"
+                              fallback="Ricevuta:"
+                            />{" "}
+                          </dt>
                           <dd className="inline">
                             {new Date(inquiry.created_at).toLocaleString(
                               "it-IT"
@@ -492,7 +563,10 @@ export default async function DashboardInquiriesPage({
                       )}`}
                       className="shrink-0 rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                     >
-                      Rispondi via email
+                      <T
+                        textKey="dashboard.inquiries.actions.replyByEmail"
+                        fallback="Rispondi via email"
+                      />
                     </a>
                   </div>
                 </article>

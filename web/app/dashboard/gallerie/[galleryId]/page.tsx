@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import T from "@/components/i18n/T";
 import AddArtworkToGalleryForm from "@/components/dashboard/AddArtworkToGalleryForm";
 import RemoveGalleryArtworkButton from "@/components/dashboard/RemoveGalleryArtworkButton";
 import GalleryPublishStatusButton from "@/components/dashboard/GalleryPublishStatusButton";
@@ -408,14 +409,24 @@ export default async function DashboardGalleryDetailPage({
         activeSection="gallerie"
       >
         <div className="rounded-3xl border border-red-800 bg-red-950/30 p-6">
-          {galleryError?.message || "Nessun dato disponibile."}
+          {galleryError?.message ? (
+            galleryError.message
+          ) : (
+            <T
+              textKey="dashboard.galleryDetail.errors.noData"
+              fallback="Nessun dato disponibile."
+            />
+          )}
         </div>
 
         <a
           href="/dashboard/gallerie"
           className="mt-8 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alle gallerie
+          <T
+            textKey="dashboard.galleryDetail.actions.backToGalleries"
+            fallback="Torna alle gallerie"
+          />
         </a>
       </DashboardShell>
     );
@@ -434,7 +445,10 @@ export default async function DashboardGalleryDetailPage({
           href="/dashboard/gallerie"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alle gallerie
+          <T
+            textKey="dashboard.galleryDetail.actions.backToGalleries"
+            fallback="Torna alle gallerie"
+          />
         </a>
       </DashboardShell>
     );
@@ -619,28 +633,40 @@ export default async function DashboardGalleryDetailPage({
             href="/dashboard/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Tutte le gallerie
+            <T
+              textKey="dashboard.galleryDetail.actions.allGalleries"
+              fallback="Tutte le gallerie"
+            />
           </a>
 
           <a
-  href={`/dashboard/gallerie/${gallery.id}/catalogo`}
-  className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
->
-  Crea catalogo
-</a>
+            href={`/dashboard/gallerie/${gallery.id}/catalogo`}
+            className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
+          >
+            <T
+              textKey="dashboard.galleryDetail.actions.createCatalog"
+              fallback="Crea catalogo"
+            />
+          </a>
 
           <a
             href="/marketplace"
             className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
           >
-            Marketplace
+            <T
+              textKey="dashboard.galleryDetail.actions.marketplace"
+              fallback="Marketplace"
+            />
           </a>
 
           <a
             href={`/dashboard/gallerie-editor/${gallery.id}`}
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
-            Apri editor Unity
+            <T
+              textKey="dashboard.galleryDetail.actions.openUnityEditor"
+              fallback="Apri editor Unity"
+            />
           </a>
 
           <a
@@ -649,7 +675,10 @@ export default async function DashboardGalleryDetailPage({
             rel="noreferrer"
             className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
           >
-            Anteprima viewer 3D
+            <T
+              textKey="dashboard.galleryDetail.actions.viewerPreview"
+              fallback="Anteprima viewer 3D"
+            />
           </a>
 
           {gallery.status === "published" && (
@@ -659,7 +688,10 @@ export default async function DashboardGalleryDetailPage({
               rel="noreferrer"
               className="rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
             >
-              Pagina pubblica
+              <T
+                textKey="dashboard.galleryDetail.actions.publicPage"
+                fallback="Pagina pubblica"
+              />
             </a>
           )}
         </>
@@ -669,12 +701,18 @@ export default async function DashboardGalleryDetailPage({
         <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Onboarding galleria
+              <T
+                textKey="dashboard.galleryDetail.onboarding.label"
+                fallback="Onboarding galleria"
+              />
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-2xl font-medium">
-                Preparazione pubblicazione
+                <T
+                  textKey="dashboard.galleryDetail.onboarding.title"
+                  fallback="Preparazione pubblicazione"
+                />
               </h2>
 
               <span
@@ -687,15 +725,20 @@ export default async function DashboardGalleryDetailPage({
             </div>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
-              Segui questi passaggi per trasformare la galleria da bozza tecnica
-              a spazio pubblico pronto per essere condiviso con visitatori e
-              collezionisti.
+              <T
+                textKey="dashboard.galleryDetail.onboarding.description"
+                fallback="Segui questi passaggi per trasformare la galleria da bozza tecnica a spazio pubblico pronto per essere condiviso con visitatori e collezionisti."
+              />
             </p>
 
             <div className="mt-6">
               <div className="mb-2 flex items-center justify-between text-xs text-neutral-500">
                 <span>
-                  Completati {completedOnboardingSteps}/{onboardingSteps.length}
+                  <T
+                    textKey="dashboard.galleryDetail.onboarding.completed"
+                    fallback="Completati"
+                  />{" "}
+                  {completedOnboardingSteps}/{onboardingSteps.length}
                 </span>
 
                 <span>{onboardingProgress}%</span>
@@ -711,7 +754,13 @@ export default async function DashboardGalleryDetailPage({
 
             <div className="mt-6 grid gap-3 text-sm">
               <div className="flex justify-between gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3">
-                <span className="text-neutral-500">Errori bloccanti</span>
+                <span className="text-neutral-500">
+                  <T
+                    textKey="dashboard.galleryDetail.onboarding.blockingErrors"
+                    fallback="Errori bloccanti"
+                  />
+                </span>
+
                 <span
                   className={
                     blockingErrors > 0 ? "text-red-300" : "text-green-300"
@@ -722,7 +771,13 @@ export default async function DashboardGalleryDetailPage({
               </div>
 
               <div className="flex justify-between gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3">
-                <span className="text-neutral-500">Attenzioni</span>
+                <span className="text-neutral-500">
+                  <T
+                    textKey="dashboard.galleryDetail.onboarding.warnings"
+                    fallback="Attenzioni"
+                  />
+                </span>
+
                 <span
                   className={
                     onboardingWarnings > 0
@@ -735,7 +790,13 @@ export default async function DashboardGalleryDetailPage({
               </div>
 
               <div className="flex justify-between gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3">
-                <span className="text-neutral-500">Opere posizionate</span>
+                <span className="text-neutral-500">
+                  <T
+                    textKey="dashboard.galleryDetail.onboarding.positionedArtworks"
+                    fallback="Opere posizionate"
+                  />
+                </span>
+
                 <span className="text-neutral-100">
                   {publishValidation.summary.positionedArtworks} /{" "}
                   {publishValidation.summary.totalArtworks}
@@ -748,21 +809,30 @@ export default async function DashboardGalleryDetailPage({
                 href="#opere-galleria"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
-                Gestisci opere
+                <T
+                  textKey="dashboard.galleryDetail.actions.manageArtworks"
+                  fallback="Gestisci opere"
+                />
               </a>
 
               <a
                 href={`/dashboard/gallerie-editor/${gallery.id}`}
                 className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
-                Apri editor 3D
+                <T
+                  textKey="dashboard.galleryDetail.actions.open3dEditor"
+                  fallback="Apri editor 3D"
+                />
               </a>
 
               <a
                 href="#pubblicazione"
                 className="rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
               >
-                Pubblicazione
+                <T
+                  textKey="dashboard.galleryDetail.actions.publication"
+                  fallback="Pubblicazione"
+                />
               </a>
             </div>
           </div>
@@ -827,7 +897,12 @@ export default async function DashboardGalleryDetailPage({
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
         >
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-medium">Dati galleria</h2>
+            <h2 className="text-2xl font-medium">
+              <T
+                textKey="dashboard.galleryDetail.details.title"
+                fallback="Dati galleria"
+              />
+            </h2>
 
             <span
               className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getStatusBadgeClass(
@@ -840,56 +915,123 @@ export default async function DashboardGalleryDetailPage({
 
           <dl className="mt-6 space-y-3 text-sm">
             <div>
-              <dt className="text-neutral-500">ID</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.details.id"
+                  fallback="ID"
+                />
+              </dt>
+
               <dd className="mt-1 break-all text-neutral-200">
                 {gallery.id}
               </dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Titolo</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.details.galleryTitle"
+                  fallback="Titolo"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">{gallery.title}</dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Slug</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.details.slug"
+                  fallback="Slug"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">{gallery.slug}</dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Status</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.details.status"
+                  fallback="Status"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">{gallery.status}</dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Descrizione</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.details.description"
+                  fallback="Descrizione"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
-                {gallery.description || "Non inserita"}
+                {gallery.description ? (
+                  gallery.description
+                ) : (
+                  <T
+                    textKey="dashboard.galleryDetail.details.descriptionMissing"
+                    fallback="Non inserita"
+                  />
+                )}
               </dd>
             </div>
           </dl>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-          <h2 className="text-2xl font-medium">Template e limiti</h2>
+          <h2 className="text-2xl font-medium">
+            <T
+              textKey="dashboard.galleryDetail.limits.title"
+              fallback="Template e limiti"
+            />
+          </h2>
 
           <dl className="mt-6 space-y-3 text-sm">
             <div>
-              <dt className="text-neutral-500">Template</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.template"
+                  fallback="Template"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
-                {template?.name || "Template non trovato"}
+                {template?.name ? (
+                  template.name
+                ) : (
+                  <T
+                    textKey="dashboard.galleryDetail.limits.templateNotFound"
+                    fallback="Template non trovato"
+                  />
+                )}
               </dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Unity scene key</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.unitySceneKey"
+                  fallback="Unity scene key"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
                 {template?.unity_scene_key || "N/D"}
               </dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Accesso template</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.templateAccess"
+                  fallback="Accesso template"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
                 {getTemplatePlanLabel(
                   template?.available_from_plan || "free",
@@ -899,35 +1041,84 @@ export default async function DashboardGalleryDetailPage({
             </div>
 
             <div>
-              <dt className="text-neutral-500">Piano account</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.accountPlan"
+                  fallback="Piano account"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">{limits.label}</dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Limite piano</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.planLimit"
+                  fallback="Limite piano"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
-                {planMaxArtworksPerGallery === null
-                  ? "Illimitato"
-                  : planMaxArtworksPerGallery}
+                {planMaxArtworksPerGallery === null ? (
+                  <T
+                    textKey="dashboard.galleryDetail.limits.unlimited"
+                    fallback="Illimitato"
+                  />
+                ) : (
+                  planMaxArtworksPerGallery
+                )}
               </dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Limite template</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.templateLimit"
+                  fallback="Limite template"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
-                {templateMaxArtworks === null ? "N/D" : templateMaxArtworks}
+                {templateMaxArtworks === null ? (
+                  <T
+                    textKey="dashboard.galleryDetail.limits.notAvailable"
+                    fallback="N/D"
+                  />
+                ) : (
+                  templateMaxArtworks
+                )}
               </dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Limite effettivo</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.effectiveLimit"
+                  fallback="Limite effettivo"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
-                {effectiveLimit === null ? "Illimitato" : effectiveLimit}
+                {effectiveLimit === null ? (
+                  <T
+                    textKey="dashboard.galleryDetail.limits.unlimited"
+                    fallback="Illimitato"
+                  />
+                ) : (
+                  effectiveLimit
+                )}
               </dd>
             </div>
 
             <div>
-              <dt className="text-neutral-500">Opere inserite</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.limits.insertedArtworks"
+                  fallback="Opere inserite"
+                />
+              </dt>
+
               <dd className="mt-1 text-neutral-200">
                 {safeGalleryArtworks.length}
                 {effectiveLimit !== null ? ` / ${effectiveLimit}` : ""}
@@ -998,14 +1189,26 @@ export default async function DashboardGalleryDetailPage({
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Allestimento
+                <T
+                  textKey="dashboard.galleryDetail.artworks.label"
+                  fallback="Allestimento"
+                />
               </p>
 
-              <h2 className="text-2xl font-medium">Opere nella galleria</h2>
+              <h2 className="text-2xl font-medium">
+                <T
+                  textKey="dashboard.galleryDetail.artworks.title"
+                  fallback="Opere nella galleria"
+                />
+              </h2>
             </div>
 
             <p className="text-sm text-neutral-500">
-              Totale: {safeGalleryArtworks.length}
+              <T
+                textKey="dashboard.galleryDetail.artworks.total"
+                fallback="Totale:"
+              />{" "}
+              {safeGalleryArtworks.length}
             </p>
           </div>
 
@@ -1018,11 +1221,17 @@ export default async function DashboardGalleryDetailPage({
           {safeGalleryArtworks.length === 0 && (
             <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
               <p className="text-neutral-300">
-                Non hai ancora aggiunto opere a questa galleria.
+                <T
+                  textKey="dashboard.galleryDetail.artworks.emptyTitle"
+                  fallback="Non hai ancora aggiunto opere a questa galleria."
+                />
               </p>
 
               <p className="mt-2 text-sm text-neutral-500">
-                Usa il form a sinistra per iniziare l allestimento.
+                <T
+                  textKey="dashboard.galleryDetail.artworks.emptyDescription"
+                  fallback="Usa il form a sinistra per iniziare l allestimento."
+                />
               </p>
             </div>
           )}
@@ -1047,7 +1256,10 @@ export default async function DashboardGalleryDetailPage({
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center text-sm text-neutral-500">
-                            Immagine assente
+                            <T
+                              textKey="dashboard.galleryDetail.artworks.imageMissing"
+                              fallback="Immagine assente"
+                            />
                           </div>
                         )}
                       </div>
@@ -1057,51 +1269,92 @@ export default async function DashboardGalleryDetailPage({
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-xl font-medium">
-                                {artwork?.title || "Opera non trovata"}
+                                {artwork?.title ? (
+                                  artwork.title
+                                ) : (
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.artworkNotFound"
+                                    fallback="Opera non trovata"
+                                  />
+                                )}
                               </h3>
 
                               {artwork?.is_public ? (
                                 <span className="rounded-full border border-green-900 bg-green-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-green-300">
-                                  Pubblica
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.public"
+                                    fallback="Pubblica"
+                                  />
                                 </span>
                               ) : (
                                 <span className="rounded-full border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-400">
-                                  Privata
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.private"
+                                    fallback="Privata"
+                                  />
                                 </span>
                               )}
 
                               {artwork?.is_for_sale && (
                                 <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
-                                  In vendita
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.forSale"
+                                    fallback="In vendita"
+                                  />
                                 </span>
                               )}
 
                               {item.wall_key ? (
                                 <span className="rounded-full border border-neutral-700 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-300">
-                                  Posizionata
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.positioned"
+                                    fallback="Posizionata"
+                                  />
                                 </span>
                               ) : (
                                 <span className="rounded-full border border-yellow-900 bg-yellow-950/30 px-3 py-1 text-xs uppercase tracking-[0.15em] text-yellow-300">
-                                  Non posizionata
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.notPositioned"
+                                    fallback="Non posizionata"
+                                  />
                                 </span>
                               )}
                             </div>
 
                             <p className="mt-2 text-sm text-neutral-500">
-                              {artwork?.artist_name || "Artista non indicato"}
+                              {artwork?.artist_name ? (
+                                artwork.artist_name
+                              ) : (
+                                <T
+                                  textKey="dashboard.galleryDetail.artworks.artistMissing"
+                                  fallback="Artista non indicato"
+                                />
+                              )}
                               {artwork?.year ? `, ${artwork.year}` : ""}
                             </p>
 
                             <dl className="mt-4 grid gap-2 text-xs text-neutral-500 md:grid-cols-2">
                               <div>
-                                <dt className="text-neutral-600">Parete</dt>
+                                <dt className="text-neutral-600">
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.wall"
+                                    fallback="Parete"
+                                  />
+                                </dt>
+
                                 <dd className="text-neutral-300">
                                   {item.wall_key || "N/D"}
                                 </dd>
                               </div>
 
                               <div>
-                                <dt className="text-neutral-600">Ordine</dt>
+                                <dt className="text-neutral-600">
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.order"
+                                    fallback="Ordine"
+                                  />
+                                </dt>
+
                                 <dd className="text-neutral-300">
                                   {item.sort_order}
                                 </dd>
@@ -1109,8 +1362,12 @@ export default async function DashboardGalleryDetailPage({
 
                               <div>
                                 <dt className="text-neutral-600">
-                                  Dimensioni display
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.displayDimensions"
+                                    fallback="Dimensioni display"
+                                  />
                                 </dt>
+
                                 <dd className="text-neutral-300">
                                   {item.display_width_cm || "50"} x{" "}
                                   {item.display_height_cm || "50"} cm
@@ -1118,15 +1375,35 @@ export default async function DashboardGalleryDetailPage({
                               </div>
 
                               <div>
-                                <dt className="text-neutral-600">Cornice</dt>
+                                <dt className="text-neutral-600">
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.frame"
+                                    fallback="Cornice"
+                                  />
+                                </dt>
+
                                 <dd className="text-neutral-300">
-                                  larg. {item.frame_width_cm ?? "0"} cm · prof.{" "}
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.frameWidth"
+                                    fallback="larg."
+                                  />{" "}
+                                  {item.frame_width_cm ?? "0"} cm ·{" "}
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.frameDepth"
+                                    fallback="prof."
+                                  />{" "}
                                   {item.frame_depth_cm ?? "2"} cm
                                 </dd>
                               </div>
 
                               <div>
-                                <dt className="text-neutral-600">Posizione</dt>
+                                <dt className="text-neutral-600">
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.position"
+                                    fallback="Posizione"
+                                  />
+                                </dt>
+
                                 <dd className="text-neutral-300">
                                   x {formatNumber(item.position_x)} · y{" "}
                                   {formatNumber(item.position_y)} · z{" "}
@@ -1135,7 +1412,13 @@ export default async function DashboardGalleryDetailPage({
                               </div>
 
                               <div>
-                                <dt className="text-neutral-600">Rotazione</dt>
+                                <dt className="text-neutral-600">
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.rotation"
+                                    fallback="Rotazione"
+                                  />
+                                </dt>
+
                                 <dd className="text-neutral-300">
                                   x {formatNumber(item.rotation_x)} · y{" "}
                                   {formatNumber(item.rotation_y)} · z{" "}
@@ -1144,7 +1427,13 @@ export default async function DashboardGalleryDetailPage({
                               </div>
 
                               <div>
-                                <dt className="text-neutral-600">Scala</dt>
+                                <dt className="text-neutral-600">
+                                  <T
+                                    textKey="dashboard.galleryDetail.artworks.scale"
+                                    fallback="Scala"
+                                  />
+                                </dt>
+
                                 <dd className="text-neutral-300">
                                   x {formatNumber(item.scale_x)} · y{" "}
                                   {formatNumber(item.scale_y)} · z{" "}
@@ -1170,20 +1459,34 @@ export default async function DashboardGalleryDetailPage({
 
       <div className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-          Unity readiness
+          <T
+            textKey="dashboard.galleryDetail.unity.label"
+            fallback="Unity readiness"
+          />
         </p>
 
         <h2 className="text-2xl font-medium">
-          Dati pronti per il viewer 3D
+          <T
+            textKey="dashboard.galleryDetail.unity.title"
+            fallback="Dati pronti per il viewer 3D"
+          />
         </h2>
 
         <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-          Ogni opera aggiunta qui crea una riga in{" "}
-          <span className="text-neutral-100">gallery_artworks</span>. Unity
-          leggerà queste righe, scaricherà le immagini da{" "}
-          <span className="text-neutral-100">image_url</span> e creerà i quadri
-          nello spazio 3D usando posizione, rotazione, scala, dimensioni
-          espositive e cornici.
+          <T
+            textKey="dashboard.galleryDetail.unity.descriptionPrefix"
+            fallback="Ogni opera aggiunta qui crea una riga in"
+          />{" "}
+          <span className="text-neutral-100">gallery_artworks</span>.{" "}
+          <T
+            textKey="dashboard.galleryDetail.unity.descriptionMiddle"
+            fallback="Unity leggerà queste righe, scaricherà le immagini da"
+          />{" "}
+          <span className="text-neutral-100">image_url</span>{" "}
+          <T
+            textKey="dashboard.galleryDetail.unity.descriptionSuffix"
+            fallback="e creerà i quadri nello spazio 3D usando posizione, rotazione, scala, dimensioni espositive e cornici."
+          />
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -1193,7 +1496,10 @@ export default async function DashboardGalleryDetailPage({
             rel="noreferrer"
             className="inline-flex rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
           >
-            Anteprima viewer 3D
+            <T
+              textKey="dashboard.galleryDetail.actions.viewerPreview"
+              fallback="Anteprima viewer 3D"
+            />
           </a>
 
           {gallery.status === "published" && (
@@ -1203,7 +1509,10 @@ export default async function DashboardGalleryDetailPage({
               rel="noreferrer"
               className="inline-flex rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
             >
-              Apri pagina pubblica
+              <T
+                textKey="dashboard.galleryDetail.actions.openPublicPage"
+                fallback="Apri pagina pubblica"
+              />
             </a>
           )}
 
@@ -1211,7 +1520,10 @@ export default async function DashboardGalleryDetailPage({
             href={`/dashboard/gallerie-editor/${gallery.id}`}
             className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
-            Apri editor Unity
+            <T
+              textKey="dashboard.galleryDetail.actions.openUnityEditor"
+              fallback="Apri editor Unity"
+            />
           </a>
 
           <a
@@ -1220,15 +1532,19 @@ export default async function DashboardGalleryDetailPage({
             rel="noreferrer"
             className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Apri JSON Unity
+            <T
+              textKey="dashboard.galleryDetail.actions.openUnityJson"
+              fallback="Apri JSON Unity"
+            />
           </a>
         </div>
 
         {gallery.status !== "published" && (
           <p className="mt-4 text-xs leading-5 text-neutral-500">
-            La pagina pubblica completa sarà disponibile dopo la pubblicazione.
-            Puoi comunque usare l’anteprima viewer 3D per controllare
-            l’allestimento in modalità visitatore.
+            <T
+              textKey="dashboard.galleryDetail.unity.unpublishedNotice"
+              fallback="La pagina pubblica completa sarà disponibile dopo la pubblicazione. Puoi comunque usare l’anteprima viewer 3D per controllare l’allestimento in modalità visitatore."
+            />
           </p>
         )}
       </div>

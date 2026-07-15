@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import ArtworkInventoryTable from "@/components/dashboard/ArtworkInventoryTable";
 import DataErrorCard from "@/components/system/DataErrorCard";
+import T from "@/components/i18n/T";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import { createClient } from "@/lib/supabase/server";
 
@@ -76,7 +77,10 @@ export default async function DashboardArtworkInventoryPage() {
           href="/dashboard"
           className="inline-flex rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
         >
-          Torna alla dashboard
+          <T
+            textKey="dashboard.artworkInventory.actions.backToDashboard"
+            fallback="Torna alla dashboard"
+          />
         </a>
       </DashboardShell>
     );
@@ -103,14 +107,20 @@ export default async function DashboardArtworkInventoryPage() {
             href="/dashboard/opere"
             className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
           >
-            Archivio opere
+            <T
+              textKey="dashboard.artworkInventory.actions.artworkArchive"
+              fallback="Archivio opere"
+            />
           </a>
 
           <a
             href="/dashboard/gallerie"
             className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
           >
-            Gallerie
+            <T
+              textKey="dashboard.artworkInventory.actions.galleries"
+              fallback="Gallerie"
+            />
           </a>
         </div>
       }

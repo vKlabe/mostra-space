@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import TemplateCheckoutButton from "@/components/marketplace/TemplateCheckoutButton";
+import T from "@/components/i18n/T";
 
 export const dynamic = "force-dynamic";
 
@@ -124,23 +125,33 @@ export default async function MarketplacePage() {
             <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
               <div>
                 <p className="mb-4 text-xs uppercase tracking-[0.28em] text-neutral-500">
-                  MostraSpace Marketplace
+                  <T
+                    textKey="marketplace.hero.label"
+                    fallback="MostraSpace Marketplace"
+                  />
                 </p>
 
                 <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">
-                  Template gallerie acquistabili per sempre.
+                  <T
+                    textKey="marketplace.hero.title"
+                    fallback="Template gallerie acquistabili per sempre."
+                  />
                 </h1>
 
                 <p className="mt-6 max-w-3xl text-base leading-8 text-neutral-400">
-                  Acquista ambienti 3D extra per le tue mostre digitali. Una
-                  volta comprato, il template resta collegato al tuo account e
-                  potrai usarlo indipendentemente dal piano attivo.
+                  <T
+                    textKey="marketplace.hero.subtitle"
+                    fallback="Acquista ambienti 3D extra per le tue mostre digitali. Una volta comprato, il template resta collegato al tuo account e potrai usarlo indipendentemente dal piano attivo."
+                  />
                 </p>
               </div>
 
               <div className="rounded-3xl border border-neutral-800 bg-neutral-950/80 p-5">
                 <p className="text-sm text-neutral-400">
-                  Template disponibili
+                  <T
+                    textKey="marketplace.hero.availableTemplates"
+                    fallback="Template disponibili"
+                  />
                 </p>
 
                 <p className="mt-2 text-4xl font-semibold">
@@ -155,7 +166,10 @@ export default async function MarketplacePage() {
           {templatesResult.error && (
             <div className="rounded-3xl border border-red-900 bg-red-950/30 p-6">
               <p className="font-medium text-red-100">
-                Errore caricamento marketplace
+                <T
+                  textKey="marketplace.errors.loadingTitle"
+                  fallback="Errore caricamento marketplace"
+                />
               </p>
 
               <p className="mt-2 text-sm text-red-200">
@@ -166,18 +180,28 @@ export default async function MarketplacePage() {
 
           {!templatesResult.error && templates.length === 0 && (
             <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-8">
-              <p className="text-lg font-medium">Marketplace in preparazione</p>
+              <p className="text-lg font-medium">
+                <T
+                  textKey="marketplace.empty.title"
+                  fallback="Marketplace in preparazione"
+                />
+              </p>
 
               <p className="mt-3 max-w-2xl text-sm leading-7 text-neutral-400">
-                Non ci sono ancora template acquistabili. Torna presto: qui
-                compariranno gli ambienti premium venduti singolarmente.
+                <T
+                  textKey="marketplace.empty.description"
+                  fallback="Non ci sono ancora template acquistabili. Torna presto: qui compariranno gli ambienti premium venduti singolarmente."
+                />
               </p>
 
               <Link
                 href="/pricing"
                 className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-200 transition hover:border-neutral-500"
               >
-                Vedi i piani
+                <T
+                  textKey="marketplace.empty.viewPlans"
+                  fallback="Vedi i piani"
+                />
               </Link>
             </div>
           )}
@@ -209,27 +233,39 @@ export default async function MarketplacePage() {
                       ) : (
                         <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.18),_transparent_30%),linear-gradient(135deg,_#262626,_#111827_55%,_#020617)] p-6 text-center">
                           <p className="text-sm uppercase tracking-[0.2em] text-neutral-500">
-                            Preview in arrivo
+                            <T
+                              textKey="marketplace.card.previewComing"
+                              fallback="Preview in arrivo"
+                            />
                           </p>
                         </div>
                       )}
 
                       {template.is_featured && (
                         <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-neutral-950">
-                          Featured
+                          <T
+                            textKey="marketplace.card.featured"
+                            fallback="Featured"
+                          />
                         </span>
                       )}
 
                       {isPurchased && (
                         <span className="absolute right-4 top-4 rounded-full border border-green-900 bg-green-950/80 px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-green-200">
-                          Acquistato
+                          <T
+                            textKey="marketplace.card.purchased"
+                            fallback="Acquistato"
+                          />
                         </span>
                       )}
                     </div>
 
                     <div className="p-6">
                       <p className="mb-3 text-xs uppercase tracking-[0.22em] text-amber-300">
-                        Marketplace template
+                        <T
+                          textKey="marketplace.card.label"
+                          fallback="Marketplace template"
+                        />
                       </p>
 
                       <h2 className="text-2xl font-medium">
@@ -248,14 +284,19 @@ export default async function MarketplacePage() {
 
                       {!description && (
                         <p className="mt-5 min-h-24 text-sm leading-7 text-neutral-500">
-                          Template premium acquistabile singolarmente e
-                          collegato per sempre al tuo account.
+                          <T
+                            textKey="marketplace.card.defaultDescription"
+                            fallback="Template premium acquistabile singolarmente e collegato per sempre al tuo account."
+                          />
                         </p>
                       )}
 
                       <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                         <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                          Prezzo
+                          <T
+                            textKey="marketplace.card.price"
+                            fallback="Prezzo"
+                          />
                         </p>
 
                         <p className="mt-2 text-3xl font-semibold">
@@ -266,8 +307,10 @@ export default async function MarketplacePage() {
                         </p>
 
                         <p className="mt-2 text-xs leading-5 text-neutral-500">
-                          Pagamento singolo. Accesso permanente al template sul
-                          tuo account.
+                          <T
+                            textKey="marketplace.card.paymentDescription"
+                            fallback="Pagamento singolo. Accesso permanente al template sul tuo account."
+                          />
                         </p>
                       </div>
 

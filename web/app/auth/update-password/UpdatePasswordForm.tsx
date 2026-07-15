@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { createBrowserClient } from "@supabase/ssr";
+import T from "@/components/i18n/T";
 
 function getSupabaseBrowserClient() {
   return createBrowserClient(
@@ -130,7 +131,10 @@ export default function UpdatePasswordForm() {
   if (isPreparingSession) {
     return (
       <div className="mt-8 rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] px-4 py-4 text-sm text-[var(--museum-stone)]">
-        Verifica del link in corso...
+        <T
+          textKey="auth.updatePasswordForm.verifyingLink"
+          fallback="Verifica del link in corso..."
+        />
       </div>
     );
   }
@@ -148,7 +152,10 @@ export default function UpdatePasswordForm() {
           href="/auth/forgot-password"
           className="museum-button-primary flex w-full px-5 py-3"
         >
-          Richiedi nuovo link
+          <T
+            textKey="auth.updatePasswordForm.requestNewLink"
+            fallback="Richiedi nuovo link"
+          />
         </Link>
       </div>
     );
@@ -161,7 +168,10 @@ export default function UpdatePasswordForm() {
           htmlFor="password"
           className="block text-sm text-[var(--museum-ivory-soft)]"
         >
-          Nuova password
+          <T
+            textKey="auth.updatePasswordForm.newPassword"
+            fallback="Nuova password"
+          />
         </label>
 
         <input
@@ -181,7 +191,10 @@ export default function UpdatePasswordForm() {
           htmlFor="password-confirm"
           className="block text-sm text-[var(--museum-ivory-soft)]"
         >
-          Conferma nuova password
+          <T
+            textKey="auth.updatePasswordForm.confirmPassword"
+            fallback="Conferma nuova password"
+          />
         </label>
 
         <input
@@ -213,7 +226,17 @@ export default function UpdatePasswordForm() {
         disabled={isSubmitting}
         className="museum-button-primary w-full px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? "Aggiornamento..." : "Aggiorna password"}
+        {isSubmitting ? (
+          <T
+            textKey="auth.updatePasswordForm.updating"
+            fallback="Aggiornamento..."
+          />
+        ) : (
+          <T
+            textKey="auth.updatePasswordForm.updatePassword"
+            fallback="Aggiorna password"
+          />
+        )}
       </button>
 
       {statusMessage && (
@@ -221,7 +244,10 @@ export default function UpdatePasswordForm() {
           href="/dashboard"
           className="museum-button-secondary flex w-full px-5 py-3"
         >
-          Vai alla dashboard
+          <T
+            textKey="auth.updatePasswordForm.goToDashboard"
+            fallback="Vai alla dashboard"
+          />
         </Link>
       )}
     </form>

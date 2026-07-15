@@ -41,31 +41,82 @@ const STANDARD_PLAN_NAMES: PlanName[] = PLAN_ORDER.filter(
   (planName) => planName !== "institution"
 );
 
-const planHighlights: Record<PlanName, string[]> = {
+const planHighlights: Record<
+  PlanName,
+  Array<{
+    textKey: string;
+    fallback: string;
+  }>
+> = {
   free: [
-    "1 galleria pubblicabile",
-    "15 opere totali",
-    "25 MB di storage",
+    {
+      textKey: "pricing.plans.free.highlights.galleries",
+      fallback: "1 galleria pubblicabile",
+    },
+    {
+      textKey: "pricing.plans.free.highlights.artworks",
+      fallback: "15 opere totali",
+    },
+    {
+      textKey: "pricing.plans.free.highlights.storage",
+      fallback: "25 MB di storage",
+    },
   ],
   pro: [
-    "5 gallerie pubblicabili",
-    "150 opere totali",
-    "500 MB di storage",
+    {
+      textKey: "pricing.plans.pro.highlights.galleries",
+      fallback: "5 gallerie pubblicabili",
+    },
+    {
+      textKey: "pricing.plans.pro.highlights.artworks",
+      fallback: "150 opere totali",
+    },
+    {
+      textKey: "pricing.plans.pro.highlights.storage",
+      fallback: "500 MB di storage",
+    },
   ],
   business: [
-    "10 gallerie pubblicabili",
-    "250 opere totali",
-    "1 GB di storage",
+    {
+      textKey: "pricing.plans.business.highlights.galleries",
+      fallback: "10 gallerie pubblicabili",
+    },
+    {
+      textKey: "pricing.plans.business.highlights.artworks",
+      fallback: "250 opere totali",
+    },
+    {
+      textKey: "pricing.plans.business.highlights.storage",
+      fallback: "1 GB di storage",
+    },
   ],
   diamond: [
-    "15 gallerie pubblicabili",
-    "500 opere totali",
-    "2 GB di storage",
+    {
+      textKey: "pricing.plans.diamond.highlights.galleries",
+      fallback: "15 gallerie pubblicabili",
+    },
+    {
+      textKey: "pricing.plans.diamond.highlights.artworks",
+      fallback: "500 opere totali",
+    },
+    {
+      textKey: "pricing.plans.diamond.highlights.storage",
+      fallback: "2 GB di storage",
+    },
   ],
   institution: [
-    "Piano personalizzato",
-    "Features su misura",
-    "Per musei, fondazioni e istituzioni",
+    {
+      textKey: "pricing.plans.institution.highlights.customPlan",
+      fallback: "Piano personalizzato",
+    },
+    {
+      textKey: "pricing.plans.institution.highlights.customFeatures",
+      fallback: "Features su misura",
+    },
+    {
+      textKey: "pricing.plans.institution.highlights.audience",
+      fallback: "Per musei, fondazioni e istituzioni",
+    },
   ],
 };
 
@@ -220,7 +271,12 @@ export default async function PricingPage() {
         <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
           <div className="grid gap-10 lg:grid-cols-[1fr_0.7fr] lg:items-end">
             <div>
-              <p className="museum-label">Piani e prezzi</p>
+              <p className="museum-label">
+                <T
+                  textKey="pricing.hero.label"
+                  fallback="Piani e prezzi"
+                />
+              </p>
 
               <h1 className="museum-title mt-6 max-w-5xl text-6xl text-[var(--museum-ivory)] md:text-7xl">
                 <T
@@ -240,18 +296,30 @@ export default async function PricingPage() {
             <div className="museum-card rounded-[1.75rem] p-6">
               {profile ? (
                 <>
-                  <p className="museum-label">Account collegato</p>
+                  <p className="museum-label">
+                    <T
+                      textKey="pricing.account.connected"
+                      fallback="Account collegato"
+                    />
+                  </p>
 
                   <p className="mt-4 font-editorial text-3xl text-[var(--museum-ivory)]">
                     {profile.display_name ||
                       profile.full_name ||
-                      profile.email ||
-                      "Utente"}
+                      profile.email || (
+                        <T
+                          textKey="pricing.account.defaultUser"
+                          fallback="Utente"
+                        />
+                      )}
                   </p>
 
                   <div className="mt-5 grid gap-3 text-sm text-[var(--museum-stone)]">
                     <p>
-                      Piano attuale:{" "}
+                      <T
+                        textKey="pricing.account.currentPlan"
+                        fallback="Piano attuale:"
+                      />{" "}
                       <span className="capitalize text-[var(--museum-ivory)]">
                         {currentPlan}
                       </span>
@@ -259,7 +327,10 @@ export default async function PricingPage() {
 
                     {profile.stripe_subscription_status && (
                       <p>
-                        Stato abbonamento:{" "}
+                        <T
+                          textKey="pricing.account.subscriptionStatus"
+                          fallback="Stato abbonamento:"
+                        />{" "}
                         <span className="text-[var(--museum-ivory)]">
                           {profile.stripe_subscription_status}
                         </span>
@@ -268,9 +339,17 @@ export default async function PricingPage() {
 
                     {billingDate && (
                       <p>
-                        {profile.stripe_cancel_at_period_end
-                          ? "Attivo fino al"
-                          : "Rinnovo previsto il"}{" "}
+                        {profile.stripe_cancel_at_period_end ? (
+                          <T
+                            textKey="pricing.account.activeUntil"
+                            fallback="Attivo fino al"
+                          />
+                        ) : (
+                          <T
+                            textKey="pricing.account.renewalDate"
+                            fallback="Rinnovo previsto il"
+                          />
+                        )}{" "}
                         <span className="text-[var(--museum-ivory)]">
                           {billingDate}
                         </span>
@@ -283,27 +362,43 @@ export default async function PricingPage() {
                       href="/dashboard"
                       className="museum-button-secondary px-5 py-2.5"
                     >
-                      Dashboard
+                      <T
+                        textKey="pricing.account.dashboard"
+                        fallback="Dashboard"
+                      />
                     </Link>
 
                     {isPaidCurrentPlan && hasStripeCustomer && (
                       <CustomerPortalButton className="museum-button-primary px-5 py-2.5">
-                        Gestisci abbonamento
+                        <T
+                          textKey="pricing.actions.manageSubscription"
+                          fallback="Gestisci abbonamento"
+                        />
                       </CustomerPortalButton>
                     )}
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="museum-label">Accesso richiesto</p>
+                  <p className="museum-label">
+                    <T
+                      textKey="pricing.access.required"
+                      fallback="Accesso richiesto"
+                    />
+                  </p>
 
                   <h2 className="mt-4 font-editorial text-3xl text-[var(--museum-ivory)]">
-                    Consulta i piani, poi entra nel tuo spazio.
+                    <T
+                      textKey="pricing.access.title"
+                      fallback="Consulta i piani, poi entra nel tuo spazio."
+                    />
                   </h2>
 
                   <p className="mt-4 text-sm leading-7 text-[var(--museum-stone)]">
-                    Puoi vedere tutte le opzioni. Per attivare un piano o
-                    gestire un abbonamento devi accedere.
+                    <T
+                      textKey="pricing.access.description"
+                      fallback="Puoi vedere tutte le opzioni. Per attivare un piano o gestire un abbonamento devi accedere."
+                    />
                   </p>
 
                   <div className="mt-6 flex flex-wrap gap-3">
@@ -311,14 +406,20 @@ export default async function PricingPage() {
                       href="/auth/login"
                       className="museum-button-primary px-5 py-2.5"
                     >
-                      Accedi
+                      <T
+                        textKey="pricing.access.login"
+                        fallback="Accedi"
+                      />
                     </Link>
 
                     <Link
                       href="/auth/register"
                       className="museum-button-secondary px-5 py-2.5"
                     >
-                      Registrati
+                      <T
+                        textKey="pricing.access.register"
+                        fallback="Registrati"
+                      />
                     </Link>
                   </div>
                 </>
@@ -348,19 +449,28 @@ export default async function PricingPage() {
               >
                 {isCurrent && (
                   <div className="absolute right-5 top-5 rounded-full border border-[var(--museum-bronze-light)] bg-[var(--museum-bronze)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-black)]">
-                    Attuale
+                    <T
+                      textKey="pricing.badges.current"
+                      fallback="Attuale"
+                    />
                   </div>
                 )}
 
                 {plan.name === "pro" && !isCurrent && (
                   <div className="absolute right-5 top-5 rounded-full border border-[var(--museum-bronze-dark)] bg-[rgba(168,121,69,0.12)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-bronze-light)]">
-                    Consigliato
+                    <T
+                      textKey="pricing.badges.recommended"
+                      fallback="Consigliato"
+                    />
                   </div>
                 )}
 
                 {plan.name === "diamond" && !isCurrent && (
                   <div className="absolute right-5 top-5 rounded-full border border-[rgba(255,255,255,0.4)] bg-[rgba(255,255,255,0.1)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-ivory)]">
-                    Premium
+                    <T
+                      textKey="pricing.badges.premium"
+                      fallback="Premium"
+                    />
                   </div>
                 )}
 
@@ -434,11 +544,16 @@ export default async function PricingPage() {
                 <div className="mt-7 space-y-3 border-t border-[var(--museum-border)] pt-6">
                   {planHighlights[plan.name].map((item) => (
                     <div
-                      key={item}
+                      key={item.textKey}
                       className="flex gap-3 text-sm text-[var(--museum-stone)]"
                     >
                       <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--museum-bronze-light)]" />
-                      <span>{item}</span>
+                      <span>
+                        <T
+                          textKey={item.textKey}
+                          fallback={item.fallback}
+                        />
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -446,7 +561,10 @@ export default async function PricingPage() {
                 <div className="mt-7 space-y-4 border-t border-[var(--museum-border)] pt-6">
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Gallerie
+                      <T
+                        textKey="pricing.features.galleries"
+                        fallback="Gallerie"
+                      />
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatLimitValue(plan.maxGalleries)}
@@ -455,7 +573,10 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Opere totali
+                      <T
+                        textKey="pricing.features.totalArtworks"
+                        fallback="Opere totali"
+                      />
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatLimitValue(plan.maxArtworksTotal)}
@@ -464,7 +585,10 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Storage
+                      <T
+                        textKey="pricing.features.storage"
+                        fallback="Storage"
+                      />
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatMb(plan.maxStorageMb)}
@@ -473,7 +597,10 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Richieste/mese
+                      <T
+                        textKey="pricing.features.requestsPerMonth"
+                        fallback="Richieste/mese"
+                      />
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatLimitValue(plan.maxRequestsPerMonth)}
@@ -482,7 +609,10 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Template gallerie
+                      <T
+                        textKey="pricing.features.galleryTemplates"
+                        fallback="Template gallerie"
+                      />
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
                       {formatTemplateLimit(plan.selectableTemplates)}
@@ -491,7 +621,10 @@ export default async function PricingPage() {
 
                   <div className="flex justify-between gap-3 text-sm">
                     <span className="text-[var(--museum-stone-muted)]">
-                      Catalogo PDF
+                      <T
+                        textKey="pricing.features.pdfCatalog"
+                        fallback="Catalogo PDF"
+                      />
                     </span>
                     <span className="text-right text-[var(--museum-ivory-soft)]">
                       {getCatalogPdfLabel(plan.name)}
@@ -519,7 +652,10 @@ export default async function PricingPage() {
 
                 {isInstitutionCurrent && (
                   <span className="rounded-full border border-[var(--museum-bronze-light)] bg-[var(--museum-bronze)] px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-black)]">
-                    Attuale
+                    <T
+                      textKey="pricing.badges.current"
+                      fallback="Attuale"
+                    />
                   </span>
                 )}
               </div>
@@ -546,40 +682,61 @@ export default async function PricingPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
                   <p className="font-medium text-[var(--museum-ivory)]">
-                    Limiti personalizzati
+                    <T
+                      textKey="pricing.institution.customLimits.title"
+                      fallback="Limiti personalizzati"
+                    />
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
-                    Gallerie, opere, storage e richieste definiti in base al
-                    progetto.
+                    <T
+                      textKey="pricing.institution.customLimits.description"
+                      fallback="Gallerie, opere, storage e richieste definiti in base al progetto."
+                    />
                   </p>
                 </div>
 
                 <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
                   <p className="font-medium text-[var(--museum-ivory)]">
-                    Supporto dedicato
+                    <T
+                      textKey="pricing.institution.dedicatedSupport.title"
+                      fallback="Supporto dedicato"
+                    />
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
-                    Onboarding, configurazione e assistenza per realtà complesse.
+                    <T
+                      textKey="pricing.institution.dedicatedSupport.description"
+                      fallback="Onboarding, configurazione e assistenza per realtà complesse."
+                    />
                   </p>
                 </div>
 
                 <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
                   <p className="font-medium text-[var(--museum-ivory)]">
-                    Branding su misura
+                    <T
+                      textKey="pricing.institution.customBranding.title"
+                      fallback="Branding su misura"
+                    />
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
-                    Esperienza più coerente con identità, archivio e progetto
-                    culturale.
+                    <T
+                      textKey="pricing.institution.customBranding.description"
+                      fallback="Esperienza più coerente con identità, archivio e progetto culturale."
+                    />
                   </p>
                 </div>
 
                 <div className="rounded-[1.25rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5">
                   <p className="font-medium text-[var(--museum-ivory)]">
-                    Sale e template dedicati
+                    <T
+                      textKey="pricing.institution.customRooms.title"
+                      fallback="Sale e template dedicati"
+                    />
                   </p>
                   <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
-                    Possibilità di ambienti, configurazioni e funzioni su
-                    richiesta.
+                    <T
+                      textKey="pricing.institution.customRooms.description"
+                      fallback="Possibilità di ambienti, configurazioni e funzioni su richiesta."
+                    />
                   </p>
                 </div>
               </div>
@@ -592,25 +749,36 @@ export default async function PricingPage() {
                   disabled
                   className="w-full rounded-none border border-[var(--museum-border)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--museum-stone-muted)] lg:w-auto"
                 >
-                  Piano attuale
+                  <T
+                    textKey="pricing.actions.currentPlan"
+                    fallback="Piano attuale"
+                  />
                 </button>
               ) : (
                 <a
                   href="mailto:info@mostra.space?subject=Richiesta%20piano%20Institution%20MostraSpace"
                   className="museum-button-secondary inline-flex w-full justify-center px-5 py-3 lg:w-auto"
                 >
-                  Contattaci
+                  <T
+                    textKey="pricing.actions.contactUs"
+                    fallback="Contattaci"
+                  />
                 </a>
               )}
 
               <div className="mt-6 space-y-3 border-t border-[var(--museum-border)] pt-6 text-left lg:text-right">
                 {planHighlights.institution.map((item) => (
                   <div
-                    key={item}
+                    key={item.textKey}
                     className="flex gap-3 text-sm text-[var(--museum-stone)] lg:justify-end"
                   >
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--museum-bronze-light)] lg:order-2" />
-                    <span>{item}</span>
+                    <span>
+                      <T
+                        textKey={item.textKey}
+                        fallback={item.fallback}
+                      />
+                    </span>
                   </div>
                 ))}
               </div>
@@ -621,27 +789,34 @@ export default async function PricingPage() {
         <section className="museum-card mt-10 rounded-[1.75rem] p-6 md:p-8">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
-              <p className="museum-label">Nota sui limiti</p>
+              <p className="museum-label">
+                <T
+                  textKey="pricing.limitsNote.label"
+                  fallback="Nota sui limiti"
+                />
+              </p>
 
               <h2 className="museum-title mt-4 text-4xl text-[var(--museum-ivory)] md:text-5xl">
-                Storage account e opere visibili non sono la stessa cosa.
+                <T
+                  textKey="pricing.limitsNote.title"
+                  fallback="Storage account e opere visibili non sono la stessa cosa."
+                />
               </h2>
 
               <p className="museum-subtitle mt-5 text-sm text-[var(--museum-stone)]">
-                Lo storage indica quante opere puoi archiviare sul tuo account.
-                Le opere visibili per sala indicano invece quante opere vengono
-                caricate in una singola galleria visitabile, così l’esperienza
-                resta fluida e accessibile.
+                <T
+                  textKey="pricing.limitsNote.description"
+                  fallback="Lo storage indica quante opere puoi archiviare sul tuo account. Le opere visibili per sala indicano invece quante opere vengono caricate in una singola galleria visitabile, così l’esperienza resta fluida e accessibile."
+                />
               </p>
             </div>
 
             <div className="rounded-[1.35rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.46)] p-6">
               <p className="text-sm leading-7 text-[var(--museum-stone)]">
-                I pagamenti dei piani Pro, Business e Diamond sono gestiti
-                tramite Stripe. Puoi attivare un piano, aggiornare metodo di
-                pagamento, consultare rinnovi e cancellare l’abbonamento dal
-                portale di gestione. Il piano Institution è personalizzato e
-                richiede contatto diretto.
+                <T
+                  textKey="pricing.payments.description"
+                  fallback="I pagamenti dei piani Pro, Business e Diamond sono gestiti tramite Stripe. Puoi attivare un piano, aggiornare metodo di pagamento, consultare rinnovi e cancellare l’abbonamento dal portale di gestione. Il piano Institution è personalizzato e richiede contatto diretto."
+                />
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -649,21 +824,30 @@ export default async function PricingPage() {
                   href="/dashboard"
                   className="museum-button-primary px-5 py-2.5"
                 >
-                  Torna alla dashboard
+                  <T
+                    textKey="pricing.actions.backToDashboard"
+                    fallback="Torna alla dashboard"
+                  />
                 </Link>
 
                 <Link
                   href="/legal/pagamenti"
                   className="museum-button-secondary px-5 py-2.5"
                 >
-                  Info pagamenti
+                  <T
+                    textKey="pricing.actions.paymentInfo"
+                    fallback="Info pagamenti"
+                  />
                 </Link>
 
                 <Link
                   href="/legal/cancellazioni-rimborsi"
                   className="museum-button-secondary px-5 py-2.5"
                 >
-                  Rimborsi
+                  <T
+                    textKey="pricing.actions.refunds"
+                    fallback="Rimborsi"
+                  />
                 </Link>
               </div>
             </div>

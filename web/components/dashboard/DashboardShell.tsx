@@ -1,4 +1,5 @@
 import LogoutButton from "@/components/auth/LogoutButton";
+import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import Link from "next/link";
 
 type DashboardShellProps = {
@@ -156,7 +157,11 @@ export default function DashboardShell({
           })}
         </nav>
 
-        <div className="museum-dashboard-card mt-8 rounded-[1.5rem] p-5">
+                <div className="mt-8 flex justify-center">
+          <LanguageSwitcher />
+        </div>
+
+        <div className="museum-dashboard-card mt-4 rounded-[1.5rem] p-5">
           <p className="museum-label">Pubblico</p>
 
           <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">

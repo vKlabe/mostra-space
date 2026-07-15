@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import GalleryCatalogBuilder from "@/components/catalog/GalleryCatalogBuilder";
+import T from "@/components/i18n/T";
 
 export const dynamic = "force-dynamic";
 
@@ -131,7 +132,7 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
   const { galleryId } = await params;
 
   const supabase = await createClient();
-    const admin = createAdminClient();
+  const admin = createAdminClient();
 
   const {
     data: { user },
@@ -161,16 +162,32 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
     return (
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-4xl rounded-3xl border border-red-900 bg-red-950/30 p-6">
-          <p className="text-lg font-medium">Galleria non trovata</p>
+          <p className="text-lg font-medium">
+            <T
+              textKey="catalog.page.errors.galleryNotFound"
+              fallback="Galleria non trovata"
+            />
+          </p>
+
           <p className="mt-2 text-sm text-red-100">
-            {galleryError?.message || "Non riesco a caricare questa galleria."}
+            {galleryError?.message ? (
+              galleryError.message
+            ) : (
+              <T
+                textKey="catalog.page.errors.galleryLoading"
+                fallback="Non riesco a caricare questa galleria."
+              />
+            )}
           </p>
 
           <a
             href="/dashboard/gallerie"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Torna alle gallerie
+            <T
+              textKey="catalog.page.actions.backToGalleries"
+              fallback="Torna alle gallerie"
+            />
           </a>
         </section>
       </main>
@@ -184,16 +201,28 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
     return (
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-4xl rounded-3xl border border-red-900 bg-red-950/30 p-6">
-          <p className="text-lg font-medium">Accesso negato</p>
+          <p className="text-lg font-medium">
+            <T
+              textKey="catalog.page.errors.accessDenied"
+              fallback="Accesso negato"
+            />
+          </p>
+
           <p className="mt-2 text-sm text-red-100">
-            Non puoi creare il catalogo di una galleria che non gestisci.
+            <T
+              textKey="catalog.page.errors.notGalleryManager"
+              fallback="Non puoi creare il catalogo di una galleria che non gestisci."
+            />
           </p>
 
           <a
             href="/dashboard/gallerie"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Torna alle gallerie
+            <T
+              textKey="catalog.page.actions.backToGalleries"
+              fallback="Torna alle gallerie"
+            />
           </a>
         </section>
       </main>
@@ -237,7 +266,13 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
     return (
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-4xl rounded-3xl border border-red-900 bg-red-950/30 p-6">
-          <p className="text-lg font-medium">Errore caricamento opere</p>
+          <p className="text-lg font-medium">
+            <T
+              textKey="catalog.page.errors.artworksLoading"
+              fallback="Errore caricamento opere"
+            />
+          </p>
+
           <p className="mt-2 text-sm text-red-100">
             {galleryArtworksError.message}
           </p>
@@ -246,7 +281,10 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
             href={`/dashboard/gallerie/${gallery.id}`}
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Torna alla galleria
+            <T
+              textKey="catalog.page.actions.backToGallery"
+              fallback="Torna alla galleria"
+            />
           </a>
         </section>
       </main>
@@ -254,39 +292,39 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
   }
 
   const safeGalleryArtworks =
-  (galleryArtworks || []) as unknown as GalleryArtworkRow[];
+    (galleryArtworks || []) as unknown as GalleryArtworkRow[];
 
   const artworks = safeGalleryArtworks.flatMap((item) => {
-  const artwork = normalizeArtworkRelation(item.artworks);
+    const artwork = normalizeArtworkRelation(item.artworks);
 
-  if (!artwork) {
-    return [];
-  }
+    if (!artwork) {
+      return [];
+    }
 
-  return [
-    {
-      galleryArtworkId: item.id,
-      artworkId: artwork.id,
-      title: artwork.title || "Opera senza titolo",
-      artistName: artwork.artist_name || "",
-      year: artwork.year || "",
-      technique: artwork.technique || "",
-      dimensions: artwork.dimensions || "",
-      description: artwork.description || "",
-      imageUrl: getArtworkImageUrl(artwork),
-      price: artwork.price,
-      currency: artwork.currency || "EUR",
-      isForSale: artwork.is_for_sale === true,
-      isPublic: artwork.is_public === true,
-      widthCm: toNullableNumber(artwork.width_cm),
-      heightCm: toNullableNumber(artwork.height_cm),
-      depthCm: toNullableNumber(artwork.depth_cm),
-      sortOrder: item.sort_order || 0,
-    },
-  ];
-});
+    return [
+      {
+        galleryArtworkId: item.id,
+        artworkId: artwork.id,
+        title: artwork.title || "Opera senza titolo",
+        artistName: artwork.artist_name || "",
+        year: artwork.year || "",
+        technique: artwork.technique || "",
+        dimensions: artwork.dimensions || "",
+        description: artwork.description || "",
+        imageUrl: getArtworkImageUrl(artwork),
+        price: artwork.price,
+        currency: artwork.currency || "EUR",
+        isForSale: artwork.is_for_sale === true,
+        isPublic: artwork.is_public === true,
+        widthCm: toNullableNumber(artwork.width_cm),
+        heightCm: toNullableNumber(artwork.height_cm),
+        depthCm: toNullableNumber(artwork.depth_cm),
+        sortOrder: item.sort_order || 0,
+      },
+    ];
+  });
 
-    const appUrl = getAppUrl();
+  const appUrl = getAppUrl();
   const publicUrl = `${appUrl}/gallerie/${gallery.slug}`;
 
   const { data: catalogSettingsData } = await admin
@@ -320,7 +358,9 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
         introText: catalogSettingsData.intro_text,
         contactEmail: catalogSettingsData.contact_email,
         website: catalogSettingsData.website,
-        layoutVariant: normalizeCatalogLayout(catalogSettingsData.layout_variant),
+        layoutVariant: normalizeCatalogLayout(
+          catalogSettingsData.layout_variant
+        ),
         includeDescriptions: catalogSettingsData.include_descriptions,
         includePrices: catalogSettingsData.include_prices,
         includePublicLink: catalogSettingsData.include_public_link,
@@ -330,20 +370,20 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
 
   return (
     <GalleryCatalogBuilder
-  gallery={{
-    id: gallery.id,
-    title: gallery.title,
-    slug: gallery.slug,
-    description: gallery.description,
-    coverImageUrl: gallery.cover_image_url,
-    status: gallery.status,
-    publicUrl,
-  }}
-  artworks={artworks}
-  defaultCuratorName={profile.full_name || profile.display_name || ""}
-  defaultContactEmail={profile.email || user.email || ""}
-  initialSettings={catalogSettings}
-  userPlan={profile.plan || "free"}
-/>
+      gallery={{
+        id: gallery.id,
+        title: gallery.title,
+        slug: gallery.slug,
+        description: gallery.description,
+        coverImageUrl: gallery.cover_image_url,
+        status: gallery.status,
+        publicUrl,
+      }}
+      artworks={artworks}
+      defaultCuratorName={profile.full_name || profile.display_name || ""}
+      defaultContactEmail={profile.email || user.email || ""}
+      initialSettings={catalogSettings}
+      userPlan={profile.plan || "free"}
+    />
   );
 }

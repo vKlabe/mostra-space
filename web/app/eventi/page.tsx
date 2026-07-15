@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
+import T from "@/components/i18n/T";
 
 type GalleryEvent = {
   id: string;
@@ -202,7 +203,7 @@ export default async function PublicEventsPage() {
             />
           ) : (
             <div className="flex h-full min-h-[220px] items-center justify-center text-xs uppercase tracking-[0.25em] text-neutral-600">
-              No cover
+              <T textKey="events.card.noCover" fallback="No cover" />
             </div>
           )}
         </div>
@@ -210,7 +211,11 @@ export default async function PublicEventsPage() {
         <div className="p-6">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-amber-900 bg-amber-950/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-200">
-              {event.status === "live" ? "Live" : "Evento"}
+              {event.status === "live" ? (
+                <T textKey="events.card.statusLive" fallback="Live" />
+              ) : (
+                <T textKey="events.card.statusEvent" fallback="Evento" />
+              )}
             </span>
 
             {gallery && (
@@ -227,7 +232,7 @@ export default async function PublicEventsPage() {
           </p>
 
           <p className="mt-2 text-sm text-neutral-500">
-            A cura di{" "}
+            <T textKey="events.card.curatedBy" fallback="A cura di" />{" "}
             {ownerProfileHref ? (
               <a
                 href={ownerProfileHref}
@@ -252,11 +257,17 @@ export default async function PublicEventsPage() {
                 href={`/gallerie/${gallery.slug}`}
                 className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
-                Apri galleria
+                <T
+                  textKey="events.card.openGallery"
+                  fallback="Apri galleria"
+                />
               </a>
             ) : (
               <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
-                Galleria in preparazione
+                <T
+                  textKey="events.card.galleryInPreparation"
+                  fallback="Galleria in preparazione"
+                />
               </span>
             )}
 
@@ -284,67 +295,96 @@ export default async function PublicEventsPage() {
       <MuseumHeader />
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-6xl">
-        <p className="mb-4 text-xs uppercase tracking-[0.35em] text-amber-500">
-          Calendario pubblico
-        </p>
+          <p className="mb-4 text-xs uppercase tracking-[0.35em] text-amber-500">
+            <T
+              textKey="events.header.label"
+              fallback="Calendario pubblico"
+            />
+          </p>
 
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-          <div>
-            <h1 className="font-serif text-5xl">Eventi su mostra.space</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
-              Vernissage digitali, visite guidate e appuntamenti collegati alle
-              gallerie pubbliche della piattaforma.
-            </p>
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <h1 className="font-serif text-5xl">
+                <T
+                  textKey="events.header.title"
+                  fallback="Eventi su mostra.space"
+                />
+              </h1>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
+                <T
+                  textKey="events.header.subtitle"
+                  fallback="Vernissage digitali, visite guidate e appuntamenti collegati alle gallerie pubbliche della piattaforma."
+                />
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/profili"
+                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              >
+                <T
+                  textKey="events.header.exploreProfiles"
+                  fallback="Esplora profili"
+                />
+              </a>
+
+              <a
+                href="/account/calendario"
+                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              >
+                <T
+                  textKey="events.header.myCalendar"
+                  fallback="Il mio calendario"
+                />
+              </a>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <a
-              href="/profili"
-              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
-              Esplora profili
-            </a>
+          <section className="mt-10">
+            <h2 className="font-serif text-3xl">
+              <T
+                textKey="events.upcoming.title"
+                fallback="Prossimi eventi"
+              />
+            </h2>
 
-            <a
-              href="/account/calendario"
-              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
-              Il mio calendario
-            </a>
-          </div>
-        </div>
-
-        <section className="mt-10">
-          <h2 className="font-serif text-3xl">Prossimi eventi</h2>
-
-          {upcomingEvents.length === 0 ? (
-            <div className="mt-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-400">
-              Nessun evento programmato al momento.
-            </div>
-          ) : (
-            <div className="mt-6 space-y-8">
-              {groupByMonth(upcomingEvents).map(([month, monthEvents]) => (
-                <section key={month}>
-                  <h3 className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                    {month}
-                  </h3>
-                  <div className="space-y-5">
-                    {monthEvents.map((event) => renderEventCard(event))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {pastEvents.length > 0 && (
-          <section className="mt-12">
-            <h2 className="font-serif text-3xl">Eventi passati</h2>
-            <div className="mt-6 space-y-5">
-              {pastEvents.map((event) => renderEventCard(event))}
-            </div>
+            {upcomingEvents.length === 0 ? (
+              <div className="mt-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-400">
+                <T
+                  textKey="events.upcoming.empty"
+                  fallback="Nessun evento programmato al momento."
+                />
+              </div>
+            ) : (
+              <div className="mt-6 space-y-8">
+                {groupByMonth(upcomingEvents).map(([month, monthEvents]) => (
+                  <section key={month}>
+                    <h3 className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-500">
+                      {month}
+                    </h3>
+                    <div className="space-y-5">
+                      {monthEvents.map((event) => renderEventCard(event))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
           </section>
-        )}
+
+          {pastEvents.length > 0 && (
+            <section className="mt-12">
+              <h2 className="font-serif text-3xl">
+                <T
+                  textKey="events.past.title"
+                  fallback="Eventi passati"
+                />
+              </h2>
+              <div className="mt-6 space-y-5">
+                {pastEvents.map((event) => renderEventCard(event))}
+              </div>
+            </section>
+          )}
         </section>
       </main>
     </>

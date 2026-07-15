@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import T from "@/components/i18n/T";
 import PlanUsageCard from "@/components/dashboard/PlanUsageCard";
 import { normalizePlanName } from "@/lib/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -84,7 +85,10 @@ type FavoriteArtworkGalleryRelation = {
 type FavoriteArtworkPlacement = {
   id: string;
   artwork_id: string;
-  galleries: FavoriteArtworkGalleryRelation | FavoriteArtworkGalleryRelation[] | null;
+  galleries:
+    | FavoriteArtworkGalleryRelation
+    | FavoriteArtworkGalleryRelation[]
+    | null;
 };
 
 type FavoritePublicArtwork = FavoriteArtworkRecord & {
@@ -269,8 +273,8 @@ export default async function DashboardPage() {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select(
-  "id, email, display_name, full_name, role, plan, stripe_subscription_status, stripe_current_period_end, stripe_cancel_at_period_end"
-)
+      "id, email, display_name, full_name, role, plan, stripe_subscription_status, stripe_current_period_end, stripe_cancel_at_period_end"
+    )
     .eq("id", user.id)
     .single<Profile>();
 
@@ -279,17 +283,32 @@ export default async function DashboardPage() {
       <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-5xl">
           <p className="mb-4 text-sm uppercase tracking-[0.35em] text-red-400">
-            Errore
+            <T textKey="dashboard.error.label" fallback="Errore" />
           </p>
 
-          <h1 className="text-4xl font-semibold">Profilo non trovato</h1>
+          <h1 className="text-4xl font-semibold">
+            <T
+              textKey="dashboard.error.profileNotFound"
+              fallback="Profilo non trovato"
+            />
+          </h1>
 
           <p className="mt-4 text-neutral-300">
-            Non riesco a leggere il profilo utente.
+            <T
+              textKey="dashboard.error.profileReadError"
+              fallback="Non riesco a leggere il profilo utente."
+            />
           </p>
 
           <div className="mt-8 rounded-3xl border border-red-800 bg-red-950/30 p-6">
-            {profileError?.message || "Profilo assente."}
+            {profileError?.message ? (
+              profileError.message
+            ) : (
+              <T
+                textKey="dashboard.error.profileMissing"
+                fallback="Profilo assente."
+              />
+            )}
           </div>
         </section>
       </main>
@@ -298,7 +317,7 @@ export default async function DashboardPage() {
 
   const canManage = profile.role === "gallerist" || profile.role === "admin";
 
-    const admin = createAdminClient();
+  const admin = createAdminClient();
 
   const { data: favoriteGalleryRowsData } = await admin
     .from("favorite_galleries")
@@ -345,7 +364,7 @@ export default async function DashboardPage() {
       .filter(Boolean) as FavoritePublicGallery[];
   }
 
-    const { data: favoriteArtworkRowsData } = await admin
+  const { data: favoriteArtworkRowsData } = await admin
     .from("favorite_artworks")
     .select("artwork_id, created_at")
     .eq("user_id", user.id)
@@ -395,25 +414,30 @@ export default async function DashboardPage() {
       FavoriteArtworkPlacement
     >();
 
-    ((favoriteArtworkPlacementsData || []) as unknown as FavoriteArtworkPlacement[])
-      .forEach((placement) => {
-        const galleries = Array.isArray(placement.galleries)
-          ? placement.galleries
-          : placement.galleries
-            ? [placement.galleries]
-            : [];
+    (
+      (favoriteArtworkPlacementsData ||
+        []) as unknown as FavoriteArtworkPlacement[]
+    ).forEach((placement) => {
+      const galleries = Array.isArray(placement.galleries)
+        ? placement.galleries
+        : placement.galleries
+          ? [placement.galleries]
+          : [];
 
-        const publishedGallery = galleries.find(
-          (gallery) => gallery.status === "published"
-        );
+      const publishedGallery = galleries.find(
+        (gallery) => gallery.status === "published"
+      );
 
-        if (publishedGallery && !favoriteArtworkPlacementByArtworkId.has(placement.artwork_id)) {
-          favoriteArtworkPlacementByArtworkId.set(placement.artwork_id, {
-            ...placement,
-            galleries: publishedGallery,
-          });
-        }
-      });
+      if (
+        publishedGallery &&
+        !favoriteArtworkPlacementByArtworkId.has(placement.artwork_id)
+      ) {
+        favoriteArtworkPlacementByArtworkId.set(placement.artwork_id, {
+          ...placement,
+          galleries: publishedGallery,
+        });
+      }
+    });
 
     favoriteArtworks = favoriteArtworkRows
       .map((favorite) => {
@@ -438,7 +462,7 @@ export default async function DashboardPage() {
       .filter(Boolean) as FavoritePublicArtwork[];
   }
 
-    const { data: recentGalleryVisitRowsData } = await admin
+  const { data: recentGalleryVisitRowsData } = await admin
     .from("recent_gallery_visits")
     .select("gallery_id, visited_at")
     .eq("user_id", user.id)
@@ -486,13 +510,18 @@ export default async function DashboardPage() {
   const recentGalleriesCard = (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
       <h3 className="text-lg font-semibold text-neutral-100">
-        Gallerie visitate recentemente
+        <T
+          textKey="dashboard.community.recentGalleries.title"
+          fallback="Gallerie visitate recentemente"
+        />
       </h3>
 
       {recentGalleries.length === 0 && (
         <p className="mt-3 text-sm leading-6 text-neutral-400">
-          Non hai ancora visitato gallerie pubbliche. Esplora il portale e
-          ritroverai qui gli ultimi spazi aperti.
+          <T
+            textKey="dashboard.community.recentGalleries.empty"
+            fallback="Non hai ancora visitato gallerie pubbliche. Esplora il portale e ritroverai qui gli ultimi spazi aperti."
+          />
         </p>
       )}
 
@@ -505,8 +534,12 @@ export default async function DashboardPage() {
               className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-600"
             >
               <p className="font-medium text-neutral-100">{gallery.title}</p>
+
               <p className="mt-1 text-xs text-neutral-500">
-                Visitata il{" "}
+                <T
+                  textKey="dashboard.community.recentGalleries.visitedAt"
+                  fallback="Visitata il"
+                />{" "}
                 {new Date(gallery.visited_at).toLocaleDateString("it-IT")}
               </p>
             </a>
@@ -518,12 +551,15 @@ export default async function DashboardPage() {
         href="/gallerie"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
-        Esplora gallerie
+        <T
+          textKey="dashboard.community.actions.exploreGalleries"
+          fallback="Esplora gallerie"
+        />
       </a>
     </article>
   );
 
-    const { data: sentInquiriesData } = await admin
+  const { data: sentInquiriesData } = await admin
     .from("gallery_inquiries")
     .select(
       `
@@ -548,13 +584,18 @@ export default async function DashboardPage() {
   const sentInquiriesCard = (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
       <h3 className="text-lg font-semibold text-neutral-100">
-        Richieste inviate
+        <T
+          textKey="dashboard.community.sentInquiries.title"
+          fallback="Richieste inviate"
+        />
       </h3>
 
       {sentInquiries.length === 0 && (
         <p className="mt-3 text-sm leading-6 text-neutral-400">
-          Non hai ancora inviato richieste. Apri una galleria pubblica e usa il
-          form informazioni.
+          <T
+            textKey="dashboard.community.sentInquiries.empty"
+            fallback="Non hai ancora inviato richieste. Apri una galleria pubblica e usa il form informazioni."
+          />
         </p>
       )}
 
@@ -571,7 +612,14 @@ export default async function DashboardPage() {
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium text-neutral-100">
-                    {gallery?.title || "Galleria non trovata"}
+                    {gallery?.title ? (
+                      gallery.title
+                    ) : (
+                      <T
+                        textKey="dashboard.community.common.galleryNotFound"
+                        fallback="Galleria non trovata"
+                      />
+                    )}
                   </p>
 
                   <span
@@ -584,7 +632,10 @@ export default async function DashboardPage() {
                 </div>
 
                 <p className="mt-2 text-xs text-neutral-500">
-                  Inviata il{" "}
+                  <T
+                    textKey="dashboard.community.sentInquiries.sentAt"
+                    fallback="Inviata il"
+                  />{" "}
                   {new Date(inquiry.created_at).toLocaleDateString("it-IT")}
                 </p>
               </a>
@@ -597,7 +648,10 @@ export default async function DashboardPage() {
         href="/gallerie"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
-        Esplora gallerie
+        <T
+          textKey="dashboard.community.actions.exploreGalleries"
+          fallback="Esplora gallerie"
+        />
       </a>
     </article>
   );
@@ -605,13 +659,18 @@ export default async function DashboardPage() {
   const favoriteArtworksCard = (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
       <h3 className="text-lg font-semibold text-neutral-100">
-        Opere preferite
+        <T
+          textKey="dashboard.community.favoriteArtworks.title"
+          fallback="Opere preferite"
+        />
       </h3>
 
       {favoriteArtworks.length === 0 && (
         <p className="mt-3 text-sm leading-6 text-neutral-400">
-          Non hai ancora salvato opere. Apri una galleria pubblica e usa il
-          pulsante Salva opera.
+          <T
+            textKey="dashboard.community.favoriteArtworks.empty"
+            fallback="Non hai ancora salvato opere. Apri una galleria pubblica e usa il pulsante Salva opera."
+          />
         </p>
       )}
 
@@ -637,12 +696,19 @@ export default async function DashboardPage() {
 
               {artwork.gallery_title && (
                 <p className="mt-1 text-xs text-neutral-500">
-                  Da: {artwork.gallery_title}
+                  <T
+                    textKey="dashboard.community.favoriteArtworks.fromGallery"
+                    fallback="Da:"
+                  />{" "}
+                  {artwork.gallery_title}
                 </p>
               )}
 
               <p className="mt-1 text-xs text-neutral-500">
-                Salvata il{" "}
+                <T
+                  textKey="dashboard.community.favoriteArtworks.savedAt"
+                  fallback="Salvata il"
+                />{" "}
                 {new Date(artwork.saved_at).toLocaleDateString("it-IT")}
               </p>
             </a>
@@ -654,7 +720,10 @@ export default async function DashboardPage() {
         href="/gallerie"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
-        Esplora opere
+        <T
+          textKey="dashboard.community.actions.exploreArtworks"
+          fallback="Esplora opere"
+        />
       </a>
     </article>
   );
@@ -662,13 +731,18 @@ export default async function DashboardPage() {
   const favoriteGalleriesCard = (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600">
       <h3 className="text-lg font-semibold text-neutral-100">
-        Gallerie preferite
+        <T
+          textKey="dashboard.community.favoriteGalleries.title"
+          fallback="Gallerie preferite"
+        />
       </h3>
 
       {favoriteGalleries.length === 0 && (
         <p className="mt-3 text-sm leading-6 text-neutral-400">
-          Non hai ancora salvato gallerie. Esplora il portale e usa il pulsante
-          Salva galleria.
+          <T
+            textKey="dashboard.community.favoriteGalleries.empty"
+            fallback="Non hai ancora salvato gallerie. Esplora il portale e usa il pulsante Salva galleria."
+          />
         </p>
       )}
 
@@ -681,8 +755,12 @@ export default async function DashboardPage() {
               className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-600"
             >
               <p className="font-medium text-neutral-100">{gallery.title}</p>
+
               <p className="mt-1 text-xs text-neutral-500">
-                Salvata il{" "}
+                <T
+                  textKey="dashboard.community.favoriteGalleries.savedAt"
+                  fallback="Salvata il"
+                />{" "}
                 {new Date(gallery.saved_at).toLocaleDateString("it-IT")}
               </p>
             </a>
@@ -694,12 +772,15 @@ export default async function DashboardPage() {
         href="/gallerie"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
-        Esplora gallerie
+        <T
+          textKey="dashboard.community.actions.exploreGalleries"
+          fallback="Esplora gallerie"
+        />
       </a>
     </article>
   );
 
-    if (!canManage) {
+  if (!canManage) {
     const visitorName =
       profile.display_name || profile.full_name || profile.email || "Visitor";
 
@@ -708,53 +789,68 @@ export default async function DashboardPage() {
         title={`Ciao, ${visitorName}`}
         subtitle="Questa e la tua dashboard community: il tuo spazio personale dentro mostra.space."
         activeSection="dashboard"
-          navMode="community"
+        navMode="community"
         actions={
           <a
             href="/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Esplora gallerie pubbliche
+            <T
+              textKey="dashboard.community.actions.explorePublicGalleries"
+              fallback="Esplora gallerie pubbliche"
+            />
           </a>
         }
       >
         <div className="space-y-8">
           <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
             <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-              Community
+              <T
+                textKey="dashboard.community.header.label"
+                fallback="Community"
+              />
             </p>
 
             <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
-              Il tuo spazio personale
+              <T
+                textKey="dashboard.community.header.title"
+                fallback="Il tuo spazio personale"
+              />
             </h2>
 
             <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-              Il tuo account e attivo come Visitor. Puoi esplorare il portale,
-              visitare gallerie pubbliche, salvare preferiti e gestire le tue
-              richieste. Questi strumenti community resteranno disponibili anche
-              se passerai ad account Gallerista o Artista.
+              <T
+                textKey="dashboard.community.header.visitorDescription"
+                fallback="Il tuo account e attivo come Visitor. Puoi esplorare il portale, visitare gallerie pubbliche, salvare preferiti e gestire le tue richieste. Questi strumenti community resteranno disponibili anche se passerai ad account Gallerista o Artista."
+              />
             </p>
           </section>
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-  {favoriteGalleriesCard}
+            {favoriteGalleriesCard}
 
-  {favoriteArtworksCard}
+            {favoriteArtworksCard}
 
-  {sentInquiriesCard}
+            {sentInquiriesCard}
 
-  {recentGalleriesCard}
+            {recentGalleriesCard}
 
-  <a
-    href="/account"
-    
+            <a
+              href="/account"
               className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
             >
               <h3 className="text-lg font-semibold text-neutral-100">
-                Impostazioni account
+                <T
+                  textKey="dashboard.community.accountSettings.title"
+                  fallback="Impostazioni account"
+                />
               </h3>
+
               <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Gestisci sicurezza, preferenze e dati del tuo account.
+                <T
+                  textKey="dashboard.community.accountSettings.description"
+                  fallback="Gestisci sicurezza, preferenze e dati del tuo account."
+                />
               </p>
             </a>
           </section>
@@ -763,17 +859,24 @@ export default async function DashboardPage() {
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-                  Creator tools
+                  <T
+                    textKey="dashboard.community.creatorTools.label"
+                    fallback="Creator tools"
+                  />
                 </p>
 
                 <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
-                  Vuoi creare una galleria?
+                  <T
+                    textKey="dashboard.community.creatorTools.title"
+                    fallback="Vuoi creare una galleria?"
+                  />
                 </h2>
 
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
-                  Puoi trasformare questo stesso account in account Gallerista
-                  o Artista. La parte community resta attiva, ma si aggiungono
-                  gallerie, opere, editor 3D e richieste ricevute.
+                  <T
+                    textKey="dashboard.community.creatorTools.description"
+                    fallback="Puoi trasformare questo stesso account in account Gallerista o Artista. La parte community resta attiva, ma si aggiungono gallerie, opere, editor 3D e richieste ricevute."
+                  />
                 </p>
               </div>
 
@@ -781,34 +884,63 @@ export default async function DashboardPage() {
                 href="/account/upgrade-gallerist"
                 className="inline-flex rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
-                Passa a Gallerista / Artista
+                <T
+                  textKey="dashboard.community.creatorTools.upgrade"
+                  fallback="Passa a Gallerista / Artista"
+                />
               </a>
             </div>
           </section>
 
           <section className="rounded-3xl border border-dashed border-neutral-800 p-6">
             <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-              Prossimamente
+              <T
+                textKey="dashboard.community.comingSoon.label"
+                fallback="Prossimamente"
+              />
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-400">
               <span className="rounded-full border border-neutral-800 px-4 py-2">
-                Chat
+                <T
+                  textKey="dashboard.community.comingSoon.chat"
+                  fallback="Chat"
+                />
               </span>
+
               <span className="rounded-full border border-neutral-800 px-4 py-2">
-                Follow
+                <T
+                  textKey="dashboard.community.comingSoon.follow"
+                  fallback="Follow"
+                />
               </span>
+
               <span className="rounded-full border border-neutral-800 px-4 py-2">
-                Notifiche
+                <T
+                  textKey="dashboard.community.comingSoon.notifications"
+                  fallback="Notifiche"
+                />
               </span>
+
               <span className="rounded-full border border-neutral-800 px-4 py-2">
-                Eventi
+                <T
+                  textKey="dashboard.community.comingSoon.events"
+                  fallback="Eventi"
+                />
               </span>
+
               <span className="rounded-full border border-neutral-800 px-4 py-2">
-                Liste personali
+                <T
+                  textKey="dashboard.community.comingSoon.personalLists"
+                  fallback="Liste personali"
+                />
               </span>
+
               <span className="rounded-full border border-neutral-800 px-4 py-2">
-                Feed
+                <T
+                  textKey="dashboard.community.comingSoon.feed"
+                  fallback="Feed"
+                />
               </span>
             </div>
           </section>
@@ -957,7 +1089,10 @@ export default async function DashboardPage() {
             href="/dashboard/gallerie"
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
-            Crea / gestisci gallerie
+            <T
+              textKey="dashboard.actions.manageGalleries"
+              fallback="Crea / gestisci gallerie"
+            />
           </a>
 
           <a
@@ -966,48 +1101,59 @@ export default async function DashboardPage() {
             rel="noreferrer"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Elenco pubblico
+            <T
+              textKey="dashboard.actions.publicList"
+              fallback="Elenco pubblico"
+            />
           </a>
         </>
       }
     >
-          <section className="mb-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <section className="mb-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-          Community
+          <T textKey="dashboard.community.header.label" fallback="Community" />
         </p>
 
         <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
-          Il tuo spazio personale
+          <T
+            textKey="dashboard.community.header.title"
+            fallback="Il tuo spazio personale"
+          />
         </h2>
 
         <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-          Anche come Gallerista o Artista mantieni tutti gli strumenti community:
-          profilo, preferiti, richieste inviate, cronologia visite e impostazioni
-          account. La community e unica, cambiano solo gli strumenti creator
-          disponibili in base al ruolo.
+          <T
+            textKey="dashboard.community.header.creatorDescription"
+            fallback="Anche come Gallerista o Artista mantieni tutti gli strumenti community: profilo, preferiti, richieste inviate, cronologia visite e impostazioni account. La community e unica, cambiano solo gli strumenti creator disponibili in base al ruolo."
+          />
         </p>
       </section>
 
       <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-  <a
-    href="/account"
-    className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-  >
-    <h3 className="text-lg font-semibold text-neutral-100">
-      Profilo
-    </h3>
-    <p className="mt-3 text-sm leading-6 text-neutral-400">
-      Gestisci nome, dati account e informazioni personali.
-    </p>
-  </a>
+        <a
+          href="/account"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            <T
+              textKey="dashboard.community.profile.title"
+              fallback="Profilo"
+            />
+          </h3>
 
-  {favoriteGalleriesCard}
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            <T
+              textKey="dashboard.community.profile.description"
+              fallback="Gestisci nome, dati account e informazioni personali."
+            />
+          </p>
+        </a>
 
-  {favoriteArtworksCard}
+        {favoriteGalleriesCard}
 
-              
-          {sentInquiriesCard}
+        {favoriteArtworksCard}
 
+        {sentInquiriesCard}
 
         {recentGalleriesCard}
 
@@ -1016,45 +1162,79 @@ export default async function DashboardPage() {
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
           <h3 className="text-lg font-semibold text-neutral-100">
-            Impostazioni account
+            <T
+              textKey="dashboard.community.accountSettings.title"
+              fallback="Impostazioni account"
+            />
           </h3>
+
           <p className="mt-3 text-sm leading-6 text-neutral-400">
-            Gestisci sicurezza, preferenze e dati del tuo account.
+            <T
+              textKey="dashboard.community.accountSettings.description"
+              fallback="Gestisci sicurezza, preferenze e dati del tuo account."
+            />
           </p>
         </a>
       </section>
 
       <section className="mb-8 rounded-3xl border border-dashed border-neutral-800 p-6">
         <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-          Prossimamente
+          <T
+            textKey="dashboard.community.comingSoon.label"
+            fallback="Prossimamente"
+          />
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-400">
           <span className="rounded-full border border-neutral-800 px-4 py-2">
-            Chat
+            <T
+              textKey="dashboard.community.comingSoon.chat"
+              fallback="Chat"
+            />
           </span>
+
           <span className="rounded-full border border-neutral-800 px-4 py-2">
-            Follow
+            <T
+              textKey="dashboard.community.comingSoon.follow"
+              fallback="Follow"
+            />
           </span>
+
           <span className="rounded-full border border-neutral-800 px-4 py-2">
-            Notifiche
+            <T
+              textKey="dashboard.community.comingSoon.notifications"
+              fallback="Notifiche"
+            />
           </span>
+
           <span className="rounded-full border border-neutral-800 px-4 py-2">
-            Eventi
+            <T
+              textKey="dashboard.community.comingSoon.events"
+              fallback="Eventi"
+            />
           </span>
+
           <span className="rounded-full border border-neutral-800 px-4 py-2">
-            Liste personali
+            <T
+              textKey="dashboard.community.comingSoon.personalLists"
+              fallback="Liste personali"
+            />
           </span>
+
           <span className="rounded-full border border-neutral-800 px-4 py-2">
-            Feed
+            <T
+              textKey="dashboard.community.comingSoon.feed"
+              fallback="Feed"
+            />
           </span>
         </div>
       </section>
+
       <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Onboarding
+              <T textKey="dashboard.onboarding.label" fallback="Onboarding" />
             </p>
 
             <h2 className="text-3xl font-semibold">{onboardingTitle}</h2>
@@ -1095,7 +1275,10 @@ export default async function DashboardPage() {
                   rel="noreferrer"
                   className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
                 >
-                  Anteprima viewer 3D
+                  <T
+                    textKey="dashboard.onboarding.previewViewer"
+                    fallback="Anteprima viewer 3D"
+                  />
                 </a>
               )}
             </div>
@@ -1116,13 +1299,27 @@ export default async function DashboardPage() {
 
                 <div>
                   <p className="text-sm font-medium text-neutral-100">
-                    Crea una galleria
+                    <T
+                      textKey="dashboard.onboarding.steps.createGallery.title"
+                      fallback="Crea una galleria"
+                    />
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-neutral-500">
-                    {hasGalleries
-                      ? `${safeGalleries.length} gallerie create.`
-                      : "Crea il primo spazio espositivo dal pannello gallerie."}
+                    {hasGalleries ? (
+                      <>
+                        {safeGalleries.length}{" "}
+                        <T
+                          textKey="dashboard.onboarding.steps.createGallery.completed"
+                          fallback="gallerie create."
+                        />
+                      </>
+                    ) : (
+                      <T
+                        textKey="dashboard.onboarding.steps.createGallery.pending"
+                        fallback="Crea il primo spazio espositivo dal pannello gallerie."
+                      />
+                    )}
                   </p>
                 </div>
               </div>
@@ -1142,13 +1339,32 @@ export default async function DashboardPage() {
 
                 <div>
                   <p className="text-sm font-medium text-neutral-100">
-                    Carica opere
+                    <T
+                      textKey="dashboard.onboarding.steps.uploadArtworks.title"
+                      fallback="Carica opere"
+                    />
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-neutral-500">
-                    {hasArtworks
-                      ? `${safeArtworks.length} opere caricate, ${publicArtworks} pubbliche.`
-                      : "Carica immagini, dati, prezzi e stato pubblico delle opere."}
+                    {hasArtworks ? (
+                      <>
+                        {safeArtworks.length}{" "}
+                        <T
+                          textKey="dashboard.onboarding.steps.uploadArtworks.uploaded"
+                          fallback="opere caricate,"
+                        />{" "}
+                        {publicArtworks}{" "}
+                        <T
+                          textKey="dashboard.onboarding.steps.uploadArtworks.public"
+                          fallback="pubbliche."
+                        />
+                      </>
+                    ) : (
+                      <T
+                        textKey="dashboard.onboarding.steps.uploadArtworks.pending"
+                        fallback="Carica immagini, dati, prezzi e stato pubblico delle opere."
+                      />
+                    )}
                   </p>
                 </div>
               </div>
@@ -1168,13 +1384,27 @@ export default async function DashboardPage() {
 
                 <div>
                   <p className="text-sm font-medium text-neutral-100">
-                    Allestisci e pubblica
+                    <T
+                      textKey="dashboard.onboarding.steps.publish.title"
+                      fallback="Allestisci e pubblica"
+                    />
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-neutral-500">
-                    {hasPublishedGallery
-                      ? `${publishedGalleries} gallerie online.`
-                      : "Apri l’editor 3D, posiziona le opere e pubblica quando la checklist è pronta."}
+                    {hasPublishedGallery ? (
+                      <>
+                        {publishedGalleries}{" "}
+                        <T
+                          textKey="dashboard.onboarding.steps.publish.completed"
+                          fallback="gallerie online."
+                        />
+                      </>
+                    ) : (
+                      <T
+                        textKey="dashboard.onboarding.steps.publish.pending"
+                        fallback="Apri l’editor 3D, posiziona le opere e pubblica quando la checklist è pronta."
+                      />
+                    )}
                   </p>
                 </div>
               </div>
@@ -1194,13 +1424,31 @@ export default async function DashboardPage() {
 
                 <div>
                   <p className="text-sm font-medium text-neutral-100">
-                    Gestisci richieste
+                    <T
+                      textKey="dashboard.onboarding.steps.manageInquiries.title"
+                      fallback="Gestisci richieste"
+                    />
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-neutral-500">
-                    {hasNewInquiries
-                      ? `Hai ${newInquiries} nuove richieste da controllare.`
-                      : "Quando i visitatori inviano richieste, le troverai nella sezione richieste."}
+                    {hasNewInquiries ? (
+                      <>
+                        <T
+                          textKey="dashboard.onboarding.steps.manageInquiries.hasNewPrefix"
+                          fallback="Hai"
+                        />{" "}
+                        {newInquiries}{" "}
+                        <T
+                          textKey="dashboard.onboarding.steps.manageInquiries.hasNewSuffix"
+                          fallback="nuove richieste da controllare."
+                        />
+                      </>
+                    ) : (
+                      <T
+                        textKey="dashboard.onboarding.steps.manageInquiries.empty"
+                        fallback="Quando i visitatori inviano richieste, le troverai nella sezione richieste."
+                      />
+                    )}
                   </p>
                 </div>
               </div>
@@ -1212,71 +1460,111 @@ export default async function DashboardPage() {
       <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Gallerie
+            <T textKey="dashboard.stats.galleries.title" fallback="Gallerie" />
           </p>
 
           <p className="text-4xl font-semibold">{safeGalleries.length}</p>
 
           <p className="mt-3 text-sm text-neutral-400">
-            {publishedGalleries} pubblicate · {draftGalleries} bozze ·{" "}
-            {archivedGalleries} archiviate
+            {publishedGalleries}{" "}
+            <T
+              textKey="dashboard.stats.galleries.published"
+              fallback="pubblicate"
+            />{" "}
+            · {draftGalleries}{" "}
+            <T
+              textKey="dashboard.stats.galleries.drafts"
+              fallback="bozze"
+            />{" "}
+            · {archivedGalleries}{" "}
+            <T
+              textKey="dashboard.stats.galleries.archived"
+              fallback="archiviate"
+            />
           </p>
 
           <a
             href="/dashboard/gallerie"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Gestisci gallerie
+            <T
+              textKey="dashboard.stats.galleries.manage"
+              fallback="Gestisci gallerie"
+            />
           </a>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Opere
+            <T textKey="dashboard.stats.artworks.title" fallback="Opere" />
           </p>
 
           <p className="text-4xl font-semibold">{safeArtworks.length}</p>
 
           <p className="mt-3 text-sm text-neutral-400">
-            {publicArtworks} pubbliche · {forSaleArtworks} in vendita
+            {publicArtworks}{" "}
+            <T
+              textKey="dashboard.stats.artworks.public"
+              fallback="pubbliche"
+            />{" "}
+            · {forSaleArtworks}{" "}
+            <T
+              textKey="dashboard.stats.artworks.forSale"
+              fallback="in vendita"
+            />
           </p>
 
           <a
             href="/dashboard/opere"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Gestisci opere
+            <T
+              textKey="dashboard.stats.artworks.manage"
+              fallback="Gestisci opere"
+            />
           </a>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Richieste
+            <T textKey="dashboard.stats.inquiries.title" fallback="Richieste" />
           </p>
 
           <p className="text-4xl font-semibold">{safeInquiries.length}</p>
 
           <p className="mt-3 text-sm text-neutral-400">
-            {newInquiries} nuove · {monthlyRequestsCount} questo mese
+            {newInquiries}{" "}
+            <T textKey="dashboard.stats.inquiries.new" fallback="nuove" /> ·{" "}
+            {monthlyRequestsCount}{" "}
+            <T
+              textKey="dashboard.stats.inquiries.thisMonth"
+              fallback="questo mese"
+            />
           </p>
 
           <a
             href="/dashboard/richieste"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Apri richieste
+            <T
+              textKey="dashboard.stats.inquiries.open"
+              fallback="Apri richieste"
+            />
           </a>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Piano
+            <T textKey="dashboard.stats.plan.title" fallback="Piano" />
           </p>
 
           <p className="text-4xl font-semibold capitalize">{plan}</p>
 
           <p className="mt-3 text-sm text-neutral-400">
-            {formatStorage(storageUsedBytes)} usati · ruolo {profile.role}
+            {formatStorage(storageUsedBytes)}{" "}
+            <T textKey="dashboard.stats.plan.used" fallback="usati" /> ·{" "}
+            <T textKey="dashboard.stats.plan.role" fallback="ruolo" />{" "}
+            {profile.role}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-2">
@@ -1284,14 +1572,14 @@ export default async function DashboardPage() {
               href="/account"
               className="inline-flex rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-500 transition hover:border-neutral-600 hover:text-neutral-300"
             >
-              Account
+              <T textKey="dashboard.stats.plan.account" fallback="Account" />
             </a>
 
             <a
               href="/pricing"
               className="inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
-              Piani
+              <T textKey="dashboard.stats.plan.plans" fallback="Piani" />
             </a>
           </div>
         </article>
@@ -1303,13 +1591,21 @@ export default async function DashboardPage() {
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
           <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-            Azione rapida
+            <T textKey="dashboard.quickActions.label" fallback="Azione rapida" />
           </p>
 
-          <h3 className="mt-3 text-lg font-medium">Crea galleria</h3>
+          <h3 className="mt-3 text-lg font-medium">
+            <T
+              textKey="dashboard.quickActions.createGallery.title"
+              fallback="Crea galleria"
+            />
+          </h3>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Apri la sezione gallerie e crea o modifica uno spazio virtuale.
+            <T
+              textKey="dashboard.quickActions.createGallery.description"
+              fallback="Apri la sezione gallerie e crea o modifica uno spazio virtuale."
+            />
           </p>
         </a>
 
@@ -1318,28 +1614,48 @@ export default async function DashboardPage() {
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
           <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-            Azione rapida
+            <T textKey="dashboard.quickActions.label" fallback="Azione rapida" />
           </p>
 
-          <h3 className="mt-3 text-lg font-medium">Carica opera</h3>
+          <h3 className="mt-3 text-lg font-medium">
+            <T
+              textKey="dashboard.quickActions.uploadArtwork.title"
+              fallback="Carica opera"
+            />
+          </h3>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Aggiungi immagini, dati, dimensioni, prezzo e visibilità.
+            <T
+              textKey="dashboard.quickActions.uploadArtwork.description"
+              fallback="Aggiungi immagini, dati, dimensioni, prezzo e visibilità."
+            />
           </p>
         </a>
 
         <a
-          href={primaryGallery ? `/dashboard/gallerie/${primaryGallery.id}` : "/dashboard/gallerie"}
+          href={
+            primaryGallery
+              ? `/dashboard/gallerie/${primaryGallery.id}`
+              : "/dashboard/gallerie"
+          }
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
           <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-            Azione rapida
+            <T textKey="dashboard.quickActions.label" fallback="Azione rapida" />
           </p>
 
-          <h3 className="mt-3 text-lg font-medium">Checklist galleria</h3>
+          <h3 className="mt-3 text-lg font-medium">
+            <T
+              textKey="dashboard.quickActions.galleryChecklist.title"
+              fallback="Checklist galleria"
+            />
+          </h3>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Controlla cover, opere, allestimento, anteprima e pubblicazione.
+            <T
+              textKey="dashboard.quickActions.galleryChecklist.description"
+              fallback="Controlla cover, opere, allestimento, anteprima e pubblicazione."
+            />
           </p>
         </a>
 
@@ -1348,13 +1664,21 @@ export default async function DashboardPage() {
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
           <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-            Azione rapida
+            <T textKey="dashboard.quickActions.label" fallback="Azione rapida" />
           </p>
 
-          <h3 className="mt-3 text-lg font-medium">Richieste ricevute</h3>
+          <h3 className="mt-3 text-lg font-medium">
+            <T
+              textKey="dashboard.quickActions.receivedInquiries.title"
+              fallback="Richieste ricevute"
+            />
+          </h3>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Leggi e gestisci i contatti arrivati dalle gallerie pubbliche.
+            <T
+              textKey="dashboard.quickActions.receivedInquiries.description"
+              fallback="Leggi e gestisci i contatti arrivati dalle gallerie pubbliche."
+            />
           </p>
         </a>
       </section>
@@ -1374,36 +1698,52 @@ export default async function DashboardPage() {
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Ultime gallerie
+                <T
+                  textKey="dashboard.latestGalleries.label"
+                  fallback="Ultime gallerie"
+                />
               </p>
 
-              <h2 className="text-2xl font-medium">Spazi recenti</h2>
+              <h2 className="text-2xl font-medium">
+                <T
+                  textKey="dashboard.latestGalleries.title"
+                  fallback="Spazi recenti"
+                />
+              </h2>
             </div>
 
             <a
               href="/dashboard/gallerie"
               className="text-sm text-neutral-400 underline-offset-4 hover:text-white hover:underline"
             >
-              Vedi tutte
+              <T textKey="dashboard.common.viewAll" fallback="Vedi tutte" />
             </a>
           </div>
 
           {latestGalleries.length === 0 && (
             <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
               <p className="text-neutral-300">
-                Non hai ancora creato gallerie.
+                <T
+                  textKey="dashboard.latestGalleries.emptyTitle"
+                  fallback="Non hai ancora creato gallerie."
+                />
               </p>
 
               <p className="mt-2 text-sm leading-6 text-neutral-500">
-                Crea la prima galleria, poi carica opere e apri l’editor 3D per
-                iniziare l’allestimento.
+                <T
+                  textKey="dashboard.latestGalleries.emptyDescription"
+                  fallback="Crea la prima galleria, poi carica opere e apri l’editor 3D per iniziare l’allestimento."
+                />
               </p>
 
               <a
                 href="/dashboard/gallerie"
                 className="mt-4 inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
-                Crea la prima galleria
+                <T
+                  textKey="dashboard.latestGalleries.createFirst"
+                  fallback="Crea la prima galleria"
+                />
               </a>
             </div>
           )}
@@ -1436,7 +1776,11 @@ export default async function DashboardPage() {
                       </p>
 
                       <p className="mt-2 text-xs text-neutral-600">
-                        Creata il {formatDate(gallery.created_at)}
+                        <T
+                          textKey="dashboard.latestGalleries.createdAt"
+                          fallback="Creata il"
+                        />{" "}
+                        {formatDate(gallery.created_at)}
                       </p>
                     </div>
 
@@ -1445,14 +1789,20 @@ export default async function DashboardPage() {
                         href={`/dashboard/gallerie/${gallery.id}`}
                         className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                       >
-                        Gestisci
+                        <T
+                          textKey="dashboard.latestGalleries.manage"
+                          fallback="Gestisci"
+                        />
                       </a>
 
                       <a
                         href={`/dashboard/gallerie-editor/${gallery.id}`}
                         className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                       >
-                        Editor
+                        <T
+                          textKey="dashboard.latestGalleries.editor"
+                          fallback="Editor"
+                        />
                       </a>
 
                       {gallery.status === "published" && (
@@ -1462,7 +1812,10 @@ export default async function DashboardPage() {
                           rel="noreferrer"
                           className="rounded-full border border-green-800 px-4 py-2 text-sm text-green-200 transition hover:border-green-500"
                         >
-                          Pubblica
+                          <T
+                            textKey="dashboard.latestGalleries.publicPage"
+                            fallback="Pubblica"
+                          />
                         </a>
                       )}
                     </div>
@@ -1477,29 +1830,42 @@ export default async function DashboardPage() {
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Ultime richieste
+                <T
+                  textKey="dashboard.latestInquiries.label"
+                  fallback="Ultime richieste"
+                />
               </p>
 
-              <h2 className="text-2xl font-medium">Lead recenti</h2>
+              <h2 className="text-2xl font-medium">
+                <T
+                  textKey="dashboard.latestInquiries.title"
+                  fallback="Lead recenti"
+                />
+              </h2>
             </div>
 
             <a
               href="/dashboard/richieste"
               className="text-sm text-neutral-400 underline-offset-4 hover:text-white hover:underline"
             >
-              Vedi tutte
+              <T textKey="dashboard.common.viewAll" fallback="Vedi tutte" />
             </a>
           </div>
 
           {latestInquiries.length === 0 && (
             <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-6">
               <p className="text-neutral-300">
-                Non hai ancora ricevuto richieste.
+                <T
+                  textKey="dashboard.latestInquiries.emptyTitle"
+                  fallback="Non hai ancora ricevuto richieste."
+                />
               </p>
 
               <p className="mt-2 text-sm text-neutral-500">
-                Pubblica una galleria e condividi il link per iniziare a
-                ricevere contatti.
+                <T
+                  textKey="dashboard.latestInquiries.emptyDescription"
+                  fallback="Pubblica una galleria e condividi il link per iniziare a ricevere contatti."
+                />
               </p>
 
               {latestPublishedGallery && (
@@ -1509,7 +1875,10 @@ export default async function DashboardPage() {
                   rel="noreferrer"
                   className="mt-4 inline-flex rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
                 >
-                  Apri galleria pubblica
+                  <T
+                    textKey="dashboard.latestInquiries.openPublicGallery"
+                    fallback="Apri galleria pubblica"
+                  />
                 </a>
               )}
             </div>
@@ -1546,9 +1915,20 @@ export default async function DashboardPage() {
                         </p>
 
                         <p className="mt-2 text-xs text-neutral-500">
-                          {gallery
-                            ? `Da: ${gallery.title}`
-                            : "Galleria non trovata"}
+                          {gallery ? (
+                            <>
+                              <T
+                                textKey="dashboard.latestInquiries.fromGallery"
+                                fallback="Da:"
+                              />{" "}
+                              {gallery.title}
+                            </>
+                          ) : (
+                            <T
+                              textKey="dashboard.community.common.galleryNotFound"
+                              fallback="Galleria non trovata"
+                            />
+                          )}
                         </p>
                       </div>
 
@@ -1556,7 +1936,10 @@ export default async function DashboardPage() {
                         href="/dashboard/richieste"
                         className="shrink-0 rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                       >
-                        Apri
+                        <T
+                          textKey="dashboard.latestInquiries.open"
+                          fallback="Apri"
+                        />
                       </a>
                     </div>
                   </article>

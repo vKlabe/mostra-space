@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import T from "@/components/i18n/T";
 
 type GlobalErrorPageProps = {
   error: Error & {
@@ -49,7 +50,10 @@ export default function GlobalErrorPage({
                 letterSpacing: "0.28em",
               }}
             >
-              Errore critico
+              <T
+                textKey="globalError.header.label"
+                fallback="Errore critico"
+              />
             </p>
 
             <h1
@@ -60,7 +64,10 @@ export default function GlobalErrorPage({
                 fontWeight: 600,
               }}
             >
-              MOSTRA.SPACE non è riuscito a caricare correttamente.
+              <T
+                textKey="globalError.header.title"
+                fallback="MOSTRA.SPACE non è riuscito a caricare correttamente."
+              />
             </h1>
 
             <p
@@ -72,8 +79,10 @@ export default function GlobalErrorPage({
                 lineHeight: 1.8,
               }}
             >
-              Si è verificato un errore generale. Puoi riprovare a caricare la
-              pagina oppure tornare alla home.
+              <T
+                textKey="globalError.header.description"
+                fallback="Si è verificato un errore generale. Puoi riprovare a caricare la pagina oppure tornare alla home."
+              />
             </p>
 
             {error.digest && (
@@ -89,7 +98,11 @@ export default function GlobalErrorPage({
                   wordBreak: "break-all",
                 }}
               >
-                Codice errore: {error.digest}
+                <T
+                  textKey="globalError.details.codeLabel"
+                  fallback="Codice errore:"
+                />{" "}
+                {error.digest}
               </p>
             )}
 
@@ -114,7 +127,7 @@ export default function GlobalErrorPage({
                   fontWeight: 600,
                 }}
               >
-                Riprova
+                <T textKey="globalError.actions.retry" fallback="Riprova" />
               </button>
 
               <a
@@ -127,7 +140,10 @@ export default function GlobalErrorPage({
                   textDecoration: "none",
                 }}
               >
-                Torna alla home
+                <T
+                  textKey="globalError.actions.home"
+                  fallback="Torna alla home"
+                />
               </a>
             </div>
           </section>

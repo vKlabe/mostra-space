@@ -1,5 +1,6 @@
 ﻿import { notFound, redirect } from "next/navigation";
 import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
+import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -271,7 +272,10 @@ export default async function DashboardArtworkDetailPage({
         <div className="flex flex-col justify-between gap-5 border-b border-neutral-800 pb-8 md:flex-row md:items-end">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.35em] text-neutral-500">
-              Dettaglio opera
+              <T
+                textKey="dashboard.artworkDetail.header.label"
+                fallback="Dettaglio opera"
+              />
             </p>
 
             <h1 className="text-4xl font-semibold leading-tight">
@@ -279,8 +283,10 @@ export default async function DashboardArtworkDetailPage({
             </h1>
 
             <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
-              Scheda tecnica, immagine, stato pubblico, dati commerciali,
-              storage e gallerie in cui l opera e stata allestita.
+              <T
+                textKey="dashboard.artworkDetail.header.description"
+                fallback="Scheda tecnica, immagine, stato pubblico, dati commerciali, storage e gallerie in cui l opera e stata allestita."
+              />
             </p>
           </div>
 
@@ -289,14 +295,20 @@ export default async function DashboardArtworkDetailPage({
               href="/dashboard/opere"
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
-              Torna alle opere
+              <T
+                textKey="dashboard.artworkDetail.actions.backToArtworks"
+                fallback="Torna alle opere"
+              />
             </a>
 
             <a
               href="/dashboard"
               className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-400 transition hover:border-neutral-600 hover:text-neutral-100"
             >
-              Dashboard
+              <T
+                textKey="dashboard.artworkDetail.actions.dashboard"
+                fallback="Dashboard"
+              />
             </a>
 
             {isAdmin && (
@@ -304,7 +316,10 @@ export default async function DashboardArtworkDetailPage({
                 href="/admin/storage"
                 className="rounded-full border border-red-800 px-5 py-2 text-sm text-red-200 transition hover:border-red-500"
               >
-                Admin storage
+                <T
+                  textKey="dashboard.artworkDetail.actions.adminStorage"
+                  fallback="Admin storage"
+                />
               </a>
             )}
           </div>
@@ -329,7 +344,17 @@ export default async function DashboardArtworkDetailPage({
                       : "rounded-full border border-neutral-700 bg-neutral-950 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-400"
                   }
                 >
-                  {artwork.is_public ? "Pubblica" : "Privata"}
+                  {artwork.is_public ? (
+                    <T
+                      textKey="dashboard.artworkDetail.status.public"
+                      fallback="Pubblica"
+                    />
+                  ) : (
+                    <T
+                      textKey="dashboard.artworkDetail.status.private"
+                      fallback="Privata"
+                    />
+                  )}
                 </span>
 
                 <span
@@ -339,7 +364,17 @@ export default async function DashboardArtworkDetailPage({
                       : "rounded-full border border-neutral-700 bg-neutral-950 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-400"
                   }
                 >
-                  {artwork.is_for_sale ? "In vendita" : "Non in vendita"}
+                  {artwork.is_for_sale ? (
+                    <T
+                      textKey="dashboard.artworkDetail.status.forSale"
+                      fallback="In vendita"
+                    />
+                  ) : (
+                    <T
+                      textKey="dashboard.artworkDetail.status.notForSale"
+                      fallback="Non in vendita"
+                    />
+                  )}
                 </span>
               </div>
 
@@ -349,7 +384,10 @@ export default async function DashboardArtworkDetailPage({
                 </p>
               ) : (
                 <p className="mt-5 text-sm leading-7 text-neutral-500">
-                  Nessuna descrizione inserita.
+                  <T
+                    textKey="dashboard.artworkDetail.image.noDescription"
+                    fallback="Nessuna descrizione inserita."
+                  />
                 </p>
               )}
             </div>
@@ -358,68 +396,136 @@ export default async function DashboardArtworkDetailPage({
           <section className="space-y-6">
             <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Scheda opera
+                <T
+                  textKey="dashboard.artworkDetail.details.label"
+                  fallback="Scheda opera"
+                />
               </p>
 
               <dl className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Artista
+                    <T
+                      textKey="dashboard.artworkDetail.details.artist"
+                      fallback="Artista"
+                    />
                   </dt>
+
                   <dd className="mt-2 text-sm text-neutral-100">
-                    {artwork.artist_name || "Non indicato"}
+                    {artwork.artist_name ? (
+                      artwork.artist_name
+                    ) : (
+                      <T
+                        textKey="dashboard.artworkDetail.details.notSpecifiedMasculine"
+                        fallback="Non indicato"
+                      />
+                    )}
                   </dd>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Anno
+                    <T
+                      textKey="dashboard.artworkDetail.details.year"
+                      fallback="Anno"
+                    />
                   </dt>
+
                   <dd className="mt-2 text-sm text-neutral-100">
-                    {artwork.year || "Non indicato"}
+                    {artwork.year ? (
+                      artwork.year
+                    ) : (
+                      <T
+                        textKey="dashboard.artworkDetail.details.notSpecifiedMasculine"
+                        fallback="Non indicato"
+                      />
+                    )}
                   </dd>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Tecnica
+                    <T
+                      textKey="dashboard.artworkDetail.details.technique"
+                      fallback="Tecnica"
+                    />
                   </dt>
+
                   <dd className="mt-2 text-sm text-neutral-100">
-                    {artwork.technique || "Non indicata"}
+                    {artwork.technique ? (
+                      artwork.technique
+                    ) : (
+                      <T
+                        textKey="dashboard.artworkDetail.details.notSpecifiedFeminine"
+                        fallback="Non indicata"
+                      />
+                    )}
                   </dd>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Dimensioni testuali
+                    <T
+                      textKey="dashboard.artworkDetail.details.textDimensions"
+                      fallback="Dimensioni testuali"
+                    />
                   </dt>
+
                   <dd className="mt-2 text-sm text-neutral-100">
-                    {artwork.dimensions || "Non indicate"}
+                    {artwork.dimensions ? (
+                      artwork.dimensions
+                    ) : (
+                      <T
+                        textKey="dashboard.artworkDetail.details.notSpecifiedPlural"
+                        fallback="Non indicate"
+                      />
+                    )}
                   </dd>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 md:col-span-2">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Dimensioni reali per editor 3D
+                    <T
+                      textKey="dashboard.artworkDetail.editorDimensions.title"
+                      fallback="Dimensioni reali per editor 3D"
+                    />
                   </dt>
 
                   <dd className="mt-3 grid gap-3 text-sm md:grid-cols-3">
                     <div>
-                      <span className="block text-neutral-500">Larghezza</span>
+                      <span className="block text-neutral-500">
+                        <T
+                          textKey="dashboard.artworkDetail.editorDimensions.width"
+                          fallback="Larghezza"
+                        />
+                      </span>
+
                       <span className="mt-1 block text-neutral-100">
                         {formatCm(artwork.width_cm)}
                       </span>
                     </div>
 
                     <div>
-                      <span className="block text-neutral-500">Altezza</span>
+                      <span className="block text-neutral-500">
+                        <T
+                          textKey="dashboard.artworkDetail.editorDimensions.height"
+                          fallback="Altezza"
+                        />
+                      </span>
+
                       <span className="mt-1 block text-neutral-100">
                         {formatCm(artwork.height_cm)}
                       </span>
                     </div>
 
                     <div>
-                      <span className="block text-neutral-500">Profondità</span>
+                      <span className="block text-neutral-500">
+                        <T
+                          textKey="dashboard.artworkDetail.editorDimensions.depth"
+                          fallback="Profondità"
+                        />
+                      </span>
+
                       <span className="mt-1 block text-neutral-100">
                         {formatCm(artwork.depth_cm)}
                       </span>
@@ -440,20 +546,31 @@ export default async function DashboardArtworkDetailPage({
                           : "text-sm leading-6 text-yellow-100"
                       }
                     >
-                      Dimensione usata dall editor:{" "}
+                      <T
+                        textKey="dashboard.artworkDetail.editorDimensions.usedSize"
+                        fallback="Dimensione usata dall editor:"
+                      />{" "}
                       <span className="font-medium">
                         {getEditorFallbackLabel(artwork)}
                       </span>
-                      {!hasRealEditorDimensions(artwork) &&
-                        ". Mancando larghezza o altezza, Unity userà il fallback 50 x 50 cm."}
+                      {!hasRealEditorDimensions(artwork) && (
+                        <T
+                          textKey="dashboard.artworkDetail.editorDimensions.fallbackNotice"
+                          fallback=". Mancando larghezza o altezza, Unity userà il fallback 50 x 50 cm."
+                        />
+                      )}
                     </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Prezzo
+                    <T
+                      textKey="dashboard.artworkDetail.details.price"
+                      fallback="Prezzo"
+                    />
                   </dt>
+
                   <dd className="mt-2 text-sm text-neutral-100">
                     {formatPrice(artwork.price, artwork.currency)}
                   </dd>
@@ -461,8 +578,12 @@ export default async function DashboardArtworkDetailPage({
 
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                   <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    Peso file
+                    <T
+                      textKey="dashboard.artworkDetail.details.fileSize"
+                      fallback="Peso file"
+                    />
                   </dt>
+
                   <dd className="mt-2 text-sm text-neutral-100">
                     {formatBytes(artwork.file_size_bytes)}
                   </dd>
@@ -472,10 +593,18 @@ export default async function DashboardArtworkDetailPage({
 
             <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Allestimenti
+                <T
+                  textKey="dashboard.artworkDetail.galleries.label"
+                  fallback="Allestimenti"
+                />
               </p>
 
-              <h2 className="text-2xl font-medium">Gallerie collegate</h2>
+              <h2 className="text-2xl font-medium">
+                <T
+                  textKey="dashboard.artworkDetail.galleries.title"
+                  fallback="Gallerie collegate"
+                />
+              </h2>
 
               {galleryArtworksError && (
                 <div className="mt-5 rounded-2xl border border-red-800 bg-red-950/30 p-4">
@@ -487,7 +616,10 @@ export default async function DashboardArtworkDetailPage({
 
               {!galleryArtworksError && linkedGalleries.length === 0 && (
                 <p className="mt-4 text-sm leading-7 text-neutral-400">
-                  Questa opera non e ancora collegata a nessuna galleria.
+                  <T
+                    textKey="dashboard.artworkDetail.galleries.empty"
+                    fallback="Questa opera non e ancora collegata a nessuna galleria."
+                  />
                 </p>
               )}
 
@@ -518,14 +650,26 @@ export default async function DashboardArtworkDetailPage({
 
                           <dl className="mt-3 grid gap-2 text-xs text-neutral-500 md:grid-cols-3">
                             <div>
-                              <dt>Wall</dt>
+                              <dt>
+                                <T
+                                  textKey="dashboard.artworkDetail.galleries.wall"
+                                  fallback="Wall"
+                                />
+                              </dt>
+
                               <dd className="mt-1 text-neutral-300">
                                 {relation.wall_key || "-"}
                               </dd>
                             </div>
 
                             <div>
-                              <dt>Posizione</dt>
+                              <dt>
+                                <T
+                                  textKey="dashboard.artworkDetail.galleries.position"
+                                  fallback="Posizione"
+                                />
+                              </dt>
+
                               <dd className="mt-1 text-neutral-300">
                                 {formatNumber(relation.position_x)},{" "}
                                 {formatNumber(relation.position_y)},{" "}
@@ -534,7 +678,13 @@ export default async function DashboardArtworkDetailPage({
                             </div>
 
                             <div>
-                              <dt>Rotazione</dt>
+                              <dt>
+                                <T
+                                  textKey="dashboard.artworkDetail.galleries.rotation"
+                                  fallback="Rotazione"
+                                />
+                              </dt>
+
                               <dd className="mt-1 text-neutral-300">
                                 {formatNumber(relation.rotation_x)},{" "}
                                 {formatNumber(relation.rotation_y)},{" "}
@@ -549,14 +699,20 @@ export default async function DashboardArtworkDetailPage({
                             href={`/dashboard/gallerie/${gallery.id}`}
                             className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                           >
-                            Gestisci
+                            <T
+                              textKey="dashboard.artworkDetail.galleries.manage"
+                              fallback="Gestisci"
+                            />
                           </a>
 
                           <a
                             href={`/dashboard/gallerie-editor/${gallery.id}`}
                             className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                           >
-                            Editor
+                            <T
+                              textKey="dashboard.artworkDetail.galleries.editor"
+                              fallback="Editor"
+                            />
                           </a>
 
                           {gallery.status === "published" && (
@@ -566,7 +722,10 @@ export default async function DashboardArtworkDetailPage({
                               rel="noreferrer"
                               className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                             >
-                              Apri
+                              <T
+                                textKey="dashboard.artworkDetail.galleries.open"
+                                fallback="Apri"
+                              />
                             </a>
                           )}
                         </div>
@@ -579,40 +738,73 @@ export default async function DashboardArtworkDetailPage({
 
             <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Dati tecnici
+                <T
+                  textKey="dashboard.artworkDetail.technical.label"
+                  fallback="Dati tecnici"
+                />
               </p>
 
               <dl className="space-y-3 text-sm">
                 <div>
-                  <dt className="text-neutral-500">ID</dt>
+                  <dt className="text-neutral-500">
+                    <T
+                      textKey="dashboard.artworkDetail.technical.id"
+                      fallback="ID"
+                    />
+                  </dt>
+
                   <dd className="mt-1 break-all text-neutral-200">
                     {artwork.id}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="text-neutral-500">Storage path</dt>
+                  <dt className="text-neutral-500">
+                    <T
+                      textKey="dashboard.artworkDetail.technical.storagePath"
+                      fallback="Storage path"
+                    />
+                  </dt>
+
                   <dd className="mt-1 break-all text-neutral-200">
                     {artwork.storage_path || "-"}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="text-neutral-500">Image URL</dt>
+                  <dt className="text-neutral-500">
+                    <T
+                      textKey="dashboard.artworkDetail.technical.imageUrl"
+                      fallback="Image URL"
+                    />
+                  </dt>
+
                   <dd className="mt-1 break-all text-neutral-200">
                     {artwork.image_url}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="text-neutral-500">Creata</dt>
+                  <dt className="text-neutral-500">
+                    <T
+                      textKey="dashboard.artworkDetail.technical.createdAt"
+                      fallback="Creata"
+                    />
+                  </dt>
+
                   <dd className="mt-1 text-neutral-200">
                     {formatDate(artwork.created_at)}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="text-neutral-500">Aggiornata</dt>
+                  <dt className="text-neutral-500">
+                    <T
+                      textKey="dashboard.artworkDetail.technical.updatedAt"
+                      fallback="Aggiornata"
+                    />
+                  </dt>
+
                   <dd className="mt-1 text-neutral-200">
                     {formatDate(artwork.updated_at)}
                   </dd>

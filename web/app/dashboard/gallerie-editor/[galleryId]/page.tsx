@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import UnityGalleryViewer from "@/components/unity/UnityGalleryViewer";
+import T from "@/components/i18n/T";
 
 type DashboardGalleryUnityEditorPageProps = {
   params: Promise<{
@@ -96,7 +97,9 @@ export default async function DashboardGalleryUnityEditorPage({
 
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
-    .select("id, owner_id, title, slug, status, cover_image_url, updated_at, published_at")
+    .select(
+      "id, owner_id, title, slug, status, cover_image_url, updated_at, published_at"
+    )
     .eq("id", galleryId)
     .single<Gallery>();
 
@@ -109,7 +112,14 @@ export default async function DashboardGalleryUnityEditorPage({
       >
         <div className="rounded-3xl border border-red-900 bg-red-950/30 p-6">
           <p className="text-sm text-red-100">
-            {galleryError?.message || "Nessun dato disponibile."}
+            {galleryError?.message ? (
+              galleryError.message
+            ) : (
+              <T
+                textKey="dashboard.galleryEditor.errors.noData"
+                fallback="Nessun dato disponibile."
+              />
+            )}
           </p>
         </div>
 
@@ -117,7 +127,10 @@ export default async function DashboardGalleryUnityEditorPage({
           href="/dashboard/gallerie"
           className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alle gallerie
+          <T
+            textKey="dashboard.galleryEditor.actions.backToGalleries"
+            fallback="Torna alle gallerie"
+          />
         </a>
       </DashboardShell>
     );
@@ -135,7 +148,10 @@ export default async function DashboardGalleryUnityEditorPage({
       >
         <div className="rounded-3xl border border-yellow-900 bg-yellow-950/30 p-6">
           <p className="text-sm text-yellow-100">
-            Non sei il proprietario di questa galleria e non hai permessi admin.
+            <T
+              textKey="dashboard.galleryEditor.errors.notOwner"
+              fallback="Non sei il proprietario di questa galleria e non hai permessi admin."
+            />
           </p>
         </div>
 
@@ -143,7 +159,10 @@ export default async function DashboardGalleryUnityEditorPage({
           href="/dashboard/gallerie"
           className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
-          Torna alle gallerie
+          <T
+            textKey="dashboard.galleryEditor.actions.backToGalleries"
+            fallback="Torna alle gallerie"
+          />
         </a>
       </DashboardShell>
     );
@@ -164,7 +183,10 @@ export default async function DashboardGalleryUnityEditorPage({
             href={detailHref}
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Dettaglio galleria
+            <T
+              textKey="dashboard.galleryEditor.actions.galleryDetails"
+              fallback="Dettaglio galleria"
+            />
           </a>
 
           <a
@@ -173,7 +195,10 @@ export default async function DashboardGalleryUnityEditorPage({
             rel="noreferrer"
             className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
           >
-            Anteprima visitatore
+            <T
+              textKey="dashboard.galleryEditor.actions.visitorPreview"
+              fallback="Anteprima visitatore"
+            />
           </a>
 
           {gallery.status === "published" && (
@@ -183,7 +208,10 @@ export default async function DashboardGalleryUnityEditorPage({
               rel="noreferrer"
               className="rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
             >
-              Pagina pubblica
+              <T
+                textKey="dashboard.galleryEditor.actions.publicPage"
+                fallback="Pagina pubblica"
+              />
             </a>
           )}
 
@@ -191,7 +219,10 @@ export default async function DashboardGalleryUnityEditorPage({
             href="/dashboard/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Esci
+            <T
+              textKey="dashboard.galleryEditor.actions.exit"
+              fallback="Esci"
+            />
           </a>
         </>
       }
@@ -201,7 +232,10 @@ export default async function DashboardGalleryUnityEditorPage({
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Editor Unity WebGL
+                <T
+                  textKey="dashboard.galleryEditor.header.label"
+                  fallback="Editor Unity WebGL"
+                />
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -217,10 +251,30 @@ export default async function DashboardGalleryUnityEditorPage({
               </div>
 
               <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-                Trascina le opere sulle pareti, regola dimensioni e cornice dal
-                pannello destro, poi usa <span className="text-neutral-100">Salva opera</span> o{" "}
-                <span className="text-neutral-100">Salva tutto</span> dentro
-                Unity.
+                <T
+                  textKey="dashboard.galleryEditor.header.descriptionPrefix"
+                  fallback="Trascina le opere sulle pareti, regola dimensioni e cornice dal pannello destro, poi usa"
+                />{" "}
+                <span className="text-neutral-100">
+                  <T
+                    textKey="dashboard.galleryEditor.commands.saveArtwork"
+                    fallback="Salva opera"
+                  />
+                </span>{" "}
+                <T
+                  textKey="dashboard.galleryEditor.header.descriptionOr"
+                  fallback="o"
+                />{" "}
+                <span className="text-neutral-100">
+                  <T
+                    textKey="dashboard.galleryEditor.commands.saveAll"
+                    fallback="Salva tutto"
+                  />
+                </span>{" "}
+                <T
+                  textKey="dashboard.galleryEditor.header.descriptionSuffix"
+                  fallback="dentro Unity."
+                />
               </p>
             </div>
 
@@ -238,31 +292,56 @@ export default async function DashboardGalleryUnityEditorPage({
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Stato lavoro
+            <T
+              textKey="dashboard.galleryEditor.workStatus.label"
+              fallback="Stato lavoro"
+            />
           </p>
 
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-neutral-500">Status</dt>
-              <dd className="text-neutral-100">{getStatusLabel(gallery.status)}</dd>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryEditor.workStatus.status"
+                  fallback="Status"
+                />
+              </dt>
+              <dd className="text-neutral-100">
+                {getStatusLabel(gallery.status)}
+              </dd>
             </div>
 
             <div className="flex justify-between gap-4">
-              <dt className="text-neutral-500">Ultima modifica</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryEditor.workStatus.lastUpdate"
+                  fallback="Ultima modifica"
+                />
+              </dt>
               <dd className="text-right text-neutral-100">
                 {formatDate(gallery.updated_at)}
               </dd>
             </div>
 
             <div className="flex justify-between gap-4">
-              <dt className="text-neutral-500">Pubblicazione</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryEditor.workStatus.publication"
+                  fallback="Pubblicazione"
+                />
+              </dt>
               <dd className="text-right text-neutral-100">
                 {formatDate(gallery.published_at)}
               </dd>
             </div>
 
             <div className="flex justify-between gap-4">
-              <dt className="text-neutral-500">Slug</dt>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryEditor.workStatus.slug"
+                  fallback="Slug"
+                />
+              </dt>
               <dd className="break-all text-right text-neutral-100">
                 {gallery.slug}
               </dd>
@@ -275,30 +354,47 @@ export default async function DashboardGalleryUnityEditorPage({
         <div className="flex flex-col justify-between gap-3 border-b border-neutral-800 bg-neutral-950 px-5 py-4 md:flex-row md:items-center">
           <div>
             <p className="text-sm font-medium text-neutral-100">
-              Area editor 3D
+              <T
+                textKey="dashboard.galleryEditor.viewer.title"
+                fallback="Area editor 3D"
+              />
             </p>
 
             <p className="mt-1 text-xs text-neutral-500">
-              Usa la tastiera per muoverti. Il mouse resta libero per drag,
-              pannelli e campi numerici.
+              <T
+                textKey="dashboard.galleryEditor.viewer.description"
+                fallback="Usa la tastiera per muoverti. Il mouse resta libero per drag, pannelli e campi numerici."
+              />
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs text-neutral-400">
             <span className="rounded-full border border-neutral-800 px-3 py-1">
-              WASD movimento
+              <T
+                textKey="dashboard.galleryEditor.controls.movement"
+                fallback="WASD movimento"
+              />
             </span>
 
             <span className="rounded-full border border-neutral-800 px-3 py-1">
-              Q/E ruota
+              <T
+                textKey="dashboard.galleryEditor.controls.rotation"
+                fallback="Q/E ruota"
+              />
             </span>
 
             <span className="rounded-full border border-neutral-800 px-3 py-1">
-              R/F quota
+              <T
+                textKey="dashboard.galleryEditor.controls.height"
+                fallback="R/F quota"
+              />
             </span>
 
             <span className="rounded-full border border-neutral-800 px-3 py-1">
-              Drag opera
+              <T
+                textKey="dashboard.galleryEditor.controls.drag"
+                fallback="Drag opera"
+              />
             </span>
           </div>
         </div>
@@ -309,41 +405,91 @@ export default async function DashboardGalleryUnityEditorPage({
       <section className="mt-6 grid gap-4 lg:grid-cols-3">
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-neutral-500">
-            1. Posiziona
+            <T
+              textKey="dashboard.galleryEditor.steps.position.label"
+              fallback="1. Posiziona"
+            />
           </p>
 
-          <h3 className="text-lg font-medium">Trascina le opere</h3>
+          <h3 className="text-lg font-medium">
+            <T
+              textKey="dashboard.galleryEditor.steps.position.title"
+              fallback="Trascina le opere"
+            />
+          </h3>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Seleziona un’opera dalla sidebar sinistra o clicca un’opera già
-            appesa. Trascinala su una parete e rilasciala.
+            <T
+              textKey="dashboard.galleryEditor.steps.position.description"
+              fallback="Seleziona un’opera dalla sidebar sinistra o clicca un’opera già appesa. Trascinala su una parete e rilasciala."
+            />
           </p>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-neutral-500">
-            2. Modifica
+            <T
+              textKey="dashboard.galleryEditor.steps.edit.label"
+              fallback="2. Modifica"
+            />
           </p>
 
-          <h3 className="text-lg font-medium">Dimensioni e cornice</h3>
+          <h3 className="text-lg font-medium">
+            <T
+              textKey="dashboard.galleryEditor.steps.edit.title"
+              fallback="Dimensioni e cornice"
+            />
+          </h3>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Dal pannello destro puoi impostare larghezza, altezza, colore della
-            cornice, spessore e profondità.
+            <T
+              textKey="dashboard.galleryEditor.steps.edit.description"
+              fallback="Dal pannello destro puoi impostare larghezza, altezza, colore della cornice, spessore e profondità."
+            />
           </p>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-neutral-500">
-            3. Salva
+            <T
+              textKey="dashboard.galleryEditor.steps.save.label"
+              fallback="3. Salva"
+            />
           </p>
 
-          <h3 className="text-lg font-medium">Non uscire senza salvare</h3>
+          <h3 className="text-lg font-medium">
+            <T
+              textKey="dashboard.galleryEditor.steps.save.title"
+              fallback="Non uscire senza salvare"
+            />
+          </h3>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Dopo ogni modifica importante usa <span className="text-neutral-100">Salva opera</span> o{" "}
-            <span className="text-neutral-100">Salva tutto</span>. Poi apri
-            l’anteprima visitatore per controllare il risultato.
+            <T
+              textKey="dashboard.galleryEditor.steps.save.descriptionPrefix"
+              fallback="Dopo ogni modifica importante usa"
+            />{" "}
+            <span className="text-neutral-100">
+              <T
+                textKey="dashboard.galleryEditor.commands.saveArtwork"
+                fallback="Salva opera"
+              />
+            </span>{" "}
+            <T
+              textKey="dashboard.galleryEditor.steps.save.descriptionOr"
+              fallback="o"
+            />{" "}
+            <span className="text-neutral-100">
+              <T
+                textKey="dashboard.galleryEditor.commands.saveAll"
+                fallback="Salva tutto"
+              />
+            </span>
+            .{" "}
+            <T
+              textKey="dashboard.galleryEditor.steps.save.descriptionSuffix"
+              fallback="Poi apri l’anteprima visitatore per controllare il risultato."
+            />
           </p>
         </article>
       </section>
@@ -351,13 +497,17 @@ export default async function DashboardGalleryUnityEditorPage({
       {gallery.status !== "published" && (
         <section className="mt-6 rounded-3xl border border-yellow-900 bg-yellow-950/20 p-6">
           <p className="text-sm font-medium text-yellow-200">
-            La galleria non è ancora pubblica
+            <T
+              textKey="dashboard.galleryEditor.unpublished.title"
+              fallback="La galleria non è ancora pubblica"
+            />
           </p>
 
           <p className="mt-2 text-sm leading-6 text-yellow-100/80">
-            Puoi usare l’anteprima visitatore per controllare il viewer 3D. La
-            pagina pubblica completa sarà disponibile solo dopo la pubblicazione
-            dal dettaglio galleria.
+            <T
+              textKey="dashboard.galleryEditor.unpublished.description"
+              fallback="Puoi usare l’anteprima visitatore per controllare il viewer 3D. La pagina pubblica completa sarà disponibile solo dopo la pubblicazione dal dettaglio galleria."
+            />
           </p>
 
           <div className="mt-4 flex flex-wrap gap-3">
@@ -367,14 +517,20 @@ export default async function DashboardGalleryUnityEditorPage({
               rel="noreferrer"
               className="rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
             >
-              Apri anteprima visitatore
+              <T
+                textKey="dashboard.galleryEditor.unpublished.openPreview"
+                fallback="Apri anteprima visitatore"
+              />
             </a>
 
             <a
               href={detailHref}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
-              Vai alla pubblicazione
+              <T
+                textKey="dashboard.galleryEditor.unpublished.goToPublication"
+                fallback="Vai alla pubblicazione"
+              />
             </a>
           </div>
         </section>

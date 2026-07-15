@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import T from "@/components/i18n/T";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -104,15 +105,25 @@ export default function LoginPage() {
           <div className="absolute left-1/2 top-76 h-32 w-16 -translate-x-1/2 rotate-45 rounded-full border-[8px] border-[rgba(197,151,94,0.75)] opacity-90" />
 
           <div className="absolute bottom-12 left-10 right-10">
-            <p className="museum-label">Accesso riservato</p>
+            <p className="museum-label">
+              <T
+                textKey="auth.login.hero.label"
+                fallback="Accesso riservato"
+              />
+            </p>
 
             <h2 className="museum-title mt-5 text-5xl text-[var(--museum-ivory)]">
-              Entra nel tuo spazio espositivo.
+              <T
+                textKey="auth.login.hero.title"
+                fallback="Entra nel tuo spazio espositivo."
+              />
             </h2>
 
             <p className="museum-subtitle mt-5 text-sm text-[var(--museum-stone)]">
-              Gestisci gallerie, opere, richieste, abbonamento e strumenti
-              immersivi da un’unica dashboard.
+              <T
+                textKey="auth.login.hero.subtitle"
+                fallback="Gestisci gallerie, opere, richieste, abbonamento e strumenti immersivi da un’unica dashboard."
+              />
             </p>
           </div>
         </div>
@@ -130,22 +141,26 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 lg:mt-0">
-            <p className="museum-label">Accesso</p>
+            <p className="museum-label">
+              <T textKey="auth.login.form.label" fallback="Accesso" />
+            </p>
 
             <h1 className="museum-title mt-5 text-5xl text-[var(--museum-ivory)] md:text-6xl">
-              Accedi.
+              <T textKey="auth.login.form.title" fallback="Accedi." />
             </h1>
 
             <p className="museum-subtitle mt-5 max-w-xl text-sm text-[var(--museum-stone)]">
-              Entra nel portale per gestire account, gallerie, opere, richieste,
-              abbonamento e allestimenti Unity WebGL.
+              <T
+                textKey="auth.login.form.subtitle"
+                fallback="Entra nel portale per gestire account, gallerie, opere, richieste, abbonamento e allestimenti Unity WebGL."
+              />
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="mt-10 space-y-5">
             <div>
               <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                Email
+                <T textKey="auth.login.form.email" fallback="Email" />
               </label>
 
               <input
@@ -162,7 +177,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm text-[var(--museum-ivory-soft)]">
-                Password
+                <T textKey="auth.login.form.password" fallback="Password" />
               </label>
 
               <input
@@ -182,7 +197,10 @@ export default function LoginPage() {
                 href="/auth/forgot-password"
                 className="museum-link text-sm underline-offset-4 hover:underline"
               >
-                Password dimenticata?
+                <T
+                  textKey="auth.login.form.forgotPassword"
+                  fallback="Password dimenticata?"
+                />
               </Link>
             </div>
 
@@ -197,38 +215,58 @@ export default function LoginPage() {
               disabled={formDisabled}
               className="museum-button-primary w-full px-6 py-3 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {checkingSession
-                ? "Controllo sessione..."
-                : loading
-                  ? "Accesso..."
-                  : "Accedi"}
+              {checkingSession ? (
+                <T
+                  textKey="auth.login.actions.checkingSession"
+                  fallback="Controllo sessione..."
+                />
+              ) : loading ? (
+                <T
+                  textKey="auth.login.actions.loggingIn"
+                  fallback="Accesso..."
+                />
+              ) : (
+                <T textKey="auth.login.actions.login" fallback="Accedi" />
+              )}
             </button>
 
             <p className="text-center text-sm text-[var(--museum-stone)]">
-              Non hai un account?{" "}
+              <T
+                textKey="auth.login.register.noAccount"
+                fallback="Non hai un account?"
+              />{" "}
               <Link
                 href="/auth/register"
                 className="text-[var(--museum-bronze-light)] underline-offset-4 hover:underline"
               >
-                Registrati
+                <T
+                  textKey="auth.login.register.action"
+                  fallback="Registrati"
+                />
               </Link>
             </p>
           </form>
 
           <p className="mt-8 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
-            Accedendo accetti i{" "}
+            <T
+              textKey="auth.login.legal.acceptance"
+              fallback="Accedendo accetti i"
+            />{" "}
             <Link
               href="/legal/termini"
               className="text-[var(--museum-stone)] underline-offset-4 hover:text-[var(--museum-bronze-light)] hover:underline"
             >
-              Termini
+              <T textKey="auth.login.legal.terms" fallback="Termini" />
             </Link>{" "}
-            e la{" "}
+            <T textKey="auth.login.legal.andPrivacy" fallback="e la" />{" "}
             <Link
               href="/legal/privacy"
               className="text-[var(--museum-stone)] underline-offset-4 hover:text-[var(--museum-bronze-light)] hover:underline"
             >
-              Privacy Policy
+              <T
+                textKey="auth.login.legal.privacyPolicy"
+                fallback="Privacy Policy"
+              />
             </Link>
             .
           </p>

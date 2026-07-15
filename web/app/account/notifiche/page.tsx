@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import NotificationReadButton from "@/components/account/NotificationReadButton";
+import T from "@/components/i18n/T";
 
 type Notification = {
   id: string;
@@ -126,33 +127,55 @@ export default async function AccountNotificationsPage() {
             href="/account/calendario"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Il mio calendario
+            <T
+              textKey="account.notifications.actions.myCalendar"
+              fallback="Il mio calendario"
+            />
           </a>
 
           <a
             href="/eventi"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Eventi pubblici
+            <T
+              textKey="account.notifications.actions.publicEvents"
+              fallback="Eventi pubblici"
+            />
           </a>
         </div>
       }
     >
       <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
-          Eventi
+          <T
+            textKey="account.notifications.header.label"
+            fallback="Eventi"
+          />
         </p>
 
         <h2 className="font-serif text-3xl text-neutral-50">
-          {unreadCount > 0
-            ? `${unreadCount} notifiche da leggere`
-            : "Nessuna nuova notifica"}
+          {unreadCount > 0 ? (
+            <>
+              {unreadCount}{" "}
+              <T
+                textKey="account.notifications.header.unread"
+                fallback="notifiche da leggere"
+              />
+            </>
+          ) : (
+            <T
+              textKey="account.notifications.header.noNewNotifications"
+              fallback="Nessuna nuova notifica"
+            />
+          )}
         </h2>
 
         {safeNotifications.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-400">
-            Non hai ancora notifiche evento. Segui profili o salva gallerie per
-            costruire il tuo calendario.
+            <T
+              textKey="account.notifications.empty.message"
+              fallback="Non hai ancora notifiche evento. Segui profili o salva gallerie per costruire il tuo calendario."
+            />
           </p>
         ) : (
           <div className="mt-6 grid gap-4">
@@ -189,7 +212,11 @@ export default async function AccountNotificationsPage() {
 
                       {event && (
                         <p className="mt-2 text-sm text-amber-200">
-                          Evento: {formatDate(event.starts_at)}
+                          <T
+                            textKey="account.notifications.event.date"
+                            fallback="Evento:"
+                          />{" "}
+                          {formatDate(event.starts_at)}
                         </p>
                       )}
 
@@ -200,11 +227,17 @@ export default async function AccountNotificationsPage() {
                               href={`/gallerie/${gallery.slug}`}
                               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                             >
-                              Apri galleria
+                              <T
+                                textKey="account.notifications.event.openGallery"
+                                fallback="Apri galleria"
+                              />
                             </a>
                           ) : (
                             <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
-                              Galleria in preparazione
+                              <T
+                                textKey="account.notifications.event.galleryInPreparation"
+                                fallback="Galleria in preparazione"
+                              />
                             </span>
                           )}
                         </div>
