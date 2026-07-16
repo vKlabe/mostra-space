@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type InquiryStatus = "new" | "read" | "closed";
 
@@ -62,7 +63,10 @@ export default function InquiryStatusButton({
           disabled={isLoading}
           className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Segna letta
+          <T
+            textKey="dashboard.inquiryStatus.actions.markAsRead"
+            fallback="Segna letta"
+          />
         </button>
       )}
 
@@ -73,7 +77,10 @@ export default function InquiryStatusButton({
           disabled={isLoading}
           className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Riapri
+          <T
+            textKey="dashboard.inquiryStatus.actions.reopen"
+            fallback="Riapri"
+          />
         </button>
       )}
 
@@ -84,7 +91,10 @@ export default function InquiryStatusButton({
           disabled={isLoading}
           className="rounded-full border border-yellow-800 px-4 py-2 text-xs text-yellow-200 transition hover:border-yellow-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Chiudi
+          <T
+            textKey="dashboard.inquiryStatus.actions.close"
+            fallback="Chiudi"
+          />
         </button>
       )}
 

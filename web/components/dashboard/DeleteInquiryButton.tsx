@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type DeleteInquiryButtonProps = {
   inquiryId: string;
@@ -52,12 +53,17 @@ export default function DeleteInquiryButton({
   return (
     <div className="mt-4 rounded-2xl border border-red-950 bg-red-950/20 p-4">
       <p className="mb-2 text-xs uppercase tracking-[0.25em] text-red-300">
-        Zona pericolosa
+        <T
+          textKey="dashboard.deleteInquiry.header.label"
+          fallback="Zona pericolosa"
+        />
       </p>
 
       <p className="text-sm leading-6 text-red-100/80">
-        Elimina questa richiesta solo se e un test, spam o un contatto gia
-        gestito.
+        <T
+          textKey="dashboard.deleteInquiry.description"
+          fallback="Elimina questa richiesta solo se e un test, spam o un contatto gia gestito."
+        />
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -67,7 +73,17 @@ export default function DeleteInquiryButton({
           disabled={isLoading}
           className="rounded-full border border-red-700 px-4 py-2 text-xs text-red-100 transition hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Eliminazione..." : "Elimina richiesta"}
+          {isLoading ? (
+            <T
+              textKey="dashboard.deleteInquiry.actions.deleting"
+              fallback="Eliminazione..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.deleteInquiry.actions.delete"
+              fallback="Elimina richiesta"
+            />
+          )}
         </button>
 
         {message && (

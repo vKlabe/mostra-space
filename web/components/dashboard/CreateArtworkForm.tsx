@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import T from "@/components/i18n/T";
 import { createClient } from "@/lib/supabase/client";
 import {
   bytesToMb,
@@ -361,32 +362,63 @@ export default function CreateArtworkForm({
       className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
     >
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-        Nuova opera
+        <T
+          textKey="dashboard.createArtworkForm.header.label"
+          fallback="Nuova opera"
+        />
       </p>
 
-      <h2 className="text-2xl font-medium">Carica un’opera</h2>
+      <h2 className="text-2xl font-medium">
+        <T
+          textKey="dashboard.createArtworkForm.header.title"
+          fallback="Carica un’opera"
+        />
+      </h2>
 
       <p className="mt-3 text-sm leading-6 text-neutral-400">
-        Piano attuale:{" "}
+        <T
+          textKey="dashboard.createArtworkForm.plan.current"
+          fallback="Piano attuale:"
+        />{" "}
         <span className="capitalize text-neutral-100">{plan}</span>
       </p>
 
       <div className="mt-4 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
         <p className="text-sm text-neutral-300">
-          Opere: {currentArtworkCount} / {formatLimitValue(maxArtworksTotal)}
+          <T
+            textKey="dashboard.createArtworkForm.limits.artworks"
+            fallback="Opere:"
+          />{" "}
+          {currentArtworkCount} / {formatLimitValue(maxArtworksTotal)}
         </p>
 
         <p className="mt-1 text-sm text-neutral-300">
-          Storage: {formatMb(storageUsedMb)} / {formatMb(maxStorageMb)}
+          <T
+            textKey="dashboard.createArtworkForm.limits.storage"
+            fallback="Storage:"
+          />{" "}
+          {formatMb(storageUsedMb)} / {formatMb(maxStorageMb)}
         </p>
 
         <p className="mt-1 text-sm text-neutral-500">
-          Peso massimo singola opera: {formatMb(maxArtworkFileMb)}
+          <T
+            textKey="dashboard.createArtworkForm.limits.maxSingleArtwork"
+            fallback="Peso massimo singola opera:"
+          />{" "}
+          {formatMb(maxArtworkFileMb)}
         </p>
 
         {selectedFileSize !== null && (
           <p className="mt-3 text-sm text-neutral-400">
-            File selezionato: {selectedFileSizeMb.toFixed(2)} MB · Dopo upload:{" "}
+            <T
+              textKey="dashboard.createArtworkForm.limits.selectedFile"
+              fallback="File selezionato:"
+            />{" "}
+            {selectedFileSizeMb.toFixed(2)} MB ·{" "}
+            <T
+              textKey="dashboard.createArtworkForm.limits.afterUpload"
+              fallback="Dopo upload:"
+            />{" "}
             {wouldUseStorage.toFixed(2)} MB
           </p>
         )}
@@ -394,15 +426,24 @@ export default function CreateArtworkForm({
         {!canUpload && (
           <div className="mt-3 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
             <p className="text-sm leading-6 text-yellow-100">
-              {limitMessage ||
-                "Hai raggiunto il limite opere/storage del tuo piano."}
+              {limitMessage ? (
+                limitMessage
+              ) : (
+                <T
+                  textKey="dashboard.createArtworkForm.limits.reached"
+                  fallback="Hai raggiunto il limite opere/storage del tuo piano."
+                />
+              )}
             </p>
 
             <a
               href="/pricing"
               className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
-              Passa a un piano superiore
+              <T
+                textKey="dashboard.createArtworkForm.actions.upgradePlan"
+                fallback="Passa a un piano superiore"
+              />
             </a>
           </div>
         )}
@@ -411,7 +452,10 @@ export default function CreateArtworkForm({
       <div className="mt-6 space-y-4">
         <div>
           <label className="mb-2 block text-sm text-neutral-300">
-            Immagine opera
+            <T
+              textKey="dashboard.createArtworkForm.fields.image"
+              fallback="Immagine opera"
+            />
           </label>
 
           <input
@@ -425,19 +469,30 @@ export default function CreateArtworkForm({
           />
 
           <p className="mt-2 text-xs leading-5 text-neutral-500">
-            Formati accettati: JPG, PNG, WEBP. Lato lungo massimo: 2048px.
+            <T
+              textKey="dashboard.createArtworkForm.fields.imageRequirements"
+              fallback="Formati accettati: JPG, PNG, WEBP. Lato lungo massimo: 2048px."
+            />
           </p>
 
           {selectedImagePixels && (
             <p className="mt-2 text-xs text-neutral-400">
-              Dimensioni immagine: {selectedImagePixels.width} ×{" "}
-              {selectedImagePixels.height}px
+              <T
+                textKey="dashboard.createArtworkForm.fields.imageDimensions"
+                fallback="Dimensioni immagine:"
+              />{" "}
+              {selectedImagePixels.width} × {selectedImagePixels.height}px
             </p>
           )}
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">Titolo</label>
+          <label className="mb-2 block text-sm text-neutral-300">
+            <T
+              textKey="dashboard.createArtworkForm.fields.title"
+              fallback="Titolo"
+            />
+          </label>
 
           <input
             value={title}
@@ -450,7 +505,12 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">Artista</label>
+          <label className="mb-2 block text-sm text-neutral-300">
+            <T
+              textKey="dashboard.createArtworkForm.fields.artist"
+              fallback="Artista"
+            />
+          </label>
 
           <input
             value={artistName}
@@ -463,7 +523,12 @@ export default function CreateArtworkForm({
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">Anno</label>
+            <label className="mb-2 block text-sm text-neutral-300">
+              <T
+                textKey="dashboard.createArtworkForm.fields.year"
+                fallback="Anno"
+              />
+            </label>
 
             <input
               value={year}
@@ -476,7 +541,10 @@ export default function CreateArtworkForm({
 
           <div>
             <label className="mb-2 block text-sm text-neutral-300">
-              Dimensioni testuali
+              <T
+                textKey="dashboard.createArtworkForm.fields.textDimensions"
+                fallback="Dimensioni testuali"
+              />
             </label>
 
             <input
@@ -491,18 +559,26 @@ export default function CreateArtworkForm({
 
         <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
           <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-            Dimensioni reali nello spazio 3D
+            <T
+              textKey="dashboard.createArtworkForm.realDimensions.label"
+              fallback="Dimensioni reali nello spazio 3D"
+            />
           </p>
 
           <p className="mb-4 text-sm leading-6 text-neutral-400">
-            Inserisci larghezza e altezza reali dell’opera in centimetri. Se non
-            le inserisci, l’editor userà un formato iniziale di 50 × 50 cm.
+            <T
+              textKey="dashboard.createArtworkForm.realDimensions.description"
+              fallback="Inserisci larghezza e altezza reali dell’opera in centimetri. Se non le inserisci, l’editor userà un formato iniziale di 50 × 50 cm."
+            />
           </p>
 
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Larghezza cm
+                <T
+                  textKey="dashboard.createArtworkForm.fields.widthCm"
+                  fallback="Larghezza cm"
+                />
               </label>
 
               <input
@@ -519,7 +595,10 @@ export default function CreateArtworkForm({
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Altezza cm
+                <T
+                  textKey="dashboard.createArtworkForm.fields.heightCm"
+                  fallback="Altezza cm"
+                />
               </label>
 
               <input
@@ -536,7 +615,10 @@ export default function CreateArtworkForm({
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Profondità cm
+                <T
+                  textKey="dashboard.createArtworkForm.fields.depthCm"
+                  fallback="Profondità cm"
+                />
               </label>
 
               <input
@@ -554,7 +636,12 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">Tecnica</label>
+          <label className="mb-2 block text-sm text-neutral-300">
+            <T
+              textKey="dashboard.createArtworkForm.fields.technique"
+              fallback="Tecnica"
+            />
+          </label>
 
           <input
             value={technique}
@@ -567,7 +654,12 @@ export default function CreateArtworkForm({
 
         <div className="grid gap-4 md:grid-cols-[1fr_120px]">
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">Prezzo</label>
+            <label className="mb-2 block text-sm text-neutral-300">
+              <T
+                textKey="dashboard.createArtworkForm.fields.price"
+                fallback="Prezzo"
+              />
+            </label>
 
             <input
               value={price}
@@ -579,7 +671,12 @@ export default function CreateArtworkForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">Valuta</label>
+            <label className="mb-2 block text-sm text-neutral-300">
+              <T
+                textKey="dashboard.createArtworkForm.fields.currency"
+                fallback="Valuta"
+              />
+            </label>
 
             <input
               value={currency}
@@ -593,7 +690,10 @@ export default function CreateArtworkForm({
 
         <div>
           <label className="mb-2 block text-sm text-neutral-300">
-            Descrizione
+            <T
+              textKey="dashboard.createArtworkForm.fields.description"
+              fallback="Descrizione"
+            />
           </label>
 
           <textarea
@@ -616,8 +716,10 @@ export default function CreateArtworkForm({
             />
 
             <span>
-              Opera pubblica: visibile nel catalogo pubblico e nel viewer
-              visitatore.
+              <T
+                textKey="dashboard.createArtworkForm.options.public"
+                fallback="Opera pubblica: visibile nel catalogo pubblico e nel viewer visitatore."
+              />
             </span>
           </label>
 
@@ -631,7 +733,10 @@ export default function CreateArtworkForm({
             />
 
             <span>
-              Opera in vendita: mostra badge commerciale e prezzo se inserito.
+              <T
+                textKey="dashboard.createArtworkForm.options.forSale"
+                fallback="Opera in vendita: mostra badge commerciale e prezzo se inserito."
+              />
             </span>
           </label>
         </div>
@@ -643,7 +748,17 @@ export default function CreateArtworkForm({
           disabled={!canUpload || isLoading}
           className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Caricamento..." : "Carica opera"}
+          {isLoading ? (
+            <T
+              textKey="dashboard.createArtworkForm.actions.uploading"
+              fallback="Caricamento..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.createArtworkForm.actions.upload"
+              fallback="Carica opera"
+            />
+          )}
         </button>
 
         {message && <p className="text-sm text-neutral-300">{message}</p>}

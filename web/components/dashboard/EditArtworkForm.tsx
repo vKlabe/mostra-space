@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type EditArtworkFormProps = {
   artwork: {
@@ -114,13 +115,24 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-                Opera
+                <T
+                  textKey="dashboard.editArtwork.header.label"
+                  fallback="Opera"
+                />
               </p>
 
-              <h2 className="text-2xl font-medium">Modifica dati opera</h2>
+              <h2 className="text-2xl font-medium">
+                <T
+                  textKey="dashboard.editArtwork.header.title"
+                  fallback="Modifica dati opera"
+                />
+              </h2>
 
               <p className="mt-3 text-sm leading-6 text-neutral-400">
-                Questi dati vengono mostrati nella scheda informativa dell’opera.
+                <T
+                  textKey="dashboard.editArtwork.header.description"
+                  fallback="Questi dati vengono mostrati nella scheda informativa dell’opera."
+                />
               </p>
             </div>
 
@@ -131,14 +143,27 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
                   : "rounded-full border border-neutral-700 bg-neutral-950 px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-400"
               }
             >
-              {isPublic ? "pubblica" : "privata"}
+              {isPublic ? (
+                <T
+                  textKey="dashboard.editArtwork.status.public"
+                  fallback="pubblica"
+                />
+              ) : (
+                <T
+                  textKey="dashboard.editArtwork.status.private"
+                  fallback="privata"
+                />
+              )}
             </span>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm text-neutral-300">
-                Titolo
+                <T
+                  textKey="dashboard.editArtwork.fields.title"
+                  fallback="Titolo"
+                />
               </label>
 
               <input
@@ -151,7 +176,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Artista
+                <T
+                  textKey="dashboard.editArtwork.fields.artist"
+                  fallback="Artista"
+                />
               </label>
 
               <input
@@ -163,7 +191,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Anno
+                <T
+                  textKey="dashboard.editArtwork.fields.year"
+                  fallback="Anno"
+                />
               </label>
 
               <input
@@ -175,7 +206,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Tecnica
+                <T
+                  textKey="dashboard.editArtwork.fields.technique"
+                  fallback="Tecnica"
+                />
               </label>
 
               <input
@@ -187,7 +221,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Dimensioni testuali
+                <T
+                  textKey="dashboard.editArtwork.fields.textDimensions"
+                  fallback="Dimensioni testuali"
+                />
               </label>
 
               <input
@@ -200,17 +237,26 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 md:col-span-2">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-                Dimensioni reali nello spazio 3D
+                <T
+                  textKey="dashboard.editArtwork.realDimensions.label"
+                  fallback="Dimensioni reali nello spazio 3D"
+                />
               </p>
 
               <p className="mb-4 text-sm leading-6 text-neutral-400">
-                Questi valori determinano la proporzione iniziale dell opera dentro Unity. Se larghezza o altezza mancano, l editor usera 50 x 50 cm.
+                <T
+                  textKey="dashboard.editArtwork.realDimensions.description"
+                  fallback="Questi valori determinano la proporzione iniziale dell opera dentro Unity. Se larghezza o altezza mancano, l editor usera 50 x 50 cm."
+                />
               </p>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <label className="mb-2 block text-sm text-neutral-300">
-                    Larghezza cm
+                    <T
+                      textKey="dashboard.editArtwork.fields.widthCm"
+                      fallback="Larghezza cm"
+                    />
                   </label>
 
                   <input
@@ -226,7 +272,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
                 <div>
                   <label className="mb-2 block text-sm text-neutral-300">
-                    Altezza cm
+                    <T
+                      textKey="dashboard.editArtwork.fields.heightCm"
+                      fallback="Altezza cm"
+                    />
                   </label>
 
                   <input
@@ -242,7 +291,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
                 <div>
                   <label className="mb-2 block text-sm text-neutral-300">
-                    Profondità cm
+                    <T
+                      textKey="dashboard.editArtwork.fields.depthCm"
+                      fallback="Profondità cm"
+                    />
                   </label>
 
                   <input
@@ -260,7 +312,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Prezzo
+                <T
+                  textKey="dashboard.editArtwork.fields.price"
+                  fallback="Prezzo"
+                />
               </label>
 
               <input
@@ -273,7 +328,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div>
               <label className="mb-2 block text-sm text-neutral-300">
-                Valuta
+                <T
+                  textKey="dashboard.editArtwork.fields.currency"
+                  fallback="Valuta"
+                />
               </label>
 
               <input
@@ -286,7 +344,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
 
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm text-neutral-300">
-                Descrizione
+                <T
+                  textKey="dashboard.editArtwork.fields.description"
+                  fallback="Descrizione"
+                />
               </label>
 
               <textarea
@@ -304,7 +365,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
                 checked={isForSale}
                 onChange={(event) => setIsForSale(event.target.checked)}
               />
-              Opera in vendita
+              <T
+                textKey="dashboard.editArtwork.options.forSale"
+                fallback="Opera in vendita"
+              />
             </label>
 
             <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-300">
@@ -313,7 +377,10 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
                 checked={isPublic}
                 onChange={(event) => setIsPublic(event.target.checked)}
               />
-              Opera pubblica
+              <T
+                textKey="dashboard.editArtwork.options.public"
+                fallback="Opera pubblica"
+              />
             </label>
           </div>
 
@@ -323,7 +390,17 @@ export default function EditArtworkForm({ artwork }: EditArtworkFormProps) {
               disabled={isLoading}
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? "Salvataggio..." : "Salva opera"}
+              {isLoading ? (
+                <T
+                  textKey="dashboard.editArtwork.actions.saving"
+                  fallback="Salvataggio..."
+                />
+              ) : (
+                <T
+                  textKey="dashboard.editArtwork.actions.save"
+                  fallback="Salva opera"
+                />
+              )}
             </button>
 
             {message && (

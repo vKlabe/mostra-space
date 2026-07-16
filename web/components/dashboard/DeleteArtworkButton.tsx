@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type DeleteArtworkButtonProps = {
   artworkId: string;
@@ -53,11 +54,17 @@ export default function DeleteArtworkButton({
   return (
     <div className="rounded-3xl border border-red-950 bg-red-950/20 p-5">
       <p className="mb-2 text-xs uppercase tracking-[0.25em] text-red-300">
-        Zona pericolosa
+        <T
+          textKey="dashboard.deleteArtwork.header.label"
+          fallback="Zona pericolosa"
+        />
       </p>
 
       <p className="text-sm leading-6 text-red-100/80">
-        Puoi eliminare questa opera solo se non e gia collegata a una galleria.
+        <T
+          textKey="dashboard.deleteArtwork.description"
+          fallback="Puoi eliminare questa opera solo se non e gia collegata a una galleria."
+        />
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -67,7 +74,17 @@ export default function DeleteArtworkButton({
           disabled={isLoading}
           className="rounded-full border border-red-700 px-5 py-2 text-sm text-red-100 transition hover:border-red-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Eliminazione..." : "Elimina opera"}
+          {isLoading ? (
+            <T
+              textKey="dashboard.deleteArtwork.actions.deleting"
+              fallback="Eliminazione..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.deleteArtwork.actions.delete"
+              fallback="Elimina opera"
+            />
+          )}
         </button>
 
         {message && (

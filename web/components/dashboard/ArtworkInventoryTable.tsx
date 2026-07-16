@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import T from "@/components/i18n/T";
 
 type ArtworkInventoryItem = {
   id: string;
@@ -205,13 +206,23 @@ export default function ArtworkInventoryTable({
   if (artworks.length === 0) {
     return (
       <div className="rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-8">
-        <p className="museum-label">Inventario vuoto</p>
+        <p className="museum-label">
+          <T
+            textKey="dashboard.artworkInventory.empty.label"
+            fallback="Inventario vuoto"
+          />
+        </p>
         <h2 className="mt-4 font-serif text-3xl text-[var(--museum-ivory)]">
-          Non ci sono ancora opere.
+          <T
+            textKey="dashboard.artworkInventory.empty.title"
+            fallback="Non ci sono ancora opere."
+          />
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--museum-stone-muted)]">
-          Carica la prima opera dall'archivio opere, poi torna qui per
-          modificarne rapidamente i dati principali.
+          <T
+            textKey="dashboard.artworkInventory.empty.description"
+            fallback="Carica la prima opera dall'archivio opere, poi torna qui per modificarne rapidamente i dati principali."
+          />
         </p>
       </div>
     );
@@ -221,18 +232,31 @@ export default function ArtworkInventoryTable({
     <section className="rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-4 shadow-2xl shadow-black/20 md:p-6">
       <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <p className="museum-label">Inventario rapido</p>
+          <p className="museum-label">
+            <T
+              textKey="dashboard.artworkInventory.header.label"
+              fallback="Inventario rapido"
+            />
+          </p>
           <h2 className="mt-3 font-serif text-3xl text-[var(--museum-ivory)]">
-            Modifica opere
+            <T
+              textKey="dashboard.artworkInventory.header.title"
+              fallback="Modifica opere"
+            />
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--museum-stone-muted)]">
-            Aggiorna i dati essenziali delle opere senza entrare ogni volta
-            nella scheda completa.
+            <T
+              textKey="dashboard.artworkInventory.header.description"
+              fallback="Aggiorna i dati essenziali delle opere senza entrare ogni volta nella scheda completa."
+            />
           </p>
         </div>
 
         <div className="text-sm text-[var(--museum-stone-muted)]">
-          Totale opere:{" "}
+          <T
+            textKey="dashboard.artworkInventory.header.totalArtworks"
+            fallback="Totale opere:"
+          />{" "}
           <span className="text-[var(--museum-ivory-soft)]">
             {artworks.length}
           </span>
@@ -253,21 +277,68 @@ export default function ArtworkInventoryTable({
 
       <div className="rounded-[1.5rem] border border-[var(--museum-border-soft)]">
         <div className="border-b border-[var(--museum-border-soft)] bg-black/25 px-4 py-3 text-xs text-[var(--museum-stone-muted)]">
-          Ogni riga ha il suo scorrimento orizzontale: così puoi lavorare su
-          una singola opera senza perdere il riferimento visivo.
+          <T
+            textKey="dashboard.artworkInventory.table.scrollDescription"
+            fallback="Ogni riga ha il suo scorrimento orizzontale: così puoi lavorare su una singola opera senza perdere il riferimento visivo."
+          />
         </div>
 
         <div className="overflow-x-auto border-b border-[var(--museum-border-soft)] bg-black/30">
           <div className="grid min-w-[1180px] grid-cols-[72px_220px_180px_100px_250px_150px_110px_120px_170px] items-center gap-4 px-4 py-4 text-[0.68rem] uppercase tracking-[0.22em] text-[var(--museum-bronze)]">
-            <div className="font-semibold">Opera</div>
-            <div className="font-semibold">Titolo</div>
-            <div className="font-semibold">Artista</div>
-            <div className="font-semibold">Anno</div>
-            <div className="font-semibold">Tecnica</div>
-            <div className="font-semibold">Prezzo</div>
-            <div className="font-semibold">Valuta</div>
-            <div className="font-semibold">Vendita</div>
-            <div className="font-semibold">Azioni</div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.artwork"
+                fallback="Opera"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.title"
+                fallback="Titolo"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.artist"
+                fallback="Artista"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.year"
+                fallback="Anno"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.technique"
+                fallback="Tecnica"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.price"
+                fallback="Prezzo"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.currency"
+                fallback="Valuta"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.forSale"
+                fallback="Vendita"
+              />
+            </div>
+            <div className="font-semibold">
+              <T
+                textKey="dashboard.artworkInventory.table.actions"
+                fallback="Azioni"
+              />
+            </div>
           </div>
         </div>
 
@@ -297,7 +368,10 @@ export default function ArtworkInventoryTable({
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-[0.65rem] uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
-                            No img
+                            <T
+                              textKey="dashboard.artworkInventory.table.noImage"
+                              fallback="No img"
+                            />
                           </div>
                         )}
                       </div>
@@ -400,7 +474,10 @@ export default function ArtworkInventoryTable({
                             )
                           }
                         />
-                        Sì
+                        <T
+                          textKey="dashboard.artworkInventory.table.yes"
+                          fallback="Sì"
+                        />
                       </label>
                     </div>
 
@@ -412,14 +489,27 @@ export default function ArtworkInventoryTable({
                           onClick={() => saveArtwork(artwork.id)}
                           className="rounded-full bg-[var(--museum-bronze)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {savingId === artwork.id ? "Salvo..." : "Salva"}
+                          {savingId === artwork.id ? (
+                            <T
+                              textKey="dashboard.artworkInventory.actions.saving"
+                              fallback="Salvo..."
+                            />
+                          ) : (
+                            <T
+                              textKey="dashboard.artworkInventory.actions.save"
+                              fallback="Salva"
+                            />
+                          )}
                         </button>
 
                         <a
                           href={`/dashboard/opere/${artwork.id}`}
                           className="rounded-full border border-[var(--museum-border-soft)] px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
                         >
-                          Dettaglio
+                          <T
+                            textKey="dashboard.artworkInventory.actions.details"
+                            fallback="Dettaglio"
+                          />
                         </a>
 
                         <button
@@ -428,7 +518,17 @@ export default function ArtworkInventoryTable({
                           onClick={() => deleteArtwork(artwork)}
                           className="rounded-full border border-red-900 bg-red-950/30 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-red-200 transition hover:bg-red-950/60 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {deletingId === artwork.id ? "Elimino..." : "Elimina"}
+                          {deletingId === artwork.id ? (
+                            <T
+                              textKey="dashboard.artworkInventory.actions.deleting"
+                              fallback="Elimino..."
+                            />
+                          ) : (
+                            <T
+                              textKey="dashboard.artworkInventory.actions.delete"
+                              fallback="Elimina"
+                            />
+                          )}
                         </button>
                       </div>
                     </div>

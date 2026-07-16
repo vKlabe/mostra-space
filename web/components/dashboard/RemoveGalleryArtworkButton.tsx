@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import T from "@/components/i18n/T";
 import { createClient } from "@/lib/supabase/client";
 
 type RemoveGalleryArtworkButtonProps = {
@@ -48,7 +49,17 @@ export default function RemoveGalleryArtworkButton({
       disabled={loading}
       className="rounded-full border border-red-900/70 px-4 py-2 text-sm text-red-200 transition hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      {loading ? "Rimozione..." : "Rimuovi"}
+      {loading ? (
+        <T
+          textKey="dashboard.removeGalleryArtwork.actions.removing"
+          fallback="Rimozione..."
+        />
+      ) : (
+        <T
+          textKey="dashboard.removeGalleryArtwork.actions.remove"
+          fallback="Rimuovi"
+        />
+      )}
     </button>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import T from "@/components/i18n/T";
 import {
   formatLimitValue,
   getTemplateAccessPlanLabel,
@@ -257,13 +258,24 @@ export default function CreateGalleryForm({
       className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
     >
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-        Nuova galleria
+        <T
+          textKey="dashboard.createGalleryForm.header.label"
+          fallback="Nuova galleria"
+        />
       </p>
 
-      <h2 className="text-2xl font-medium">Crea una galleria</h2>
+      <h2 className="text-2xl font-medium">
+        <T
+          textKey="dashboard.createGalleryForm.header.title"
+          fallback="Crea una galleria"
+        />
+      </h2>
 
       <p className="mt-3 text-sm leading-6 text-neutral-400">
-        Piano attuale:{" "}
+        <T
+          textKey="dashboard.createGalleryForm.plan.current"
+          fallback="Piano attuale:"
+        />{" "}
         <span className="capitalize text-neutral-100">
           {getAccountPlanLabel(plan)}
         </span>
@@ -275,15 +287,24 @@ export default function CreateGalleryForm({
         {!canCreate && (
           <div className="mt-3 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
             <p className="text-sm leading-6 text-yellow-100">
-              {limitMessage ||
-                "Hai raggiunto il limite di gallerie del tuo piano."}
+              {limitMessage ? (
+                limitMessage
+              ) : (
+                <T
+                  textKey="dashboard.createGalleryForm.limits.reached"
+                  fallback="Hai raggiunto il limite di gallerie del tuo piano."
+                />
+              )}
             </p>
 
             <a
               href="/pricing"
               className="mt-3 inline-flex rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
-              Passa a un piano superiore
+              <T
+                textKey="dashboard.createGalleryForm.actions.upgradePlan"
+                fallback="Passa a un piano superiore"
+              />
             </a>
           </div>
         )}
@@ -291,7 +312,12 @@ export default function CreateGalleryForm({
 
       <div className="mt-6 space-y-4">
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">Titolo</label>
+          <label className="mb-2 block text-sm text-neutral-300">
+            <T
+              textKey="dashboard.createGalleryForm.fields.title"
+              fallback="Titolo"
+            />
+          </label>
 
           <input
             value={title}
@@ -305,7 +331,10 @@ export default function CreateGalleryForm({
 
         <div>
           <label className="mb-2 block text-sm text-neutral-300">
-            Slug pubblico
+            <T
+              textKey="dashboard.createGalleryForm.fields.publicSlug"
+              fallback="Slug pubblico"
+            />
           </label>
 
           <input
@@ -318,13 +347,20 @@ export default function CreateGalleryForm({
           />
 
           <p className="mt-2 text-xs text-neutral-500">
-            Link finale: /gallerie/{slug || "slug-galleria"}
+            <T
+              textKey="dashboard.createGalleryForm.fields.finalLink"
+              fallback="Link finale:"
+            />{" "}
+            /gallerie/{slug || "slug-galleria"}
           </p>
         </div>
 
         <div>
           <label className="mb-2 block text-sm text-neutral-300">
-            Descrizione
+            <T
+              textKey="dashboard.createGalleryForm.fields.description"
+              fallback="Descrizione"
+            />
           </label>
 
           <textarea
@@ -340,31 +376,46 @@ export default function CreateGalleryForm({
           <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
               <label className="block text-sm text-neutral-300">
-                Template stanza
+                <T
+                  textKey="dashboard.createGalleryForm.templates.label"
+                  fallback="Template stanza"
+                />
               </label>
 
               <p className="mt-1 text-xs leading-5 text-neutral-500">
-                Scegli l’ambiente 3D da usare come base della galleria.
+                <T
+                  textKey="dashboard.createGalleryForm.templates.description"
+                  fallback="Scegli l’ambiente 3D da usare come base della galleria."
+                />
               </p>
             </div>
 
             <p className="text-xs text-neutral-600">
-              Disponibili: {templates.length}
+              <T
+                textKey="dashboard.createGalleryForm.templates.available"
+                fallback="Disponibili:"
+              />{" "}
+              {templates.length}
             </p>
           </div>
 
           {templates.length === 0 && (
             <div className="rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4">
               <p className="text-sm leading-6 text-yellow-100">
-                Nessun template disponibile per il tuo piano o per i tuoi
-                acquisti marketplace.
+                <T
+                  textKey="dashboard.createGalleryForm.templates.empty"
+                  fallback="Nessun template disponibile per il tuo piano o per i tuoi acquisti marketplace."
+                />
               </p>
 
               <a
                 href="/marketplace"
                 className="mt-3 inline-flex rounded-full border border-amber-800 px-4 py-2 text-sm text-amber-200 transition hover:border-amber-500"
               >
-                Vai al marketplace
+                <T
+                  textKey="dashboard.createGalleryForm.actions.marketplace"
+                  fallback="Vai al marketplace"
+                />
               </a>
             </div>
           )}
@@ -407,7 +458,10 @@ export default function CreateGalleryForm({
                         <div className="absolute inset-x-4 bottom-4">
                           <div className="rounded-2xl border border-white/20 bg-black/35 p-3 backdrop-blur">
                             <p className="text-xs uppercase tracking-[0.18em] text-white/60">
-                              Preview
+                              <T
+                                textKey="dashboard.createGalleryForm.templates.preview"
+                                fallback="Preview"
+                              />
                             </p>
 
                             <p className="mt-1 text-sm font-medium text-white">
@@ -429,13 +483,19 @@ export default function CreateGalleryForm({
 
                           {template.is_featured && (
                             <span className="rounded-full border border-white/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-950">
-                              In evidenza
+                              <T
+                                textKey="dashboard.createGalleryForm.templates.featured"
+                                fallback="In evidenza"
+                              />
                             </span>
                           )}
 
                           {isSelected && (
                             <span className="rounded-full border border-white/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-950">
-                              Selezionato
+                              <T
+                                textKey="dashboard.createGalleryForm.templates.selected"
+                                fallback="Selezionato"
+                              />
                             </span>
                           )}
                         </div>
@@ -445,27 +505,48 @@ export default function CreateGalleryForm({
                         </h3>
 
                         <p className="mt-2 text-sm leading-6 text-neutral-500">
-                          {template.description ||
-                            "Template 3D disponibile per questa galleria."}
+                          {template.description ? (
+                            template.description
+                          ) : (
+                            <T
+                              textKey="dashboard.createGalleryForm.templates.defaultDescription"
+                              fallback="Template 3D disponibile per questa galleria."
+                            />
+                          )}
                         </p>
 
                         <dl className="mt-4 grid gap-3 text-xs text-neutral-500 sm:grid-cols-3">
                           <div>
-                            <dt className="text-neutral-600">Unity key</dt>
+                            <dt className="text-neutral-600">
+                              <T
+                                textKey="dashboard.createGalleryForm.templates.unityKey"
+                                fallback="Unity key"
+                              />
+                            </dt>
                             <dd className="mt-1 break-all text-neutral-300">
                               {template.unity_scene_key}
                             </dd>
                           </div>
 
                           <div>
-                            <dt className="text-neutral-600">Max opere</dt>
+                            <dt className="text-neutral-600">
+                              <T
+                                textKey="dashboard.createGalleryForm.templates.maxArtworks"
+                                fallback="Max opere"
+                              />
+                            </dt>
                             <dd className="mt-1 text-neutral-300">
                               {template.max_artworks}
                             </dd>
                           </div>
 
                           <div>
-                            <dt className="text-neutral-600">Slug</dt>
+                            <dt className="text-neutral-600">
+                              <T
+                                textKey="dashboard.createGalleryForm.templates.slug"
+                                fallback="Slug"
+                              />
+                            </dt>
                             <dd className="mt-1 break-all text-neutral-300">
                               {template.slug}
                             </dd>
@@ -483,7 +564,10 @@ export default function CreateGalleryForm({
         {selectedTemplate && (
           <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
             <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
-              Template selezionato
+              <T
+                textKey="dashboard.createGalleryForm.selectedTemplate.label"
+                fallback="Template selezionato"
+              />
             </p>
 
             <div className="mt-4 grid gap-4 md:grid-cols-[160px_1fr]">
@@ -516,21 +600,36 @@ export default function CreateGalleryForm({
 
                 <dl className="mt-4 grid gap-3 text-sm md:grid-cols-3">
                   <div>
-                    <dt className="text-neutral-600">Unity key</dt>
+                    <dt className="text-neutral-600">
+                      <T
+                        textKey="dashboard.createGalleryForm.templates.unityKey"
+                        fallback="Unity key"
+                      />
+                    </dt>
                     <dd className="mt-1 break-all text-neutral-200">
                       {selectedTemplate.unity_scene_key}
                     </dd>
                   </div>
 
                   <div>
-                    <dt className="text-neutral-600">Accesso</dt>
+                    <dt className="text-neutral-600">
+                      <T
+                        textKey="dashboard.createGalleryForm.selectedTemplate.access"
+                        fallback="Accesso"
+                      />
+                    </dt>
                     <dd className="mt-1 text-neutral-200">
                       {getTemplateAccessShortLabel(selectedTemplate)}
                     </dd>
                   </div>
 
                   <div>
-                    <dt className="text-neutral-600">Max opere</dt>
+                    <dt className="text-neutral-600">
+                      <T
+                        textKey="dashboard.createGalleryForm.templates.maxArtworks"
+                        fallback="Max opere"
+                      />
+                    </dt>
                     <dd className="mt-1 text-neutral-200">
                       {selectedTemplate.max_artworks}
                     </dd>
@@ -548,7 +647,17 @@ export default function CreateGalleryForm({
           disabled={!canCreate || isLoading || templates.length === 0}
           className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Creazione..." : "Crea galleria"}
+          {isLoading ? (
+            <T
+              textKey="dashboard.createGalleryForm.actions.creating"
+              fallback="Creazione..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.createGalleryForm.actions.create"
+              fallback="Crea galleria"
+            />
+          )}
         </button>
 
         {message && <p className="text-sm text-neutral-300">{message}</p>}
