@@ -46,7 +46,7 @@ function getProfileName(profile: Profile | undefined) {
     profile?.display_name ||
     profile?.full_name ||
     profile?.email?.split("@")[0] ||
-    "Profilo mostra.space"
+    null
   );
 }
 
@@ -234,15 +234,27 @@ export default async function PublicEventsPage() {
           <p className="mt-2 text-sm text-neutral-500">
             <T textKey="events.card.curatedBy" fallback="A cura di" />{" "}
             {ownerProfileHref ? (
-              <a
-                href={ownerProfileHref}
-                className="text-neutral-200 underline decoration-neutral-700 underline-offset-4 transition hover:text-white"
-              >
-                {ownerName}
-              </a>
-            ) : (
-              <span className="text-neutral-200">{ownerName}</span>
-            )}
+  <a
+    href={ownerProfileHref}
+    className="text-neutral-200 underline decoration-neutral-700 underline-offset-4 transition hover:text-white"
+  >
+    {ownerName || (
+      <T
+        textKey="events.card.unknownProfile"
+        fallback="Profilo mostra.space"
+      />
+    )}
+  </a>
+) : (
+  <span className="text-neutral-200">
+    {ownerName || (
+      <T
+        textKey="events.card.unknownProfile"
+        fallback="Profilo mostra.space"
+      />
+    )}
+  </span>
+)}
           </p>
 
           {event.description && (

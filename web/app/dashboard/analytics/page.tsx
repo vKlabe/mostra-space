@@ -387,11 +387,21 @@ export default async function DashboardAnalyticsPage({
   if (!canReadAnalytics) {
     return (
       <DashboardShell
-        title="Analytics non disponibili"
-        subtitle="Le statistiche sono disponibili per account gallerista, admin e piani creator."
-        activeSection="analytics"
-        navMode="community"
-      >
+  title={
+    <T
+      textKey="dashboard.analytics.unavailable.title"
+      fallback="Analytics non disponibili"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.analytics.unavailable.subtitle"
+      fallback="Le statistiche sono disponibili per account gallerista, admin e piani creator."
+    />
+  }
+  activeSection="analytics"
+  navMode="community"
+>
         <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-sm leading-6 text-neutral-400">
             <T
@@ -696,9 +706,19 @@ export default async function DashboardAnalyticsPage({
 
   return (
     <DashboardShell
-      title="Analytics"
-      subtitle="Una prima lettura delle performance dei tuoi spazi: visite registrate, salvataggi, richieste, chat, eventi e community."
-      activeSection="analytics"
+  title={
+    <T
+      textKey="dashboard.analytics.header.title"
+      fallback="Analytics"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.analytics.header.subtitle"
+      fallback="Una prima lettura delle performance dei tuoi spazi: visite registrate, salvataggi, richieste, chat, eventi e community."
+    />
+  }
+  activeSection="analytics"
       actions={
         <div className="flex flex-wrap gap-2">
           {rangeOptions.map((option) => {
@@ -790,10 +810,33 @@ export default async function DashboardAnalyticsPage({
 
             <h2 className="mt-3 text-2xl font-medium text-neutral-50">
               <T
-                textKey="dashboard.analytics.period.dataOn"
-                fallback="Dati su"
-              />{" "}
-              {formatRangeLabel(selectedRange)}
+  textKey="dashboard.analytics.period.dataOn"
+  fallback="Dati su"
+/>{" "}
+{selectedRange === "7" && (
+  <T
+    textKey="dashboard.analytics.period.range.sevenDays"
+    fallback="ultimi 7 giorni"
+  />
+)}
+{selectedRange === "30" && (
+  <T
+    textKey="dashboard.analytics.period.range.thirtyDays"
+    fallback="ultimi 30 giorni"
+  />
+)}
+{selectedRange === "90" && (
+  <T
+    textKey="dashboard.analytics.period.range.ninetyDays"
+    fallback="ultimi 90 giorni"
+  />
+)}
+{selectedRange === "all" && (
+  <T
+    textKey="dashboard.analytics.period.range.all"
+    fallback="tutto il periodo"
+  />
+)}
             </h2>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-400">

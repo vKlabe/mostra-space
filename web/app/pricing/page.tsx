@@ -120,44 +120,74 @@ const planHighlights: Record<
   ],
 };
 
-function getPlanDescription(plan: PlanName) {
+function getPlanDescriptionContent(plan: PlanName) {
   if (plan === "free") {
-    return "Per iniziare, testare la piattaforma e pubblicare una prima galleria virtuale.";
+    return (
+      <T
+        textKey="pricing.plans.free.description"
+        fallback="Per iniziare, testare la piattaforma e pubblicare una prima galleria virtuale."
+      />
+    );
   }
 
   if (plan === "pro") {
-    return "Per artisti, curatori indipendenti e piccoli studi che vogliono creare più gallerie e archiviare più opere.";
+    return (
+      <T
+        textKey="pricing.plans.pro.description"
+        fallback="Per artisti, curatori indipendenti e piccoli studi che vogliono creare più gallerie e archiviare più opere."
+      />
+    );
   }
 
   if (plan === "business") {
-    return "Per gallerie e progetti professionali che hanno bisogno di più spazio, più opere e più continuità operativa.";
+    return (
+      <T
+        textKey="pricing.plans.business.description"
+        fallback="Per gallerie e progetti professionali che hanno bisogno di più spazio, più opere e più continuità operativa."
+      />
+    );
   }
 
   if (plan === "diamond") {
-    return "Per gallerie strutturate, cataloghi ampi e attività espositive digitali più intense.";
+    return (
+      <T
+        textKey="pricing.plans.diamond.description"
+        fallback="Per gallerie strutturate, cataloghi ampi e attività espositive digitali più intense."
+      />
+    );
   }
 
-  return "Per musei, fondazioni, fiere, istituzioni e progetti speciali con esigenze, limiti e funzionalità personalizzate.";
+  return (
+    <T
+      textKey="pricing.plans.institution.description"
+      fallback="Per musei, fondazioni, fiere, istituzioni e progetti speciali con esigenze, limiti e funzionalità personalizzate."
+    />
+  );
 }
 
-function getPlanEyebrow(plan: PlanName) {
+function getPlanEyebrowContent(plan: PlanName) {
   if (plan === "free") {
-    return "Ingresso";
+    return <T textKey="pricing.plans.free.eyebrow" fallback="Ingresso" />;
   }
 
   if (plan === "pro") {
-    return "Artista";
+    return <T textKey="pricing.plans.pro.eyebrow" fallback="Artista" />;
   }
 
   if (plan === "business") {
-    return "Gallerista";
+    return <T textKey="pricing.plans.business.eyebrow" fallback="Gallerista" />;
   }
 
   if (plan === "diamond") {
-    return "Premium";
+    return <T textKey="pricing.plans.diamond.eyebrow" fallback="Premium" />;
   }
 
-  return "Istituzione";
+  return (
+    <T
+      textKey="pricing.plans.institution.eyebrow"
+      fallback="Istituzione"
+    />
+  );
 }
 
 function getPlanBadgeClass(plan: PlanName, isCurrent: boolean) {
@@ -184,24 +214,48 @@ function getPlanBadgeClass(plan: PlanName, isCurrent: boolean) {
   return "border-[rgba(216,205,187,0.28)] bg-[rgba(216,205,187,0.08)] text-[var(--museum-ivory)]";
 }
 
-function formatTemplateLimit(value: number | null) {
-  return value === null ? "Tutti" : value;
+function formatTemplateLimitContent(value: number | null) {
+  if (value === null) {
+    return <T textKey="pricing.features.allTemplates" fallback="Tutti" />;
+  }
+
+  return value;
 }
 
-function getCatalogPdfLabel(plan: PlanName) {
+function getCatalogPdfContent(plan: PlanName) {
   if (plan === "free") {
-    return "Anteprima";
+    return (
+      <T
+        textKey="pricing.features.pdfCatalog.free"
+        fallback="Anteprima"
+      />
+    );
   }
 
   if (plan === "pro") {
-    return "PDF elegante";
+    return (
+      <T
+        textKey="pricing.features.pdfCatalog.pro"
+        fallback="PDF elegante"
+      />
+    );
   }
 
   if (plan === "business" || plan === "diamond") {
-    return "Tutti i layout";
+    return (
+      <T
+        textKey="pricing.features.pdfCatalog.allLayouts"
+        fallback="Tutti i layout"
+      />
+    );
   }
 
-  return "Personalizzato";
+  return (
+    <T
+      textKey="pricing.features.pdfCatalog.custom"
+      fallback="Personalizzato"
+    />
+  );
 }
 
 function formatDate(value?: string | null) {
@@ -474,7 +528,7 @@ export default async function PricingPage() {
                   </div>
                 )}
 
-                <p className="museum-label">{getPlanEyebrow(plan.name)}</p>
+                <p className="museum-label">{getPlanEyebrowContent(plan.name)}</p>
 
                 <span
                   className={`mt-5 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.15em] ${getPlanBadgeClass(
@@ -490,7 +544,7 @@ export default async function PricingPage() {
                 </h2>
 
                 <p className="mt-5 min-h-28 text-sm leading-7 text-[var(--museum-stone)]">
-                  {getPlanDescription(plan.name)}
+                  {getPlanDescriptionContent(plan.name)}
                 </p>
 
                 <div className="mt-6">
@@ -615,7 +669,7 @@ export default async function PricingPage() {
                       />
                     </span>
                     <span className="text-[var(--museum-ivory-soft)]">
-                      {formatTemplateLimit(plan.selectableTemplates)}
+                      {formatTemplateLimitContent(plan.selectableTemplates)}
                     </span>
                   </div>
 
@@ -627,7 +681,7 @@ export default async function PricingPage() {
                       />
                     </span>
                     <span className="text-right text-[var(--museum-ivory-soft)]">
-                      {getCatalogPdfLabel(plan.name)}
+                      {getCatalogPdfContent(plan.name)}
                     </span>
                   </div>
                 </div>
@@ -647,7 +701,7 @@ export default async function PricingPage() {
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <p className="museum-label">
-                  {getPlanEyebrow(institutionPlan.name)}
+                  {getPlanEyebrowContent(institutionPlan.name)}
                 </p>
 
                 {isInstitutionCurrent && (
@@ -674,7 +728,7 @@ export default async function PricingPage() {
               </h2>
 
               <p className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
-                {getPlanDescription(institutionPlan.name)}
+                {getPlanDescriptionContent(institutionPlan.name)}
               </p>
             </div>
 

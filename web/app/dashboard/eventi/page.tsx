@@ -40,20 +40,53 @@ function formatDateTime(value: string) {
   });
 }
 
-function getStatusLabel(status: GalleryEvent["status"]) {
+function getEventStatusTranslation(status: GalleryEvent["status"]) {
   if (status === "live") {
-    return "Live";
+    return {
+      textKey: "dashboard.events.status.live",
+      fallback: "Live",
+    };
   }
 
   if (status === "completed") {
-    return "Terminato";
+    return {
+      textKey: "dashboard.events.status.completed",
+      fallback: "Terminato",
+    };
   }
 
   if (status === "cancelled") {
-    return "Annullato";
+    return {
+      textKey: "dashboard.events.status.cancelled",
+      fallback: "Annullato",
+    };
   }
 
-  return "Programmato";
+  return {
+    textKey: "dashboard.events.status.scheduled",
+    fallback: "Programmato",
+  };
+}
+
+function getGalleryStatusTranslation(status: Gallery["status"]) {
+  if (status === "published") {
+    return {
+      textKey: "dashboard.events.galleryStatus.published",
+      fallback: "Pubblicata",
+    };
+  }
+
+  if (status === "archived") {
+    return {
+      textKey: "dashboard.events.galleryStatus.archived",
+      fallback: "Archiviata",
+    };
+  }
+
+  return {
+    textKey: "dashboard.events.galleryStatus.draft",
+    fallback: "Bozza",
+  };
 }
 
 function getStatusClass(status: GalleryEvent["status"]) {
@@ -100,10 +133,20 @@ export default async function DashboardEventsPage() {
   if (!canManageEvents) {
     return (
       <DashboardShell
-        title="Eventi"
-        subtitle="Gli eventi sono disponibili per galleristi, artisti e admin."
-        activeSection="gallerie"
-      >
+  title={
+    <T
+      textKey="dashboard.events.restricted.title"
+      fallback="Eventi"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.events.restricted.subtitle"
+      fallback="Gli eventi sono disponibili per galleristi, artisti e admin."
+    />
+  }
+  activeSection="gallerie"
+>
         <a
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -176,9 +219,19 @@ export default async function DashboardEventsPage() {
 
   return (
     <DashboardShell
-      title="Eventi"
-      subtitle="Crea eventi collegati alle tue gallerie. Ogni galleria può avere massimo un evento attivo."
-      activeSection="gallerie"
+  title={
+    <T
+      textKey="dashboard.events.shell.title"
+      fallback="Eventi"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.events.shell.subtitle"
+      fallback="Crea eventi collegati alle tue gallerie. Ogni galleria può avere massimo un evento attivo."
+    />
+  }
+  activeSection="gallerie"
       actions={
         <div className="flex flex-wrap gap-3">
           <a
@@ -264,12 +317,19 @@ export default async function DashboardEventsPage() {
                             event.status
                           )}`}
                         >
-                          {getStatusLabel(event.status)}
+                          <T
+  textKey={getEventStatusTranslation(event.status).textKey}
+  fallback={getEventStatusTranslation(event.status).fallback}
+/>
                         </span>
 
                         {gallery && (
                           <span className="rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-400">
-                            {gallery.title} · {gallery.status}
+                            {gallery.title} ·{" "}
+<T
+  textKey={getGalleryStatusTranslation(gallery.status).textKey}
+  fallback={getGalleryStatusTranslation(gallery.status).fallback}
+/>
                           </span>
                         )}
                       </div>
@@ -353,7 +413,10 @@ export default async function DashboardEventsPage() {
                           />
                         )}{" "}
                         · {formatDateTime(event.starts_at)} ·{" "}
-                        {getStatusLabel(event.status)}
+<T
+  textKey={getEventStatusTranslation(event.status).textKey}
+  fallback={getEventStatusTranslation(event.status).fallback}
+/>
                       </p>
                     </div>
 

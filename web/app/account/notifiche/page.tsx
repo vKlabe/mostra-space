@@ -117,10 +117,20 @@ export default async function AccountNotificationsPage() {
 
   return (
     <DashboardShell
-      title="Notifiche"
-      subtitle="Promemoria collegati agli eventi dei profili che segui e delle gallerie salvate."
-      activeSection="account"
-      navMode={isCreator ? "creator" : "community"}
+  title={
+    <T
+      textKey="account.notifications.shell.title"
+      fallback="Notifiche"
+    />
+  }
+  subtitle={
+    <T
+      textKey="account.notifications.shell.subtitle"
+      fallback="Promemoria collegati agli eventi dei profili che segui e delle gallerie salvate."
+    />
+  }
+  activeSection="account"
+  navMode={isCreator ? "creator" : "community"}
       actions={
         <div className="flex flex-wrap gap-3">
           <a

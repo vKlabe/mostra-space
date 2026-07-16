@@ -122,11 +122,11 @@ type OnboardingStepStatus = "done" | "warning" | "todo";
 
 type OnboardingStep = {
   id: string;
-  label: string;
-  description: string;
+  label: React.ReactNode;
+  description: React.ReactNode;
   status: OnboardingStepStatus;
   href?: string;
-  actionLabel?: string;
+  actionLabel?: React.ReactNode;
 };
 
 function formatNumber(value: number | null | undefined) {
@@ -137,16 +137,25 @@ function formatNumber(value: number | null | undefined) {
   return Number(value).toFixed(2);
 }
 
-function getStatusLabel(status: Gallery["status"]) {
+function getStatusTranslation(status: Gallery["status"]) {
   if (status === "published") {
-    return "Pubblicata";
+    return {
+      textKey: "dashboard.galleryDetail.status.published",
+      fallback: "Pubblicata",
+    };
   }
 
   if (status === "archived") {
-    return "Archiviata";
+    return {
+      textKey: "dashboard.galleryDetail.status.archived",
+      fallback: "Archiviata",
+    };
   }
 
-  return "Bozza";
+  return {
+    textKey: "dashboard.galleryDetail.status.draft",
+    fallback: "Bozza",
+  };
 }
 
 function getStatusBadgeClass(status: Gallery["status"]) {
@@ -261,105 +270,289 @@ function buildOnboardingSteps({
   return [
     {
       id: "gallery-created",
-      label: "Galleria creata",
-      description:
-        "Lo spazio espositivo esiste nel portale ed è pronto per essere configurato.",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryCreated.label"
+          fallback="Galleria creata"
+        />
+      ),
+      description: (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryCreated.description"
+          fallback="Lo spazio espositivo esiste nel portale ed è pronto per essere configurato."
+        />
+      ),
       status: "done",
     },
     {
       id: "gallery-data",
-      label: "Titolo e descrizione",
-      description: hasTitle
-        ? "I dati principali della galleria sono presenti."
-        : "Inserisci almeno il titolo della galleria.",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryData.label"
+          fallback="Titolo e descrizione"
+        />
+      ),
+      description: hasTitle ? (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryData.done"
+          fallback="I dati principali della galleria sono presenti."
+        />
+      ) : (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryData.todo"
+          fallback="Inserisci almeno il titolo della galleria."
+        />
+      ),
       status: hasTitle ? "done" : "todo",
       href: "#dati-galleria",
-      actionLabel: "Modifica dati",
+      actionLabel: (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryData.action"
+          fallback="Modifica dati"
+        />
+      ),
     },
     {
       id: "gallery-cover",
-      label: "Cover galleria",
-      description: hasCover
-        ? "La galleria ha una cover visibile nelle pagine pubbliche."
-        : "Aggiungi una cover: serve per pubblicare e rendere la pagina più credibile.",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryCover.label"
+          fallback="Cover galleria"
+        />
+      ),
+      description: hasCover ? (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryCover.done"
+          fallback="La galleria ha una cover visibile nelle pagine pubbliche."
+        />
+      ) : (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryCover.todo"
+          fallback="Aggiungi una cover: serve per pubblicare e rendere la pagina più credibile."
+        />
+      ),
       status: hasCover ? "done" : "todo",
       href: "#cover-galleria",
-      actionLabel: hasCover ? "Aggiorna cover" : "Carica cover",
+      actionLabel: hasCover ? (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryCover.updateAction"
+          fallback="Aggiorna cover"
+        />
+      ) : (
+        <T
+          textKey="dashboard.galleryDetail.steps.galleryCover.uploadAction"
+          fallback="Carica cover"
+        />
+      ),
     },
     {
       id: "artworks-linked",
-      label: "Opere associate",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.artworksLinked.label"
+          fallback="Opere associate"
+        />
+      ),
       description:
-        totalArtworks > 0
-          ? `Hai associato ${totalArtworks} opere a questa galleria.`
-          : "Associa almeno un’opera alla galleria prima di pubblicarla.",
+        totalArtworks > 0 ? (
+          <>
+            <T
+              textKey="dashboard.galleryDetail.steps.artworksLinked.donePrefix"
+              fallback="Hai associato"
+            />{" "}
+            {totalArtworks}{" "}
+            <T
+              textKey="dashboard.galleryDetail.steps.artworksLinked.doneSuffix"
+              fallback="opere a questa galleria."
+            />
+          </>
+        ) : (
+          <T
+            textKey="dashboard.galleryDetail.steps.artworksLinked.todo"
+            fallback="Associa almeno un’opera alla galleria prima di pubblicarla."
+          />
+        ),
       status: totalArtworks > 0 ? "done" : "todo",
       href: "#opere-galleria",
-      actionLabel: "Gestisci opere",
+      actionLabel: (
+        <T
+          textKey="dashboard.galleryDetail.steps.artworksLinked.action"
+          fallback="Gestisci opere"
+        />
+      ),
     },
     {
       id: "artworks-positioned",
-      label: "Allestimento 3D",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.artworksPositioned.label"
+          fallback="Allestimento 3D"
+        />
+      ),
       description:
-        positionedArtworks > 0
-          ? `${positionedArtworks} opere sono già posizionate sulle pareti.`
-          : "Apri l’editor 3D e posiziona almeno un’opera su una parete.",
+        positionedArtworks > 0 ? (
+          <>
+            {positionedArtworks}{" "}
+            <T
+              textKey="dashboard.galleryDetail.steps.artworksPositioned.doneSuffix"
+              fallback="opere sono già posizionate sulle pareti."
+            />
+          </>
+        ) : (
+          <T
+            textKey="dashboard.galleryDetail.steps.artworksPositioned.todo"
+            fallback="Apri l’editor 3D e posiziona almeno un’opera su una parete."
+          />
+        ),
       status: positionedArtworks > 0 ? "done" : "todo",
       href: `/dashboard/gallerie-editor/${gallery.id}`,
-      actionLabel: "Apri editor 3D",
+      actionLabel: (
+        <T
+          textKey="dashboard.galleryDetail.steps.artworksPositioned.action"
+          fallback="Apri editor 3D"
+        />
+      ),
     },
     {
       id: "unpositioned-warning",
-      label: "Opere non posizionate",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.unpositionedWarning.label"
+          fallback="Opere non posizionate"
+        />
+      ),
       description:
-        unpositionedArtworks > 0
-          ? `${unpositionedArtworks} opere sono associate ma non posizionate: non saranno visibili nel viewer.`
-          : "Tutte le opere associate risultano posizionate o non ci sono warning di allestimento.",
+        unpositionedArtworks > 0 ? (
+          <>
+            {unpositionedArtworks}{" "}
+            <T
+              textKey="dashboard.galleryDetail.steps.unpositionedWarning.warningSuffix"
+              fallback="opere sono associate ma non posizionate: non saranno visibili nel viewer."
+            />
+          </>
+        ) : (
+          <T
+            textKey="dashboard.galleryDetail.steps.unpositionedWarning.done"
+            fallback="Tutte le opere associate risultano posizionate o non ci sono warning di allestimento."
+          />
+        ),
       status: unpositionedArtworks > 0 ? "warning" : "done",
       href: `/dashboard/gallerie-editor/${gallery.id}`,
-      actionLabel: "Controlla editor",
+      actionLabel: (
+        <T
+          textKey="dashboard.galleryDetail.steps.unpositionedWarning.action"
+          fallback="Controlla editor"
+        />
+      ),
     },
     {
       id: "dimensions-warning",
-      label: "Dimensioni opere",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.dimensionsWarning.label"
+          fallback="Dimensioni opere"
+        />
+      ),
       description:
-        artworksWithoutDimensions > 0
-          ? `${artworksWithoutDimensions} opere non hanno dimensioni: nel viewer verrà usato il fallback 50 x 50 cm.`
-          : "Le dimensioni opere sono sufficienti per il viewer.",
+        artworksWithoutDimensions > 0 ? (
+          <>
+            {artworksWithoutDimensions}{" "}
+            <T
+              textKey="dashboard.galleryDetail.steps.dimensionsWarning.warningSuffix"
+              fallback="opere non hanno dimensioni: nel viewer verrà usato il fallback 50 x 50 cm."
+            />
+          </>
+        ) : (
+          <T
+            textKey="dashboard.galleryDetail.steps.dimensionsWarning.done"
+            fallback="Le dimensioni opere sono sufficienti per il viewer."
+          />
+        ),
       status: artworksWithoutDimensions > 0 ? "warning" : "done",
       href: `/dashboard/gallerie-editor/${gallery.id}`,
-      actionLabel: "Controlla dimensioni",
+      actionLabel: (
+        <T
+          textKey="dashboard.galleryDetail.steps.dimensionsWarning.action"
+          fallback="Controlla dimensioni"
+        />
+      ),
     },
     {
       id: "visitor-preview",
-      label: "Anteprima visitatore",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.visitorPreview.label"
+          fallback="Anteprima visitatore"
+        />
+      ),
       description:
-        gallery.status === "published"
-          ? "La galleria è pubblicata: puoi controllare la pagina pubblica completa."
-          : "Apri l’anteprima visitatore prima di pubblicare, così controlli esperienza e allestimento.",
+        gallery.status === "published" ? (
+          <T
+            textKey="dashboard.galleryDetail.steps.visitorPreview.published"
+            fallback="La galleria è pubblicata: puoi controllare la pagina pubblica completa."
+          />
+        ) : (
+          <T
+            textKey="dashboard.galleryDetail.steps.visitorPreview.todo"
+            fallback="Apri l’anteprima visitatore prima di pubblicare, così controlli esperienza e allestimento."
+          />
+        ),
       status: gallery.status === "published" ? "done" : "todo",
       href:
         gallery.status === "published"
           ? `/gallerie/${gallery.slug}`
           : `/unity-frame?galleryId=${gallery.id}&mode=visitor`,
       actionLabel:
-        gallery.status === "published"
-          ? "Apri pagina pubblica"
-          : "Apri anteprima",
+        gallery.status === "published" ? (
+          <T
+            textKey="dashboard.galleryDetail.steps.visitorPreview.publicAction"
+            fallback="Apri pagina pubblica"
+          />
+        ) : (
+          <T
+            textKey="dashboard.galleryDetail.steps.visitorPreview.previewAction"
+            fallback="Apri anteprima"
+          />
+        ),
     },
     {
       id: "publication",
-      label: "Pubblicazione",
+      label: (
+        <T
+          textKey="dashboard.galleryDetail.steps.publication.label"
+          fallback="Pubblicazione"
+        />
+      ),
       description:
-        gallery.status === "published"
-          ? "La galleria è online e visibile pubblicamente."
-          : canPublish
-            ? "La galleria è pronta per la pubblicazione."
-            : "Completa gli step obbligatori prima di pubblicare.",
+        gallery.status === "published" ? (
+          <T
+            textKey="dashboard.galleryDetail.steps.publication.published"
+            fallback="La galleria è online e visibile pubblicamente."
+          />
+        ) : canPublish ? (
+          <T
+            textKey="dashboard.galleryDetail.steps.publication.ready"
+            fallback="La galleria è pronta per la pubblicazione."
+          />
+        ) : (
+          <T
+            textKey="dashboard.galleryDetail.steps.publication.todo"
+            fallback="Completa gli step obbligatori prima di pubblicare."
+          />
+        ),
       status:
-        gallery.status === "published" ? "done" : canPublish ? "warning" : "todo",
+        gallery.status === "published"
+          ? "done"
+          : canPublish
+            ? "warning"
+            : "todo",
       href: "#pubblicazione",
-      actionLabel: "Vai alla pubblicazione",
+      actionLabel: (
+        <T
+          textKey="dashboard.galleryDetail.steps.publication.action"
+          fallback="Vai alla pubblicazione"
+        />
+      ),
     },
   ];
 }
@@ -404,10 +597,20 @@ export default async function DashboardGalleryDetailPage({
   if (galleryError || !gallery) {
     return (
       <DashboardShell
-        title="Galleria non trovata"
-        subtitle="La galleria non esiste oppure non hai i permessi per leggerla."
-        activeSection="gallerie"
-      >
+  title={
+    <T
+      textKey="dashboard.galleryDetail.notFound.title"
+      fallback="Galleria non trovata"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.galleryDetail.notFound.subtitle"
+      fallback="La galleria non esiste oppure non hai i permessi per leggerla."
+    />
+  }
+  activeSection="gallerie"
+>
         <div className="rounded-3xl border border-red-800 bg-red-950/30 p-6">
           {galleryError?.message ? (
             galleryError.message
@@ -437,10 +640,20 @@ export default async function DashboardGalleryDetailPage({
   if (!canManage) {
     return (
       <DashboardShell
-        title="Accesso negato"
-        subtitle="Non puoi gestire questa galleria perche non sei il proprietario."
-        activeSection="gallerie"
-      >
+  title={
+    <T
+      textKey="dashboard.galleryDetail.accessDenied.title"
+      fallback="Accesso negato"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.galleryDetail.accessDenied.subtitle"
+      fallback="Non puoi gestire questa galleria perché non sei il proprietario."
+    />
+  }
+  activeSection="gallerie"
+>
         <a
           href="/dashboard/gallerie"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -624,9 +837,14 @@ export default async function DashboardGalleryDetailPage({
 
   return (
     <DashboardShell
-      title={gallery.title}
-      subtitle="Gestisci dati pubblici, opere collegate, template, pubblicazione e apertura dell editor Unity WebGL."
-      activeSection="gallerie"
+  title={gallery.title}
+  subtitle={
+    <T
+      textKey="dashboard.galleryDetail.header.subtitle"
+      fallback="Gestisci dati pubblici, opere collegate, template, pubblicazione e apertura dell’editor Unity WebGL."
+    />
+  }
+  activeSection="gallerie"
       actions={
         <>
           <a
@@ -720,7 +938,10 @@ export default async function DashboardGalleryDetailPage({
                   gallery.status
                 )}`}
               >
-                {getStatusLabel(gallery.status)}
+                <T
+  textKey={getStatusTranslation(gallery.status).textKey}
+  fallback={getStatusTranslation(gallery.status).fallback}
+/>
               </span>
             </div>
 
@@ -909,7 +1130,10 @@ export default async function DashboardGalleryDetailPage({
                 gallery.status
               )}`}
             >
-              {getStatusLabel(gallery.status)}
+              <T
+  textKey={getStatusTranslation(gallery.status).textKey}
+  fallback={getStatusTranslation(gallery.status).fallback}
+/>
             </span>
           </div>
 
@@ -957,7 +1181,12 @@ export default async function DashboardGalleryDetailPage({
                 />
               </dt>
 
-              <dd className="mt-1 text-neutral-200">{gallery.status}</dd>
+              <dd className="mt-1 text-neutral-200">
+  <T
+    textKey={getStatusTranslation(gallery.status).textKey}
+    fallback={getStatusTranslation(gallery.status).fallback}
+  />
+</dd>
             </div>
 
             <div>

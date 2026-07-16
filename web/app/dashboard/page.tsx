@@ -786,10 +786,20 @@ export default async function DashboardPage() {
 
     return (
       <DashboardShell
-        title={`Ciao, ${visitorName}`}
-        subtitle="Questa e la tua dashboard community: il tuo spazio personale dentro mostra.space."
-        activeSection="dashboard"
-        navMode="community"
+  title={
+    <>
+      <T textKey="dashboard.header.greeting" fallback="Ciao," />{" "}
+      {visitorName}
+    </>
+  }
+  subtitle={
+    <T
+      textKey="dashboard.community.header.subtitle"
+      fallback="Questa è la tua dashboard community: il tuo spazio personale dentro mostra.space."
+    />
+  }
+  activeSection="dashboard"
+  navMode="community"
         actions={
           <a
             href="/gallerie"
@@ -1080,9 +1090,19 @@ export default async function DashboardPage() {
 
   return (
     <DashboardShell
-      title={`Ciao, ${displayName}`}
-      subtitle="Da qui controlli gallerie virtuali, opere, pubblicazioni, limiti piano e richieste ricevute dai visitatori."
-      activeSection="dashboard"
+  title={
+    <>
+      <T textKey="dashboard.header.greeting" fallback="Ciao," />{" "}
+      {displayName}
+    </>
+  }
+  subtitle={
+    <T
+      textKey="dashboard.header.subtitle"
+      fallback="Da qui controlli gallerie virtuali, opere, pubblicazioni, limiti piano e richieste ricevute dai visitatori."
+    />
+  }
+  activeSection="dashboard"
       actions={
         <>
           <a

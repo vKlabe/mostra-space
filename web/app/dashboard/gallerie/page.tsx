@@ -75,16 +75,25 @@ function normalizeStatusFilter(value: string | undefined): StatusFilter {
   return "all";
 }
 
-function getStatusLabel(status: GalleryStatus) {
+function getStatusTranslation(status: GalleryStatus) {
   if (status === "published") {
-    return "Pubblicata";
+    return {
+      textKey: "dashboard.galleries.status.published",
+      fallback: "Pubblicata",
+    };
   }
 
   if (status === "archived") {
-    return "Archiviata";
+    return {
+      textKey: "dashboard.galleries.status.archived",
+      fallback: "Archiviata",
+    };
   }
 
-  return "Bozza";
+  return {
+    textKey: "dashboard.galleries.status.draft",
+    fallback: "Bozza",
+  };
 }
 
 function getStatusBadgeClass(status: GalleryStatus) {
@@ -107,20 +116,32 @@ function getFilterHref(status: StatusFilter) {
   return `/dashboard/gallerie?status=${status}`;
 }
 
-function getFilterLabel(status: StatusFilter) {
+function getFilterTranslation(status: StatusFilter) {
   if (status === "published") {
-    return "Pubblicate";
+    return {
+      textKey: "dashboard.galleries.filters.published",
+      fallback: "Pubblicate",
+    };
   }
 
   if (status === "archived") {
-    return "Archiviate";
+    return {
+      textKey: "dashboard.galleries.filters.archived",
+      fallback: "Archiviate",
+    };
   }
 
   if (status === "draft") {
-    return "Bozze";
+    return {
+      textKey: "dashboard.galleries.filters.drafts",
+      fallback: "Bozze",
+    };
   }
 
-  return "Tutte";
+  return {
+    textKey: "dashboard.galleries.filters.all",
+    fallback: "Tutte",
+  };
 }
 
 function getTemplatePlanLabel(
@@ -180,10 +201,27 @@ export default async function DashboardGalleriesPage({
   if (!canManageGalleries) {
     return (
       <DashboardShell
-        title="Area riservata ai galleristi"
-        subtitle={`Il tuo ruolo attuale e ${profile.role}. Per creare e gestire gallerie devi avere il ruolo gallerista.`}
-        activeSection="gallerie"
-      >
+  title={
+    <T
+      textKey="dashboard.galleries.restricted.title"
+      fallback="Area riservata ai galleristi"
+    />
+  }
+  subtitle={
+    <>
+      <T
+        textKey="dashboard.galleries.restricted.subtitlePrefix"
+        fallback="Il tuo ruolo attuale è"
+      />{" "}
+      {profile.role}.{" "}
+      <T
+        textKey="dashboard.galleries.restricted.subtitleSuffix"
+        fallback="Per creare e gestire gallerie devi avere il ruolo gallerista."
+      />
+    </>
+  }
+  activeSection="gallerie"
+>
         <a
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -313,9 +351,19 @@ export default async function DashboardGalleriesPage({
 
   return (
     <DashboardShell
-      title="Le tue gallerie"
-      subtitle="Crea, gestisci, pubblica e archivia le tue gallerie virtuali. Ogni galleria puo essere modificata nell'editor."
-      activeSection="gallerie"
+  title={
+    <T
+      textKey="dashboard.galleries.header.title"
+      fallback="Le tue gallerie"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.galleries.header.subtitle"
+      fallback="Crea, gestisci, pubblica e archivia le tue gallerie virtuali. Ogni galleria può essere modificata nell'editor."
+    />
+  }
+  activeSection="gallerie"
       actions={
         <div className="flex flex-wrap gap-3">
           <a
@@ -516,7 +564,10 @@ export default async function DashboardGalleriesPage({
                       : "rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-400 transition hover:border-neutral-500 hover:text-neutral-100"
                   }
                 >
-                  {getFilterLabel(filter.status)}{" "}
+                  <T
+  textKey={getFilterTranslation(filter.status).textKey}
+  fallback={getFilterTranslation(filter.status).fallback}
+/>{" "}
                   <span
                     className={
                       isActive ? "text-neutral-700" : "text-neutral-600"
@@ -577,7 +628,10 @@ export default async function DashboardGalleriesPage({
                               gallery.status
                             )}`}
                           >
-                            {getStatusLabel(gallery.status)}
+                            <T
+  textKey={getStatusTranslation(gallery.status).textKey}
+  fallback={getStatusTranslation(gallery.status).fallback}
+/>
                           </span>
                         </div>
 

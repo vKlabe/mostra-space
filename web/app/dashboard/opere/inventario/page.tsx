@@ -46,10 +46,20 @@ export default async function DashboardArtworkInventoryPage() {
   if (profileError || !profile) {
     return (
       <DashboardShell
-        title="Inventario opere"
-        subtitle="Modifica rapidamente le informazioni principali delle opere."
-        activeSection="opere"
-      >
+  title={
+    <T
+      textKey="dashboard.artworkInventory.errorShell.title"
+      fallback="Inventario opere"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.artworkInventory.errorShell.subtitle"
+      fallback="Modifica rapidamente le informazioni principali delle opere."
+    />
+  }
+  activeSection="opere"
+>
         <DataErrorCard
           title="Profilo non trovato"
           message="Non riesco a leggere il profilo utente."
@@ -69,10 +79,27 @@ export default async function DashboardArtworkInventoryPage() {
   if (!canManageArtworks) {
     return (
       <DashboardShell
-        title="Area riservata ai galleristi"
-        subtitle={`Il tuo ruolo attuale è ${profile.role}. Per gestire opere devi avere il ruolo gallerista.`}
-        activeSection="opere"
-      >
+  title={
+    <T
+      textKey="dashboard.artworkInventory.restricted.title"
+      fallback="Area riservata ai galleristi"
+    />
+  }
+  subtitle={
+    <>
+      <T
+        textKey="dashboard.artworkInventory.restricted.subtitlePrefix"
+        fallback="Il tuo ruolo attuale è"
+      />{" "}
+      {profile.role}.{" "}
+      <T
+        textKey="dashboard.artworkInventory.restricted.subtitleSuffix"
+        fallback="Per gestire opere devi avere il ruolo gallerista."
+      />
+    </>
+  }
+  activeSection="opere"
+>
         <a
           href="/dashboard"
           className="inline-flex rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
@@ -98,9 +125,19 @@ export default async function DashboardArtworkInventoryPage() {
 
   return (
     <DashboardShell
-      title="Inventario opere"
-      subtitle="Una vista rapida per modificare titolo, artista, anno, tecnica, prezzo, valuta e stato di vendita."
-      activeSection="opere"
+  title={
+    <T
+      textKey="dashboard.artworkInventory.header.title"
+      fallback="Inventario opere"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.artworkInventory.header.subtitle"
+      fallback="Una vista rapida per modificare titolo, artista, anno, tecnica, prezzo, valuta e stato di vendita."
+    />
+  }
+  activeSection="opere"
       actions={
         <div className="flex flex-wrap gap-3">
           <a

@@ -76,34 +76,54 @@ function getFilterHref(filter: ArtworkFilter) {
   return `/dashboard/opere?filter=${filter}`;
 }
 
-function getFilterLabel(filter: ArtworkFilter) {
+function getFilterTranslation(filter: ArtworkFilter) {
   if (filter === "public") {
-    return "Pubbliche";
+    return {
+      textKey: "dashboard.artworks.filters.public",
+      fallback: "Pubbliche",
+    };
   }
 
   if (filter === "private") {
-    return "Private";
+    return {
+      textKey: "dashboard.artworks.filters.private",
+      fallback: "Private",
+    };
   }
 
   if (filter === "for-sale") {
-    return "In vendita";
+    return {
+      textKey: "dashboard.artworks.filters.forSale",
+      fallback: "In vendita",
+    };
   }
 
   if (filter === "not-for-sale") {
-    return "Non in vendita";
+    return {
+      textKey: "dashboard.artworks.filters.notForSale",
+      fallback: "Non in vendita",
+    };
   }
 
-  return "Tutte";
+  return {
+    textKey: "dashboard.artworks.filters.all",
+    fallback: "Tutte",
+  };
 }
 
-function getArtworkRealSizeLabel(artwork: Artwork) {
+function getArtworkRealSizeContent(artwork: Artwork) {
   if (artwork.width_cm && artwork.height_cm) {
     return `${Number(artwork.width_cm).toFixed(2)} x ${Number(
       artwork.height_cm
     ).toFixed(2)} cm`;
   }
 
-  return "Fallback editor: 50 x 50 cm";
+  return (
+    <T
+      textKey="dashboard.artworks.item.editorFallbackSize"
+      fallback="Fallback editor: 50 x 50 cm"
+    />
+  );
 }
 
 export default async function DashboardArtworksPage({
@@ -152,10 +172,27 @@ export default async function DashboardArtworksPage({
   if (!canManageArtworks) {
     return (
       <DashboardShell
-        title="Area riservata ai galleristi"
-        subtitle={`Il tuo ruolo attuale e ${profile.role}. Per creare e gestire opere devi avere il ruolo gallerista.`}
-        activeSection="opere"
-      >
+  title={
+    <T
+      textKey="dashboard.artworks.restricted.title"
+      fallback="Area riservata ai galleristi"
+    />
+  }
+  subtitle={
+    <>
+      <T
+        textKey="dashboard.artworks.restricted.subtitlePrefix"
+        fallback="Il tuo ruolo attuale è"
+      />{" "}
+      {profile.role}.{" "}
+      <T
+        textKey="dashboard.artworks.restricted.subtitleSuffix"
+        fallback="Per creare e gestire opere devi avere il ruolo gallerista."
+      />
+    </>
+  }
+  activeSection="opere"
+>
         <a
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -246,9 +283,19 @@ export default async function DashboardArtworksPage({
 
   return (
     <DashboardShell
-      title="Archivio opere"
-      subtitle="Qui carichi, organizzi e modifichi le opere che poi potranno essere inserite nelle gallerie virtuali e posizionate negli spazi espositivi."
-      activeSection="opere"
+  title={
+    <T
+      textKey="dashboard.artworks.header.title"
+      fallback="Archivio opere"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.artworks.header.subtitle"
+      fallback="Qui carichi, organizzi e modifichi le opere che poi potranno essere inserite nelle gallerie virtuali e posizionate negli spazi espositivi."
+    />
+  }
+  activeSection="opere"
       actions={
         <div className="flex flex-wrap gap-3">
           <a
@@ -417,7 +464,10 @@ export default async function DashboardArtworksPage({
                       : "rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-400 transition hover:border-neutral-500 hover:text-neutral-100"
                   }
                 >
-                  {getFilterLabel(item.filter)}{" "}
+                  <T
+  textKey={getFilterTranslation(item.filter).textKey}
+  fallback={getFilterTranslation(item.filter).fallback}
+/>{" "}
                   <span
                     className={
                       isActive ? "text-neutral-700" : "text-neutral-600"
@@ -512,7 +562,7 @@ export default async function DashboardArtworksPage({
                         textKey="dashboard.artworks.item.measurements"
                         fallback="Misure:"
                       />{" "}
-                      {getArtworkRealSizeLabel(artwork)}
+                      {getArtworkRealSizeContent(artwork)}
                     </div>
                   </div>
 

@@ -28,16 +28,25 @@ type Gallery = {
   published_at: string | null;
 };
 
-function getStatusLabel(status: GalleryStatus) {
+function getStatusTranslation(status: GalleryStatus) {
   if (status === "published") {
-    return "Pubblicata";
+    return {
+      textKey: "dashboard.galleryEditor.status.published",
+      fallback: "Pubblicata",
+    };
   }
 
   if (status === "archived") {
-    return "Archiviata";
+    return {
+      textKey: "dashboard.galleryEditor.status.archived",
+      fallback: "Archiviata",
+    };
   }
 
-  return "Bozza";
+  return {
+    textKey: "dashboard.galleryEditor.status.draft",
+    fallback: "Bozza",
+  };
 }
 
 function getStatusBadgeClass(status: GalleryStatus) {
@@ -106,10 +115,20 @@ export default async function DashboardGalleryUnityEditorPage({
   if (galleryError || !gallery) {
     return (
       <DashboardShell
-        title="Galleria non trovata"
-        subtitle="La galleria non esiste oppure non hai i permessi per leggerla."
-        activeSection="gallerie"
-      >
+  title={
+    <T
+      textKey="dashboard.galleryEditor.notFound.title"
+      fallback="Galleria non trovata"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.galleryEditor.notFound.subtitle"
+      fallback="La galleria non esiste oppure non hai i permessi per leggerla."
+    />
+  }
+  activeSection="gallerie"
+>
         <div className="rounded-3xl border border-red-900 bg-red-950/30 p-6">
           <p className="text-sm text-red-100">
             {galleryError?.message ? (
@@ -142,10 +161,20 @@ export default async function DashboardGalleryUnityEditorPage({
   if (!isAdmin && !isOwner) {
     return (
       <DashboardShell
-        title="Accesso negato"
-        subtitle="Non puoi aprire l’editor Unity di questa galleria."
-        activeSection="gallerie"
-      >
+  title={
+    <T
+      textKey="dashboard.galleryEditor.accessDenied.title"
+      fallback="Accesso negato"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.galleryEditor.accessDenied.subtitle"
+      fallback="Non puoi aprire l’editor Unity di questa galleria."
+    />
+  }
+  activeSection="gallerie"
+>
         <div className="rounded-3xl border border-yellow-900 bg-yellow-950/30 p-6">
           <p className="text-sm text-yellow-100">
             <T
@@ -174,9 +203,19 @@ export default async function DashboardGalleryUnityEditorPage({
 
   return (
     <DashboardShell
-      title={`Editor 3D — ${gallery.title}`}
-      subtitle="Allestisci la galleria virtuale, posiziona le opere sulle pareti, modifica dimensioni e cornici, poi salva le modifiche."
-      activeSection="gallerie"
+  title={
+    <>
+      <T textKey="dashboard.galleryEditor.header.titlePrefix" fallback="Editor 3D" />{" "}
+      — {gallery.title}
+    </>
+  }
+  subtitle={
+    <T
+      textKey="dashboard.galleryEditor.header.subtitle"
+      fallback="Allestisci la galleria virtuale, posiziona le opere sulle pareti, modifica dimensioni e cornici, poi salva le modifiche."
+    />
+  }
+  activeSection="gallerie"
       actions={
         <>
           <a
@@ -246,7 +285,10 @@ export default async function DashboardGalleryUnityEditorPage({
                     gallery.status
                   )}`}
                 >
-                  {getStatusLabel(gallery.status)}
+                  <T
+  textKey={getStatusTranslation(gallery.status).textKey}
+  fallback={getStatusTranslation(gallery.status).fallback}
+/>
                 </span>
               </div>
 
@@ -307,7 +349,10 @@ export default async function DashboardGalleryUnityEditorPage({
                 />
               </dt>
               <dd className="text-neutral-100">
-                {getStatusLabel(gallery.status)}
+                <T
+  textKey={getStatusTranslation(gallery.status).textKey}
+  fallback={getStatusTranslation(gallery.status).fallback}
+/>
               </dd>
             </div>
 

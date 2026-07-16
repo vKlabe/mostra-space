@@ -54,7 +54,7 @@ function getProfileName(profile: Profile | undefined) {
     profile?.display_name ||
     profile?.full_name ||
     profile?.email?.split("@")[0] ||
-    "Profilo mostra.space"
+    null
   );
 }
 
@@ -180,10 +180,20 @@ export default async function AccountCalendarPage() {
 
   return (
     <DashboardShell
-      title="Il tuo calendario"
-      subtitle="Eventi creati dai profili che segui e dalle gallerie che hai salvato."
-      activeSection="account"
-      navMode={isCreator ? "creator" : "community"}
+  title={
+    <T
+      textKey="account.calendar.shell.title"
+      fallback="Il tuo calendario"
+    />
+  }
+  subtitle={
+    <T
+      textKey="account.calendar.shell.subtitle"
+      fallback="Eventi creati dai profili che segui e dalle gallerie che hai salvato."
+    />
+  }
+  activeSection="account"
+  navMode={isCreator ? "creator" : "community"}
       actions={
         <div className="flex flex-wrap gap-3">
           <a
@@ -310,15 +320,25 @@ export default async function AccountCalendarPage() {
                       )}{" "}
                       ·{" "}
                       {owner?.profile_slug ? (
-                        <a
-                          href={`/profili/${owner.profile_slug}`}
-                          className="text-neutral-300 underline decoration-neutral-700 underline-offset-4 transition hover:text-white"
-                        >
-                          {ownerName}
-                        </a>
-                      ) : (
-                        ownerName
-                      )}
+  <a
+    href={`/profili/${owner.profile_slug}`}
+    className="text-neutral-300 underline decoration-neutral-700 underline-offset-4 transition hover:text-white"
+  >
+    {ownerName || (
+      <T
+        textKey="account.calendar.event.unknownProfile"
+        fallback="Profilo mostra.space"
+      />
+    )}
+  </a>
+) : (
+  ownerName || (
+    <T
+      textKey="account.calendar.event.unknownProfile"
+      fallback="Profilo mostra.space"
+    />
+  )
+)}
                     </p>
 
                     {event.description && (

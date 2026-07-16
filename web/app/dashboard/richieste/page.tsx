@@ -67,32 +67,53 @@ function getFilterHref(filter: InquiryFilter) {
   return `/dashboard/richieste?status=${filter}`;
 }
 
-function getFilterLabel(filter: InquiryFilter) {
+function getFilterTranslation(filter: InquiryFilter) {
   if (filter === "new") {
-    return "Nuove";
+    return {
+      textKey: "dashboard.inquiries.filters.new",
+      fallback: "Nuove",
+    };
   }
 
   if (filter === "read") {
-    return "Lette";
+    return {
+      textKey: "dashboard.inquiries.filters.read",
+      fallback: "Lette",
+    };
   }
 
   if (filter === "closed") {
-    return "Chiuse";
+    return {
+      textKey: "dashboard.inquiries.filters.closed",
+      fallback: "Chiuse",
+    };
   }
 
-  return "Tutte";
+  return {
+    textKey: "dashboard.inquiries.filters.all",
+    fallback: "Tutte",
+  };
 }
 
-function getStatusLabel(status: InquiryStatus) {
+function getStatusTranslation(status: InquiryStatus) {
   if (status === "new") {
-    return "Nuova";
+    return {
+      textKey: "dashboard.inquiries.status.new",
+      fallback: "Nuova",
+    };
   }
 
   if (status === "read") {
-    return "Letta";
+    return {
+      textKey: "dashboard.inquiries.status.read",
+      fallback: "Letta",
+    };
   }
 
-  return "Chiusa";
+  return {
+    textKey: "dashboard.inquiries.status.closed",
+    fallback: "Chiusa",
+  };
 }
 
 function getStatusBadgeClass(status: InquiryStatus) {
@@ -154,10 +175,20 @@ export default async function DashboardInquiriesPage({
   if (!canManage) {
     return (
       <DashboardShell
-        title="Area riservata ai galleristi"
-        subtitle="Per vedere le richieste devi avere il ruolo gallerista."
-        activeSection="richieste"
-      >
+  title={
+    <T
+      textKey="dashboard.inquiries.restricted.title"
+      fallback="Area riservata ai galleristi"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.inquiries.restricted.subtitle"
+      fallback="Per vedere le richieste devi avere il ruolo gallerista."
+    />
+  }
+  activeSection="richieste"
+>
         <a
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -238,9 +269,19 @@ export default async function DashboardInquiriesPage({
 
   return (
     <DashboardShell
-      title="Richieste ricevute"
-      subtitle="Qui trovi i contatti lasciati dai visitatori nelle pagine pubbliche delle tue gallerie."
-      activeSection="richieste"
+  title={
+    <T
+      textKey="dashboard.inquiries.shell.title"
+      fallback="Richieste ricevute"
+    />
+  }
+  subtitle={
+    <T
+      textKey="dashboard.inquiries.shell.subtitle"
+      fallback="Qui trovi i contatti lasciati dai visitatori nelle pagine pubbliche delle tue gallerie."
+    />
+  }
+  activeSection="richieste"
       actions={
         <>
           <a
@@ -373,7 +414,10 @@ export default async function DashboardInquiriesPage({
                     : "rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-400 transition hover:border-neutral-500 hover:text-neutral-100"
                 }
               >
-                {getFilterLabel(item.filter)}{" "}
+                <T
+  textKey={getFilterTranslation(item.filter).textKey}
+  fallback={getFilterTranslation(item.filter).fallback}
+/>{" "}
                 <span
                   className={isActive ? "text-neutral-700" : "text-neutral-600"}
                 >
@@ -417,7 +461,7 @@ export default async function DashboardInquiriesPage({
               const artwork = normalizeRelation(inquiry.artworks);
 
               const emailSubject = artwork
-                ? `Risposta alla richiesta per l opera ${artwork.title}`
+                ? `Risposta alla richiesta per l'opera ${artwork.title}`
                 : `Risposta alla richiesta per ${
                     gallery?.title || "la galleria"
                   }`;
@@ -437,7 +481,10 @@ export default async function DashboardInquiriesPage({
                             inquiry.status
                           )}`}
                         >
-                          {getStatusLabel(inquiry.status)}
+                          <T
+  textKey={getStatusTranslation(inquiry.status).textKey}
+  fallback={getStatusTranslation(inquiry.status).fallback}
+/>
                         </span>
 
                         {artwork ? (

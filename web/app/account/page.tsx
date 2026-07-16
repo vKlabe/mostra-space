@@ -13,42 +13,72 @@ import {
   type PlanName,
 } from "@/lib/plans";
 
-function getRoleLabel(role?: string | null) {
+function getRoleLabelContent(role?: string | null) {
   if (role === "admin") {
-    return "Admin";
+    return <T textKey="account.role.admin" fallback="Admin" />;
   }
 
   if (role === "gallerist") {
-    return "Gallerista / Artista";
+    return (
+      <T
+        textKey="account.role.gallerist"
+        fallback="Gallerista / Artista"
+      />
+    );
   }
 
-  return "Visitor";
+  return <T textKey="account.role.visitor" fallback="Visitor" />;
 }
 
 function getPlanLabel(plan?: string | null) {
   return PLAN_LIMITS[normalizePlanName(plan)].label;
 }
 
-function getPlanDescription(plan?: string | null) {
+function getPlanDescriptionContent(plan?: string | null) {
   const normalizedPlan = normalizePlanName(plan);
 
   if (normalizedPlan === "institution") {
-    return "Piano personalizzato per istituzioni, fondazioni, musei, fiere e progetti espositivi complessi.";
+    return (
+      <T
+        textKey="account.planDescription.institution"
+        fallback="Piano personalizzato per istituzioni, fondazioni, musei, fiere e progetti espositivi complessi."
+      />
+    );
   }
 
   if (normalizedPlan === "diamond") {
-    return "Piano premium per gallerie strutturate, cataloghi ampi e attività espositive digitali più intense.";
+    return (
+      <T
+        textKey="account.planDescription.diamond"
+        fallback="Piano premium per gallerie strutturate, cataloghi ampi e attività espositive digitali più intense."
+      />
+    );
   }
 
   if (normalizedPlan === "business") {
-    return "Piano pensato per gallerie strutturate, studi e realtà professionali.";
+    return (
+      <T
+        textKey="account.planDescription.business"
+        fallback="Piano pensato per gallerie strutturate, studi e realtà professionali."
+      />
+    );
   }
 
   if (normalizedPlan === "pro") {
-    return "Piano pensato per creator, artisti e gallerie che vogliono più spazio e più strumenti.";
+    return (
+      <T
+        textKey="account.planDescription.pro"
+        fallback="Piano pensato per creator, artisti e gallerie che vogliono più spazio e più strumenti."
+      />
+    );
   }
 
-  return "Piano iniziale per esplorare la piattaforma e iniziare a costruire il proprio profilo.";
+  return (
+    <T
+      textKey="account.planDescription.free"
+      fallback="Piano iniziale per esplorare la piattaforma e iniziare a costruire il proprio profilo."
+    />
+  );
 }
 
 function getPlanBadgeClass(plan?: string | null) {
@@ -144,19 +174,16 @@ export default async function AccountPage() {
 
   const isCreator = profile.role === "gallerist" || profile.role === "admin";
   const isAdmin = profile.role === "admin";
-  const roleLabel = getRoleLabel(profile.role);
+  const roleLabel = getRoleLabelContent(profile.role);
   const planLabel = getPlanLabel(profile.plan);
-  const planDescription = getPlanDescription(profile.plan);
+  const planDescription = getPlanDescriptionContent(profile.plan);
 
   const displayName =
     profile.display_name || profile.full_name || profile.email || "Account";
 
-  const publicReference =
-    profile.website_url || profile.instagram_url || "Non inserito";
+  const publicReference = profile.website_url || profile.instagram_url || null;
 
-  const createdAt = profile.created_at
-    ? formatDate(profile.created_at)
-    : "Non disponibile";
+  const createdAt = profile.created_at ? formatDate(profile.created_at) : null;
 
   const publicProfileHref =
     profile.profile_slug && profile.public_profile_enabled
@@ -165,11 +192,16 @@ export default async function AccountPage() {
 
   return (
     <DashboardShell
-      title="Account"
-      subtitle="Profilo, piano, ruolo e impostazioni personali del tuo spazio su mostra.space."
-      activeSection="account"
-      navMode={isCreator ? "creator" : "community"}
-    >
+  title={<T textKey="account.shell.title" fallback="Account" />}
+  subtitle={
+    <T
+      textKey="account.shell.subtitle"
+      fallback="Profilo, piano, ruolo e impostazioni personali del tuo spazio su mostra.space."
+    />
+  }
+  activeSection="account"
+  navMode={isCreator ? "creator" : "community"}
+>
       <div className="space-y-8">
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
@@ -270,7 +302,16 @@ export default async function AccountPage() {
                     fallback="Creato il"
                   />
                 </dt>
-                <dd className="mt-1 text-neutral-200">{createdAt}</dd>
+                <dd className="mt-1 text-neutral-200">
+  {createdAt ? (
+    createdAt
+  ) : (
+    <T
+      textKey="account.platformStatus.notAvailable"
+      fallback="Non disponibile"
+    />
+  )}
+</dd>
               </div>
 
               <div>
@@ -305,7 +346,14 @@ export default async function AccountPage() {
                   />
                 </dt>
                 <dd className="mt-1 break-all text-neutral-200">
-                  {publicReference}
+                  {publicReference ? (
+  publicReference
+) : (
+  <T
+    textKey="account.platformStatus.notInserted"
+    fallback="Non inserito"
+  />
+)}
                 </dd>
               </div>
 

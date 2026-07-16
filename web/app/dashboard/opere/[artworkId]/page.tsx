@@ -100,9 +100,17 @@ function formatBytes(bytes: number | null) {
   return `${gb.toFixed(2)} GB`;
 }
 
-function formatPrice(price: number | string | null, currency: string | null) {
+function formatPriceContent(
+  price: number | string | null,
+  currency: string | null
+) {
   if (price === null || price === undefined || price === "") {
-    return "Non indicato";
+    return (
+      <T
+        textKey="dashboard.artworkDetail.details.priceNotSpecified"
+        fallback="Non indicato"
+      />
+    );
   }
 
   const numericPrice = Number(price);
@@ -136,16 +144,27 @@ function getGalleryStatusBadgeClass(
   return "border-neutral-700 bg-neutral-950 text-neutral-400";
 }
 
-function getGalleryStatusLabel(status: "draft" | "published" | "archived") {
+function getGalleryStatusTranslation(
+  status: "draft" | "published" | "archived"
+) {
   if (status === "published") {
-    return "Pubblicata";
+    return {
+      textKey: "dashboard.artworkDetail.galleryStatus.published",
+      fallback: "Pubblicata",
+    };
   }
 
   if (status === "archived") {
-    return "Archiviata";
+    return {
+      textKey: "dashboard.artworkDetail.galleryStatus.archived",
+      fallback: "Archiviata",
+    };
   }
 
-  return "Bozza";
+  return {
+    textKey: "dashboard.artworkDetail.galleryStatus.draft",
+    fallback: "Bozza",
+  };
 }
 
 function formatNumber(value: number | null) {
@@ -156,9 +175,14 @@ function formatNumber(value: number | null) {
   return Number(value).toFixed(2);
 }
 
-function formatCm(value: number | null) {
+function formatCmContent(value: number | null) {
   if (value === null || value === undefined) {
-    return "Non indicata";
+    return (
+      <T
+        textKey="dashboard.artworkDetail.editorDimensions.notSpecified"
+        fallback="Non indicata"
+      />
+    );
   }
 
   return `${Number(value).toFixed(2)} cm`;
@@ -285,7 +309,7 @@ export default async function DashboardArtworkDetailPage({
             <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
               <T
                 textKey="dashboard.artworkDetail.header.description"
-                fallback="Scheda tecnica, immagine, stato pubblico, dati commerciali, storage e gallerie in cui l opera e stata allestita."
+                fallback="Scheda tecnica, immagine, stato pubblico, dati commerciali, storage e gallerie in cui l’opera è stata allestita."
               />
             </p>
           </div>
@@ -501,7 +525,7 @@ export default async function DashboardArtworkDetailPage({
                       </span>
 
                       <span className="mt-1 block text-neutral-100">
-                        {formatCm(artwork.width_cm)}
+                        {formatCmContent(artwork.width_cm)}
                       </span>
                     </div>
 
@@ -514,7 +538,7 @@ export default async function DashboardArtworkDetailPage({
                       </span>
 
                       <span className="mt-1 block text-neutral-100">
-                        {formatCm(artwork.height_cm)}
+                        {formatCmContent(artwork.height_cm)}
                       </span>
                     </div>
 
@@ -527,7 +551,7 @@ export default async function DashboardArtworkDetailPage({
                       </span>
 
                       <span className="mt-1 block text-neutral-100">
-                        {formatCm(artwork.depth_cm)}
+                        {formatCmContent(artwork.depth_cm)}
                       </span>
                     </div>
                   </dd>
@@ -572,7 +596,7 @@ export default async function DashboardArtworkDetailPage({
                   </dt>
 
                   <dd className="mt-2 text-sm text-neutral-100">
-                    {formatPrice(artwork.price, artwork.currency)}
+                    {formatPriceContent(artwork.price, artwork.currency)}
                   </dd>
                 </div>
 
@@ -637,7 +661,10 @@ export default async function DashboardArtworkDetailPage({
                               gallery.status
                             )}`}
                           >
-                            {getGalleryStatusLabel(gallery.status)}
+                            <T
+  textKey={getGalleryStatusTranslation(gallery.status).textKey}
+  fallback={getGalleryStatusTranslation(gallery.status).fallback}
+/>
                           </span>
 
                           <p className="mt-3 text-sm font-medium text-neutral-100">
