@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import T from "@/components/i18n/T";
 
 type GalleryOption = {
   id: string;
@@ -120,16 +121,24 @@ export default function CreateGalleryEventForm({
   return (
     <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
-        Nuovo evento
+        <T
+          textKey="dashboard.events.create.label"
+          fallback="Nuovo evento"
+        />
       </p>
 
       <h2 className="font-serif text-3xl text-neutral-50">
-        Crea evento collegato a una galleria
+        <T
+          textKey="dashboard.events.create.title"
+          fallback="Crea evento collegato a una galleria"
+        />
       </h2>
 
       <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-        Puoi collegare anche una galleria in bozza. L'immagine evento sarà la
-        cover della galleria. Ogni galleria può avere massimo un evento attivo.
+        <T
+          textKey="dashboard.events.create.description"
+          fallback="Puoi collegare anche una galleria in bozza. L'immagine evento sarà la cover della galleria. Ogni galleria può avere massimo un evento attivo."
+        />
       </p>
 
       {message && (
@@ -147,14 +156,22 @@ export default function CreateGalleryEventForm({
       <form onSubmit={createEvent} className="mt-6 grid gap-4">
         <label className="grid gap-2">
           <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            Galleria
+            <T
+              textKey="dashboard.events.create.fields.gallery"
+              fallback="Galleria"
+            />
           </span>
           <select
             value={galleryId}
             onChange={(event) => setGalleryId(event.target.value)}
             className="rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-amber-600"
           >
-            <option value="">Seleziona galleria</option>
+            <option value="">
+              <T
+                textKey="dashboard.events.create.fields.selectGallery"
+                fallback="Seleziona galleria"
+              />
+            </option>
             {galleries.map((gallery) => (
               <option
                 key={gallery.id}
@@ -162,7 +179,17 @@ export default function CreateGalleryEventForm({
                 disabled={gallery.hasActiveEvent}
               >
                 {gallery.title} · {gallery.status}
-                {gallery.hasActiveEvent ? " · evento attivo già presente" : ""}
+                {gallery.hasActiveEvent ? (
+                  <>
+                    {" · "}
+                    <T
+                      textKey="dashboard.events.create.gallery.activeEventPresent"
+                      fallback="evento attivo già presente"
+                    />
+                  </>
+                ) : (
+                  ""
+                )}
               </option>
             ))}
           </select>
@@ -170,7 +197,10 @@ export default function CreateGalleryEventForm({
 
         <label className="grid gap-2">
           <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            Titolo evento
+            <T
+              textKey="dashboard.events.create.fields.title"
+              fallback="Titolo evento"
+            />
           </span>
           <input
             value={title}
@@ -184,7 +214,10 @@ export default function CreateGalleryEventForm({
         <div className="grid gap-4 md:grid-cols-[1fr_180px]">
           <label className="grid gap-2">
             <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-              Data e orario
+              <T
+                textKey="dashboard.events.create.fields.dateTime"
+                fallback="Data e orario"
+              />
             </span>
             <input
               type="datetime-local"
@@ -196,24 +229,50 @@ export default function CreateGalleryEventForm({
 
           <label className="grid gap-2">
             <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-              Durata
+              <T
+                textKey="dashboard.events.create.fields.duration"
+                fallback="Durata"
+              />
             </span>
             <select
               value={durationMinutes}
               onChange={(event) => setDurationMinutes(event.target.value)}
               className="rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-amber-600"
             >
-              <option value="30">30 min</option>
-              <option value="60">1 ora</option>
-              <option value="90">1 ora e 30</option>
-              <option value="120">2 ore</option>
+              <option value="30">
+                <T
+                  textKey="dashboard.events.create.duration.thirtyMinutes"
+                  fallback="30 min"
+                />
+              </option>
+              <option value="60">
+                <T
+                  textKey="dashboard.events.create.duration.oneHour"
+                  fallback="1 ora"
+                />
+              </option>
+              <option value="90">
+                <T
+                  textKey="dashboard.events.create.duration.ninetyMinutes"
+                  fallback="1 ora e 30"
+                />
+              </option>
+              <option value="120">
+                <T
+                  textKey="dashboard.events.create.duration.twoHours"
+                  fallback="2 ore"
+                />
+              </option>
             </select>
           </label>
         </div>
 
         <label className="grid gap-2">
           <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            Descrizione breve
+            <T
+              textKey="dashboard.events.create.fields.shortDescription"
+              fallback="Descrizione breve"
+            />
           </span>
           <textarea
             value={description}
@@ -224,7 +283,11 @@ export default function CreateGalleryEventForm({
             className="rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-7 text-neutral-100 outline-none transition focus:border-amber-600"
           />
           <span className="text-xs text-neutral-600">
-            {description.length}/600 caratteri
+            {description.length}/600{" "}
+            <T
+              textKey="dashboard.events.create.fields.characters"
+              fallback="caratteri"
+            />
           </span>
         </label>
 
@@ -233,7 +296,17 @@ export default function CreateGalleryEventForm({
           disabled={isPending}
           className="w-fit rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isPending ? "Creo evento..." : "Crea evento"}
+          {isPending ? (
+            <T
+              textKey="dashboard.events.create.actions.creating"
+              fallback="Creo evento..."
+            />
+          ) : (
+            <T
+              textKey="dashboard.events.create.actions.create"
+              fallback="Crea evento"
+            />
+          )}
         </button>
       </form>
     </section>

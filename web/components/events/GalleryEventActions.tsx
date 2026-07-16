@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import T from "@/components/i18n/T";
 
 type GalleryEventActionsProps = {
   eventId: string;
@@ -105,7 +106,10 @@ export default function GalleryEventActions({
               onClick={() => updateStatus("completed")}
               className="rounded-full border border-neutral-700 px-4 py-2 text-xs font-medium text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Segna terminato
+              <T
+                textKey="dashboard.events.actions.markCompleted"
+                fallback="Segna terminato"
+              />
             </button>
 
             <button
@@ -114,7 +118,10 @@ export default function GalleryEventActions({
               onClick={() => updateStatus("cancelled")}
               className="rounded-full border border-yellow-900 bg-yellow-950/25 px-4 py-2 text-xs font-medium text-yellow-200 transition hover:bg-yellow-950/50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Annulla
+              <T
+                textKey="dashboard.events.actions.cancel"
+                fallback="Annulla"
+              />
             </button>
           </>
         )}
@@ -125,7 +132,10 @@ export default function GalleryEventActions({
           onClick={deleteEvent}
           className="rounded-full border border-red-900 bg-red-950/30 px-4 py-2 text-xs font-medium text-red-200 transition hover:bg-red-950/60 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Elimina
+          <T
+            textKey="dashboard.events.actions.delete"
+            fallback="Elimina"
+          />
         </button>
       </div>
 

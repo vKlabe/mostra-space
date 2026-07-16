@@ -7,6 +7,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import T from "@/components/i18n/T";
 
 type GalleryLivePanelProps = {
   galleryId: string;
@@ -317,7 +318,15 @@ export default function GalleryLivePanel({
           </span>
 
           <span className="pointer-events-none absolute right-[calc(100%+0.75rem)] hidden whitespace-nowrap rounded-full border border-[rgba(197,151,94,0.35)] bg-[rgba(8,7,5,0.72)] px-3 py-2 text-xs text-[var(--museum-ivory-soft)] opacity-0 shadow-xl backdrop-blur-md transition group-hover:opacity-100 md:block">
-            Chat live · {galleryCount} presenti
+            <T
+              textKey="gallery.livePanel.tooltip.chatLive"
+              fallback="Chat live"
+            />{" "}
+            · {galleryCount}{" "}
+            <T
+              textKey="gallery.livePanel.tooltip.present"
+              fallback="presenti"
+            />
           </span>
 
           <span className="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.95)]" />
@@ -327,13 +336,28 @@ export default function GalleryLivePanel({
           <div className="flex items-start justify-between gap-4 border-b border-[rgba(197,151,94,0.22)] px-4 py-3">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--museum-bronze-light)]">
-                Chat live
+                <T
+                  textKey="gallery.livePanel.header.title"
+                  fallback="Chat live"
+                />
               </p>
               <p className="mt-1 text-sm text-[var(--museum-ivory-soft)]">
-                {roomLabel} · {roomCount} in sala · {galleryCount} totali
+                {roomLabel} · {roomCount}{" "}
+                <T
+                  textKey="gallery.livePanel.header.inRoom"
+                  fallback="in sala"
+                />{" "}
+                · {galleryCount}{" "}
+                <T
+                  textKey="gallery.livePanel.header.total"
+                  fallback="totali"
+                />
               </p>
               <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
-                Messaggi visibili per 24 ore.
+                <T
+                  textKey="gallery.livePanel.header.messageRetention"
+                  fallback="Messaggi visibili per 24 ore."
+                />
               </p>
             </div>
 
@@ -351,7 +375,10 @@ export default function GalleryLivePanel({
             <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/30 p-3">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
-                  Presenti
+                  <T
+                    textKey="gallery.livePanel.presence.title"
+                    fallback="Presenti"
+                  />
                 </p>
                 <span className="rounded-full bg-[rgba(197,151,94,0.16)] px-2 py-0.5 text-[0.68rem] text-[var(--museum-bronze-light)]">
                   {activeVisitors.length}
@@ -370,7 +397,10 @@ export default function GalleryLivePanel({
                   ))
                 ) : (
                   <span className="text-xs text-[var(--museum-stone-muted)]">
-                    Presenze in caricamento...
+                    <T
+                      textKey="gallery.livePanel.presence.loading"
+                      fallback="Presenze in caricamento..."
+                    />
                   </span>
                 )}
               </div>
@@ -402,8 +432,10 @@ export default function GalleryLivePanel({
                 })
               ) : (
                 <div className="py-8 text-center text-sm leading-6 text-[var(--museum-stone-muted)]">
-                  Ancora nessun messaggio. Apri tu la conversazione della
-                  mostra.
+                  <T
+                    textKey="gallery.livePanel.messages.empty"
+                    fallback="Ancora nessun messaggio. Apri tu la conversazione della mostra."
+                  />
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -427,7 +459,16 @@ export default function GalleryLivePanel({
                 disabled={isSending || cooldownSeconds > 0 || !messageDraft.trim()}
                 className="rounded-2xl bg-[var(--museum-bronze)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSending ? "..." : cooldownSeconds > 0 ? `${cooldownSeconds}s` : "Invia"}
+                {isSending ? (
+                  "..."
+                ) : cooldownSeconds > 0 ? (
+                  `${cooldownSeconds}s`
+                ) : (
+                  <T
+                    textKey="gallery.livePanel.actions.send"
+                    fallback="Invia"
+                  />
+                )}
               </button>
             </form>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import T from "@/components/i18n/T";
 
 type FavoriteArtworkButtonProps = {
   artworkId: string;
@@ -104,11 +105,22 @@ export default function FavoriteArtworkButton({
             : "inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
         }
       >
-        {loading
-          ? "Controllo..."
-          : isFavorite
-            ? "Opera salvata"
-            : "Salva opera"}
+        {loading ? (
+          <T
+            textKey="artwork.favorites.actions.checking"
+            fallback="Controllo..."
+          />
+        ) : isFavorite ? (
+          <T
+            textKey="artwork.favorites.actions.saved"
+            fallback="Opera salvata"
+          />
+        ) : (
+          <T
+            textKey="artwork.favorites.actions.save"
+            fallback="Salva opera"
+          />
+        )}
       </button>
 
       {message && (

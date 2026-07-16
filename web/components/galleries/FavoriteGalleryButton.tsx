@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import T from "@/components/i18n/T";
 
 type FavoriteGalleryButtonProps = {
   galleryId: string;
@@ -114,11 +115,22 @@ export default function FavoriteGalleryButton({
             : "inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
         }
       >
-        {loading
-          ? "Controllo..."
-          : isFavorite
-            ? "Galleria salvata"
-            : "Salva galleria"}
+        {loading ? (
+          <T
+            textKey="gallery.favorites.actions.checking"
+            fallback="Controllo..."
+          />
+        ) : isFavorite ? (
+          <T
+            textKey="gallery.favorites.actions.saved"
+            fallback="Galleria salvata"
+          />
+        ) : (
+          <T
+            textKey="gallery.favorites.actions.save"
+            fallback="Salva galleria"
+          />
+        )}
       </button>
 
       {message && (
