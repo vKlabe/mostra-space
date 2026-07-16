@@ -5,9 +5,9 @@ import Link from "next/link";
 
 type DashboardShellProps = {
   children: React.ReactNode;
-  title: string;
-  subtitle?: string;
-  eyebrow?: string;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
+  eyebrow?: React.ReactNode;
   activeSection?:
     | "dashboard"
     | "social"
@@ -21,97 +21,97 @@ type DashboardShellProps = {
 };
 
 type NavItem = {
-  label: string;
   labelKey: string;
+  labelFallback: string;
   href: string;
   section: DashboardShellProps["activeSection"];
-  description: string;
   descriptionKey: string;
+  descriptionFallback: string;
 };
 
 const communityNavItems: NavItem[] = [
   {
-    label: "Dashboard",
     labelKey: "dashboard.shell.communityNav.dashboard.label",
+    labelFallback: "Dashboard",
     href: "/dashboard",
     section: "dashboard",
-    description: "Spazio community",
     descriptionKey: "dashboard.shell.communityNav.dashboard.description",
+    descriptionFallback: "Spazio community",
   },
   {
-    label: "Social",
     labelKey: "dashboard.shell.communityNav.social.label",
+    labelFallback: "Social",
     href: "/dashboard/social",
     section: "social",
-    description: "Follow, preferiti, eventi",
     descriptionKey: "dashboard.shell.communityNav.social.description",
+    descriptionFallback: "Follow, preferiti, eventi",
   },
   {
-    label: "Account",
     labelKey: "dashboard.shell.communityNav.account.label",
+    labelFallback: "Account",
     href: "/account",
     section: "account",
-    description: "Profilo e impostazioni",
     descriptionKey: "dashboard.shell.communityNav.account.description",
+    descriptionFallback: "Profilo e impostazioni",
   },
 ];
 
 const navItems: NavItem[] = [
   {
-    label: "Dashboard",
     labelKey: "dashboard.shell.creatorNav.dashboard.label",
+    labelFallback: "Dashboard",
     href: "/dashboard",
     section: "dashboard",
-    description: "Panoramica generale",
     descriptionKey: "dashboard.shell.creatorNav.dashboard.description",
+    descriptionFallback: "Panoramica generale",
   },
   {
-    label: "Social",
     labelKey: "dashboard.shell.creatorNav.social.label",
+    labelFallback: "Social",
     href: "/dashboard/social",
     section: "social",
-    description: "Community e attività",
     descriptionKey: "dashboard.shell.creatorNav.social.description",
+    descriptionFallback: "Community e attività",
   },
   {
-    label: "Gallerie",
     labelKey: "dashboard.shell.creatorNav.galleries.label",
+    labelFallback: "Gallerie",
     href: "/dashboard/gallerie",
     section: "gallerie",
-    description: "Spazi espositivi",
     descriptionKey: "dashboard.shell.creatorNav.galleries.description",
+    descriptionFallback: "Spazi espositivi",
   },
   {
-    label: "Opere",
     labelKey: "dashboard.shell.creatorNav.artworks.label",
+    labelFallback: "Opere",
     href: "/dashboard/opere",
     section: "opere",
-    description: "Archivio opere",
     descriptionKey: "dashboard.shell.creatorNav.artworks.description",
+    descriptionFallback: "Archivio opere",
   },
   {
-    label: "Analytics",
     labelKey: "dashboard.shell.creatorNav.analytics.label",
+    labelFallback: "Analytics",
     href: "/dashboard/analytics",
     section: "analytics",
-    description: "Visite, salvataggi, richieste",
     descriptionKey: "dashboard.shell.creatorNav.analytics.description",
+    descriptionFallback: "Visite, salvataggi, richieste",
   },
   {
-    label: "Richieste",
     labelKey: "dashboard.shell.creatorNav.inquiries.label",
+    labelFallback: "Richieste",
     href: "/dashboard/richieste",
     section: "richieste",
-    description: "Richieste e contatti",
     descriptionKey: "dashboard.shell.creatorNav.inquiries.description",
+    descriptionFallback: "Richieste e contatti",
   },
   {
-    label: "Account",
     labelKey: "dashboard.shell.creatorNav.account.label",
+    labelFallback: "Account",
     href: "/account",
     section: "account",
-    description: "Profilo e piano",
     descriptionKey: "dashboard.shell.creatorNav.account.description",
+    descriptionFallback: "Profilo e piano",
   },
 ];
 
@@ -119,7 +119,12 @@ export default function DashboardShell({
   children,
   title,
   subtitle,
-  eyebrow = "Dashboard account",
+  eyebrow = (
+    <T
+      textKey="dashboard.shell.header.defaultEyebrow"
+      fallback="Dashboard account"
+    />
+  ),
   activeSection = "dashboard",
   navMode = "creator",
   actions,
@@ -167,7 +172,10 @@ export default function DashboardShell({
                 }
               >
                 <span className="block text-sm font-medium">
-                  <T textKey={item.labelKey} fallback={item.label} />
+                  <T
+                    textKey={item.labelKey}
+                    fallback={item.labelFallback}
+                  />
                 </span>
 
                 <span
@@ -179,7 +187,7 @@ export default function DashboardShell({
                 >
                   <T
                     textKey={item.descriptionKey}
-                    fallback={item.description}
+                    fallback={item.descriptionFallback}
                   />
                 </span>
               </Link>
@@ -232,16 +240,7 @@ export default function DashboardShell({
         <header className="museum-topbar sticky top-0 z-30 px-5 py-4 lg:px-8">
           <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <p className="museum-label mb-2">
-                {eyebrow === "Dashboard account" ? (
-                  <T
-                    textKey="dashboard.shell.header.defaultEyebrow"
-                    fallback="Dashboard account"
-                  />
-                ) : (
-                  eyebrow
-                )}
-              </p>
+              <p className="museum-label mb-2">{eyebrow}</p>
 
               <h1 className="font-editorial text-3xl font-medium text-[var(--museum-ivory)] md:text-4xl">
                 {title}
@@ -269,7 +268,10 @@ export default function DashboardShell({
                           : "rounded-full border border-[var(--museum-border)] px-4 py-2 text-xs text-[var(--museum-stone)]"
                       }
                     >
-                      <T textKey={item.labelKey} fallback={item.label} />
+                      <T
+                        textKey={item.labelKey}
+                        fallback={item.labelFallback}
+                      />
                     </Link>
                   );
                 })}
