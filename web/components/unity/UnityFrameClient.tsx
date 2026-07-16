@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import T from "@/components/i18n/T";
 
 type UnityMode = "visitor" | "editor";
 
@@ -45,23 +46,47 @@ declare global {
 }
 
 function getModeLabel(mode: UnityMode) {
-  return mode === "editor" ? "Editor 3D" : "Visita 3D";
+  return mode === "editor" ? (
+    <T textKey="gallery.unityFrame.mode.editorLabel" fallback="Editor 3D" />
+  ) : (
+    <T textKey="gallery.unityFrame.mode.visitorLabel" fallback="Visita 3D" />
+  );
 }
 
 function getModeDescription(mode: UnityMode) {
   if (mode === "editor") {
-    return "Caricamento dell’editor di allestimento. Potrai trascinare opere, modificare cornici, dimensioni e salvare le modifiche.";
+    return (
+      <T
+        textKey="gallery.unityFrame.mode.editorDescription"
+        fallback="Caricamento dell’editor di allestimento. Potrai trascinare opere, modificare cornici, dimensioni e salvare le modifiche."
+      />
+    );
   }
 
-  return "Caricamento della galleria virtuale. Potrai muoverti nello spazio, osservare le opere e aprire le schede informative.";
+  return (
+    <T
+      textKey="gallery.unityFrame.mode.visitorDescription"
+      fallback="Caricamento della galleria virtuale. Potrai muoverti nello spazio, osservare le opere e aprire le schede informative."
+    />
+  );
 }
 
 function getModeControls(mode: UnityMode) {
   if (mode === "editor") {
-    return "Editor: WASD movimento · Q/E rotazione · R/F quota · mouse libero per UI e drag";
+    return (
+      <T
+        textKey="gallery.unityFrame.mode.editorControls"
+        fallback="Editor: WASD movimento · Q/E rotazione · R/F quota · mouse libero per UI e drag"
+      />
+    );
   }
 
-  return "Visitor: click per entrare · WASD movimento · mouse visuale · Shift corsa · ESC libera mouse · SPACE menu";
+  return (
+    <T
+      textKey="gallery.unityFrame.mode.visitorControls"
+      fallback="Visitor: click per entrare · WASD movimento · mouse visuale · Shift corsa · ESC libera mouse · SPACE menu"
+    />
+  );
 }
 
 function isWebGlAvailable() {
@@ -283,7 +308,10 @@ export default function UnityFrameClient({
             </p>
 
             <h1 className="text-2xl font-semibold">
-              Caricamento esperienza immersiva
+              <T
+                textKey="gallery.unityFrame.loading.title"
+                fallback="Caricamento esperienza immersiva"
+              />
             </h1>
 
             <p className="mt-3 text-sm leading-6 text-neutral-400">
@@ -293,9 +321,17 @@ export default function UnityFrameClient({
             <div className="mt-6">
               <div className="mb-2 flex items-center justify-between text-xs text-neutral-500">
                 <span>
-                  {hasStartedLoading
-                    ? "Download e inizializzazione WebGL"
-                    : "Preparazione loader Unity"}
+                  {hasStartedLoading ? (
+                    <T
+                      textKey="gallery.unityFrame.loading.webglInitialization"
+                      fallback="Download e inizializzazione WebGL"
+                    />
+                  ) : (
+                    <T
+                      textKey="gallery.unityFrame.loading.loaderPreparation"
+                      fallback="Preparazione loader Unity"
+                    />
+                  )}
                 </span>
                 <span>{progressPercent}%</span>
               </div>
@@ -314,9 +350,10 @@ export default function UnityFrameClient({
 
             {isTakingLong && (
               <div className="mt-5 rounded-2xl border border-yellow-900 bg-yellow-950/30 p-4 text-sm leading-6 text-yellow-100/90">
-                Il primo caricamento può richiedere qualche secondo, soprattutto
-                dopo una nuova build o con connessioni lente. Se resta bloccato,
-                ricarica la pagina.
+                <T
+                  textKey="gallery.unityFrame.loading.longWait"
+                  fallback="Il primo caricamento può richiedere qualche secondo, soprattutto dopo una nuova build o con connessioni lente. Se resta bloccato, ricarica la pagina."
+                />
               </div>
             )}
 
@@ -331,11 +368,17 @@ export default function UnityFrameClient({
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/90 px-6 backdrop-blur-sm">
           <div className="w-full max-w-xl rounded-3xl border border-red-900 bg-red-950/30 p-7 shadow-2xl">
             <p className="mb-3 text-xs uppercase tracking-[0.28em] text-red-300/70">
-              Errore WebGL
+              <T
+                textKey="gallery.unityFrame.error.label"
+                fallback="Errore WebGL"
+              />
             </p>
 
             <h1 className="text-2xl font-semibold text-white">
-              Non riesco a caricare la galleria 3D
+              <T
+                textKey="gallery.unityFrame.error.title"
+                fallback="Non riesco a caricare la galleria 3D"
+              />
             </h1>
 
             <p className="mt-3 text-sm leading-6 text-red-100/80">
@@ -343,8 +386,10 @@ export default function UnityFrameClient({
             </p>
 
             <div className="mt-5 rounded-2xl border border-neutral-800 bg-black/30 p-4 text-sm leading-6 text-neutral-300">
-              Prova a ricaricare la pagina. Se il problema continua, usa Chrome
-              o Edge aggiornati e verifica che WebGL sia attivo nel browser.
+              <T
+                textKey="gallery.unityFrame.error.instructions"
+                fallback="Prova a ricaricare la pagina. Se il problema continua, usa Chrome o Edge aggiornati e verifica che WebGL sia attivo nel browser."
+              />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -353,14 +398,20 @@ export default function UnityFrameClient({
                 onClick={reloadFrame}
                 className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
-                Ricarica viewer
+                <T
+                  textKey="gallery.unityFrame.actions.reload"
+                  fallback="Ricarica viewer"
+                />
               </button>
 
               <a
                 href="/gallerie"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
-                Torna alle gallerie
+                <T
+                  textKey="gallery.unityFrame.actions.backToGalleries"
+                  fallback="Torna alle gallerie"
+                />
               </a>
             </div>
 
@@ -376,9 +427,17 @@ export default function UnityFrameClient({
           <p>{statusMessage}</p>
 
           <p className="mt-1 text-white/50">
-            {mode === "editor"
-              ? "Editor attivo · salva le modifiche prima di uscire"
-              : "Visitor attivo · click per entrare, ESC per uscire"}
+            {mode === "editor" ? (
+              <T
+                textKey="gallery.unityFrame.ready.editorStatus"
+                fallback="Editor attivo · salva le modifiche prima di uscire"
+              />
+            ) : (
+              <T
+                textKey="gallery.unityFrame.ready.visitorStatus"
+                fallback="Visitor attivo · click per entrare, ESC per uscire"
+              />
+            )}
           </p>
         </div>
       )}

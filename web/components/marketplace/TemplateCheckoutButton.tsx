@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type TemplateCheckoutButtonProps = {
   templateId: string;
@@ -71,7 +72,10 @@ export default function TemplateCheckoutButton({
           href="/login?next=/marketplace"
           className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
         >
-          Accedi per acquistare
+          <T
+            textKey="marketplace.templateCheckout.actions.loginToPurchase"
+            fallback="Accedi per acquistare"
+          />
         </Link>
       </div>
     );
@@ -84,7 +88,10 @@ export default function TemplateCheckoutButton({
           href="/dashboard/gallerie"
           className="inline-flex w-full justify-center rounded-full border border-green-900 bg-green-950/40 px-5 py-3 text-sm font-medium text-green-200 transition hover:border-green-700"
         >
-          Già acquistato · Usa template
+          <T
+            textKey="marketplace.templateCheckout.actions.alreadyPurchased"
+            fallback="Già acquistato · Usa template"
+          />
         </Link>
       </div>
     );
@@ -98,7 +105,17 @@ export default function TemplateCheckoutButton({
         disabled={isLoading}
         className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isLoading ? "Apertura checkout..." : "Acquista template"}
+        {isLoading ? (
+          <T
+            textKey="marketplace.templateCheckout.actions.openingCheckout"
+            fallback="Apertura checkout..."
+          />
+        ) : (
+          <T
+            textKey="marketplace.templateCheckout.actions.purchase"
+            fallback="Acquista template"
+          />
+        )}
       </button>
 
       {message && <p className="mt-3 text-sm text-red-300">{message}</p>}

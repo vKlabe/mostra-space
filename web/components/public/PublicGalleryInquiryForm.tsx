@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import T from "@/components/i18n/T";
 
 type PublicGalleryInquiryFormProps = {
   galleryId: string;
@@ -120,31 +121,59 @@ export default function PublicGalleryInquiryForm({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            Richiesta informazioni
+            <T
+              textKey="gallery.inquiry.label"
+              fallback="Richiesta informazioni"
+            />
           </p>
 
           <h2 className="text-2xl font-medium">
-            {artworkTitle
-              ? "Parla con la galleria di quest’opera"
-              : "Contatta la galleria"}
+            {artworkTitle ? (
+              <T
+                textKey="gallery.inquiry.artworkTitle"
+                fallback="Parla con la galleria di quest’opera"
+              />
+            ) : (
+              <T
+                textKey="gallery.inquiry.galleryTitle"
+                fallback="Contatta la galleria"
+              />
+            )}
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-            {artworkTitle
-              ? `Lascia i tuoi dati per ricevere informazioni su "${artworkTitle}".`
-              : "Invia una richiesta diretta per informazioni su opere, disponibilità, prezzi o visite."}
+            {artworkTitle ? (
+              <>
+                <T
+                  textKey="gallery.inquiry.artworkDescriptionPrefix"
+                  fallback="Lascia i tuoi dati per ricevere informazioni su"
+                />{" "}
+                &quot;{artworkTitle}&quot;.
+              </>
+            ) : (
+              <T
+                textKey="gallery.inquiry.galleryDescription"
+                fallback="Invia una richiesta diretta per informazioni su opere, disponibilità, prezzi o visite."
+              />
+            )}
           </p>
         </div>
 
         <span className="inline-flex w-fit rounded-full border border-neutral-800 bg-neutral-950 px-3 py-1 text-xs uppercase tracking-[0.16em] text-neutral-500">
-          Risposta dal gallerista
+          <T
+            textKey="gallery.inquiry.responseBadge"
+            fallback="Risposta dal gallerista"
+          />
         </span>
       </div>
 
       {artworkTitle && (
         <div className="mt-6 rounded-2xl border border-blue-900 bg-blue-950/30 p-5">
           <p className="text-xs uppercase tracking-[0.18em] text-blue-300">
-            Opera selezionata
+            <T
+              textKey="gallery.inquiry.selectedArtwork"
+              fallback="Opera selezionata"
+            />
           </p>
 
           <p className="mt-2 text-base font-medium text-neutral-100">
@@ -153,7 +182,11 @@ export default function PublicGalleryInquiryForm({
 
           {galleryArtworkId && (
             <p className="mt-2 break-all text-xs leading-5 text-neutral-500">
-              ID allestimento: {galleryArtworkId}
+              <T
+                textKey="gallery.inquiry.installationId"
+                fallback="ID allestimento:"
+              />{" "}
+              {galleryArtworkId}
             </p>
           )}
         </div>
@@ -173,7 +206,9 @@ export default function PublicGalleryInquiryForm({
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">Nome</label>
+          <label className="mb-2 block text-sm text-neutral-300">
+            <T textKey="gallery.inquiry.form.name" fallback="Nome" />
+          </label>
 
           <input
             value={name}
@@ -186,7 +221,9 @@ export default function PublicGalleryInquiryForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">Email</label>
+          <label className="mb-2 block text-sm text-neutral-300">
+            <T textKey="gallery.inquiry.form.email" fallback="Email" />
+          </label>
 
           <input
             type="email"
@@ -201,7 +238,7 @@ export default function PublicGalleryInquiryForm({
 
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm text-neutral-300">
-            Messaggio
+            <T textKey="gallery.inquiry.form.message" fallback="Messaggio" />
           </label>
 
           <textarea
@@ -226,17 +263,26 @@ export default function PublicGalleryInquiryForm({
           />
 
           <span>
-            Dichiaro di aver letto l{"'"}
+            <T
+              textKey="gallery.inquiry.privacy.prefix"
+              fallback="Dichiaro di aver letto l"
+            />
+            {"'"}
             <a
               href="/privacy"
               target="_blank"
               rel="noreferrer"
               className="text-neutral-100 underline underline-offset-4 hover:text-white"
             >
-              informativa privacy
+              <T
+                textKey="gallery.inquiry.privacy.link"
+                fallback="informativa privacy"
+              />
             </a>{" "}
-            e autorizzo il trattamento dei dati inseriti per essere ricontattato
-            in merito alla mia richiesta.
+            <T
+              textKey="gallery.inquiry.privacy.suffix"
+              fallback="e autorizzo il trattamento dei dati inseriti per essere ricontattato in merito alla mia richiesta."
+            />
           </span>
         </label>
 
@@ -250,9 +296,10 @@ export default function PublicGalleryInquiryForm({
           />
 
           <span>
-            Acconsento facoltativamente a ricevere comunicazioni su mostre,
-            opere e aggiornamenti della galleria. Potrò revocare il consenso in
-            qualsiasi momento.
+            <T
+              textKey="gallery.inquiry.marketingConsent"
+              fallback="Acconsento facoltativamente a ricevere comunicazioni su mostre, opere e aggiornamenti della galleria. Potrò revocare il consenso in qualsiasi momento."
+            />
           </span>
         </label>
       </div>
@@ -263,11 +310,24 @@ export default function PublicGalleryInquiryForm({
           disabled={isLoading || !privacyAccepted}
           className="inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? "Invio richiesta..." : "Invia richiesta"}
+          {isLoading ? (
+            <T
+              textKey="gallery.inquiry.actions.sending"
+              fallback="Invio richiesta..."
+            />
+          ) : (
+            <T
+              textKey="gallery.inquiry.actions.send"
+              fallback="Invia richiesta"
+            />
+          )}
         </button>
 
         <p className="text-xs leading-5 text-neutral-500">
-          Nessun pagamento online: la richiesta verrà inviata alla galleria.
+          <T
+            textKey="gallery.inquiry.noOnlinePayment"
+            fallback="Nessun pagamento online: la richiesta verrà inviata alla galleria."
+          />
         </p>
       </div>
 

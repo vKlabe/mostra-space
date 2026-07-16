@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import GalleryLivePanel from "@/components/gallery/GalleryLivePanel";
+import T from "@/components/i18n/T";
 
 type UnityMode = "visitor" | "editor";
 
@@ -43,31 +44,71 @@ const movementKeyMap: Record<
 };
 
 function getViewerTitle(mode: UnityMode) {
-  return mode === "editor" ? "Editor spazio 3D" : "Spazio immersivo";
+  return mode === "editor" ? (
+    <T
+      textKey="gallery.unityViewer.header.editorTitle"
+      fallback="Editor spazio 3D"
+    />
+  ) : (
+    <T
+      textKey="gallery.unityViewer.header.visitorTitle"
+      fallback="Spazio immersivo"
+    />
+  );
 }
 
 function getViewerDescription(mode: UnityMode) {
   if (mode === "editor") {
-    return "Allestisci la galleria, trascina le opere sulle pareti, modifica dimensioni e cornici, poi salva le modifiche.";
+    return (
+      <T
+        textKey="gallery.unityViewer.header.editorDescription"
+        fallback="Allestisci la galleria, trascina le opere sulle pareti, modifica dimensioni e cornici, poi salva le modifiche."
+      />
+    );
   }
 
-  return "Entra nello spazio virtuale, muoviti tra le opere e apri le schede informative direttamente dal viewer.";
+  return (
+    <T
+      textKey="gallery.unityViewer.header.visitorDescription"
+      fallback="Entra nello spazio virtuale, muoviti tra le opere e apri le schede informative direttamente dal viewer."
+    />
+  );
 }
 
 function getDesktopControls(mode: UnityMode) {
   if (mode === "editor") {
-    return "WASD movimento · Q/E rotazione · R/F quota · mouse libero per UI e drag";
+    return (
+      <T
+        textKey="gallery.unityViewer.controls.desktopEditor"
+        fallback="WASD movimento · Q/E rotazione · R/F quota · mouse libero per UI e drag"
+      />
+    );
   }
 
-  return "Click per entrare · WASD movimento · mouse visuale · Shift corsa · ESC libera mouse · SPACE comandi";
+  return (
+    <T
+      textKey="gallery.unityViewer.controls.desktopVisitor"
+      fallback="Click per entrare · WASD movimento · mouse visuale · Shift corsa · ESC libera mouse · SPACE comandi"
+    />
+  );
 }
 
 function getMobileControls(mode: UnityMode) {
   if (mode === "editor") {
-    return "Per l’editor consigliamo desktop. Da smartphone o tablet puoi visualizzare, ma l’allestimento è più preciso da computer.";
+    return (
+      <T
+        textKey="gallery.unityViewer.controls.mobileEditor"
+        fallback="Per l’editor consigliamo desktop. Da smartphone o tablet puoi visualizzare, ma l’allestimento è più preciso da computer."
+      />
+    );
   }
 
-  return "Usa le frecce touch per muoverti. Trascina il dito dentro lo spazio 3D per orientare la visuale. Per una visita migliore ruota il dispositivo in orizzontale.";
+  return (
+    <T
+      textKey="gallery.unityViewer.controls.mobileVisitor"
+      fallback="Usa le frecce touch per muoverti. Trascina il dito dentro lo spazio 3D per orientare la visuale. Per una visita migliore ruota il dispositivo in orizzontale."
+    />
+  );
 }
 
 function createKeyboardEvent(type: "keydown" | "keyup", movementKey: MovementKey) {
@@ -471,16 +512,25 @@ export default function UnityGalleryViewer({
 
       {isMobileViewer && mode === "visitor" && (
         <div className="mb-4 rounded-[1.5rem] border border-[rgba(197,151,94,0.42)] bg-[rgba(168,121,69,0.1)] p-4">
-          <p className="museum-label">Visita da smartphone</p>
+          <p className="museum-label">
+            <T
+              textKey="gallery.unityViewer.mobile.label"
+              fallback="Visita da smartphone"
+            />
+          </p>
 
           <h3 className="mt-2 font-editorial text-3xl font-medium text-[var(--museum-ivory)]">
-            Ruota il telefono e apri a schermo intero.
+            <T
+              textKey="gallery.unityViewer.mobile.title"
+              fallback="Ruota il telefono e apri a schermo intero."
+            />
           </h3>
 
           <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-            Usa le frecce touch per muoverti nello spazio. Trascina il dito
-            dentro il viewer per orientare la visuale. Per una visita migliore,
-            ruota il dispositivo in orizzontale.
+            <T
+              textKey="gallery.unityViewer.mobile.description"
+              fallback="Usa le frecce touch per muoverti nello spazio. Trascina il dito dentro il viewer per orientare la visuale. Per una visita migliore, ruota il dispositivo in orizzontale."
+            />
           </p>
 
           <div className="mt-4 flex flex-wrap gap-3">
@@ -489,11 +539,17 @@ export default function UnityGalleryViewer({
               onClick={openFullscreen}
               className="museum-button-primary px-5 py-2.5"
             >
-              Apri a schermo intero
+              <T
+                textKey="gallery.unityViewer.actions.openFullscreen"
+                fallback="Apri a schermo intero"
+              />
             </button>
 
             <a href="#catalogo" className="museum-button-secondary px-5 py-2.5">
-              Vai al catalogo
+              <T
+                textKey="gallery.unityViewer.actions.goToCatalog"
+                fallback="Vai al catalogo"
+              />
             </a>
           </div>
         </div>
@@ -517,7 +573,10 @@ export default function UnityGalleryViewer({
 
               {isMobileViewer && mode === "visitor" && (
                 <span className="rounded-full border border-[rgba(197,151,94,0.42)] bg-[rgba(168,121,69,0.1)] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[var(--museum-bronze-light)]">
-                  Touch
+                  <T
+                    textKey="gallery.unityViewer.badges.touch"
+                    fallback="Touch"
+                  />
                 </span>
               )}
             </div>
@@ -533,7 +592,10 @@ export default function UnityGalleryViewer({
               onClick={reloadIframe}
               className="museum-button-secondary h-9 px-4 text-xs"
             >
-              Ricarica
+              <T
+                textKey="gallery.unityViewer.actions.reload"
+                fallback="Ricarica"
+              />
             </button>
 
             <button
@@ -541,7 +603,10 @@ export default function UnityGalleryViewer({
               onClick={openFullscreen}
               className="museum-button-primary h-9 px-4 text-xs"
             >
-              Schermo intero
+              <T
+                textKey="gallery.unityViewer.actions.fullscreen"
+                fallback="Schermo intero"
+              />
             </button>
           </div>
         </div>
@@ -549,8 +614,10 @@ export default function UnityGalleryViewer({
         <div ref={viewerStageRef} className="relative bg-black">
           {isMobileViewer && mode === "visitor" && (
             <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-[rgba(8,7,5,0.72)] bg-[rgba(8,7,5,0.78)] px-4 py-3 text-xs leading-5 text-[var(--museum-ivory-soft)] backdrop-blur-md">
-              Frecce touch per muoverti · trascina nel viewer per guardarti
-              intorno
+              <T
+                textKey="gallery.unityViewer.mobile.overlayInstructions"
+                fallback="Frecce touch per muoverti · trascina nel viewer per guardarti intorno"
+              />
             </div>
           )}
 
@@ -591,9 +658,17 @@ export default function UnityGalleryViewer({
       <div className="museum-card mt-4 grid gap-3 rounded-[1.75rem] p-4 text-sm md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <p className="text-[var(--museum-ivory-soft)]">
-            {mode === "editor"
-              ? "Ambiente editor isolato"
-              : "Ambiente visitor isolato"}
+            {mode === "editor" ? (
+              <T
+                textKey="gallery.unityViewer.environment.editor"
+                fallback="Ambiente editor isolato"
+              />
+            ) : (
+              <T
+                textKey="gallery.unityViewer.environment.visitor"
+                fallback="Ambiente visitor isolato"
+              />
+            )}
           </p>
 
           <p className="mt-1 text-xs leading-5 text-[var(--museum-stone-muted)]">
@@ -607,16 +682,32 @@ export default function UnityGalleryViewer({
           {mode === "editor" ? (
             <>
               <p className="text-[var(--museum-ivory-soft)]">
-                Promemoria editor
+                <T
+                  textKey="gallery.unityViewer.reminder.editorTitle"
+                  fallback="Promemoria editor"
+                />
               </p>
-              <p>Usa Salva opera, Salva tutto o attendi l’autosave.</p>
+              <p>
+                <T
+                  textKey="gallery.unityViewer.reminder.editorDescription"
+                  fallback="Usa Salva opera, Salva tutto o attendi l’autosave."
+                />
+              </p>
             </>
           ) : (
             <>
               <p className="text-[var(--museum-ivory-soft)]">
-                Accesso alternativo
+                <T
+                  textKey="gallery.unityViewer.alternativeAccess.title"
+                  fallback="Accesso alternativo"
+                />
               </p>
-              <p>Se lo spazio 3D non parte, consulta il catalogo opere sotto.</p>
+              <p>
+                <T
+                  textKey="gallery.unityViewer.alternativeAccess.description"
+                  fallback="Se lo spazio 3D non parte, consulta il catalogo opere sotto."
+                />
+              </p>
             </>
           )}
         </div>

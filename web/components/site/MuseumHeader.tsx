@@ -1,26 +1,32 @@
 import Link from "next/link";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import T from "@/components/i18n/T";
 
 const navLinks = [
   {
     href: "/eventi",
-    label: "Eventi",
+    labelKey: "site.header.navigation.events",
+    labelFallback: "Eventi",
   },
   {
     href: "/gallerie",
-    label: "Gallerie",
+    labelKey: "site.header.navigation.galleries",
+    labelFallback: "Gallerie",
   },
   {
     href: "/marketplace",
-    label: "Marketplace",
+    labelKey: "site.header.navigation.marketplace",
+    labelFallback: "Marketplace",
   },
   {
     href: "/pricing",
-    label: "Prezzi",
+    labelKey: "site.header.navigation.pricing",
+    labelFallback: "Prezzi",
   },
   {
     href: "/legal",
-    label: "Legal",
+    labelKey: "site.header.navigation.legal",
+    labelFallback: "Legal",
   },
 ];
 
@@ -40,11 +46,14 @@ export default function MuseumHeader() {
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((item) => (
             <Link
-              key={item.href + item.label}
+              key={item.href + item.labelFallback}
               href={item.href}
               className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--museum-ivory-soft)] transition hover:text-[var(--museum-bronze-light)]"
             >
-              {item.label}
+              <T
+                textKey={item.labelKey}
+                fallback={item.labelFallback}
+              />
             </Link>
           ))}
         </nav>
@@ -58,14 +67,14 @@ export default function MuseumHeader() {
             href="/auth/login"
             className="hidden text-xs font-semibold uppercase tracking-[0.16em] text-[var(--museum-ivory-soft)] transition hover:text-[var(--museum-bronze-light)] sm:inline-flex"
           >
-            Accedi
+            <T textKey="site.header.actions.login" fallback="Accedi" />
           </Link>
 
           <Link
             href="/auth/register"
             className="museum-button-secondary px-5 py-2.5"
           >
-            Registrati
+            <T textKey="site.header.actions.register" fallback="Registrati" />
           </Link>
         </div>
       </div>

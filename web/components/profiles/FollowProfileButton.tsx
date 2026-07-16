@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import T from "@/components/i18n/T";
 
 type FollowProfileButtonProps = {
   profileId: string;
@@ -24,9 +25,9 @@ export default function FollowProfileButton({
   initialFollowerCount,
   canFollow,
   isOwnProfile,
-  label = "Segui",
-  followingLabel = "Segui già",
-  ownLabel = "Il tuo profilo",
+  label,
+  followingLabel,
+  ownLabel,
   size = "md",
   compact = false,
   showCount = true,
@@ -48,14 +49,36 @@ export default function FollowProfileButton({
 
   function getButtonText() {
     if (isPending) {
-      return "Aggiorno...";
+      return (
+        <T
+          textKey="profile.follow.actions.updating"
+          fallback="Aggiorno..."
+        />
+      );
     }
 
     if (isFollowing) {
-      return showCount ? `${followingLabel} · ${followerCount}` : followingLabel;
+      return (
+        <>
+          {followingLabel ?? (
+            <T
+              textKey="profile.follow.actions.following"
+              fallback="Segui già"
+            />
+          )}
+          {showCount ? ` · ${followerCount}` : ""}
+        </>
+      );
     }
 
-    return showCount ? `${label} · ${followerCount}` : label;
+    return (
+      <>
+        {label ?? (
+          <T textKey="profile.follow.actions.follow" fallback="Segui" />
+        )}
+        {showCount ? ` · ${followerCount}` : ""}
+      </>
+    );
   }
 
   async function toggleFollow() {
@@ -119,8 +142,24 @@ export default function FollowProfileButton({
       <div
         className={`rounded-full border border-neutral-700 ${buttonSizeClass} text-neutral-300`}
       >
-        {ownLabel}
-        {showCount ? ` · ${followerCount} follower` : ""}
+        {ownLabel ?? (
+          <T
+            textKey="profile.follow.actions.ownProfile"
+            fallback="Il tuo profilo"
+          />
+        )}
+        {showCount ? (
+          <>
+            {" · "}
+            {followerCount}{" "}
+            <T
+              textKey="profile.follow.labels.followers"
+              fallback="follower"
+            />
+          </>
+        ) : (
+          ""
+        )}
       </div>
     );
   }
