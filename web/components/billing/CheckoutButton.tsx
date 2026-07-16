@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import T from "@/components/i18n/T";
 import type { PlanName } from "@/lib/plans";
 
 type PaidPlan = Exclude<PlanName, "free" | "institution">;
@@ -88,7 +89,14 @@ export default function CheckoutButton({
           "w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
         }
       >
-        {loading ? "Apertura checkout..." : children}
+        {loading ? (
+          <T
+            textKey="billing.checkout.actions.opening"
+            fallback="Apertura checkout..."
+          />
+        ) : (
+          children
+        )}
       </button>
 
       {errorMessage && (

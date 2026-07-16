@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
+import T from "@/components/i18n/T";
 
 type EditableProfile = {
   email: string;
@@ -132,12 +133,17 @@ export default function AccountProfileForm({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <h2 className="text-2xl font-medium text-neutral-100">
-            Dati account
+            <T
+              textKey="account.profile.header.title"
+              fallback="Dati account"
+            />
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-neutral-400">
-            Modifica i dati visibili del tuo profilo. Per confermare devi
-            inserire la password attuale.
+            <T
+              textKey="account.profile.header.description"
+              fallback="Modifica i dati visibili del tuo profilo. Per confermare devi inserire la password attuale."
+            />
           </p>
         </div>
 
@@ -150,7 +156,10 @@ export default function AccountProfileForm({
             }}
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
-            Modifica dati
+            <T
+              textKey="account.profile.actions.edit"
+              fallback="Modifica dati"
+            />
           </button>
         )}
       </div>
@@ -170,44 +179,107 @@ export default function AccountProfileForm({
       {!isEditing && (
         <dl className="mt-6 space-y-4 text-sm">
           <div>
-            <dt className="text-neutral-500">Email</dt>
+            <dt className="text-neutral-500">
+              <T textKey="account.profile.fields.email" fallback="Email" />
+            </dt>
             <dd className="mt-1 break-all text-neutral-200">
-              {profile.email || "Non disponibile"}
+              {profile.email ? (
+                profile.email
+              ) : (
+                <T
+                  textKey="account.profile.values.notAvailable"
+                  fallback="Non disponibile"
+                />
+              )}
             </dd>
           </div>
 
           <div>
-            <dt className="text-neutral-500">Nome completo</dt>
+            <dt className="text-neutral-500">
+              <T
+                textKey="account.profile.fields.fullName"
+                fallback="Nome completo"
+              />
+            </dt>
             <dd className="mt-1 text-neutral-200">
-              {profile.full_name || "Non inserito"}
+              {profile.full_name ? (
+                profile.full_name
+              ) : (
+                <T
+                  textKey="account.profile.values.notEntered"
+                  fallback="Non inserito"
+                />
+              )}
             </dd>
           </div>
 
           <div>
-            <dt className="text-neutral-500">Nome visualizzato</dt>
+            <dt className="text-neutral-500">
+              <T
+                textKey="account.profile.fields.displayName"
+                fallback="Nome visualizzato"
+              />
+            </dt>
             <dd className="mt-1 text-neutral-200">
-              {profile.display_name || "Non inserito"}
+              {profile.display_name ? (
+                profile.display_name
+              ) : (
+                <T
+                  textKey="account.profile.values.notEntered"
+                  fallback="Non inserito"
+                />
+              )}
             </dd>
           </div>
 
           <div>
-            <dt className="text-neutral-500">Sito</dt>
+            <dt className="text-neutral-500">
+              <T textKey="account.profile.fields.website" fallback="Sito" />
+            </dt>
             <dd className="mt-1 break-all text-neutral-200">
-              {profile.website_url || "Non inserito"}
+              {profile.website_url ? (
+                profile.website_url
+              ) : (
+                <T
+                  textKey="account.profile.values.notEntered"
+                  fallback="Non inserito"
+                />
+              )}
             </dd>
           </div>
 
           <div>
-            <dt className="text-neutral-500">Instagram / social</dt>
+            <dt className="text-neutral-500">
+              <T
+                textKey="account.profile.fields.instagram"
+                fallback="Instagram / social"
+              />
+            </dt>
             <dd className="mt-1 break-all text-neutral-200">
-              {profile.instagram_url || "Non inserito"}
+              {profile.instagram_url ? (
+                profile.instagram_url
+              ) : (
+                <T
+                  textKey="account.profile.values.notEntered"
+                  fallback="Non inserito"
+                />
+              )}
             </dd>
           </div>
 
           <div>
-            <dt className="text-neutral-500">Bio</dt>
+            <dt className="text-neutral-500">
+              <T textKey="account.profile.fields.bio" fallback="Bio" />
+            </dt>
             <dd className="mt-1 whitespace-pre-line text-neutral-200">
-              {profile.bio || "Non inserita"}
+              {profile.bio ? (
+                profile.bio
+              ) : (
+                <T
+                  textKey="account.profile.values.bioNotEntered"
+                  fallback="Non inserita"
+                />
+              )}
             </dd>
           </div>
         </dl>
@@ -220,7 +292,7 @@ export default function AccountProfileForm({
               htmlFor="account-email"
               className="text-sm font-medium text-neutral-300"
             >
-              Email
+              <T textKey="account.profile.fields.email" fallback="Email" />
             </label>
 
             <input
@@ -231,7 +303,10 @@ export default function AccountProfileForm({
             />
 
             <p className="mt-2 text-xs leading-5 text-neutral-600">
-              Il cambio email verrà gestito nella sezione sicurezza account.
+              <T
+                textKey="account.profile.email.changeNotice"
+                fallback="Il cambio email verrà gestito nella sezione sicurezza account."
+              />
             </p>
           </div>
 
@@ -240,7 +315,10 @@ export default function AccountProfileForm({
               htmlFor="account-full-name"
               className="text-sm font-medium text-neutral-300"
             >
-              Nome completo
+              <T
+                textKey="account.profile.fields.fullName"
+                fallback="Nome completo"
+              />
             </label>
 
             <input
@@ -258,7 +336,10 @@ export default function AccountProfileForm({
               htmlFor="account-display-name"
               className="text-sm font-medium text-neutral-300"
             >
-              Nome visualizzato
+              <T
+                textKey="account.profile.fields.displayName"
+                fallback="Nome visualizzato"
+              />
             </label>
 
             <input
@@ -278,7 +359,7 @@ export default function AccountProfileForm({
               htmlFor="account-website"
               className="text-sm font-medium text-neutral-300"
             >
-              Sito
+              <T textKey="account.profile.fields.website" fallback="Sito" />
             </label>
 
             <input
@@ -298,7 +379,10 @@ export default function AccountProfileForm({
               htmlFor="account-instagram"
               className="text-sm font-medium text-neutral-300"
             >
-              Instagram / social
+              <T
+                textKey="account.profile.fields.instagram"
+                fallback="Instagram / social"
+              />
             </label>
 
             <input
@@ -318,7 +402,7 @@ export default function AccountProfileForm({
               htmlFor="account-bio"
               className="text-sm font-medium text-neutral-300"
             >
-              Bio
+              <T textKey="account.profile.fields.bio" fallback="Bio" />
             </label>
 
             <textarea
@@ -332,7 +416,11 @@ export default function AccountProfileForm({
             />
 
             <p className="mt-2 text-xs text-neutral-600">
-              {formState.bio.length}/800 caratteri
+              {formState.bio.length}/800{" "}
+              <T
+                textKey="account.profile.bio.characters"
+                fallback="caratteri"
+              />
             </p>
           </div>
 
@@ -341,7 +429,10 @@ export default function AccountProfileForm({
               htmlFor="account-current-password"
               className="text-sm font-medium text-amber-100"
             >
-              Password attuale
+              <T
+                textKey="account.profile.security.currentPassword"
+                fallback="Password attuale"
+              />
             </label>
 
             <input
@@ -357,7 +448,10 @@ export default function AccountProfileForm({
             />
 
             <p className="mt-2 text-xs leading-5 text-amber-200/70">
-              Le modifiche vengono salvate solo se la password è corretta.
+              <T
+                textKey="account.profile.security.passwordNotice"
+                fallback="Le modifiche vengono salvate solo se la password è corretta."
+              />
             </p>
           </div>
 
@@ -367,7 +461,17 @@ export default function AccountProfileForm({
               disabled={isPending}
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isPending ? "Salvataggio..." : "Salva modifiche"}
+              {isPending ? (
+                <T
+                  textKey="account.profile.actions.saving"
+                  fallback="Salvataggio..."
+                />
+              ) : (
+                <T
+                  textKey="account.profile.actions.save"
+                  fallback="Salva modifiche"
+                />
+              )}
             </button>
 
             <button
@@ -376,7 +480,10 @@ export default function AccountProfileForm({
               disabled={isPending}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Annulla
+              <T
+                textKey="account.profile.actions.cancel"
+                fallback="Annulla"
+              />
             </button>
           </div>
         </form>

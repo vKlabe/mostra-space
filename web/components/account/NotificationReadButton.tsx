@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import T from "@/components/i18n/T";
 
 type NotificationReadButtonProps = {
   notificationId: string;
@@ -50,7 +51,10 @@ export default function NotificationReadButton({
   if (isRead) {
     return (
       <span className="rounded-full border border-neutral-800 px-4 py-2 text-xs text-neutral-500">
-        Letta
+        <T
+          textKey="account.notifications.status.read"
+          fallback="Letta"
+        />
       </span>
     );
   }
@@ -63,7 +67,17 @@ export default function NotificationReadButton({
         onClick={markAsRead}
         className="rounded-full border border-neutral-700 px-4 py-2 text-xs font-medium text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isPending ? "Aggiorno..." : "Segna letta"}
+        {isPending ? (
+          <T
+            textKey="account.notifications.actions.updating"
+            fallback="Aggiorno..."
+          />
+        ) : (
+          <T
+            textKey="account.notifications.actions.markAsRead"
+            fallback="Segna letta"
+          />
+        )}
       </button>
 
       {error && <p className="text-xs text-red-300">{error}</p>}

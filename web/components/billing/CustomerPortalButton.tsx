@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type CustomerPortalButtonProps = {
   children?: React.ReactNode;
@@ -8,7 +9,12 @@ type CustomerPortalButtonProps = {
 };
 
 export default function CustomerPortalButton({
-  children = "Gestisci abbonamento",
+  children = (
+    <T
+      textKey="billing.customerPortal.actions.manageSubscription"
+      fallback="Gestisci abbonamento"
+    />
+  ),
   className,
 }: CustomerPortalButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -54,7 +60,14 @@ export default function CustomerPortalButton({
           "rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60"
         }
       >
-        {loading ? "Apertura portale..." : children}
+        {loading ? (
+          <T
+            textKey="billing.customerPortal.actions.opening"
+            fallback="Apertura portale..."
+          />
+        ) : (
+          children
+        )}
       </button>
 
       {errorMessage && (

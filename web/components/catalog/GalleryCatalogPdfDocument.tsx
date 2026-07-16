@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
+import T from "@/components/i18n/T";
 
 export type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
 
@@ -383,39 +384,39 @@ const styles = StyleSheet.create({
     color: "#8e7f6c",
   },
   qrSection: {
-  marginTop: 28,
-  padding: 18,
-  borderWidth: 1,
-  borderColor: "#d8c9b0",
-  flexDirection: "row",
-  alignItems: "center",
-},
-qrImageBox: {
-  width: 88,
-  height: 88,
-  backgroundColor: "#ffffff",
-  padding: 6,
-},
-qrImage: {
-  width: "100%",
-  height: "100%",
-},
-qrTextBox: {
-  flex: 1,
-  paddingLeft: 18,
-},
-qrTitle: {
-  fontFamily: "Helvetica",
-  fontSize: 8,
-  letterSpacing: 2,
-  textTransform: "uppercase",
-  color: "#8b6a43",
-},
-qrText: {
-  marginTop: 8,
-  fontSize: 10,
-  lineHeight: 1.5,
-},
+    marginTop: 28,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#d8c9b0",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  qrImageBox: {
+    width: 88,
+    height: 88,
+    backgroundColor: "#ffffff",
+    padding: 6,
+  },
+  qrImage: {
+    width: "100%",
+    height: "100%",
+  },
+  qrTextBox: {
+    flex: 1,
+    paddingLeft: 18,
+  },
+  qrTitle: {
+    fontFamily: "Helvetica",
+    fontSize: 8,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: "#8b6a43",
+  },
+  qrText: {
+    marginTop: 8,
+    fontSize: 10,
+    lineHeight: 1.5,
+  },
 });
 
 function renderArtworkFacts(
@@ -429,32 +430,53 @@ function renderArtworkFacts(
     <View>
       {artwork.year ? (
         <View style={styles.factBlock}>
-          <Text style={styles.factLabel}>Anno</Text>
+          <Text style={styles.factLabel}>
+            <T textKey="catalog.pdf.artwork.year" fallback="Anno" />
+          </Text>
           <Text style={styles.factValue}>{artwork.year}</Text>
         </View>
       ) : null}
 
       {artwork.technique ? (
         <View style={styles.factBlock}>
-          <Text style={styles.factLabel}>Tecnica</Text>
+          <Text style={styles.factLabel}>
+            <T textKey="catalog.pdf.artwork.technique" fallback="Tecnica" />
+          </Text>
           <Text style={styles.factValue}>{artwork.technique}</Text>
         </View>
       ) : null}
 
       {artworkDimensions ? (
         <View style={styles.factBlock}>
-          <Text style={styles.factLabel}>Dimensioni</Text>
+          <Text style={styles.factLabel}>
+            <T textKey="catalog.pdf.artwork.dimensions" fallback="Dimensioni" />
+          </Text>
           <Text style={styles.factValue}>{artworkDimensions}</Text>
         </View>
       ) : null}
 
       {settings.includePrices ? (
         <View style={styles.factBlock}>
-          <Text style={styles.factLabel}>Disponibilità</Text>
+          <Text style={styles.factLabel}>
+            <T
+              textKey="catalog.pdf.artwork.availability"
+              fallback="Disponibilità"
+            />
+          </Text>
           <Text style={styles.factValue}>
-            {artwork.isForSale
-              ? artworkPrice || "Prezzo su richiesta"
-              : "Non in vendita"}
+            {artwork.isForSale ? (
+              artworkPrice || (
+                <T
+                  textKey="catalog.pdf.artwork.priceOnRequest"
+                  fallback="Prezzo su richiesta"
+                />
+              )
+            ) : (
+              <T
+                textKey="catalog.pdf.artwork.notForSale"
+                fallback="Non in vendita"
+              />
+            )}
           </Text>
         </View>
       ) : null}
@@ -475,11 +497,19 @@ export default function GalleryCatalogPdfDocument({
         <View style={styles.artworkHeader}>
           <View>
             <Text style={styles.artworkNumber}>
-              Opera {String(index + 1).padStart(2, "0")}
+              <T textKey="catalog.pdf.artwork.number" fallback="Opera" />{" "}
+              {String(index + 1).padStart(2, "0")}
             </Text>
 
             <Text style={styles.artworkTitle}>
-              {artwork.title || "Opera senza titolo"}
+              {artwork.title ? (
+                artwork.title
+              ) : (
+                <T
+                  textKey="catalog.pdf.artwork.untitled"
+                  fallback="Opera senza titolo"
+                />
+              )}
             </Text>
 
             {artwork.artistName ? (
@@ -496,7 +526,12 @@ export default function GalleryCatalogPdfDocument({
           {artwork.imageUrl ? (
             <Image src={artwork.imageUrl} style={styles.artworkImage} />
           ) : (
-            <Text style={styles.missingImage}>Immagine non disponibile</Text>
+            <Text style={styles.missingImage}>
+              <T
+                textKey="catalog.pdf.artwork.imageUnavailable"
+                fallback="Immagine non disponibile"
+              />
+            </Text>
           )}
         </View>
 
@@ -507,11 +542,22 @@ export default function GalleryCatalogPdfDocument({
 
           {settings.includeDescriptions ? (
             <View style={styles.descriptionBlock}>
-              <Text style={styles.factLabel}>Descrizione</Text>
+              <Text style={styles.factLabel}>
+                <T
+                  textKey="catalog.pdf.artwork.description"
+                  fallback="Descrizione"
+                />
+              </Text>
 
               <Text style={[styles.bodyText, { marginTop: 10 }]}>
-                {artwork.description ||
-                  "Descrizione non inserita per questa opera."}
+                {artwork.description ? (
+                  artwork.description
+                ) : (
+                  <T
+                    textKey="catalog.pdf.artwork.descriptionMissing"
+                    fallback="Descrizione non inserita per questa opera."
+                  />
+                )}
               </Text>
             </View>
           ) : null}
@@ -524,10 +570,14 @@ export default function GalleryCatalogPdfDocument({
     return chunkItems(artworks, 2).map((chunk, pageIndex) => (
       <Page key={`compact-${pageIndex}`} size="A4" style={styles.pageLight}>
         <Text style={styles.smallCapsLight}>
-  Catalogo opere · {settings.galleryName || "MostraSpace"}
-</Text>
+          <T
+            textKey="catalog.pdf.artworks.catalog"
+            fallback="Catalogo opere"
+          />{" "}
+          · {settings.galleryName || "MostraSpace"}
+        </Text>
 
-<View style={{ marginTop: 30 }}>
+        <View style={{ marginTop: 30 }}>
           {chunk.map((artwork, index) => {
             const absoluteIndex = pageIndex * 2 + index;
 
@@ -538,18 +588,29 @@ export default function GalleryCatalogPdfDocument({
                     <Image src={artwork.imageUrl} style={styles.artworkImage} />
                   ) : (
                     <Text style={styles.missingImage}>
-                      Immagine non disponibile
+                      <T
+                        textKey="catalog.pdf.artwork.imageUnavailable"
+                        fallback="Immagine non disponibile"
+                      />
                     </Text>
                   )}
                 </View>
 
                 <View style={styles.compactInfo}>
                   <Text style={styles.artworkNumber}>
-                    Opera {String(absoluteIndex + 1).padStart(2, "0")}
+                    <T textKey="catalog.pdf.artwork.number" fallback="Opera" />{" "}
+                    {String(absoluteIndex + 1).padStart(2, "0")}
                   </Text>
 
                   <Text style={styles.compactTitle}>
-                    {artwork.title || "Opera senza titolo"}
+                    {artwork.title ? (
+                      artwork.title
+                    ) : (
+                      <T
+                        textKey="catalog.pdf.artwork.untitled"
+                        fallback="Opera senza titolo"
+                      />
+                    )}
                   </Text>
 
                   {artwork.artistName ? (
@@ -564,8 +625,14 @@ export default function GalleryCatalogPdfDocument({
 
                   {settings.includeDescriptions ? (
                     <Text style={styles.compactDescription}>
-                      {artwork.description ||
-                        "Descrizione non inserita per questa opera."}
+                      {artwork.description ? (
+                        artwork.description
+                      ) : (
+                        <T
+                          textKey="catalog.pdf.artwork.descriptionMissing"
+                          fallback="Descrizione non inserita per questa opera."
+                        />
+                      )}
                     </Text>
                   ) : null}
                 </View>
@@ -581,10 +648,14 @@ export default function GalleryCatalogPdfDocument({
     return chunkItems(artworks, 6).map((chunk, pageIndex) => (
       <Page key={`list-${pageIndex}`} size="A4" style={styles.pageLight}>
         <Text style={styles.smallCapsLight}>
-  Listino opere · {settings.galleryName || "MostraSpace"}
-</Text>
+          <T
+            textKey="catalog.pdf.artworks.priceList"
+            fallback="Listino opere"
+          />{" "}
+          · {settings.galleryName || "MostraSpace"}
+        </Text>
 
-<View style={styles.listGrid}>
+        <View style={styles.listGrid}>
           {chunk.map((artwork, index) => {
             const absoluteIndex = pageIndex * 6 + index;
             const artworkPrice = formatPrice(artwork.price, artwork.currency);
@@ -596,7 +667,12 @@ export default function GalleryCatalogPdfDocument({
                   {artwork.imageUrl ? (
                     <Image src={artwork.imageUrl} style={styles.artworkImage} />
                   ) : (
-                    <Text style={styles.missingImage}>No image</Text>
+                    <Text style={styles.missingImage}>
+                      <T
+                        textKey="catalog.pdf.artwork.noImage"
+                        fallback="No image"
+                      />
+                    </Text>
                   )}
                 </View>
 
@@ -605,7 +681,14 @@ export default function GalleryCatalogPdfDocument({
                 </Text>
 
                 <Text style={styles.listTitle}>
-                  {artwork.title || "Opera senza titolo"}
+                  {artwork.title ? (
+                    artwork.title
+                  ) : (
+                    <T
+                      textKey="catalog.pdf.artwork.untitled"
+                      fallback="Opera senza titolo"
+                    />
+                  )}
                 </Text>
 
                 <Text style={styles.listMeta}>
@@ -621,9 +704,19 @@ export default function GalleryCatalogPdfDocument({
 
                 {settings.includePrices ? (
                   <Text style={styles.listPrice}>
-                    {artwork.isForSale
-                      ? artworkPrice || "Prezzo su richiesta"
-                      : "Non in vendita"}
+                    {artwork.isForSale ? (
+                      artworkPrice || (
+                        <T
+                          textKey="catalog.pdf.artwork.priceOnRequest"
+                          fallback="Prezzo su richiesta"
+                        />
+                      )
+                    ) : (
+                      <T
+                        textKey="catalog.pdf.artwork.notForSale"
+                        fallback="Non in vendita"
+                      />
+                    )}
                   </Text>
                 ) : null}
               </View>
@@ -638,12 +731,25 @@ export default function GalleryCatalogPdfDocument({
     if (artworks.length === 0) {
       return (
         <Page size="A4" style={styles.pageLight}>
-          <Text style={styles.smallCapsLight}>Catalogo opere</Text>
+          <Text style={styles.smallCapsLight}>
+            <T
+              textKey="catalog.pdf.artworks.catalog"
+              fallback="Catalogo opere"
+            />
+          </Text>
 
-          <Text style={styles.sheetTitle}>Nessuna opera inclusa</Text>
+          <Text style={styles.sheetTitle}>
+            <T
+              textKey="catalog.pdf.artworks.noneIncluded"
+              fallback="Nessuna opera inclusa"
+            />
+          </Text>
 
           <Text style={[styles.bodyText, { marginTop: 28 }]}>
-            Non ci sono opere selezionabili per questo catalogo.
+            <T
+              textKey="catalog.pdf.artworks.noneDescription"
+              fallback="Non ci sono opere selezionabili per questo catalogo."
+            />
           </Text>
         </Page>
       );
@@ -693,7 +799,8 @@ export default function GalleryCatalogPdfDocument({
           <View>
             {settings.curatorName ? (
               <Text style={styles.darkMeta}>
-                A cura di {settings.curatorName}
+                <T textKey="catalog.pdf.cover.curatedBy" fallback="A cura di" />{" "}
+                {settings.curatorName}
               </Text>
             ) : null}
 
@@ -709,7 +816,12 @@ export default function GalleryCatalogPdfDocument({
       <Page size="A4" style={styles.pageLight}>
         <View style={styles.pageBetween}>
           <View>
-            <Text style={styles.smallCapsLight}>Scheda mostra</Text>
+            <Text style={styles.smallCapsLight}>
+              <T
+                textKey="catalog.pdf.showSheet.label"
+                fallback="Scheda mostra"
+              />
+            </Text>
 
             <Text style={styles.sheetTitle}>
               {settings.title || gallery.title}
@@ -717,7 +829,12 @@ export default function GalleryCatalogPdfDocument({
 
             <View style={styles.infoBox}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Galleria</Text>
+                <Text style={styles.infoLabel}>
+                  <T
+                    textKey="catalog.pdf.showSheet.gallery"
+                    fallback="Galleria"
+                  />
+                </Text>
                 <Text style={styles.infoValue}>
                   {settings.galleryName || "MostraSpace"}
                 </Text>
@@ -725,64 +842,116 @@ export default function GalleryCatalogPdfDocument({
 
               {settings.curatorName ? (
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Curatore</Text>
+                  <Text style={styles.infoLabel}>
+                    <T
+                      textKey="catalog.pdf.showSheet.curator"
+                      fallback="Curatore"
+                    />
+                  </Text>
                   <Text style={styles.infoValue}>{settings.curatorName}</Text>
                 </View>
               ) : null}
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Opere</Text>
+                <Text style={styles.infoLabel}>
+                  <T
+                    textKey="catalog.pdf.showSheet.artworks"
+                    fallback="Opere"
+                  />
+                </Text>
                 <Text style={styles.infoValue}>{artworks.length}</Text>
               </View>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Layout</Text>
+                <Text style={styles.infoLabel}>
+                  <T
+                    textKey="catalog.pdf.showSheet.layout"
+                    fallback="Layout"
+                  />
+                </Text>
                 <Text style={styles.infoValue}>
-                  {settings.layoutVariant === "compact"
-                    ? "Compatto · 2 opere per pagina"
-                    : settings.layoutVariant === "price_list"
-                      ? "Listino · fino a 6 opere per pagina"
-                      : "Elegante · 1 opera per pagina"}
+                  {settings.layoutVariant === "compact" ? (
+                    <T
+                      textKey="catalog.pdf.layout.compact"
+                      fallback="Compatto · 2 opere per pagina"
+                    />
+                  ) : settings.layoutVariant === "price_list" ? (
+                    <T
+                      textKey="catalog.pdf.layout.priceList"
+                      fallback="Listino · fino a 6 opere per pagina"
+                    />
+                  ) : (
+                    <T
+                      textKey="catalog.pdf.layout.elegant"
+                      fallback="Elegante · 1 opera per pagina"
+                    />
+                  )}
                 </Text>
               </View>
 
               {settings.includePublicLink ? (
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Online</Text>
+                  <Text style={styles.infoLabel}>
+                    <T
+                      textKey="catalog.pdf.showSheet.online"
+                      fallback="Online"
+                    />
+                  </Text>
                   <Text style={styles.infoValue}>{gallery.publicUrl}</Text>
                 </View>
               ) : null}
             </View>
 
             {settings.includePublicLink && gallery.qrCodeDataUrl ? (
-  <View style={styles.qrSection}>
-    <View style={styles.qrImageBox}>
-      <Image src={gallery.qrCodeDataUrl} style={styles.qrImage} />
-    </View>
+              <View style={styles.qrSection}>
+                <View style={styles.qrImageBox}>
+                  <Image src={gallery.qrCodeDataUrl} style={styles.qrImage} />
+                </View>
 
-    <View style={styles.qrTextBox}>
-      <Text style={styles.qrTitle}>QR galleria online</Text>
-      <Text style={styles.qrText}>
-        Scansiona il codice per aprire direttamente la galleria digitale
-        online.
-      </Text>
-      <Text style={styles.qrText}>{gallery.publicUrl}</Text>
-    </View>
-  </View>
-) : null}
+                <View style={styles.qrTextBox}>
+                  <Text style={styles.qrTitle}>
+                    <T
+                      textKey="catalog.pdf.qr.title"
+                      fallback="QR galleria online"
+                    />
+                  </Text>
+                  <Text style={styles.qrText}>
+                    <T
+                      textKey="catalog.pdf.qr.description"
+                      fallback="Scansiona il codice per aprire direttamente la galleria digitale online."
+                    />
+                  </Text>
+                  <Text style={styles.qrText}>{gallery.publicUrl}</Text>
+                </View>
+              </View>
+            ) : null}
 
             <View style={{ marginTop: 46 }}>
-              <Text style={styles.smallCapsLight}>Testo curatoriale</Text>
+              <Text style={styles.smallCapsLight}>
+                <T
+                  textKey="catalog.pdf.curatorialText.label"
+                  fallback="Testo curatoriale"
+                />
+              </Text>
 
               <Text style={[styles.bodyText, { marginTop: 22 }]}>
-                {settings.introText ||
-                  "Testo curatoriale non inserito. Completa le impostazioni del catalogo dalla dashboard."}
+                {settings.introText ? (
+                  settings.introText
+                ) : (
+                  <T
+                    textKey="catalog.pdf.curatorialText.missing"
+                    fallback="Testo curatoriale non inserito. Completa le impostazioni del catalogo dalla dashboard."
+                  />
+                )}
               </Text>
             </View>
           </View>
 
           <Text style={styles.smallCapsLight}>
-            mostra.space · catalogo digitale
+            <T
+              textKey="catalog.pdf.footer.digitalCatalog"
+              fallback="mostra.space · catalogo digitale"
+            />
           </Text>
         </View>
       </Page>
@@ -792,34 +961,57 @@ export default function GalleryCatalogPdfDocument({
       <Page size="A4" style={styles.pageDark}>
         <View style={styles.pageBetween}>
           <View>
-            <Text style={styles.smallCapsDark}>Contatti</Text>
+            <Text style={styles.smallCapsDark}>
+              <T textKey="catalog.pdf.contacts.label" fallback="Contatti" />
+            </Text>
 
-            <Text style={styles.finalTitle}>Visita la galleria online</Text>
+            <Text style={styles.finalTitle}>
+              <T
+                textKey="catalog.pdf.contacts.title"
+                fallback="Visita la galleria online"
+              />
+            </Text>
 
             <Text style={styles.finalText}>
-              Questo catalogo nasce dalla galleria digitale pubblicata su
-              mostra.space. Consulta la mostra online per visitare lo spazio 3D,
-              scoprire le opere e inviare richieste.
+              <T
+                textKey="catalog.pdf.contacts.description"
+                fallback="Questo catalogo nasce dalla galleria digitale pubblicata su mostra.space. Consulta la mostra online per visitare lo spazio 3D, scoprire le opere e inviare richieste."
+              />
             </Text>
 
             <View style={styles.finalInfo}>
               {settings.includePublicLink ? (
                 <View style={{ marginBottom: 18 }}>
-                  <Text style={styles.smallCapsDark}>Link galleria</Text>
+                  <Text style={styles.smallCapsDark}>
+                    <T
+                      textKey="catalog.pdf.contacts.galleryLink"
+                      fallback="Link galleria"
+                    />
+                  </Text>
                   <Text>{gallery.publicUrl}</Text>
                 </View>
               ) : null}
 
               {settings.website && settings.website !== gallery.publicUrl ? (
                 <View style={{ marginBottom: 18 }}>
-                  <Text style={styles.smallCapsDark}>Sito</Text>
+                  <Text style={styles.smallCapsDark}>
+                    <T
+                      textKey="catalog.pdf.contacts.website"
+                      fallback="Sito"
+                    />
+                  </Text>
                   <Text>{settings.website}</Text>
                 </View>
               ) : null}
 
               {settings.contactEmail ? (
                 <View>
-                  <Text style={styles.smallCapsDark}>Email</Text>
+                  <Text style={styles.smallCapsDark}>
+                    <T
+                      textKey="catalog.pdf.contacts.email"
+                      fallback="Email"
+                    />
+                  </Text>
                   <Text>{settings.contactEmail}</Text>
                 </View>
               ) : null}
@@ -830,7 +1022,11 @@ export default function GalleryCatalogPdfDocument({
             <Text style={styles.finalLogo}>mostra.space</Text>
 
             <Text style={styles.finalMuted}>
-              Catalogo generato da MostraSpace · {new Date().getFullYear()}
+              <T
+                textKey="catalog.pdf.footer.generatedBy"
+                fallback="Catalogo generato da MostraSpace"
+              />{" "}
+              · {new Date().getFullYear()}
             </Text>
           </View>
         </View>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import * as QRCode from "qrcode";
+import T from "@/components/i18n/T";
 
 type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
 
@@ -63,23 +64,33 @@ type GalleryCatalogBuilderProps = {
 
 const catalogLayouts: Array<{
   key: CatalogLayoutVariant;
-  label: string;
-  description: string;
+  labelKey: string;
+  labelFallback: string;
+  descriptionKey: string;
+  descriptionFallback: string;
 }> = [
   {
     key: "elegant",
-    label: "Elegante",
-    description: "1 opera per pagina. Più editoriale, pulito e museale.",
+    labelKey: "catalog.layout.elegant",
+    labelFallback: "Elegante",
+    descriptionKey: "catalog.layout.elegantDescription",
+    descriptionFallback:
+      "1 opera per pagina. Più editoriale, pulito e museale.",
   },
   {
     key: "compact",
-    label: "Compatto",
-    description: "2 opere per pagina. Utile per mostre con molte opere.",
+    labelKey: "catalog.layout.compact",
+    labelFallback: "Compatto",
+    descriptionKey: "catalog.layout.compactDescription",
+    descriptionFallback:
+      "2 opere per pagina. Utile per mostre con molte opere.",
   },
   {
     key: "price_list",
-    label: "Listino",
-    description:
+    labelKey: "catalog.layout.priceList",
+    labelFallback: "Listino",
+    descriptionKey: "catalog.layout.priceListDescription",
+    descriptionFallback:
       "Fino a 6 opere per pagina. Pensato per vendita e invio rapido.",
   },
 ];
@@ -581,16 +592,22 @@ export default function GalleryCatalogBuilder({
         <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Catalogo PDF
+              <T textKey="catalog.header.label" fallback="Catalogo PDF" />
             </p>
 
             <h1 className="text-3xl font-semibold">
-              Crea catalogo per “{gallery.title}”
+              <T
+                textKey="catalog.header.createFor"
+                fallback="Crea catalogo per"
+              />{" "}
+              “{gallery.title}”
             </h1>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-              Compila i dati, controlla l’anteprima A4 e usa “Scarica PDF
-              diretto” per generare automaticamente il file.
+              <T
+                textKey="catalog.header.description"
+                fallback="Compila i dati, controlla l’anteprima A4 e usa “Scarica PDF diretto” per generare automaticamente il file."
+              />
             </p>
           </div>
 
@@ -599,7 +616,10 @@ export default function GalleryCatalogBuilder({
               href={`/dashboard/gallerie/${gallery.id}`}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
-              Torna alla galleria
+              <T
+                textKey="catalog.header.backToGallery"
+                fallback="Torna alla galleria"
+              />
             </a>
 
             <button
@@ -608,7 +628,17 @@ export default function GalleryCatalogBuilder({
               disabled={isSavingSettings || isDownloadingPdf}
               className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSavingSettings ? "Salvataggio..." : "Salva impostazioni"}
+              {isSavingSettings ? (
+                <T
+                  textKey="catalog.actions.savingSettings"
+                  fallback="Salvataggio..."
+                />
+              ) : (
+                <T
+                  textKey="catalog.actions.saveSettings"
+                  fallback="Salva impostazioni"
+                />
+              )}
             </button>
 
             <button
@@ -617,11 +647,22 @@ export default function GalleryCatalogBuilder({
               disabled={isDownloadingPdf || isSavingSettings || !canExportPdf}
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isDownloadingPdf
-                ? "Creo PDF..."
-                : canExportPdf
-                  ? "Scarica PDF diretto"
-                  : "PDF dal piano Pro"}
+              {isDownloadingPdf ? (
+                <T
+                  textKey="catalog.actions.creatingPdf"
+                  fallback="Creo PDF..."
+                />
+              ) : canExportPdf ? (
+                <T
+                  textKey="catalog.actions.downloadPdf"
+                  fallback="Scarica PDF diretto"
+                />
+              ) : (
+                <T
+                  textKey="catalog.actions.pdfFromPro"
+                  fallback="PDF dal piano Pro"
+                />
+              )}
             </button>
 
             <button
@@ -630,7 +671,17 @@ export default function GalleryCatalogBuilder({
               disabled={isDownloadingPdf || !canExportPdf}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {canExportPdf ? "Esporta con stampa" : "Stampa bloccata"}
+              {canExportPdf ? (
+                <T
+                  textKey="catalog.actions.print"
+                  fallback="Esporta con stampa"
+                />
+              ) : (
+                <T
+                  textKey="catalog.actions.printBlocked"
+                  fallback="Stampa bloccata"
+                />
+              )}
             </button>
           </div>
         </div>
@@ -638,18 +689,26 @@ export default function GalleryCatalogBuilder({
         <div className="mb-6 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm leading-6 text-neutral-400">
           {normalizedPlan === "free" ? (
             <p>
-              Piano Free: puoi configurare e vedere l’anteprima del catalogo,
-              ma l’export PDF è disponibile dal piano Pro.
+              <T
+                textKey="catalog.plan.freeNotice"
+                fallback="Piano Free: puoi configurare e vedere l’anteprima del catalogo, ma l’export PDF è disponibile dal piano Pro."
+              />
             </p>
           ) : normalizedPlan === "pro" ? (
             <p>
-              Piano Pro: puoi esportare il catalogo PDF nel layout Elegante, una
-              opera per pagina, con branding MostraSpace.
+              <T
+                textKey="catalog.plan.proNotice"
+                fallback="Piano Pro: puoi esportare il catalogo PDF nel layout Elegante, una opera per pagina, con branding MostraSpace."
+              />
             </p>
           ) : (
             <p>
-              Piano {getPlanLabel(normalizedPlan)}: puoi esportare il catalogo
-              PDF con tutti i layout: Elegante, Compatto e Listino.
+              <T textKey="catalog.plan.currentPrefix" fallback="Piano" />{" "}
+              {getPlanLabel(normalizedPlan)}:{" "}
+              <T
+                textKey="catalog.plan.allLayoutsNotice"
+                fallback="puoi esportare il catalogo PDF con tutti i layout: Elegante, Compatto e Listino."
+              />
             </p>
           )}
         </div>
@@ -669,13 +728,16 @@ export default function GalleryCatalogBuilder({
         <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
           <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
             <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Dati catalogo
+              <T textKey="catalog.form.label" fallback="Dati catalogo" />
             </p>
 
             <div className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm text-neutral-300">
-                  Titolo catalogo
+                  <T
+                    textKey="catalog.form.title"
+                    fallback="Titolo catalogo"
+                  />
                 </label>
 
                 <input
@@ -687,7 +749,10 @@ export default function GalleryCatalogBuilder({
 
               <div>
                 <label className="mb-2 block text-sm text-neutral-300">
-                  Sottotitolo
+                  <T
+                    textKey="catalog.form.subtitle"
+                    fallback="Sottotitolo"
+                  />
                 </label>
 
                 <input
@@ -699,7 +764,7 @@ export default function GalleryCatalogBuilder({
 
               <div>
                 <label className="mb-2 block text-sm text-neutral-300">
-                  Curatore
+                  <T textKey="catalog.form.curator" fallback="Curatore" />
                 </label>
 
                 <input
@@ -712,7 +777,10 @@ export default function GalleryCatalogBuilder({
 
               <div>
                 <label className="mb-2 block text-sm text-neutral-300">
-                  Galleria / organizzazione
+                  <T
+                    textKey="catalog.form.galleryOrganization"
+                    fallback="Galleria / organizzazione"
+                  />
                 </label>
 
                 <input
@@ -724,7 +792,10 @@ export default function GalleryCatalogBuilder({
 
               <div>
                 <label className="mb-2 block text-sm text-neutral-300">
-                  Testo curatoriale / introduzione
+                  <T
+                    textKey="catalog.form.introText"
+                    fallback="Testo curatoriale / introduzione"
+                  />
                 </label>
 
                 <textarea
@@ -736,7 +807,10 @@ export default function GalleryCatalogBuilder({
 
               <div>
                 <label className="mb-2 block text-sm text-neutral-300">
-                  Email contatto
+                  <T
+                    textKey="catalog.form.contactEmail"
+                    fallback="Email contatto"
+                  />
                 </label>
 
                 <input
@@ -748,7 +822,10 @@ export default function GalleryCatalogBuilder({
 
               <div>
                 <label className="mb-2 block text-sm text-neutral-300">
-                  Sito / link
+                  <T
+                    textKey="catalog.form.website"
+                    fallback="Sito / link"
+                  />
                 </label>
 
                 <input
@@ -760,7 +837,7 @@ export default function GalleryCatalogBuilder({
 
               <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <p className="mb-3 text-xs uppercase tracking-[0.18em] text-neutral-600">
-                  Layout catalogo
+                  <T textKey="catalog.layout.label" fallback="Layout catalogo" />
                 </p>
 
                 <div className="grid gap-3">
@@ -793,17 +870,26 @@ export default function GalleryCatalogBuilder({
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-sm font-medium text-neutral-100">
-                              {layout.label}
+                              <T
+                                textKey={layout.labelKey}
+                                fallback={layout.labelFallback}
+                              />
                             </p>
 
                             <p className="mt-1 text-xs leading-5 text-neutral-500">
-                              {layout.description}
+                              <T
+                                textKey={layout.descriptionKey}
+                                fallback={layout.descriptionFallback}
+                              />
                             </p>
                           </div>
 
                           {!isAllowed && (
                             <span className="shrink-0 rounded-full border border-neutral-800 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-neutral-500">
-                              Business
+                              <T
+                                textKey="catalog.layout.businessRequired"
+                                fallback="Business"
+                              />
                             </span>
                           )}
                         </div>
@@ -823,7 +909,12 @@ export default function GalleryCatalogBuilder({
                     }
                     className="mt-1"
                   />
-                  <span>Mostra descrizioni delle opere</span>
+                  <span>
+                    <T
+                      textKey="catalog.options.includeDescriptions"
+                      fallback="Mostra descrizioni delle opere"
+                    />
+                  </span>
                 </label>
 
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
@@ -835,7 +926,12 @@ export default function GalleryCatalogBuilder({
                     }
                     className="mt-1"
                   />
-                  <span>Mostra prezzi / stato vendita</span>
+                  <span>
+                    <T
+                      textKey="catalog.options.includePrices"
+                      fallback="Mostra prezzi / stato vendita"
+                    />
+                  </span>
                 </label>
 
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
@@ -847,7 +943,12 @@ export default function GalleryCatalogBuilder({
                     }
                     className="mt-1"
                   />
-                  <span>Mostra link e QR alla galleria online</span>
+                  <span>
+                    <T
+                      textKey="catalog.options.includePublicLink"
+                      fallback="Mostra link e QR alla galleria online"
+                    />
+                  </span>
                 </label>
 
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
@@ -859,25 +960,40 @@ export default function GalleryCatalogBuilder({
                     }
                     className="mt-1"
                   />
-                  <span>Includi anche opere private</span>
+                  <span>
+                    <T
+                      textKey="catalog.options.includePrivateArtworks"
+                      fallback="Includi anche opere private"
+                    />
+                  </span>
                 </label>
               </div>
 
               <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm text-neutral-400">
                 <p>
-                  Opere totali nella galleria:{" "}
+                  <T
+                    textKey="catalog.summary.totalGalleryArtworks"
+                    fallback="Opere totali nella galleria:"
+                  />{" "}
                   <span className="text-neutral-100">{artworks.length}</span>
                 </p>
 
                 <p className="mt-1">
-                  Opere incluse nel catalogo:{" "}
+                  <T
+                    textKey="catalog.summary.includedArtworks"
+                    fallback="Opere incluse nel catalogo:"
+                  />{" "}
                   <span className="text-neutral-100">
                     {displayedArtworks.length}
                   </span>
                 </p>
 
                 <p className="mt-3 text-xs leading-5 text-neutral-500">
-                  Layout selezionato: {getLayoutLabel(layoutVariant)}
+                  <T
+                    textKey="catalog.summary.selectedLayout"
+                    fallback="Layout selezionato:"
+                  />{" "}
+                  {getLayoutLabel(layoutVariant)}
                 </p>
               </div>
             </div>
@@ -885,12 +1001,14 @@ export default function GalleryCatalogBuilder({
 
           <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
             <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              Anteprima
+              <T textKey="catalog.preview.label" fallback="Anteprima" />
             </p>
 
             <p className="text-sm leading-6 text-neutral-400">
-              L’anteprima qui sotto cambia in base al layout selezionato:
-              Elegante, Compatto o Listino.
+              <T
+                textKey="catalog.preview.description"
+                fallback="L’anteprima qui sotto cambia in base al layout selezionato: Elegante, Compatto o Listino."
+              />
             </p>
           </section>
         </div>
@@ -925,7 +1043,12 @@ export default function GalleryCatalogBuilder({
           )}
 
           <div className="grid gap-3 text-sm leading-7 text-[#d8c9b0]">
-            {curatorName && <p>A cura di {curatorName}</p>}
+            {curatorName && (
+              <p>
+                <T textKey="catalog.print.curatedBy" fallback="A cura di" />{" "}
+                {curatorName}
+              </p>
+            )}
             <p>{new Date().getFullYear()}</p>
             {includePublicLink && <p>{gallery.publicUrl}</p>}
           </div>
@@ -935,7 +1058,7 @@ export default function GalleryCatalogBuilder({
           <div className="flex h-full flex-col justify-between">
             <div>
               <p className="catalog-small-caps text-[#8b6a43]">
-                Scheda mostra
+                <T textKey="catalog.print.showSheet" fallback="Scheda mostra" />
               </p>
 
               <h2 className="mt-8 text-[34px] font-normal leading-tight">
@@ -945,7 +1068,7 @@ export default function GalleryCatalogBuilder({
               <dl className="mt-12 grid gap-6 border-y border-[#d8c9b0] py-8 text-sm">
                 <div className="grid grid-cols-[42mm_1fr] gap-6">
                   <dt className="catalog-small-caps text-[#8b6a43]">
-                    Galleria
+                    <T textKey="catalog.print.gallery" fallback="Galleria" />
                   </dt>
                   <dd>{galleryName || "MostraSpace"}</dd>
                 </div>
@@ -953,20 +1076,22 @@ export default function GalleryCatalogBuilder({
                 {curatorName && (
                   <div className="grid grid-cols-[42mm_1fr] gap-6">
                     <dt className="catalog-small-caps text-[#8b6a43]">
-                      Curatore
+                      <T textKey="catalog.print.curator" fallback="Curatore" />
                     </dt>
                     <dd>{curatorName}</dd>
                   </div>
                 )}
 
                 <div className="grid grid-cols-[42mm_1fr] gap-6">
-                  <dt className="catalog-small-caps text-[#8b6a43]">Opere</dt>
+                  <dt className="catalog-small-caps text-[#8b6a43]">
+                    <T textKey="catalog.print.artworks" fallback="Opere" />
+                  </dt>
                   <dd>{displayedArtworks.length}</dd>
                 </div>
 
                 <div className="grid grid-cols-[42mm_1fr] gap-6">
                   <dt className="catalog-small-caps text-[#8b6a43]">
-                    Layout
+                    <T textKey="catalog.print.layout" fallback="Layout" />
                   </dt>
                   <dd>{getLayoutLabel(layoutVariant)}</dd>
                 </div>
@@ -974,7 +1099,7 @@ export default function GalleryCatalogBuilder({
                 {includePublicLink && (
                   <div className="grid grid-cols-[42mm_1fr] gap-6">
                     <dt className="catalog-small-caps text-[#8b6a43]">
-                      Online
+                      <T textKey="catalog.print.online" fallback="Online" />
                     </dt>
                     <dd className="break-all">{gallery.publicUrl}</dd>
                   </div>
@@ -993,12 +1118,17 @@ export default function GalleryCatalogBuilder({
 
                   <div>
                     <p className="catalog-small-caps text-[#8b6a43]">
-                      QR galleria online
+                      <T
+                        textKey="catalog.print.onlineGalleryQr"
+                        fallback="QR galleria online"
+                      />
                     </p>
 
                     <p className="catalog-body-text mt-3">
-                      Scansiona il codice per aprire direttamente la galleria
-                      digitale online.
+                      <T
+                        textKey="catalog.print.qrDescription"
+                        fallback="Scansiona il codice per aprire direttamente la galleria digitale online."
+                      />
                     </p>
 
                     <p className="mt-3 break-all text-[10px] leading-5 text-[#5c4b39]">
@@ -1010,34 +1140,55 @@ export default function GalleryCatalogBuilder({
 
               <div className="mt-12">
                 <p className="catalog-small-caps text-[#8b6a43]">
-                  Testo curatoriale
+                  <T
+                    textKey="catalog.print.curatorialText"
+                    fallback="Testo curatoriale"
+                  />
                 </p>
 
                 <p className="catalog-body-text mt-6 whitespace-pre-line">
-                  {introText ||
-                    "Testo curatoriale non inserito. Usa il pannello di configurazione per aggiungere una descrizione critica o curatoriale della mostra."}
+                  {introText ? (
+                    introText
+                  ) : (
+                    <T
+                      textKey="catalog.print.missingCuratorialText"
+                      fallback="Testo curatoriale non inserito. Usa il pannello di configurazione per aggiungere una descrizione critica o curatoriale della mostra."
+                    />
+                  )}
                 </p>
               </div>
             </div>
 
             <p className="catalog-small-caps text-[#8b6a43]">
-              mostra.space · catalogo digitale
+              <T
+                textKey="catalog.print.digitalCatalog"
+                fallback="mostra.space · catalogo digitale"
+              />
             </p>
           </div>
         </section>
 
         {displayedArtworks.length === 0 && (
           <section className="catalog-page">
-            <p className="catalog-small-caps text-[#8b6a43]">Catalogo opere</p>
+            <p className="catalog-small-caps text-[#8b6a43]">
+              <T
+                textKey="catalog.print.artworksCatalog"
+                fallback="Catalogo opere"
+              />
+            </p>
 
             <h2 className="mt-8 text-[34px] font-normal">
-              Nessuna opera inclusa
+              <T
+                textKey="catalog.print.noArtworksIncluded"
+                fallback="Nessuna opera inclusa"
+              />
             </h2>
 
             <p className="catalog-body-text mt-8">
-              Non ci sono opere selezionabili per questo catalogo. Controlla se
-              le opere sono state collegate alla galleria oppure se hai escluso
-              le opere private.
+              <T
+                textKey="catalog.print.noArtworksDescription"
+                fallback="Non ci sono opere selezionabili per questo catalogo. Controlla se le opere sono state collegate alla galleria oppure se hai escluso le opere private."
+              />
             </p>
           </section>
         )}
@@ -1056,11 +1207,22 @@ export default function GalleryCatalogBuilder({
                 <div className="mb-8 flex items-start justify-between gap-8">
                   <div>
                     <p className="catalog-small-caps text-[#8b6a43]">
-                      Opera {String(index + 1).padStart(2, "0")}
+                      <T
+                        textKey="catalog.print.artworkNumber"
+                        fallback="Opera"
+                      />{" "}
+                      {String(index + 1).padStart(2, "0")}
                     </p>
 
                     <h2 className="mt-4 text-[30px] font-normal leading-tight">
-                      {artwork.title || "Opera senza titolo"}
+                      {artwork.title ? (
+                        artwork.title
+                      ) : (
+                        <T
+                          textKey="catalog.print.untitledArtwork"
+                          fallback="Opera senza titolo"
+                        />
+                      )}
                     </h2>
 
                     {artwork.artistName && (
@@ -1084,7 +1246,10 @@ export default function GalleryCatalogBuilder({
                     />
                   ) : (
                     <div className="flex h-[120mm] w-full items-center justify-center text-sm text-[#8b6a43]">
-                      Immagine non disponibile
+                      <T
+                        textKey="catalog.print.imageUnavailable"
+                        fallback="Immagine non disponibile"
+                      />
                     </div>
                   )}
                 </div>
@@ -1094,7 +1259,7 @@ export default function GalleryCatalogBuilder({
                     {artwork.year && (
                       <div>
                         <dt className="catalog-small-caps text-[#8b6a43]">
-                          Anno
+                          <T textKey="catalog.print.year" fallback="Anno" />
                         </dt>
                         <dd className="mt-1">{artwork.year}</dd>
                       </div>
@@ -1103,7 +1268,10 @@ export default function GalleryCatalogBuilder({
                     {artwork.technique && (
                       <div>
                         <dt className="catalog-small-caps text-[#8b6a43]">
-                          Tecnica
+                          <T
+                            textKey="catalog.print.technique"
+                            fallback="Tecnica"
+                          />
                         </dt>
                         <dd className="mt-1">{artwork.technique}</dd>
                       </div>
@@ -1112,7 +1280,10 @@ export default function GalleryCatalogBuilder({
                     {artworkDimensions && (
                       <div>
                         <dt className="catalog-small-caps text-[#8b6a43]">
-                          Dimensioni
+                          <T
+                            textKey="catalog.print.dimensions"
+                            fallback="Dimensioni"
+                          />
                         </dt>
                         <dd className="mt-1">{artworkDimensions}</dd>
                       </div>
@@ -1121,12 +1292,25 @@ export default function GalleryCatalogBuilder({
                     {includePrices && (
                       <div>
                         <dt className="catalog-small-caps text-[#8b6a43]">
-                          Disponibilità
+                          <T
+                            textKey="catalog.print.availability"
+                            fallback="Disponibilità"
+                          />
                         </dt>
                         <dd className="mt-1">
-                          {artwork.isForSale
-                            ? artworkPrice || "Prezzo su richiesta"
-                            : "Non in vendita"}
+                          {artwork.isForSale ? (
+                            artworkPrice || (
+                              <T
+                                textKey="catalog.print.priceOnRequest"
+                                fallback="Prezzo su richiesta"
+                              />
+                            )
+                          ) : (
+                            <T
+                              textKey="catalog.print.notForSale"
+                              fallback="Non in vendita"
+                            />
+                          )}
                         </dd>
                       </div>
                     )}
@@ -1135,12 +1319,21 @@ export default function GalleryCatalogBuilder({
                   {includeDescriptions && (
                     <div>
                       <p className="catalog-small-caps text-[#8b6a43]">
-                        Descrizione
+                        <T
+                          textKey="catalog.print.description"
+                          fallback="Descrizione"
+                        />
                       </p>
 
                       <p className="catalog-body-text mt-3 whitespace-pre-line">
-                        {artwork.description ||
-                          "Descrizione non inserita per questa opera."}
+                        {artwork.description ? (
+                          artwork.description
+                        ) : (
+                          <T
+                            textKey="catalog.print.missingArtworkDescription"
+                            fallback="Descrizione non inserita per questa opera."
+                          />
+                        )}
                       </p>
                     </div>
                   )}
@@ -1157,7 +1350,11 @@ export default function GalleryCatalogBuilder({
               className="catalog-page flex flex-col"
             >
               <p className="catalog-small-caps text-[#8b6a43]">
-                Catalogo opere · {galleryName || "MostraSpace"}
+                <T
+                  textKey="catalog.print.artworksCatalog"
+                  fallback="Catalogo opere"
+                />{" "}
+                · {galleryName || "MostraSpace"}
               </p>
 
               <div className="mt-8 grid flex-1 gap-6">
@@ -1183,18 +1380,32 @@ export default function GalleryCatalogBuilder({
                           />
                         ) : (
                           <div className="text-xs text-[#8b6a43]">
-                            Immagine non disponibile
+                            <T
+                              textKey="catalog.print.imageUnavailable"
+                              fallback="Immagine non disponibile"
+                            />
                           </div>
                         )}
                       </div>
 
                       <div>
                         <p className="catalog-small-caps text-[#8b6a43]">
-                          Opera {String(absoluteIndex + 1).padStart(2, "0")}
+                          <T
+                            textKey="catalog.print.artworkNumber"
+                            fallback="Opera"
+                          />{" "}
+                          {String(absoluteIndex + 1).padStart(2, "0")}
                         </p>
 
                         <h3 className="mt-3 text-[23px] font-normal leading-tight">
-                          {artwork.title || "Opera senza titolo"}
+                          {artwork.title ? (
+                            artwork.title
+                          ) : (
+                            <T
+                              textKey="catalog.print.untitledArtwork"
+                              fallback="Opera senza titolo"
+                            />
+                          )}
                         </h3>
 
                         {artwork.artistName && (
@@ -1207,7 +1418,10 @@ export default function GalleryCatalogBuilder({
                           {artwork.year && (
                             <div>
                               <dt className="catalog-small-caps text-[#8b6a43]">
-                                Anno
+                                <T
+                                  textKey="catalog.print.year"
+                                  fallback="Anno"
+                                />
                               </dt>
                               <dd>{artwork.year}</dd>
                             </div>
@@ -1216,7 +1430,10 @@ export default function GalleryCatalogBuilder({
                           {artwork.technique && (
                             <div>
                               <dt className="catalog-small-caps text-[#8b6a43]">
-                                Tecnica
+                                <T
+                                  textKey="catalog.print.technique"
+                                  fallback="Tecnica"
+                                />
                               </dt>
                               <dd>{artwork.technique}</dd>
                             </div>
@@ -1225,7 +1442,10 @@ export default function GalleryCatalogBuilder({
                           {artworkDimensions && (
                             <div>
                               <dt className="catalog-small-caps text-[#8b6a43]">
-                                Dimensioni
+                                <T
+                                  textKey="catalog.print.dimensions"
+                                  fallback="Dimensioni"
+                                />
                               </dt>
                               <dd>{artworkDimensions}</dd>
                             </div>
@@ -1234,12 +1454,25 @@ export default function GalleryCatalogBuilder({
                           {includePrices && (
                             <div>
                               <dt className="catalog-small-caps text-[#8b6a43]">
-                                Disponibilità
+                                <T
+                                  textKey="catalog.print.availability"
+                                  fallback="Disponibilità"
+                                />
                               </dt>
                               <dd>
-                                {artwork.isForSale
-                                  ? artworkPrice || "Prezzo su richiesta"
-                                  : "Non in vendita"}
+                                {artwork.isForSale ? (
+                                  artworkPrice || (
+                                    <T
+                                      textKey="catalog.print.priceOnRequest"
+                                      fallback="Prezzo su richiesta"
+                                    />
+                                  )
+                                ) : (
+                                  <T
+                                    textKey="catalog.print.notForSale"
+                                    fallback="Non in vendita"
+                                  />
+                                )}
                               </dd>
                             </div>
                           )}
@@ -1247,8 +1480,14 @@ export default function GalleryCatalogBuilder({
 
                         {includeDescriptions && (
                           <p className="mt-4 text-[11px] leading-5">
-                            {artwork.description ||
-                              "Descrizione non inserita per questa opera."}
+                            {artwork.description ? (
+                              artwork.description
+                            ) : (
+                              <T
+                                textKey="catalog.print.missingArtworkDescription"
+                                fallback="Descrizione non inserita per questa opera."
+                              />
+                            )}
                           </p>
                         )}
                       </div>
@@ -1264,7 +1503,11 @@ export default function GalleryCatalogBuilder({
           chunkItems(displayedArtworks, 6).map((chunk, pageIndex) => (
             <section key={`list-${pageIndex}`} className="catalog-page">
               <p className="catalog-small-caps text-[#8b6a43]">
-                Listino opere · {galleryName || "MostraSpace"}
+                <T
+                  textKey="catalog.print.artworksPriceList"
+                  fallback="Listino opere"
+                />{" "}
+                · {galleryName || "MostraSpace"}
               </p>
 
               <div className="mt-8 grid grid-cols-2 gap-4">
@@ -1290,7 +1533,10 @@ export default function GalleryCatalogBuilder({
                           />
                         ) : (
                           <span className="text-[10px] text-[#8b6a43]">
-                            No image
+                            <T
+                              textKey="catalog.print.noImage"
+                              fallback="No image"
+                            />
                           </span>
                         )}
                       </div>
@@ -1300,7 +1546,14 @@ export default function GalleryCatalogBuilder({
                       </p>
 
                       <h3 className="mt-1 text-[14px] font-normal leading-tight">
-                        {artwork.title || "Opera senza titolo"}
+                        {artwork.title ? (
+                          artwork.title
+                        ) : (
+                          <T
+                            textKey="catalog.print.untitledArtwork"
+                            fallback="Opera senza titolo"
+                          />
+                        )}
                       </h3>
 
                       <p className="mt-2 text-[9px] leading-4 text-[#5c4b39]">
@@ -1316,9 +1569,19 @@ export default function GalleryCatalogBuilder({
 
                       {includePrices && (
                         <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#8b6a43]">
-                          {artwork.isForSale
-                            ? artworkPrice || "Prezzo su richiesta"
-                            : "Non in vendita"}
+                          {artwork.isForSale ? (
+                            artworkPrice || (
+                              <T
+                                textKey="catalog.print.priceOnRequest"
+                                fallback="Prezzo su richiesta"
+                              />
+                            )
+                          ) : (
+                            <T
+                              textKey="catalog.print.notForSale"
+                              fallback="Non in vendita"
+                            />
+                          )}
                         </p>
                       )}
                     </div>
@@ -1330,23 +1593,32 @@ export default function GalleryCatalogBuilder({
 
         <section className="catalog-page catalog-page-dark flex flex-col justify-between">
           <div>
-            <p className="catalog-small-caps text-[#b9905b]">Contatti</p>
+            <p className="catalog-small-caps text-[#b9905b]">
+              <T textKey="catalog.contacts.label" fallback="Contatti" />
+            </p>
 
             <h2 className="mt-8 max-w-[150mm] text-[40px] font-normal leading-tight">
-              Visita la galleria online
+              <T
+                textKey="catalog.contacts.title"
+                fallback="Visita la galleria online"
+              />
             </h2>
 
             <p className="mt-8 max-w-[140mm] text-[16px] leading-8 text-[#d8c9b0]">
-              Questo catalogo nasce dalla galleria digitale pubblicata su
-              mostra.space. Consulta la mostra online per visitare lo spazio 3D,
-              scoprire le opere e inviare richieste.
+              <T
+                textKey="catalog.contacts.description"
+                fallback="Questo catalogo nasce dalla galleria digitale pubblicata su mostra.space. Consulta la mostra online per visitare lo spazio 3D, scoprire le opere e inviare richieste."
+              />
             </p>
 
             <div className="mt-12 space-y-5 text-sm leading-7 text-[#d8c9b0]">
               {includePublicLink && (
                 <p className="break-all">
                   <span className="catalog-small-caps block text-[#b9905b]">
-                    Link galleria
+                    <T
+                      textKey="catalog.contacts.galleryLink"
+                      fallback="Link galleria"
+                    />
                   </span>
                   {gallery.publicUrl}
                 </p>
@@ -1355,7 +1627,7 @@ export default function GalleryCatalogBuilder({
               {website && website !== gallery.publicUrl && (
                 <p className="break-all">
                   <span className="catalog-small-caps block text-[#b9905b]">
-                    Sito
+                    <T textKey="catalog.contacts.website" fallback="Sito" />
                   </span>
                   {website}
                 </p>
@@ -1364,7 +1636,7 @@ export default function GalleryCatalogBuilder({
               {contactEmail && (
                 <p>
                   <span className="catalog-small-caps block text-[#b9905b]">
-                    Email
+                    <T textKey="catalog.contacts.email" fallback="Email" />
                   </span>
                   {contactEmail}
                 </p>
@@ -1379,7 +1651,11 @@ export default function GalleryCatalogBuilder({
             </p>
 
             <p className="mt-4 text-xs leading-6 text-[#8e7f6c]">
-              Catalogo generato da MostraSpace · {new Date().getFullYear()}
+              <T
+                textKey="catalog.contacts.generatedBy"
+                fallback="Catalogo generato da MostraSpace"
+              />{" "}
+              · {new Date().getFullYear()}
             </p>
           </div>
         </section>

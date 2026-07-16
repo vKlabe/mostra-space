@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import T from "@/components/i18n/T";
 
 type DeleteAccountPanelProps = {
   email: string;
@@ -79,25 +80,35 @@ export default function DeleteAccountPanel({ email }: DeleteAccountPanelProps) {
   return (
     <section className="rounded-3xl border border-red-950 bg-red-950/15 p-6">
       <p className="text-sm uppercase tracking-[0.3em] text-red-300">
-        Zona pericolosa
+        <T
+          textKey="account.deleteAccount.header.label"
+          fallback="Zona pericolosa"
+        />
       </p>
 
       <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_420px] lg:items-start">
         <div>
           <h2 className="text-2xl font-semibold text-red-100">
-            Cancella account
+            <T
+              textKey="account.deleteAccount.header.title"
+              fallback="Cancella account"
+            />
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-7 text-red-100/75">
-            Questa operazione è definitiva. Cancellerà il tuo account, le
-            gallerie, le opere, gli eventi, le notifiche, i preferiti, le
-            richieste, la presenza, la chat e i file immagine collegati. Per
-            confermare devi inserire la password attuale e scrivere CANCELLA.
+            <T
+              textKey="account.deleteAccount.header.description"
+              fallback="Questa operazione è definitiva. Cancellerà il tuo account, le gallerie, le opere, gli eventi, le notifiche, i preferiti, le richieste, la presenza, la chat e i file immagine collegati. Per confermare devi inserire la password attuale e scrivere CANCELLA."
+            />
           </p>
 
           {email && (
             <p className="mt-3 text-xs text-red-100/55">
-              Account: <span className="text-red-100">{email}</span>
+              <T
+                textKey="account.deleteAccount.account.label"
+                fallback="Account:"
+              />{" "}
+              <span className="text-red-100">{email}</span>
             </p>
           )}
         </div>
@@ -105,7 +116,10 @@ export default function DeleteAccountPanel({ email }: DeleteAccountPanelProps) {
         <div className="rounded-2xl border border-red-950 bg-neutral-950 p-4">
           <label className="grid gap-2">
             <span className="text-xs uppercase tracking-[0.18em] text-red-300/80">
-              Password attuale
+              <T
+                textKey="account.deleteAccount.fields.currentPassword"
+                fallback="Password attuale"
+              />
             </span>
             <input
               type="password"
@@ -118,7 +132,10 @@ export default function DeleteAccountPanel({ email }: DeleteAccountPanelProps) {
 
           <label className="mt-4 grid gap-2">
             <span className="text-xs uppercase tracking-[0.18em] text-red-300/80">
-              Conferma testuale
+              <T
+                textKey="account.deleteAccount.fields.textConfirmation"
+                fallback="Conferma testuale"
+              />
             </span>
             <input
               value={confirmation}
@@ -134,7 +151,17 @@ export default function DeleteAccountPanel({ email }: DeleteAccountPanelProps) {
             disabled={isDeleting || !canDelete}
             className="mt-5 w-full rounded-full bg-red-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {isDeleting ? "Eliminazione account..." : "Cancella definitivamente"}
+            {isDeleting ? (
+              <T
+                textKey="account.deleteAccount.actions.deleting"
+                fallback="Eliminazione account..."
+              />
+            ) : (
+              <T
+                textKey="account.deleteAccount.actions.deletePermanently"
+                fallback="Cancella definitivamente"
+              />
+            )}
           </button>
 
           {message && (
