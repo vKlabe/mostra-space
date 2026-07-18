@@ -30,6 +30,14 @@ type Template = {
   marketplace_is_active: boolean;
   marketplace_description: string | null;
   marketplace_preview_image_url: string | null;
+  marketplace_demo_url: string | null;
+  marketplace_square_meters: number | null;
+  marketplace_compare_at_price_cents: number | null;
+  marketplace_is_on_sale: boolean;
+  marketplace_sale_section_enabled: boolean;
+  marketplace_sale_sort_order: number;
+  marketplace_bestseller_section_enabled: boolean;
+  marketplace_bestseller_sort_order: number;
 };
 
 type Gallery = {
@@ -88,6 +96,16 @@ function formatMarketplacePrice(cents: number | null, currency: string | null) {
   }).format(cents / 100);
 }
 
+function formatSquareMeters(value: number | null) {
+  if (!value || value <= 0) {
+    return "-";
+  }
+
+  return `${new Intl.NumberFormat("it-IT", {
+    maximumFractionDigits: 1,
+  }).format(value)} m²`;
+}
+
 export default async function AdminTemplatesPage() {
   const { admin } = await requireAdmin();
 
@@ -114,6 +132,14 @@ export default async function AdminTemplatesPage() {
           "marketplace_is_active",
           "marketplace_description",
           "marketplace_preview_image_url",
+          "marketplace_demo_url",
+          "marketplace_square_meters",
+          "marketplace_compare_at_price_cents",
+          "marketplace_is_on_sale",
+          "marketplace_sale_section_enabled",
+          "marketplace_sale_sort_order",
+          "marketplace_bestseller_section_enabled",
+          "marketplace_bestseller_sort_order",
         ].join(", ")
       )
       .order("sort_order", { ascending: true })
@@ -122,7 +148,7 @@ export default async function AdminTemplatesPage() {
   ]);
 
   const templates = (templatesResult.data || []) as unknown as Template[];
-const galleries = (galleriesResult.data || []) as unknown as Gallery[];
+  const galleries = (galleriesResult.data || []) as unknown as Gallery[];
 
   const activeCount = templates.filter((item) => item.is_active).length;
   const featuredCount = templates.filter((item) => item.is_featured).length;
@@ -364,6 +390,26 @@ const galleries = (galleriesResult.data || []) as unknown as Gallery[];
                           </span>
                         )}
 
+                        {isMarketplace && template.marketplace_is_on_sale && (
+                          <span className="rounded-full border border-red-900 bg-red-950/50 px-3 py-1 text-xs uppercase tracking-[0.15em] text-red-300">
+                            On sale
+                          </span>
+                        )}
+
+                        {isMarketplace &&
+                          template.marketplace_sale_section_enabled && (
+                            <span className="rounded-full border border-red-900 bg-red-950/30 px-3 py-1 text-xs uppercase tracking-[0.15em] text-red-300">
+                              Slider sconti
+                            </span>
+                          )}
+
+                        {isMarketplace &&
+                          template.marketplace_bestseller_section_enabled && (
+                            <span className="rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs uppercase tracking-[0.15em] text-blue-300">
+                              Più venduti
+                            </span>
+                          )}
+
                         {template.is_featured && (
                           <span className="rounded-full border border-white/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.15em] text-neutral-950">
                             Featured
@@ -425,7 +471,7 @@ const galleries = (galleriesResult.data || []) as unknown as Gallery[];
                         {isMarketplace && (
                           <div className="rounded-2xl border border-amber-900/50 bg-amber-950/20 p-4 md:col-span-2">
                             <dt className="text-xs uppercase tracking-[0.18em] text-amber-300">
-                              Prezzo marketplace
+                              Marketplace
                             </dt>
                             <dd className="mt-2 text-xl font-semibold text-neutral-100">
                               {formatMarketplacePrice(
@@ -433,11 +479,76 @@ const galleries = (galleriesResult.data || []) as unknown as Gallery[];
                                 template.marketplace_currency
                               )}
                             </dd>
+
+                            {template.marketplace_is_on_sale && (
+                              <p className="mt-1 text-xs text-red-300">
+                                Prezzo barrato: {formatMarketplacePrice(
+                                  template.marketplace_compare_at_price_cents,
+                                  template.marketplace_currency
+                                )}
+                              </p>
+                            )}
+
                             <p className="mt-1 text-xs text-neutral-500">
                               {template.marketplace_is_active
-                                ? "Visibile nella futura pagina marketplace."
+                                ? "Visibile nella pagina marketplace."
                                 : "Marketplace non ancora attivo per questo template."}
                             </p>
+
+                            <dl className="mt-4 grid gap-3 md:grid-cols-2">
+                              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                                <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                                  Metri quadri
+                                </dt>
+                                <dd className="mt-2 text-sm text-neutral-200">
+                                  {formatSquareMeters(
+                                    template.marketplace_square_meters
+                                  )}
+                                </dd>
+                              </div>
+
+                              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                                <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                                  Demo visitor
+                                </dt>
+                                <dd className="mt-2 break-all text-sm text-neutral-200">
+                                  {template.marketplace_demo_url ? (
+                                    <a
+                                      href={template.marketplace_demo_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-amber-300 underline-offset-4 hover:underline"
+                                    >
+                                      Apri demo
+                                    </a>
+                                  ) : (
+                                    "-"
+                                  )}
+                                </dd>
+                              </div>
+
+                              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                                <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                                  Slider sconti
+                                </dt>
+                                <dd className="mt-2 text-sm text-neutral-200">
+                                  {template.marketplace_sale_section_enabled
+                                    ? `Sì · ordine ${template.marketplace_sale_sort_order}`
+                                    : "No"}
+                                </dd>
+                              </div>
+
+                              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+                                <dt className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                                  Più venduti
+                                </dt>
+                                <dd className="mt-2 text-sm text-neutral-200">
+                                  {template.marketplace_bestseller_section_enabled
+                                    ? `Sì · ordine ${template.marketplace_bestseller_sort_order}`
+                                    : "No"}
+                                </dd>
+                              </div>
+                            </dl>
                           </div>
                         )}
 
@@ -486,6 +597,28 @@ const galleries = (galleriesResult.data || []) as unknown as Gallery[];
                       }
                       currentMarketplacePreviewImageUrl={
                         template.marketplace_preview_image_url
+                      }
+                      currentMarketplaceDemoUrl={template.marketplace_demo_url}
+                      currentMarketplaceSquareMeters={
+                        template.marketplace_square_meters
+                      }
+                      currentMarketplaceCompareAtPriceCents={
+                        template.marketplace_compare_at_price_cents
+                      }
+                      currentMarketplaceIsOnSale={
+                        template.marketplace_is_on_sale
+                      }
+                      currentMarketplaceSaleSectionEnabled={
+                        template.marketplace_sale_section_enabled
+                      }
+                      currentMarketplaceSaleSortOrder={
+                        template.marketplace_sale_sort_order
+                      }
+                      currentMarketplaceBestsellerSectionEnabled={
+                        template.marketplace_bestseller_section_enabled
+                      }
+                      currentMarketplaceBestsellerSortOrder={
+                        template.marketplace_bestseller_sort_order
                       }
                     />
                   </div>

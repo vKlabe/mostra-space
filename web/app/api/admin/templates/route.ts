@@ -30,6 +30,14 @@ type RequestBody = {
   marketplaceIsActive?: unknown;
   marketplaceDescription?: unknown;
   marketplacePreviewImageUrl?: unknown;
+  marketplaceDemoUrl?: unknown;
+  marketplaceSquareMeters?: unknown;
+  marketplaceCompareAtPriceCents?: unknown;
+  marketplaceIsOnSale?: unknown;
+  marketplaceSaleSectionEnabled?: unknown;
+  marketplaceSaleSortOrder?: unknown;
+  marketplaceBestsellerSectionEnabled?: unknown;
+  marketplaceBestsellerSortOrder?: unknown;
 };
 
 const validTemplatePlans: TemplatePlan[] = [
@@ -69,8 +77,12 @@ function cleanCurrency(value: unknown) {
   return cleaned || "eur";
 }
 
+function hasValue(value: unknown) {
+  return value !== null && value !== undefined && value !== "";
+}
+
 function cleanMarketplacePriceCents(value: unknown) {
-  if (value === null || value === undefined || value === "") {
+  if (!hasValue(value)) {
     return null;
   }
 
@@ -78,6 +90,30 @@ function cleanMarketplacePriceCents(value: unknown) {
 
   if (!Number.isFinite(numberValue) || numberValue <= 0) {
     return null;
+  }
+
+  return Math.round(numberValue);
+}
+
+function cleanPositiveNumber(value: unknown) {
+  if (!hasValue(value)) {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue) || numberValue <= 0) {
+    return null;
+  }
+
+  return numberValue;
+}
+
+function cleanNonNegativeInteger(value: unknown) {
+  const numberValue = Number(value ?? 0);
+
+  if (!Number.isFinite(numberValue) || numberValue < 0) {
+    return 0;
   }
 
   return Math.round(numberValue);
@@ -160,6 +196,36 @@ export async function POST(request: Request) {
     ? cleanNullableText(body.marketplacePreviewImageUrl)
     : null;
 
+  const marketplaceDemoUrl = isMarketplace
+    ? cleanNullableText(body.marketplaceDemoUrl)
+    : null;
+
+  const marketplaceSquareMeters = isMarketplace
+    ? cleanPositiveNumber(body.marketplaceSquareMeters)
+    : null;
+
+  const marketplaceIsOnSale =
+    isMarketplace && body.marketplaceIsOnSale === true;
+
+  const marketplaceCompareAtPriceCents =
+    isMarketplace && marketplaceIsOnSale
+      ? cleanMarketplacePriceCents(body.marketplaceCompareAtPriceCents)
+      : null;
+
+  const marketplaceSaleSectionEnabled =
+    isMarketplace && body.marketplaceSaleSectionEnabled === true;
+
+  const marketplaceSaleSortOrder = isMarketplace
+    ? cleanNonNegativeInteger(body.marketplaceSaleSortOrder)
+    : 0;
+
+  const marketplaceBestsellerSectionEnabled =
+    isMarketplace && body.marketplaceBestsellerSectionEnabled === true;
+
+  const marketplaceBestsellerSortOrder = isMarketplace
+    ? cleanNonNegativeInteger(body.marketplaceBestsellerSortOrder)
+    : 0;
+
   const slug = slugify(rawSlug || name);
 
   if (!name) {
@@ -190,6 +256,31 @@ export async function POST(request: Request) {
     return apiBadRequest(
       "Per i template marketplace devi inserire un prezzo valido."
     );
+  }
+
+  if (
+    isMarketplace &&
+    hasValue(body.marketplaceSquareMeters) &&
+    !marketplaceSquareMeters
+  ) {
+    return apiBadRequest("I metri quadri devono essere maggiori di 0.");
+  }
+
+  if (isMarketplace && marketplaceIsOnSale) {
+    if (!marketplaceCompareAtPriceCents) {
+      return apiBadRequest(
+        "Per mostrare lo sconto devi inserire un prezzo barrato valido."
+      );
+    }
+
+    if (
+      marketplacePriceCents &&
+      marketplaceCompareAtPriceCents <= marketplacePriceCents
+    ) {
+      return apiBadRequest(
+        "Il prezzo barrato deve essere maggiore del prezzo marketplace attuale."
+      );
+    }
   }
 
   const { data: existingTemplate, error: existingTemplateError } =
@@ -233,6 +324,15 @@ export async function POST(request: Request) {
       marketplace_is_active: marketplaceIsActive,
       marketplace_description: marketplaceDescription,
       marketplace_preview_image_url: marketplacePreviewImageUrl,
+      marketplace_demo_url: marketplaceDemoUrl,
+      marketplace_square_meters: marketplaceSquareMeters,
+      marketplace_compare_at_price_cents: marketplaceCompareAtPriceCents,
+      marketplace_is_on_sale: marketplaceIsOnSale,
+      marketplace_sale_section_enabled: marketplaceSaleSectionEnabled,
+      marketplace_sale_sort_order: marketplaceSaleSortOrder,
+      marketplace_bestseller_section_enabled:
+        marketplaceBestsellerSectionEnabled,
+      marketplace_bestseller_sort_order: marketplaceBestsellerSortOrder,
     })
     .select(
       [
@@ -253,6 +353,14 @@ export async function POST(request: Request) {
         "marketplace_is_active",
         "marketplace_description",
         "marketplace_preview_image_url",
+        "marketplace_demo_url",
+        "marketplace_square_meters",
+        "marketplace_compare_at_price_cents",
+        "marketplace_is_on_sale",
+        "marketplace_sale_section_enabled",
+        "marketplace_sale_sort_order",
+        "marketplace_bestseller_section_enabled",
+        "marketplace_bestseller_sort_order",
         "created_at",
       ].join(", ")
     )

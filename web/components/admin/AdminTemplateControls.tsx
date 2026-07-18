@@ -27,6 +27,14 @@ type AdminTemplateControlsProps = {
   currentMarketplaceIsActive: boolean;
   currentMarketplaceDescription: string | null;
   currentMarketplacePreviewImageUrl: string | null;
+  currentMarketplaceDemoUrl: string | null;
+  currentMarketplaceSquareMeters: number | null;
+  currentMarketplaceCompareAtPriceCents: number | null;
+  currentMarketplaceIsOnSale: boolean;
+  currentMarketplaceSaleSectionEnabled: boolean;
+  currentMarketplaceSaleSortOrder: number;
+  currentMarketplaceBestsellerSectionEnabled: boolean;
+  currentMarketplaceBestsellerSortOrder: number;
 };
 
 const MAX_PREVIEW_SIZE_BYTES = 2 * 1024 * 1024;
@@ -76,6 +84,46 @@ function euroInputToCents(value: string) {
   return Math.round(parsed * 100);
 }
 
+function numberToInput(value: number | null | undefined) {
+  if (!value || value <= 0) {
+    return "";
+  }
+
+  return String(value).replace(".", ",");
+}
+
+function positiveNumberInputToNumber(value: string) {
+  const cleaned = value.trim().replace(",", ".");
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const parsed = Number(cleaned);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function normalizePositiveNumber(value: number | null | undefined) {
+  if (!value || value <= 0) {
+    return null;
+  }
+
+  return Number(value);
+}
+
+function normalizePositiveCents(value: number | null | undefined) {
+  if (!value || value <= 0) {
+    return null;
+  }
+
+  return Math.round(value);
+}
+
 function normalizeCurrency(value: string | null | undefined) {
   const cleaned = (value || "eur").trim().toLowerCase();
 
@@ -100,6 +148,14 @@ export default function AdminTemplateControls({
   currentMarketplaceIsActive,
   currentMarketplaceDescription,
   currentMarketplacePreviewImageUrl,
+  currentMarketplaceDemoUrl,
+  currentMarketplaceSquareMeters,
+  currentMarketplaceCompareAtPriceCents,
+  currentMarketplaceIsOnSale,
+  currentMarketplaceSaleSectionEnabled,
+  currentMarketplaceSaleSortOrder,
+  currentMarketplaceBestsellerSectionEnabled,
+  currentMarketplaceBestsellerSortOrder,
 }: AdminTemplateControlsProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,6 +189,29 @@ export default function AdminTemplateControls({
   const [marketplacePreviewImageUrl, setMarketplacePreviewImageUrl] = useState(
     currentMarketplacePreviewImageUrl || ""
   );
+  const [marketplaceDemoUrl, setMarketplaceDemoUrl] = useState(
+    currentMarketplaceDemoUrl || ""
+  );
+  const [marketplaceSquareMeters, setMarketplaceSquareMeters] = useState(
+    numberToInput(currentMarketplaceSquareMeters)
+  );
+  const [marketplaceCompareAtPrice, setMarketplaceCompareAtPrice] = useState(
+    centsToEuroInput(currentMarketplaceCompareAtPriceCents)
+  );
+  const [marketplaceIsOnSale, setMarketplaceIsOnSale] = useState(
+    currentMarketplaceIsOnSale
+  );
+  const [marketplaceSaleSectionEnabled, setMarketplaceSaleSectionEnabled] =
+    useState(currentMarketplaceSaleSectionEnabled);
+  const [marketplaceSaleSortOrder, setMarketplaceSaleSortOrder] = useState(
+    currentMarketplaceSaleSortOrder || 0
+  );
+  const [
+    marketplaceBestsellerSectionEnabled,
+    setMarketplaceBestsellerSectionEnabled,
+  ] = useState(currentMarketplaceBestsellerSectionEnabled);
+  const [marketplaceBestsellerSortOrder, setMarketplaceBestsellerSortOrder] =
+    useState(currentMarketplaceBestsellerSortOrder || 0);
 
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [previewLocalUrl, setPreviewLocalUrl] = useState("");
@@ -159,6 +238,31 @@ export default function AdminTemplateControls({
   const nextMarketplacePreviewImageUrl = isMarketplace
     ? marketplacePreviewImageUrl.trim()
     : "";
+  const nextMarketplaceDemoUrl = isMarketplace
+    ? marketplaceDemoUrl.trim()
+    : "";
+  const nextMarketplaceSquareMeters = isMarketplace
+    ? positiveNumberInputToNumber(marketplaceSquareMeters)
+    : null;
+  const nextMarketplaceIsOnSale = isMarketplace && marketplaceIsOnSale;
+  const nextMarketplaceCompareAtPriceCents = nextMarketplaceIsOnSale
+    ? euroInputToCents(marketplaceCompareAtPrice)
+    : null;
+  const nextMarketplaceSaleSectionEnabled =
+    isMarketplace && marketplaceSaleSectionEnabled;
+  const nextMarketplaceSaleSortOrder = isMarketplace
+    ? marketplaceSaleSortOrder
+    : 0;
+  const nextMarketplaceBestsellerSectionEnabled =
+    isMarketplace && marketplaceBestsellerSectionEnabled;
+  const nextMarketplaceBestsellerSortOrder = isMarketplace
+    ? marketplaceBestsellerSortOrder
+    : 0;
+
+  const currentMarketplaceCompareAtPriceCentsNormalized =
+    currentMarketplaceIsOnSale
+      ? normalizePositiveCents(currentMarketplaceCompareAtPriceCents)
+      : null;
 
   const hasChanges =
     name !== currentName ||
@@ -176,7 +280,20 @@ export default function AdminTemplateControls({
     nextMarketplaceIsActive !== currentMarketplaceIsActive ||
     nextMarketplaceDescription !== (currentMarketplaceDescription || "") ||
     nextMarketplacePreviewImageUrl !==
-      (currentMarketplacePreviewImageUrl || "");
+      (currentMarketplacePreviewImageUrl || "") ||
+    nextMarketplaceDemoUrl !== (currentMarketplaceDemoUrl || "") ||
+    nextMarketplaceSquareMeters !==
+      normalizePositiveNumber(currentMarketplaceSquareMeters) ||
+    nextMarketplaceCompareAtPriceCents !==
+      currentMarketplaceCompareAtPriceCentsNormalized ||
+    nextMarketplaceIsOnSale !== currentMarketplaceIsOnSale ||
+    nextMarketplaceSaleSectionEnabled !==
+      currentMarketplaceSaleSectionEnabled ||
+    nextMarketplaceSaleSortOrder !== currentMarketplaceSaleSortOrder ||
+    nextMarketplaceBestsellerSectionEnabled !==
+      currentMarketplaceBestsellerSectionEnabled ||
+    nextMarketplaceBestsellerSortOrder !==
+      currentMarketplaceBestsellerSortOrder;
 
   useEffect(() => {
     setPreviewImageUrl(currentPreviewImageUrl || "");
@@ -361,6 +478,50 @@ export default function AdminTemplateControls({
       return;
     }
 
+    if (
+      isMarketplace &&
+      marketplaceSquareMeters.trim() &&
+      !nextMarketplaceSquareMeters
+    ) {
+      setMessage("I metri quadri devono essere un numero maggiore di 0.");
+      return;
+    }
+
+    if (isMarketplace && marketplaceIsOnSale) {
+      if (!nextMarketplaceCompareAtPriceCents) {
+        setMessage(
+          "Per mostrare lo sconto devi inserire un prezzo barrato valido."
+        );
+        return;
+      }
+
+      if (
+        nextMarketplacePriceCents &&
+        nextMarketplaceCompareAtPriceCents <= nextMarketplacePriceCents
+      ) {
+        setMessage(
+          "Il prezzo barrato deve essere maggiore del prezzo marketplace attuale."
+        );
+        return;
+      }
+    }
+
+    if (
+      !Number.isFinite(marketplaceSaleSortOrder) ||
+      marketplaceSaleSortOrder < 0
+    ) {
+      setMessage("L’ordine dello slider sconti deve essere 0 o superiore.");
+      return;
+    }
+
+    if (
+      !Number.isFinite(marketplaceBestsellerSortOrder) ||
+      marketplaceBestsellerSortOrder < 0
+    ) {
+      setMessage("L’ordine dei più venduti deve essere 0 o superiore.");
+      return;
+    }
+
     setIsLoading(true);
     setMessage("");
 
@@ -387,6 +548,15 @@ export default function AdminTemplateControls({
           marketplaceIsActive: nextMarketplaceIsActive,
           marketplaceDescription: nextMarketplaceDescription,
           marketplacePreviewImageUrl: nextMarketplacePreviewImageUrl,
+          marketplaceDemoUrl: nextMarketplaceDemoUrl,
+          marketplaceSquareMeters: nextMarketplaceSquareMeters,
+          marketplaceCompareAtPriceCents: nextMarketplaceCompareAtPriceCents,
+          marketplaceIsOnSale: nextMarketplaceIsOnSale,
+          marketplaceSaleSectionEnabled: nextMarketplaceSaleSectionEnabled,
+          marketplaceSaleSortOrder: nextMarketplaceSaleSortOrder,
+          marketplaceBestsellerSectionEnabled:
+            nextMarketplaceBestsellerSectionEnabled,
+          marketplaceBestsellerSortOrder: nextMarketplaceBestsellerSortOrder,
         }),
       });
 
@@ -557,6 +727,42 @@ export default function AdminTemplateControls({
               </div>
             </div>
 
+            <div className="mt-4 grid gap-4 md:grid-cols-[1fr_180px]">
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Link demo visitor
+                </label>
+
+                <input
+                  value={marketplaceDemoUrl}
+                  onChange={(event) => setMarketplaceDemoUrl(event.target.value)}
+                  disabled={controlsDisabled}
+                  placeholder="/gallerie/demo-template oppure URL completo"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+
+                <p className="mt-2 text-xs leading-5 text-neutral-500">
+                  Link pubblico dove il visitatore può entrare e fare un giro nel template.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Metri quadri
+                </label>
+
+                <input
+                  value={marketplaceSquareMeters}
+                  onChange={(event) =>
+                    setMarketplaceSquareMeters(event.target.value)
+                  }
+                  disabled={controlsDisabled}
+                  placeholder="120"
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </div>
+
             <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
               <input
                 type="checkbox"
@@ -568,6 +774,116 @@ export default function AdminTemplateControls({
 
               <span>Pubblica questo template nel marketplace</span>
             </label>
+
+            <div className="mt-4 rounded-2xl border border-red-900/50 bg-red-950/20 p-4">
+              <p className="mb-4 text-xs uppercase tracking-[0.22em] text-red-300">
+                Sconto marketplace
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
+                  <input
+                    type="checkbox"
+                    checked={marketplaceIsOnSale}
+                    onChange={(event) =>
+                      setMarketplaceIsOnSale(event.target.checked)
+                    }
+                    disabled={controlsDisabled}
+                    className="mt-1"
+                  />
+
+                  <span>Mostra badge On sale e prezzo barrato</span>
+                </label>
+
+                <div>
+                  <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                    Prezzo barrato
+                  </label>
+
+                  <input
+                    value={marketplaceCompareAtPrice}
+                    onChange={(event) =>
+                      setMarketplaceCompareAtPrice(event.target.value)
+                    }
+                    disabled={controlsDisabled || !marketplaceIsOnSale}
+                    placeholder="59,00"
+                    className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+
+                  <p className="mt-2 text-xs leading-5 text-neutral-500">
+                    Deve essere maggiore del prezzo marketplace attuale.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
+                  <input
+                    type="checkbox"
+                    checked={marketplaceSaleSectionEnabled}
+                    onChange={(event) =>
+                      setMarketplaceSaleSectionEnabled(event.target.checked)
+                    }
+                    disabled={controlsDisabled}
+                    className="mt-1"
+                  />
+
+                  <span>Inserisci nello slider template con sconti</span>
+                </label>
+
+                <label className="mt-4 mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Ordine slider sconti
+                </label>
+
+                <input
+                  type="number"
+                  min={0}
+                  value={marketplaceSaleSortOrder}
+                  onChange={(event) =>
+                    setMarketplaceSaleSortOrder(Number(event.target.value))
+                  }
+                  disabled={controlsDisabled || !marketplaceSaleSectionEnabled}
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
+                  <input
+                    type="checkbox"
+                    checked={marketplaceBestsellerSectionEnabled}
+                    onChange={(event) =>
+                      setMarketplaceBestsellerSectionEnabled(
+                        event.target.checked
+                      )
+                    }
+                    disabled={controlsDisabled}
+                    className="mt-1"
+                  />
+
+                  <span>Inserisci nella sezione I più venduti</span>
+                </label>
+
+                <label className="mt-4 mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
+                  Ordine più venduti
+                </label>
+
+                <input
+                  type="number"
+                  min={0}
+                  value={marketplaceBestsellerSortOrder}
+                  onChange={(event) =>
+                    setMarketplaceBestsellerSortOrder(Number(event.target.value))
+                  }
+                  disabled={
+                    controlsDisabled || !marketplaceBestsellerSectionEnabled
+                  }
+                  className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </div>
 
             <div className="mt-4">
               <label className="mb-2 block text-xs uppercase tracking-[0.18em] text-neutral-600">
