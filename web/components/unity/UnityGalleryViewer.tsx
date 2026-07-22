@@ -629,7 +629,7 @@ export default function UnityGalleryViewer({
             className={`block w-full bg-black ${
               isFullscreenActive ? "h-screen" : "h-[72vh]"
             }`}
-            allow="fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
+            allow="autoplay; fullscreen; gamepad; xr-spatial-tracking; clipboard-read; clipboard-write"
             allowFullScreen
           />
 

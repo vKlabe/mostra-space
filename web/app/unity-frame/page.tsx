@@ -1,5 +1,7 @@
 import UnityFrameClient from "@/components/unity/UnityFrameClient";
 import T from "@/components/i18n/T";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { GallerySoundtrack } from "@/components/gallery/GallerySoundtrackPlayer";
 
 type UnityFramePageProps = {
   searchParams?: Promise<{
@@ -7,6 +9,70 @@ type UnityFramePageProps = {
     mode?: string;
   }>;
 };
+
+type GalleryRecord = {
+  id: string;
+  soundtrack_id: string | null;
+};
+
+type SoundtrackRecord = {
+  id: string;
+  title: string;
+  mood: string | null;
+  loop_duration_seconds: number | null;
+  audio_url: string | null;
+  is_active: boolean;
+};
+
+async function getGallerySoundtrack({
+  galleryId,
+  mode,
+}: {
+  galleryId: string;
+  mode: "visitor" | "editor";
+}): Promise<GallerySoundtrack | null> {
+  if (!galleryId || mode !== "visitor") {
+    return null;
+  }
+
+  try {
+    const admin = createAdminClient();
+
+    const { data: gallery } = await admin
+      .from("galleries")
+      .select("id, soundtrack_id")
+      .eq("id", galleryId)
+      .maybeSingle<GalleryRecord>();
+
+    if (!gallery?.soundtrack_id) {
+      return null;
+    }
+
+    const { data: soundtrack } = await admin
+      .from("gallery_soundtracks")
+      .select("id, title, mood, loop_duration_seconds, audio_url, is_active")
+      .eq("id", gallery.soundtrack_id)
+      .maybeSingle<SoundtrackRecord>();
+
+    if (
+      !soundtrack ||
+      soundtrack.is_active !== true ||
+      !soundtrack.audio_url
+    ) {
+      return null;
+    }
+
+    return {
+      id: soundtrack.id,
+      title: soundtrack.title,
+      mood: soundtrack.mood,
+      loopDurationSeconds: soundtrack.loop_duration_seconds,
+      audioUrl: soundtrack.audio_url,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default async function UnityFramePage({
   searchParams,
@@ -55,5 +121,16 @@ export default async function UnityFramePage({
     );
   }
 
-  return <UnityFrameClient galleryId={galleryId} mode={mode} />;
+  const soundtrack = await getGallerySoundtrack({
+    galleryId,
+    mode,
+  });
+
+  return (
+    <UnityFrameClient
+      galleryId={galleryId}
+      mode={mode}
+      soundtrack={soundtrack}
+    />
+  );
 }

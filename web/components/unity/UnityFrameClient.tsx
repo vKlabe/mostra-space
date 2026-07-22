@@ -2,12 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import T from "@/components/i18n/T";
+import GallerySoundtrackPlayer, {
+  type GallerySoundtrack,
+} from "@/components/gallery/GallerySoundtrackPlayer";
 
 type UnityMode = "visitor" | "editor";
 
 type UnityFrameClientProps = {
   galleryId: string;
   mode: UnityMode;
+  soundtrack?: GallerySoundtrack | null;
   buildPath?: string;
   buildName?: string;
 };
@@ -109,6 +113,7 @@ function isWebGlAvailable() {
 export default function UnityFrameClient({
   galleryId,
   mode,
+  soundtrack = null,
   buildPath = "/unity/artportal-viewer/Build",
   buildName = "artportal-viewer",
 }: UnityFrameClientProps) {
@@ -299,6 +304,13 @@ export default function UnityFrameClient({
         }
         tabIndex={0}
       />
+
+      {isReady && mode === "visitor" && soundtrack && (
+  <GallerySoundtrackPlayer
+    soundtrack={soundtrack}
+    className="fixed left-4 top-4 z-50 max-w-[calc(100vw-2rem)]"
+  />
+)}
 
       {!isReady && !errorMessage && (
         <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm">
