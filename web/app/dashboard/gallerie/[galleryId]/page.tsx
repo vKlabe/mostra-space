@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 import AddArtworkToGalleryForm from "@/components/dashboard/AddArtworkToGalleryForm";
@@ -624,6 +625,7 @@ export default async function DashboardGalleryDetailPage({
   const { galleryId } = await params;
 
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const {
     data: { user },
@@ -743,7 +745,7 @@ export default async function DashboardGalleryDetailPage({
       .eq("user_id", user.id)
       .eq("status", "paid"),
 
-    supabase
+    admin
       .from("gallery_soundtracks")
       .select("id, title, mood, loop_duration_seconds, is_active, sort_order")
       .order("sort_order", { ascending: true })
