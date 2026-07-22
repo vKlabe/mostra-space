@@ -36,6 +36,7 @@ type Gallery = {
   id: string;
   owner_id: string;
   template_id: string | null;
+  soundtrack_id: string | null;
   title: string;
   slug: string;
   description: string | null;
@@ -64,6 +65,23 @@ type GalleryTemplate = {
 
 type TemplatePurchase = {
   template_id: string;
+};
+
+type GallerySoundtrackRecord = {
+  id: string;
+  title: string;
+  mood: string | null;
+  loop_duration_seconds: number | null;
+  is_active: boolean;
+  sort_order: number;
+};
+
+type GallerySoundtrackOption = {
+  id: string;
+  title: string;
+  mood: string | null;
+  loopDurationSeconds: number | null;
+  isActive: boolean;
 };
 
 type Artwork = {
@@ -135,6 +153,49 @@ function formatNumber(value: number | null | undefined) {
   }
 
   return Number(value).toFixed(2);
+}
+
+function formatSoundtrackDuration(seconds: number | null) {
+  if (!seconds || seconds <= 0) {
+    return null;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (minutes <= 0) {
+    return `${remainingSeconds}s`;
+  }
+
+  if (remainingSeconds === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
+function getSoundtrackDisplayLabel(soundtrack: GallerySoundtrackOption | null) {
+  if (!soundtrack) {
+    return null;
+  }
+
+  const parts = [soundtrack.title];
+
+  if (soundtrack.mood) {
+    parts.push(soundtrack.mood);
+  }
+
+  const duration = formatSoundtrackDuration(soundtrack.loopDurationSeconds);
+
+  if (duration) {
+    parts.push(duration);
+  }
+
+  if (!soundtrack.isActive) {
+    parts.push("disattivata");
+  }
+
+  return parts.join(" · ");
 }
 
 function getStatusTranslation(status: Gallery["status"]) {
@@ -589,7 +650,7 @@ export default async function DashboardGalleryDetailPage({
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
     .select(
-      "id, owner_id, template_id, title, slug, description, status, cover_image_url, created_at, updated_at, published_at"
+      "id, owner_id, template_id, soundtrack_id, title, slug, description, status, cover_image_url, created_at, updated_at, published_at"
     )
     .eq("id", galleryId)
     .single<Gallery>();
@@ -667,7 +728,7 @@ export default async function DashboardGalleryDetailPage({
     );
   }
 
-  const [templatesResult, purchasesResult] = await Promise.all([
+  const [templatesResult, purchasesResult, soundtracksResult] = await Promise.all([
     supabase
       .from("gallery_templates")
       .select(
@@ -681,6 +742,12 @@ export default async function DashboardGalleryDetailPage({
       .select("template_id")
       .eq("user_id", user.id)
       .eq("status", "paid"),
+
+    supabase
+      .from("gallery_soundtracks")
+      .select("id, title, mood, loop_duration_seconds, is_active, sort_order")
+      .order("sort_order", { ascending: true })
+      .order("title", { ascending: true }),
   ]);
 
   const purchasedTemplateIds = new Set(
@@ -695,6 +762,25 @@ export default async function DashboardGalleryDetailPage({
     ...template,
     is_purchased_template: purchasedTemplateIds.has(template.id),
   }));
+
+  const soundtrackOptions = (
+    (soundtracksResult.data || []) as unknown as GallerySoundtrackRecord[]
+  )
+    .filter(
+      (soundtrack) => soundtrack.is_active || soundtrack.id === gallery.soundtrack_id
+    )
+    .map((soundtrack) => ({
+      id: soundtrack.id,
+      title: soundtrack.title,
+      mood: soundtrack.mood,
+      loopDurationSeconds: soundtrack.loop_duration_seconds,
+      isActive: soundtrack.is_active,
+    })) satisfies GallerySoundtrackOption[];
+
+  const currentSoundtrack =
+    soundtrackOptions.find((item) => item.id === gallery.soundtrack_id) || null;
+
+  const currentSoundtrackLabel = getSoundtrackDisplayLabel(currentSoundtrack);
 
   const template =
     safeTemplates.find((item) => item.id === gallery.template_id) || null;
@@ -1208,6 +1294,26 @@ export default async function DashboardGalleryDetailPage({
                 )}
               </dd>
             </div>
+
+            <div>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.details.soundtrack"
+                  fallback="Soundtrack"
+                />
+              </dt>
+
+              <dd className="mt-1 text-neutral-200">
+                {currentSoundtrackLabel ? (
+                  currentSoundtrackLabel
+                ) : (
+                  <T
+                    textKey="dashboard.galleryDetail.details.soundtrackMissing"
+                    fallback="Nessuna musica"
+                  />
+                )}
+              </dd>
+            </div>
           </dl>
         </article>
 
@@ -1384,6 +1490,8 @@ export default async function DashboardGalleryDetailPage({
           currentTitle={gallery.title}
           currentSlug={gallery.slug}
           currentDescription={gallery.description}
+          currentSoundtrackId={gallery.soundtrack_id}
+          soundtracks={soundtrackOptions}
         />
       </div>
 

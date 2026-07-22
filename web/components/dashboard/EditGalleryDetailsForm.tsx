@@ -4,11 +4,21 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import T from "@/components/i18n/T";
 
+type SoundtrackOption = {
+  id: string;
+  title: string;
+  mood: string | null;
+  loopDurationSeconds: number | null;
+  isActive?: boolean;
+};
+
 type EditGalleryDetailsFormProps = {
   galleryId: string;
   currentTitle?: string | null;
   currentSlug?: string | null;
   currentDescription?: string | null;
+  currentSoundtrackId?: string | null;
+  soundtracks?: SoundtrackOption[];
 };
 
 function slugify(value: string | null | undefined) {
@@ -27,17 +37,61 @@ function slugify(value: string | null | undefined) {
     .replace(/^-+|-+$/g, "");
 }
 
+function formatLoopDuration(seconds: number | null) {
+  if (!seconds || seconds <= 0) {
+    return null;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (minutes <= 0) {
+    return `${remainingSeconds}s`;
+  }
+
+  if (remainingSeconds === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
+function getSoundtrackOptionLabel(soundtrack: SoundtrackOption) {
+  const parts = [soundtrack.title];
+
+  if (soundtrack.mood) {
+    parts.push(soundtrack.mood);
+  }
+
+  const duration = formatLoopDuration(soundtrack.loopDurationSeconds);
+
+  if (duration) {
+    parts.push(duration);
+  }
+
+  if (soundtrack.isActive === false) {
+    parts.push("disattivata");
+  }
+
+  return parts.join(" · ");
+}
+
 export default function EditGalleryDetailsForm({
   galleryId,
   currentTitle = "",
   currentSlug = "",
   currentDescription = "",
+  currentSoundtrackId = null,
+  soundtracks = [],
 }: EditGalleryDetailsFormProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState(currentTitle || "");
   const [slug, setSlug] = useState(slugify(currentSlug || currentTitle || ""));
   const [description, setDescription] = useState(currentDescription || "");
+  const [selectedSoundtrackId, setSelectedSoundtrackId] = useState(
+    currentSoundtrackId || ""
+  );
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -89,6 +143,7 @@ export default function EditGalleryDetailsForm({
           title: cleanedTitle,
           slug: cleanedSlug,
           description: description.trim() || null,
+          soundtrackId: selectedSoundtrackId || null,
         }),
       });
 
@@ -131,7 +186,7 @@ export default function EditGalleryDetailsForm({
       <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
         <T
           textKey="dashboard.galleryDetailsForm.header.description"
-          fallback="Queste informazioni vengono usate nella pagina pubblica della galleria."
+          fallback="Queste informazioni vengono usate nella pagina pubblica della galleria. Da qui puoi anche scegliere la musica ambientale della visita."
         />
       </p>
 
@@ -195,6 +250,39 @@ export default function EditGalleryDetailsForm({
             className="min-h-28 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Descrizione pubblica della galleria"
           />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="mb-2 block text-sm text-neutral-300">
+            <T
+              textKey="dashboard.galleryDetailsForm.fields.soundtrack"
+              fallback="Soundtrack galleria"
+            />
+          </label>
+
+          <select
+            value={selectedSoundtrackId}
+            onChange={(event) => setSelectedSoundtrackId(event.target.value)}
+            disabled={isLoading}
+            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">
+              Nessuna musica
+            </option>
+
+            {soundtracks.map((soundtrack) => (
+              <option key={soundtrack.id} value={soundtrack.id}>
+                {getSoundtrackOptionLabel(soundtrack)}
+              </option>
+            ))}
+          </select>
+
+          <p className="mt-2 text-xs leading-5 text-neutral-500">
+            <T
+              textKey="dashboard.galleryDetailsForm.fields.soundtrackHelp"
+              fallback="La musica scelta verrà riprodotta in loop nella pagina pubblica della galleria. Il visitatore potrà disattivarla o regolare il volume."
+            />
+          </p>
         </div>
       </div>
 

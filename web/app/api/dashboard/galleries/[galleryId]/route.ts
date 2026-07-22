@@ -21,6 +21,7 @@ type UpdateGalleryPayload = {
   description?: unknown;
   coverImageUrl?: unknown;
   templateId?: unknown;
+  soundtrackId?: unknown;
 };
 
 type Profile = {
@@ -36,6 +37,7 @@ type GalleryPermissionRecord = {
   slug: string;
   status: "draft" | "published" | "archived";
   template_id: string | null;
+  soundtrack_id: string | null;
 };
 
 type TemplateRecord = {
@@ -43,6 +45,11 @@ type TemplateRecord = {
   name: string;
   is_active: boolean;
   available_from_plan: string | null;
+};
+
+type SoundtrackRecord = {
+  id: string;
+  is_active: boolean;
 };
 
 function cleanText(value: unknown) {
@@ -99,7 +106,7 @@ async function getUserAndGalleryPermission(
 
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
-    .select("id, owner_id, title, slug, status, template_id")
+    .select("id, owner_id, title, slug, status, template_id, soundtrack_id")
     .eq("id", galleryId)
     .single<GalleryPermissionRecord>();
 
@@ -206,8 +213,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   const wantsCoverUpdate = body.coverImageUrl !== undefined;
   const templateId = cleanText(body.templateId);
   const wantsTemplateUpdate = templateId.length > 0;
+  const wantsSoundtrackUpdate = body.soundtrackId !== undefined;
 
-  if (!wantsDetailsUpdate && !wantsCoverUpdate && !wantsTemplateUpdate) {
+  if (
+    !wantsDetailsUpdate &&
+    !wantsCoverUpdate &&
+    !wantsTemplateUpdate &&
+    !wantsSoundtrackUpdate
+  ) {
     return NextResponse.json(
       { error: "Nessuna modifica ricevuta." },
       { status: 400 }
@@ -363,6 +376,46 @@ export async function PATCH(request: Request, context: RouteContext) {
     updatePayload.template_id = template.id;
   }
 
+  if (wantsSoundtrackUpdate) {
+    const soundtrackId = cleanNullableText(body.soundtrackId);
+
+    if (!soundtrackId) {
+      updatePayload.soundtrack_id = null;
+    } else {
+      const { data: soundtrack, error: soundtrackError } = await admin
+        .from("gallery_soundtracks")
+        .select("id, is_active")
+        .eq("id", soundtrackId)
+        .maybeSingle<SoundtrackRecord>();
+
+      if (soundtrackError) {
+        return NextResponse.json(
+          {
+            error: "Errore controllo soundtrack.",
+            details: soundtrackError.message,
+          },
+          { status: 500 }
+        );
+      }
+
+      if (!soundtrack) {
+        return NextResponse.json(
+          { error: "Soundtrack non trovata." },
+          { status: 404 }
+        );
+      }
+
+      if (!soundtrack.is_active) {
+        return NextResponse.json(
+          { error: "Questa soundtrack non è attiva." },
+          { status: 403 }
+        );
+      }
+
+      updatePayload.soundtrack_id = soundtrack.id;
+    }
+  }
+
   updatePayload.updated_at = new Date().toISOString();
 
   const { data: updated, error: updateError } = await supabase
@@ -370,7 +423,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update(updatePayload)
     .eq("id", permission.gallery.id)
     .select(
-      "id, title, slug, description, cover_image_url, template_id, status, updated_at"
+      "id, title, slug, description, cover_image_url, template_id, soundtrack_id, status, updated_at"
     )
     .single();
 
