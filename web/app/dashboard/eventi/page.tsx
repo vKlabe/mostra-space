@@ -45,7 +45,7 @@ type GalleryLiveEvent = {
   gallery_event_id: string | null;
   gallery_id: string;
   access_mode: "public" | "password" | "invite_only" | "private_link";
-  voice_mode: "owner_speaks" | "everyone_speaks" | "request_to_speak";
+  voice_mode: "owner_only" | "everyone" | "request_to_speak";
   is_active: boolean;
   max_participants: number | null;
   room_name: string;
@@ -131,7 +131,7 @@ function getAccessModeLabel(mode: GalleryLiveEvent["access_mode"]) {
 }
 
 function getVoiceModeLabel(mode: GalleryLiveEvent["voice_mode"]) {
-  if (mode === "everyone_speaks") return "Tutti parlano";
+  if (mode === "everyone") return "Tutti parlano";
   if (mode === "request_to_speak") return "Richiesta parola";
   return "Owner/moderatori parlano";
 }

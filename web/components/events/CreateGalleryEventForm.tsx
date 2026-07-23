@@ -22,7 +22,7 @@ type CreateGalleryEventFormProps = {
 };
 
 type LiveAccessMode = "public" | "password" | "invite_only" | "private_link";
-type LiveVoiceMode = "owner_speaks" | "everyone_speaks" | "request_to_speak";
+type LiveVoiceMode = "owner_only" | "everyone" | "request_to_speak";
 
 function toLocalDateTimeValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60 * 1000;
@@ -48,7 +48,7 @@ function getAccessModeDescription(mode: LiveAccessMode) {
 }
 
 function getVoiceModeDescription(mode: LiveVoiceMode) {
-  if (mode === "everyone_speaks") {
+  if (mode === "everyone") {
     return "Tutti i partecipanti potranno attivare il microfono. Consigliato solo per gruppi piccoli.";
   }
 
@@ -86,7 +86,7 @@ export default function CreateGalleryEventForm({
   const [enableLiveGuidedVisit, setEnableLiveGuidedVisit] = useState(false);
   const [liveAccessMode, setLiveAccessMode] = useState<LiveAccessMode>("public");
   const [liveVoiceMode, setLiveVoiceMode] =
-    useState<LiveVoiceMode>("owner_speaks");
+    useState<LiveVoiceMode>("owner_only");
   const [liveMaxParticipants, setLiveMaxParticipants] = useState("50");
   const [livePassword, setLivePassword] = useState("");
   const [message, setMessage] = useState<{
@@ -190,7 +190,7 @@ export default function CreateGalleryEventForm({
       setGalleryId("");
       setEnableLiveGuidedVisit(false);
       setLiveAccessMode("public");
-      setLiveVoiceMode("owner_speaks");
+      setLiveVoiceMode("owner_only");
       setLiveMaxParticipants("50");
       setLivePassword("");
       setMessage({
@@ -422,8 +422,8 @@ export default function CreateGalleryEventForm({
                     }
                     className="rounded-2xl border border-sky-900/70 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
                   >
-                    <option value="owner_speaks">Solo owner/moderatori parlano</option>
-                    <option value="everyone_speaks">Tutti possono parlare</option>
+                    <option value="owner_only">Solo owner/moderatori parlano</option>
+                    <option value="everyone">Tutti possono parlare</option>
                     <option value="request_to_speak">Richiesta parola</option>
                   </select>
                   <span className="text-xs leading-5 text-sky-100/55">

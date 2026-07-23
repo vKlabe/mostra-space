@@ -33,8 +33,8 @@ type LiveGuidedVisitAccessMode =
   | "private_link";
 
 type LiveGuidedVisitVoiceMode =
-  | "owner_speaks"
-  | "everyone_speaks"
+  | "owner_only"
+  | "everyone"
   | "request_to_speak";
 
 type LiveGuidedVisitPayload = {
@@ -150,15 +150,15 @@ function cleanAccessMode(value: unknown): LiveGuidedVisitAccessMode {
 }
 
 function cleanVoiceMode(value: unknown): LiveGuidedVisitVoiceMode {
-  if (
-    value === "owner_speaks" ||
-    value === "everyone_speaks" ||
-    value === "request_to_speak"
-  ) {
-    return value;
+  if (value === "everyone" || value === "everyone_speaks") {
+    return "everyone";
   }
 
-  return "owner_speaks";
+  if (value === "request_to_speak") {
+    return "request_to_speak";
+  }
+
+  return "owner_only";
 }
 
 function parseLiveGuidedVisit(value: unknown): LiveGuidedVisitPayload {
@@ -166,7 +166,7 @@ function parseLiveGuidedVisit(value: unknown): LiveGuidedVisitPayload {
     return {
       enabled: false,
       accessMode: "public",
-      voiceMode: "owner_speaks",
+      voiceMode: "owner_only",
       maxParticipants: null,
       password: null,
     };
@@ -196,7 +196,7 @@ function buildLiveRoomName(galleryId: string, eventId: string) {
 }
 
 function getDefaultParticipantRole(voiceMode: LiveGuidedVisitVoiceMode) {
-  if (voiceMode === "everyone_speaks") {
+  if (voiceMode === "everyone") {
     return "speaker";
   }
 
@@ -596,12 +596,17 @@ export async function POST(request: Request) {
       {
         gallery_id: gallery.id,
         is_enabled: true,
+        voice_enabled: true,
         institution_only: true,
+        owner_plan_required: "institution",
         schedule_mode: "events_only",
+        voice_schedule_mode: "events_only",
         access_mode: liveGuidedVisit.accessMode,
+        voice_access_mode: liveGuidedVisit.accessMode,
         default_participant_role: getDefaultParticipantRole(
           liveGuidedVisit.voiceMode
         ),
+        default_voice_role: getDefaultParticipantRole(liveGuidedVisit.voiceMode),
         allow_guests: liveGuidedVisit.accessMode !== "invite_only",
         requires_login: liveGuidedVisit.accessMode === "invite_only",
         max_participants: liveGuidedVisit.maxParticipants,
