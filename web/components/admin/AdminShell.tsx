@@ -1,9 +1,10 @@
 import LogoutButton from "@/components/auth/LogoutButton";
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 type AdminShellProps = {
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
   activeSection?:
     | "overview"
     | "users"
@@ -15,7 +16,8 @@ type AdminShellProps = {
     | "events"
     | "storage"
     | "billing";
-  children: React.ReactNode;
+  children: ReactNode;
+  actions?: ReactNode;
 };
 
 const navItems = [
