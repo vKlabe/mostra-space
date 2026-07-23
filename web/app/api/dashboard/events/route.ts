@@ -1,6 +1,8 @@
+import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { normalizePlanName, type PlanName } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,6 +10,12 @@ export const runtime = "nodejs";
 type Profile = {
   id: string;
   role: "user" | "gallerist" | "admin";
+  plan: PlanName | string | null;
+};
+
+type OwnerPlanProfile = {
+  id: string;
+  plan: PlanName | string | null;
 };
 
 type Gallery = {
@@ -18,6 +26,25 @@ type Gallery = {
   status: "draft" | "published" | "archived";
 };
 
+type LiveGuidedVisitAccessMode =
+  | "public"
+  | "password"
+  | "invite_only"
+  | "private_link";
+
+type LiveGuidedVisitVoiceMode =
+  | "owner_speaks"
+  | "everyone_speaks"
+  | "request_to_speak";
+
+type LiveGuidedVisitPayload = {
+  enabled: boolean;
+  accessMode: LiveGuidedVisitAccessMode;
+  voiceMode: LiveGuidedVisitVoiceMode;
+  maxParticipants: number | null;
+  password: string | null;
+};
+
 type CreateEventBody = {
   galleryId?: unknown;
   title?: unknown;
@@ -26,6 +53,7 @@ type CreateEventBody = {
   endsAt?: unknown;
   durationMinutes?: unknown;
   timezone?: unknown;
+  liveGuidedVisit?: unknown;
 };
 
 type FollowRow = {
@@ -72,6 +100,28 @@ function cleanDurationMinutes(value: unknown) {
   return Math.round(numberValue);
 }
 
+function cleanMaxParticipants(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return null;
+  }
+
+  if (numberValue < 2) {
+    return 2;
+  }
+
+  if (numberValue > 1000) {
+    return 1000;
+  }
+
+  return Math.round(numberValue);
+}
+
 function parseDate(value: unknown) {
   if (typeof value !== "string") {
     return null;
@@ -84,6 +134,77 @@ function parseDate(value: unknown) {
   }
 
   return date;
+}
+
+function cleanAccessMode(value: unknown): LiveGuidedVisitAccessMode {
+  if (
+    value === "public" ||
+    value === "password" ||
+    value === "invite_only" ||
+    value === "private_link"
+  ) {
+    return value;
+  }
+
+  return "public";
+}
+
+function cleanVoiceMode(value: unknown): LiveGuidedVisitVoiceMode {
+  if (
+    value === "owner_speaks" ||
+    value === "everyone_speaks" ||
+    value === "request_to_speak"
+  ) {
+    return value;
+  }
+
+  return "owner_speaks";
+}
+
+function parseLiveGuidedVisit(value: unknown): LiveGuidedVisitPayload {
+  if (!value || typeof value !== "object") {
+    return {
+      enabled: false,
+      accessMode: "public",
+      voiceMode: "owner_speaks",
+      maxParticipants: null,
+      password: null,
+    };
+  }
+
+  const payload = value as Record<string, unknown>;
+  const enabled = payload.enabled === true;
+
+  return {
+    enabled,
+    accessMode: cleanAccessMode(payload.accessMode),
+    voiceMode: cleanVoiceMode(payload.voiceMode),
+    maxParticipants: cleanMaxParticipants(payload.maxParticipants),
+    password: cleanNullableText(payload.password),
+  };
+}
+
+function hashLivePassword(password: string) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+
+  return `scrypt:${salt}:${hash}`;
+}
+
+function buildLiveRoomName(galleryId: string, eventId: string) {
+  return `gallery-${galleryId}-event-${eventId}`;
+}
+
+function getDefaultParticipantRole(voiceMode: LiveGuidedVisitVoiceMode) {
+  if (voiceMode === "everyone_speaks") {
+    return "speaker";
+  }
+
+  if (voiceMode === "request_to_speak") {
+    return "listener_can_request";
+  }
+
+  return "listener";
 }
 
 async function requireEventCreator() {
@@ -107,7 +228,7 @@ async function requireEventCreator() {
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("id, role")
+    .select("id, role, plan")
     .eq("id", user.id)
     .single<Profile>();
 
@@ -261,12 +382,10 @@ async function createEventNotifications({
     return;
   }
 
-  await admin
-    .from("account_notifications")
-    .upsert(rows, {
-      onConflict: "user_id,event_id,type",
-      ignoreDuplicates: true,
-    });
+  await admin.from("account_notifications").upsert(rows, {
+    onConflict: "user_id,event_id,type",
+    ignoreDuplicates: true,
+  });
 }
 
 export async function POST(request: Request) {
@@ -301,6 +420,7 @@ export async function POST(request: Request) {
     (startsAt
       ? new Date(startsAt.getTime() + durationMinutes * 60 * 1000)
       : null);
+  const liveGuidedVisit = parseLiveGuidedVisit(body.liveGuidedVisit);
 
   if (!galleryId) {
     return NextResponse.json(
@@ -337,6 +457,20 @@ export async function POST(request: Request) {
     );
   }
 
+  if (
+    liveGuidedVisit.enabled &&
+    liveGuidedVisit.accessMode === "password" &&
+    (!liveGuidedVisit.password || liveGuidedVisit.password.length < 4)
+  ) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Inserisci una password di almeno 4 caratteri per la Live guided visit.",
+      },
+      { status: 400 }
+    );
+  }
+
   const admin = current.admin;
 
   const { data: gallery, error: galleryError } = await admin
@@ -358,6 +492,32 @@ export async function POST(request: Request) {
   if (!isAdmin && !isOwner) {
     return NextResponse.json(
       { success: false, error: "Non puoi creare eventi per questa galleria." },
+      { status: 403 }
+    );
+  }
+
+  const { data: ownerProfile, error: ownerProfileError } = await admin
+    .from("profiles")
+    .select("id, plan")
+    .eq("id", gallery.owner_id)
+    .single<OwnerPlanProfile>();
+
+  if (ownerProfileError || !ownerProfile) {
+    return NextResponse.json(
+      { success: false, error: "Profilo proprietario non trovato." },
+      { status: 404 }
+    );
+  }
+
+  const ownerPlan = normalizePlanName(ownerProfile.plan);
+
+  if (liveGuidedVisit.enabled && ownerPlan !== "institution") {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Le Live guided visits sono disponibili solo per gallerie con piano Institution.",
+      },
       { status: 403 }
     );
   }
@@ -424,6 +584,74 @@ export async function POST(request: Request) {
     );
   }
 
+  let createdLiveGuidedVisit = null;
+
+  if (liveGuidedVisit.enabled) {
+    const passwordHash =
+      liveGuidedVisit.accessMode === "password" && liveGuidedVisit.password
+        ? hashLivePassword(liveGuidedVisit.password)
+        : null;
+
+    await admin.from("gallery_live_settings").upsert(
+      {
+        gallery_id: gallery.id,
+        is_enabled: true,
+        institution_only: true,
+        schedule_mode: "events_only",
+        access_mode: liveGuidedVisit.accessMode,
+        default_participant_role: getDefaultParticipantRole(
+          liveGuidedVisit.voiceMode
+        ),
+        allow_guests: liveGuidedVisit.accessMode !== "invite_only",
+        requires_login: liveGuidedVisit.accessMode === "invite_only",
+        max_participants: liveGuidedVisit.maxParticipants,
+        notes: "Live guided visits enabled from dashboard event creation.",
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "gallery_id",
+      }
+    );
+
+    const { data: liveEvent, error: liveEventError } = await admin
+      .from("gallery_live_events")
+      .insert({
+        gallery_event_id: createdEvent.id,
+        gallery_id: gallery.id,
+        title,
+        description,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        timezone,
+        access_mode: liveGuidedVisit.accessMode,
+        password_hash: passwordHash,
+        voice_mode: liveGuidedVisit.voiceMode,
+        is_active: true,
+        max_participants: liveGuidedVisit.maxParticipants,
+        room_name: buildLiveRoomName(gallery.id, createdEvent.id),
+        created_by: current.user.id,
+      })
+      .select(
+        "id, gallery_event_id, gallery_id, title, starts_at, ends_at, access_mode, voice_mode, is_active, max_participants, room_name"
+      )
+      .single();
+
+    if (liveEventError || !liveEvent) {
+      await admin.from("gallery_events").delete().eq("id", createdEvent.id);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Evento non creato: errore creazione Live guided visit.",
+          details: liveEventError?.message || null,
+        },
+        { status: 500 }
+      );
+    }
+
+    createdLiveGuidedVisit = liveEvent;
+  }
+
   await createEventNotifications({
     admin,
     eventId: createdEvent.id,
@@ -437,5 +665,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     event: createdEvent,
+    liveGuidedVisit: createdLiveGuidedVisit,
   });
 }

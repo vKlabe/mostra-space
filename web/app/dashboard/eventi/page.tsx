@@ -5,10 +5,17 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import CreateGalleryEventForm from "@/components/events/CreateGalleryEventForm";
 import GalleryEventActions from "@/components/events/GalleryEventActions";
 import T from "@/components/i18n/T";
+import { PLAN_LIMITS, normalizePlanName, type PlanName } from "@/lib/plans";
 
 type Profile = {
   id: string;
   role: "user" | "gallerist" | "admin";
+  plan: PlanName | string | null;
+};
+
+type OwnerPlanProfile = {
+  id: string;
+  plan: PlanName | string | null;
 };
 
 type Gallery = {
@@ -31,6 +38,17 @@ type GalleryEvent = {
   timezone: string;
   status: "scheduled" | "live" | "completed" | "cancelled";
   created_at: string;
+};
+
+type GalleryLiveEvent = {
+  id: string;
+  gallery_event_id: string | null;
+  gallery_id: string;
+  access_mode: "public" | "password" | "invite_only" | "private_link";
+  voice_mode: "owner_speaks" | "everyone_speaks" | "request_to_speak";
+  is_active: boolean;
+  max_participants: number | null;
+  room_name: string;
 };
 
 function formatDateTime(value: string) {
@@ -105,6 +123,19 @@ function getStatusClass(status: GalleryEvent["status"]) {
   return "border-amber-900 bg-amber-950/25 text-amber-200";
 }
 
+function getAccessModeLabel(mode: GalleryLiveEvent["access_mode"]) {
+  if (mode === "password") return "Password";
+  if (mode === "invite_only") return "Solo invito";
+  if (mode === "private_link") return "Link privato";
+  return "Pubblico";
+}
+
+function getVoiceModeLabel(mode: GalleryLiveEvent["voice_mode"]) {
+  if (mode === "everyone_speaks") return "Tutti parlano";
+  if (mode === "request_to_speak") return "Richiesta parola";
+  return "Owner/moderatori parlano";
+}
+
 export default async function DashboardEventsPage() {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -119,7 +150,7 @@ export default async function DashboardEventsPage() {
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("id, role")
+    .select("id, role, plan")
     .eq("id", user.id)
     .single<Profile>();
 
@@ -133,20 +164,17 @@ export default async function DashboardEventsPage() {
   if (!canManageEvents) {
     return (
       <DashboardShell
-  title={
-    <T
-      textKey="dashboard.events.restricted.title"
-      fallback="Eventi"
-    />
-  }
-  subtitle={
-    <T
-      textKey="dashboard.events.restricted.subtitle"
-      fallback="Gli eventi sono disponibili per galleristi, artisti e admin."
-    />
-  }
-  activeSection="gallerie"
->
+        title={
+          <T textKey="dashboard.events.restricted.title" fallback="Eventi" />
+        }
+        subtitle={
+          <T
+            textKey="dashboard.events.restricted.subtitle"
+            fallback="Gli eventi sono disponibili per galleristi, artisti e admin."
+          />
+        }
+        activeSection="gallerie"
+      >
         <a
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -194,6 +222,42 @@ export default async function DashboardEventsPage() {
 
   const safeGalleries = (galleries || []) as Gallery[];
   const safeEvents = (events || []) as GalleryEvent[];
+
+  const ownerIds = Array.from(
+    new Set(safeGalleries.map((gallery) => gallery.owner_id))
+  );
+
+  const { data: ownerProfiles } =
+    ownerIds.length > 0
+      ? await admin.from("profiles").select("id, plan").in("id", ownerIds)
+      : { data: [] };
+
+  const ownerPlanById = new Map(
+    ((ownerProfiles || []) as OwnerPlanProfile[]).map((ownerProfile) => [
+      ownerProfile.id,
+      normalizePlanName(ownerProfile.plan),
+    ])
+  );
+
+  const eventIds = safeEvents.map((event) => event.id);
+
+  const { data: liveEvents } =
+    eventIds.length > 0
+      ? await admin
+          .from("gallery_live_events")
+          .select(
+            "id, gallery_event_id, gallery_id, access_mode, voice_mode, is_active, max_participants, room_name"
+          )
+          .in("gallery_event_id", eventIds)
+      : { data: [] };
+
+  const safeLiveEvents = (liveEvents || []) as GalleryLiveEvent[];
+  const liveEventByEventId = new Map(
+    safeLiveEvents
+      .filter((liveEvent) => liveEvent.gallery_event_id)
+      .map((liveEvent) => [liveEvent.gallery_event_id as string, liveEvent])
+  );
+
   const galleryById = new Map(
     safeGalleries.map((gallery) => [gallery.id, gallery])
   );
@@ -204,10 +268,21 @@ export default async function DashboardEventsPage() {
       .map((event) => event.gallery_id)
   );
 
-  const galleryOptions = safeGalleries.map((gallery) => ({
-    ...gallery,
-    hasActiveEvent: activeGalleryIds.has(gallery.id),
-  }));
+  const currentProfilePlan = normalizePlanName(profile.plan);
+
+  const galleryOptions = safeGalleries.map((gallery) => {
+    const ownerPlan =
+      ownerPlanById.get(gallery.owner_id) ||
+      (gallery.owner_id === user.id ? currentProfilePlan : "free");
+
+    return {
+      ...gallery,
+      ownerPlan,
+      ownerPlanLabel: PLAN_LIMITS[ownerPlan].label,
+      hasActiveEvent: activeGalleryIds.has(gallery.id),
+      liveGuidedEligible: ownerPlan === "institution",
+    };
+  });
 
   const upcomingEvents = safeEvents.filter(
     (event) => event.status === "scheduled" || event.status === "live"
@@ -219,19 +294,16 @@ export default async function DashboardEventsPage() {
 
   return (
     <DashboardShell
-  title={
-    <T
-      textKey="dashboard.events.shell.title"
-      fallback="Eventi"
-    />
-  }
-  subtitle={
-    <T
-      textKey="dashboard.events.shell.subtitle"
-      fallback="Crea eventi collegati alle tue gallerie. Ogni galleria può avere massimo un evento attivo."
-    />
-  }
-  activeSection="gallerie"
+      title={
+        <T textKey="dashboard.events.shell.title" fallback="Eventi" />
+      }
+      subtitle={
+        <T
+          textKey="dashboard.events.shell.subtitle"
+          fallback="Crea eventi collegati alle tue gallerie. Ogni galleria può avere massimo un evento attivo."
+        />
+      }
+      activeSection="gallerie"
       actions={
         <div className="flex flex-wrap gap-3">
           <a
@@ -263,17 +335,11 @@ export default async function DashboardEventsPage() {
 
         <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-            <T
-              textKey="dashboard.events.active.label"
-              fallback="Eventi attivi"
-            />
+            <T textKey="dashboard.events.active.label" fallback="Eventi attivi" />
           </p>
 
           <h2 className="font-serif text-3xl text-neutral-50">
-            <T
-              textKey="dashboard.events.active.title"
-              fallback="Prossimi eventi"
-            />
+            <T textKey="dashboard.events.active.title" fallback="Prossimi eventi" />
           </h2>
 
           {upcomingEvents.length === 0 ? (
@@ -287,6 +353,7 @@ export default async function DashboardEventsPage() {
             <div className="mt-6 grid gap-4">
               {upcomingEvents.map((event) => {
                 const gallery = galleryById.get(event.gallery_id);
+                const liveEvent = liveEventByEventId.get(event.id);
 
                 return (
                   <article
@@ -318,18 +385,24 @@ export default async function DashboardEventsPage() {
                           )}`}
                         >
                           <T
-  textKey={getEventStatusTranslation(event.status).textKey}
-  fallback={getEventStatusTranslation(event.status).fallback}
-/>
+                            textKey={getEventStatusTranslation(event.status).textKey}
+                            fallback={getEventStatusTranslation(event.status).fallback}
+                          />
                         </span>
+
+                        {liveEvent?.is_active && (
+                          <span className="rounded-full border border-sky-800 bg-sky-950/40 px-3 py-1 text-xs font-medium text-sky-200">
+                            Live guided visit
+                          </span>
+                        )}
 
                         {gallery && (
                           <span className="rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-400">
                             {gallery.title} ·{" "}
-<T
-  textKey={getGalleryStatusTranslation(gallery.status).textKey}
-  fallback={getGalleryStatusTranslation(gallery.status).fallback}
-/>
+                            <T
+                              textKey={getGalleryStatusTranslation(gallery.status).textKey}
+                              fallback={getGalleryStatusTranslation(gallery.status).fallback}
+                            />
                           </span>
                         )}
                       </div>
@@ -341,6 +414,16 @@ export default async function DashboardEventsPage() {
                       <p className="mt-2 text-sm text-amber-200">
                         {formatDateTime(event.starts_at)}
                       </p>
+
+                      {liveEvent?.is_active && (
+                        <p className="mt-2 text-xs leading-5 text-sky-200/80">
+                          Voice room: {getAccessModeLabel(liveEvent.access_mode)} ·{" "}
+                          {getVoiceModeLabel(liveEvent.voice_mode)}
+                          {liveEvent.max_participants
+                            ? ` · max ${liveEvent.max_participants} partecipanti`
+                            : ""}
+                        </p>
+                      )}
 
                       {event.description && (
                         <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
@@ -376,22 +459,17 @@ export default async function DashboardEventsPage() {
         {closedEvents.length > 0 && (
           <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              <T
-                textKey="dashboard.events.archive.label"
-                fallback="Archivio eventi"
-              />
+              <T textKey="dashboard.events.archive.label" fallback="Archivio eventi" />
             </p>
 
             <h2 className="font-serif text-3xl text-neutral-50">
-              <T
-                textKey="dashboard.events.archive.title"
-                fallback="Eventi chiusi"
-              />
+              <T textKey="dashboard.events.archive.title" fallback="Eventi chiusi" />
             </h2>
 
             <div className="mt-6 grid gap-3">
               {closedEvents.map((event) => {
                 const gallery = galleryById.get(event.gallery_id);
+                const liveEvent = liveEventByEventId.get(event.id);
 
                 return (
                   <div
@@ -399,9 +477,17 @@ export default async function DashboardEventsPage() {
                     className="flex flex-col justify-between gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 md:flex-row md:items-center"
                   >
                     <div>
-                      <p className="text-sm font-medium text-neutral-100">
-                        {event.title}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-neutral-100">
+                          {event.title}
+                        </p>
+
+                        {liveEvent && (
+                          <span className="rounded-full border border-sky-900 bg-sky-950/25 px-2 py-0.5 text-[11px] text-sky-200/80">
+                            Live guided visit
+                          </span>
+                        )}
+                      </div>
 
                       <p className="mt-1 text-xs text-neutral-500">
                         {gallery?.title ? (
@@ -413,10 +499,10 @@ export default async function DashboardEventsPage() {
                           />
                         )}{" "}
                         · {formatDateTime(event.starts_at)} ·{" "}
-<T
-  textKey={getEventStatusTranslation(event.status).textKey}
-  fallback={getEventStatusTranslation(event.status).fallback}
-/>
+                        <T
+                          textKey={getEventStatusTranslation(event.status).textKey}
+                          fallback={getEventStatusTranslation(event.status).fallback}
+                        />
                       </p>
                     </div>
 

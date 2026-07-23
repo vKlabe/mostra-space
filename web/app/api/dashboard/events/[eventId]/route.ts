@@ -148,14 +148,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const nextStatus = body.status;
+  const now = new Date().toISOString();
 
   const { data: updatedEvent, error: updateError } = await permission.admin
     .from("gallery_events")
     .update({
       status: nextStatus,
-      completed_at: nextStatus === "completed" ? new Date().toISOString() : null,
-      cancelled_at: nextStatus === "cancelled" ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
+      completed_at: nextStatus === "completed" ? now : null,
+      cancelled_at: nextStatus === "cancelled" ? now : null,
+      updated_at: now,
     })
     .eq("id", permission.event.id)
     .select(
@@ -173,6 +174,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       { status: 500 }
     );
   }
+
+  await permission.admin
+    .from("gallery_live_events")
+    .update({
+      is_active: false,
+      updated_at: now,
+    })
+    .eq("gallery_event_id", permission.event.id);
 
   return NextResponse.json({
     success: true,
@@ -198,6 +207,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
       { status: permission.status }
     );
   }
+
+  await permission.admin
+    .from("gallery_live_events")
+    .delete()
+    .eq("gallery_event_id", permission.event.id);
 
   const { error: deleteError } = await permission.admin
     .from("gallery_events")
