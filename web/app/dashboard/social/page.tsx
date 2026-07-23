@@ -416,41 +416,58 @@ export default async function DashboardSocialPage() {
 
   const nowIso = new Date().toISOString();
 
-  const followedEventRows =
+  const { data: followedOwnerGalleriesData } =
     followingIds.length > 0
+      ? await admin
+          .from("galleries")
+          .select("id")
+          .in("owner_id", followingIds)
+      : { data: [] };
+
+  const followedOwnerGalleryIds = ((followedOwnerGalleriesData || []) as Array<{
+    id: string;
+  }>).map((gallery) => gallery.id);
+
+  const ownerIdsForCalendar = Array.from(new Set([...followingIds, user.id]));
+  const galleryIdsForCalendar = Array.from(
+    new Set([...favoriteGalleryIds, ...followedOwnerGalleryIds])
+  );
+
+  const followedEventRows =
+    ownerIdsForCalendar.length > 0
       ? await admin
           .from("gallery_events")
           .select(
             "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
           )
-          .in("owner_id", followingIds)
+          .in("owner_id", ownerIdsForCalendar)
           .in("status", ["scheduled", "live"])
           .gt("ends_at", nowIso)
           .order("starts_at", { ascending: true })
-          .limit(8)
+          .limit(12)
       : { data: [] };
 
   const favoriteEventRows =
-    favoriteGalleryIds.length > 0
+    galleryIdsForCalendar.length > 0
       ? await admin
           .from("gallery_events")
           .select(
             "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
           )
-          .in("gallery_id", favoriteGalleryIds)
+          .in("gallery_id", galleryIdsForCalendar)
           .in("status", ["scheduled", "live"])
           .gt("ends_at", nowIso)
           .order("starts_at", { ascending: true })
-          .limit(8)
+          .limit(12)
       : { data: [] };
 
   const eventsById = new Map<string, GalleryEvent>();
 
-  for (const event of (followedEventRows.data || []) as GalleryEvent[]) {
+  for (const event of (followedEventRows.data || []) as unknown as GalleryEvent[]) {
     eventsById.set(event.id, event);
   }
 
-  for (const event of (favoriteEventRows.data || []) as GalleryEvent[]) {
+  for (const event of (favoriteEventRows.data || []) as unknown as GalleryEvent[]) {
     eventsById.set(event.id, event);
   }
 

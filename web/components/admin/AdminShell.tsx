@@ -12,6 +12,7 @@ type AdminShellProps = {
     | "templates"
     | "soundtracks"
     | "live-guided-visits"
+    | "events"
     | "storage"
     | "billing";
   children: React.ReactNode;
@@ -52,6 +53,11 @@ const navItems = [
   label: "Live Visits",
   href: "/admin/live-guided-visits",
   key: "live-guided-visits",
+},
+{
+  label: "Eventi",
+  href: "/admin/events",
+  key: "events",
 },
   {
     label: "Storage",

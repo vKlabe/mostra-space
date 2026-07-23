@@ -104,32 +104,54 @@ export default async function AccountCalendarPage() {
     (row) => row.gallery_id
   );
 
+  const nowIso = new Date().toISOString();
+
+  const { data: followedOwnerGalleriesData } =
+    followedProfileIds.length > 0
+      ? await admin
+          .from("galleries")
+          .select("id")
+          .in("owner_id", followedProfileIds)
+      : { data: [] };
+
+  const followedOwnerGalleryIds = ((followedOwnerGalleriesData || []) as Array<{
+    id: string;
+  }>).map((gallery) => gallery.id);
+
+  const ownerIdsForCalendar = Array.from(
+    new Set([...followedProfileIds, user.id])
+  );
+
+  const galleryIdsForCalendar = Array.from(
+    new Set([...favoriteGalleryIds, ...followedOwnerGalleryIds])
+  );
+
   const eventQueries: PromiseLike<{ data: unknown[] | null }>[] = [];
 
-  if (followedProfileIds.length > 0) {
+  if (ownerIdsForCalendar.length > 0) {
     eventQueries.push(
       admin
         .from("gallery_events")
         .select(
           "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
         )
-        .in("owner_id", followedProfileIds)
+        .in("owner_id", ownerIdsForCalendar)
         .in("status", ["scheduled", "live"])
-        .gt("ends_at", new Date().toISOString())
+        .gt("ends_at", nowIso)
         .order("starts_at", { ascending: true })
     );
   }
 
-  if (favoriteGalleryIds.length > 0) {
+  if (galleryIdsForCalendar.length > 0) {
     eventQueries.push(
       admin
         .from("gallery_events")
         .select(
           "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
         )
-        .in("gallery_id", favoriteGalleryIds)
+        .in("gallery_id", galleryIdsForCalendar)
         .in("status", ["scheduled", "live"])
-        .gt("ends_at", new Date().toISOString())
+        .gt("ends_at", nowIso)
         .order("starts_at", { ascending: true })
     );
   }
@@ -138,7 +160,7 @@ export default async function AccountCalendarPage() {
   const eventsById = new Map<string, GalleryEvent>();
 
   for (const result of queryResults) {
-    for (const event of (result.data || []) as GalleryEvent[]) {
+    for (const event of (result.data || []) as unknown as GalleryEvent[]) {
       eventsById.set(event.id, event);
     }
   }

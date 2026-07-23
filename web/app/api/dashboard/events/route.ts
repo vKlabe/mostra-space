@@ -556,7 +556,7 @@ export async function POST(request: Request) {
   const { data: createdEvent, error: insertError } = await admin
     .from("gallery_events")
     .insert({
-      owner_id: current.user.id,
+      owner_id: gallery.owner_id,
       gallery_id: gallery.id,
       title,
       description,
@@ -660,7 +660,7 @@ export async function POST(request: Request) {
   await createEventNotifications({
     admin,
     eventId: createdEvent.id,
-    ownerId: current.user.id,
+    ownerId: gallery.owner_id,
     galleryId: gallery.id,
     galleryTitle: gallery.title,
     eventTitle: createdEvent.title,
