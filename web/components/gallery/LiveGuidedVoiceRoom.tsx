@@ -93,6 +93,19 @@ type LiveGuidedVoiceRoomProps = {
 
 type ConnectionState = "idle" | "requesting" | "connecting" | "connected" | "error";
 
+type AudioDeviceOption = {
+  deviceId: string;
+  label: string;
+  kind: "audioinput" | "audiooutput";
+};
+
+type DeviceErrorCode =
+  | "enumerate_unavailable"
+  | "input_switch_failed"
+  | "output_switch_failed"
+  | "output_not_supported"
+  | null;
+
 function formatEventDateTime(value: string) {
   try {
     return new Date(value).toLocaleString("it-IT", {
@@ -227,6 +240,39 @@ function canModerateRole(role: string | null | undefined) {
   return role === "admin" || role === "owner" || role === "moderator";
 }
 
+function getDeviceLabel(
+  device: MediaDeviceInfo,
+  index: number,
+  fallbackPrefix: string
+) {
+  return device.label?.trim() || `${fallbackPrefix} ${index + 1}`;
+}
+
+function getMicrophoneOptions(deviceId: string | null | undefined) {
+  if (!deviceId) {
+    return undefined;
+  }
+
+  return {
+    deviceId,
+  } as any;
+}
+
+async function setElementSinkId(
+  element: HTMLMediaElement,
+  deviceId: string
+) {
+  const audioElement = element as HTMLMediaElement & {
+    setSinkId?: (sinkId: string) => Promise<void>;
+  };
+
+  if (typeof audioElement.setSinkId !== "function") {
+    throw new Error("setSinkId not supported");
+  }
+
+  await audioElement.setSinkId(deviceId);
+}
+
 export default function LiveGuidedVoiceRoom({
   galleryId,
   liveStatus,
@@ -251,6 +297,12 @@ export default function LiveGuidedVoiceRoom({
   const [moderationLoadingIdentity, setModerationLoadingIdentity] =
     useState<string | null>(null);
   const [moderationMessage, setModerationMessage] = useState<string | null>(null);
+  const [isDeviceSettingsOpen, setIsDeviceSettingsOpen] = useState(false);
+  const [audioInputDevices, setAudioInputDevices] = useState<AudioDeviceOption[]>([]);
+  const [audioOutputDevices, setAudioOutputDevices] = useState<AudioDeviceOption[]>([]);
+  const [selectedAudioInputId, setSelectedAudioInputId] = useState("");
+  const [selectedAudioOutputId, setSelectedAudioOutputId] = useState("");
+  const [deviceErrorCode, setDeviceErrorCode] = useState<DeviceErrorCode>(null);
 
   const roomRef = useRef<Room | null>(null);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
@@ -269,6 +321,65 @@ export default function LiveGuidedVoiceRoom({
       return a.name.localeCompare(b.name);
     });
   }, [participants]);
+
+  const refreshAudioDevices = useCallback(async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) {
+      setDeviceErrorCode("enumerate_unavailable");
+      return;
+    }
+
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const inputs = devices
+        .filter((device) => device.kind === "audioinput")
+        .map((device, index) => ({
+          deviceId: device.deviceId,
+          label: getDeviceLabel(device, index, "Microfono"),
+          kind: "audioinput" as const,
+        }));
+
+      const outputs = devices
+        .filter((device) => device.kind === "audiooutput")
+        .map((device, index) => ({
+          deviceId: device.deviceId,
+          label: getDeviceLabel(device, index, "Uscita audio"),
+          kind: "audiooutput" as const,
+        }));
+
+      setAudioInputDevices(inputs);
+      setAudioOutputDevices(outputs);
+      setSelectedAudioInputId((current) => current || inputs[0]?.deviceId || "");
+      setSelectedAudioOutputId((current) => current || outputs[0]?.deviceId || "");
+      setDeviceErrorCode(null);
+    } catch {
+      setDeviceErrorCode("enumerate_unavailable");
+    }
+  }, []);
+
+  const applyAudioOutputDevice = useCallback(async (deviceId: string) => {
+    if (!deviceId) {
+      return;
+    }
+
+    const container = audioContainerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const audioElements = Array.from(container.querySelectorAll<HTMLAudioElement>("audio"));
+
+    if (audioElements.length === 0) {
+      return;
+    }
+
+    try {
+      await Promise.all(audioElements.map((element) => setElementSinkId(element, deviceId)));
+      setDeviceErrorCode(null);
+    } catch {
+      setDeviceErrorCode("output_not_supported");
+    }
+  }, []);
 
   const applyRemoteMuteState = useCallback((identityToUpdate?: string) => {
     const container = audioContainerRef.current;
@@ -340,6 +451,46 @@ export default function LiveGuidedVoiceRoom({
     setParticipants([localParticipant, ...remoteParticipants]);
   }, [tokenData?.canPublishAudio, tokenData?.participantRole]);
 
+  const changeAudioInputDevice = useCallback(async (deviceId: string) => {
+    setSelectedAudioInputId(deviceId);
+    setDeviceErrorCode(null);
+
+    const room = roomRef.current;
+
+    if (!room || !deviceId) {
+      return;
+    }
+
+    try {
+      const switchActiveDevice = (room as unknown as {
+        switchActiveDevice?: (kind: MediaDeviceKind, deviceId: string, exact?: boolean) => Promise<void>;
+      }).switchActiveDevice;
+
+      if (typeof switchActiveDevice === "function") {
+        await switchActiveDevice.call(room, "audioinput", deviceId, true);
+      } else if (isMicrophoneEnabled && canPublishAudio) {
+        await room.localParticipant.setMicrophoneEnabled(false);
+        await room.localParticipant.setMicrophoneEnabled(true, getMicrophoneOptions(deviceId));
+      }
+
+      updateParticipants();
+    } catch {
+      setDeviceErrorCode("input_switch_failed");
+    }
+  }, [canPublishAudio, isMicrophoneEnabled, updateParticipants]);
+
+  const changeAudioOutputDevice = useCallback(async (deviceId: string) => {
+    setSelectedAudioOutputId(deviceId);
+    setDeviceErrorCode(null);
+
+    try {
+      await applyAudioOutputDevice(deviceId);
+    } catch {
+      setDeviceErrorCode("output_switch_failed");
+    }
+  }, [applyAudioOutputDevice]);
+
+
   const attachAudioTrack = useCallback((track: any, participant: any) => {
     if (!trackIsAudio(track) || !audioContainerRef.current) {
       return;
@@ -350,11 +501,18 @@ export default function LiveGuidedVoiceRoom({
       element.autoplay = true;
       element.dataset.participantIdentity = participant.identity;
       element.muted = mutedRemoteIdentities.has(participant.identity);
+
+      if (selectedAudioOutputId) {
+        void setElementSinkId(element, selectedAudioOutputId).catch(() => {
+          setDeviceErrorCode("output_not_supported");
+        });
+      }
+
       audioContainerRef.current.appendChild(element);
     } catch {
       // Se il browser blocca un attach specifico, la room resta comunque aperta.
     }
-  }, [mutedRemoteIdentities]);
+  }, [mutedRemoteIdentities, selectedAudioOutputId]);
 
   const detachAudioTrack = useCallback((track: any) => {
     if (!track || typeof track.detach !== "function") {
@@ -400,6 +558,38 @@ export default function LiveGuidedVoiceRoom({
   useEffect(() => {
     applyRemoteMuteState();
   }, [applyRemoteMuteState]);
+
+  useEffect(() => {
+    if (isConnected) {
+      void refreshAudioDevices();
+    }
+  }, [isConnected, refreshAudioDevices]);
+
+  useEffect(() => {
+    if (isDeviceSettingsOpen) {
+      void refreshAudioDevices();
+    }
+  }, [isDeviceSettingsOpen, refreshAudioDevices]);
+
+  useEffect(() => {
+    if (!selectedAudioOutputId) {
+      return;
+    }
+
+    void applyAudioOutputDevice(selectedAudioOutputId);
+  }, [selectedAudioOutputId, applyAudioOutputDevice]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.addEventListener) {
+      return;
+    }
+
+    navigator.mediaDevices.addEventListener("devicechange", refreshAudioDevices);
+
+    return () => {
+      navigator.mediaDevices.removeEventListener("devicechange", refreshAudioDevices);
+    };
+  }, [refreshAudioDevices]);
 
   useEffect(() => {
     return () => {
@@ -501,7 +691,10 @@ export default function LiveGuidedVoiceRoom({
       });
 
       if (result.canPublishAudio) {
-        await room.localParticipant.setMicrophoneEnabled(true);
+        await room.localParticipant.setMicrophoneEnabled(
+          true,
+          getMicrophoneOptions(selectedAudioInputId)
+        );
         setIsMicrophoneEnabled(true);
       } else {
         await room.localParticipant.setMicrophoneEnabled(false);
@@ -529,7 +722,10 @@ export default function LiveGuidedVoiceRoom({
     const nextValue = !isMicrophoneEnabled;
 
     try {
-      await room.localParticipant.setMicrophoneEnabled(nextValue);
+      await room.localParticipant.setMicrophoneEnabled(
+        nextValue,
+        nextValue ? getMicrophoneOptions(selectedAudioInputId) : undefined
+      );
       setIsMicrophoneEnabled(nextValue);
       updateParticipants();
     } catch (error) {
@@ -705,6 +901,120 @@ export default function LiveGuidedVoiceRoom({
     );
   }
 
+  function renderDeviceError() {
+    if (!deviceErrorCode) {
+      return null;
+    }
+
+    return (
+      <p className="rounded-2xl border border-yellow-900 bg-yellow-950/25 px-3 py-2 text-xs leading-5 text-yellow-100/90">
+        {deviceErrorCode === "enumerate_unavailable" ? (
+          <T
+            textKey="gallery.livePanel.voice.devices.errors.enumerateUnavailable"
+            fallback="Non riesco a leggere i dispositivi audio del browser. Controlla i permessi del microfono."
+          />
+        ) : deviceErrorCode === "input_switch_failed" ? (
+          <T
+            textKey="gallery.livePanel.voice.devices.errors.inputSwitchFailed"
+            fallback="Non riesco a cambiare microfono. Controlla che il dispositivo sia collegato e autorizzato."
+          />
+        ) : deviceErrorCode === "output_not_supported" ? (
+          <T
+            textKey="gallery.livePanel.voice.devices.errors.outputNotSupported"
+            fallback="Questo browser non supporta la scelta dell’uscita audio dalla pagina. Usa le impostazioni audio del sistema."
+          />
+        ) : (
+          <T
+            textKey="gallery.livePanel.voice.devices.errors.outputSwitchFailed"
+            fallback="Non riesco a cambiare uscita audio. Controlla il dispositivo selezionato."
+          />
+        )}
+      </p>
+    );
+  }
+
+  function renderDeviceSettings() {
+    if (!isConnected || !isDeviceSettingsOpen) {
+      return null;
+    }
+
+    return (
+      <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/32 p-3">
+        <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+          <div>
+            <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--museum-bronze-light)]">
+              <T textKey="gallery.livePanel.voice.devices.label" fallback="Impostazioni audio" />
+            </p>
+            <p className="mt-1 text-xs leading-5 text-[var(--museum-stone-muted)]">
+              <T
+                textKey="gallery.livePanel.voice.devices.description"
+                fallback="Scegli il microfono per parlare e l’uscita audio per ascoltare la room."
+              />
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void refreshAudioDevices()}
+            className="w-fit rounded-full border border-[rgba(243,237,226,0.16)] px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
+          >
+            <T textKey="gallery.livePanel.voice.devices.refresh" fallback="Aggiorna" />
+          </button>
+        </div>
+
+        <div className="grid gap-3">
+          <label className="grid gap-2">
+            <span className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
+              <T textKey="gallery.livePanel.voice.devices.microphone" fallback="Microfono" />
+            </span>
+            <select
+              value={selectedAudioInputId}
+              onChange={(event) => void changeAudioInputDevice(event.target.value)}
+              className="rounded-2xl border border-[rgba(243,237,226,0.14)] bg-black/45 px-4 py-3 text-sm text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
+            >
+              {audioInputDevices.length === 0 ? (
+                <option value="">
+                  Dispositivo non disponibile
+                </option>
+              ) : (
+                audioInputDevices.map((device) => (
+                  <option key={`input-${device.deviceId}`} value={device.deviceId}>
+                    {device.label}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+
+          <label className="grid gap-2">
+            <span className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
+              <T textKey="gallery.livePanel.voice.devices.output" fallback="Ascolto" />
+            </span>
+            <select
+              value={selectedAudioOutputId}
+              onChange={(event) => void changeAudioOutputDevice(event.target.value)}
+              className="rounded-2xl border border-[rgba(243,237,226,0.14)] bg-black/45 px-4 py-3 text-sm text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
+            >
+              {audioOutputDevices.length === 0 ? (
+                <option value="">
+                  Dispositivo non disponibile
+                </option>
+              ) : (
+                audioOutputDevices.map((device) => (
+                  <option key={`output-${device.deviceId}`} value={device.deviceId}>
+                    {device.label}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+        </div>
+
+        {renderDeviceError()}
+      </div>
+    );
+  }
+
   function renderConnectionControls() {
     if (!activeEvent && eventForDisplay) {
       return (
@@ -740,7 +1050,7 @@ export default function LiveGuidedVoiceRoom({
     }
 
     return (
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-3">
         <button
           type="button"
           onClick={toggleMicrophone}
@@ -758,6 +1068,18 @@ export default function LiveGuidedVoiceRoom({
           ) : (
             <T textKey="gallery.livePanel.voice.actions.unmuteMic" fallback="Attiva microfono" />
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setIsDeviceSettingsOpen((current) => !current)}
+          className={
+            isDeviceSettingsOpen
+              ? "rounded-2xl border border-[rgba(197,151,94,0.55)] bg-[rgba(197,151,94,0.18)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--museum-bronze-light)] transition hover:bg-[rgba(197,151,94,0.24)]"
+              : "rounded-2xl border border-[rgba(243,237,226,0.14)] bg-black/32 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
+          }
+        >
+          <T textKey="gallery.livePanel.voice.actions.settings" fallback="Impostazioni" />
         </button>
 
         <button
@@ -826,6 +1148,8 @@ export default function LiveGuidedVoiceRoom({
       )}
 
       {renderConnectionControls()}
+
+      {renderDeviceSettings()}
 
       {isConnected && tokenData && (
         <div className="rounded-2xl border border-emerald-900 bg-emerald-950/25 p-3 text-xs leading-5 text-emerald-100/90">
