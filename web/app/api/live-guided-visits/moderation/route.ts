@@ -103,12 +103,12 @@ function normalizeAction(value: unknown): ModerationAction | null {
   return null;
 }
 
-function getLiveKitHttpUrl() {
-  const rawUrl =
-    process.env.LIVEKIT_HTTP_URL ||
-    process.env.LIVEKIT_URL ||
-    process.env.LIVEKIT_WS_URL ||
-    "";
+function normalizeLiveKitHttpUrl(value: string) {
+  const rawUrl = value.trim().replace(/\/+$/, "");
+
+  if (rawUrl.startsWith("https://") || rawUrl.startsWith("http://")) {
+    return rawUrl;
+  }
 
   if (rawUrl.startsWith("wss://")) {
     return `https://${rawUrl.slice("wss://".length)}`;
@@ -122,11 +122,29 @@ function getLiveKitHttpUrl() {
 }
 
 function getLiveKitCredentials() {
+  const rawHttpUrl =
+    process.env.LIVEKIT_HTTP_URL ||
+    process.env.LIVEKIT_SERVER_URL ||
+    process.env.LIVEKIT_URL ||
+    process.env.LIVEKIT_WS_URL ||
+    "";
+
+  const httpUrl = normalizeLiveKitHttpUrl(rawHttpUrl);
+
   return {
     apiKey: process.env.LIVEKIT_API_KEY || "",
     apiSecret: process.env.LIVEKIT_API_SECRET || "",
-    httpUrl: getLiveKitHttpUrl(),
+    httpUrl,
   };
+}
+
+function redactUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return `${url.protocol}//${url.hostname}`;
+  } catch {
+    return value ? "configured-but-invalid" : "missing";
+  }
 }
 
 function getMetadataForRole(params: {
@@ -181,22 +199,39 @@ async function upsertParticipantOverride(params: {
     updated_at: new Date().toISOString(),
   };
 
-  const { data: existingOverride, error: existingError } = await admin
+  const { data: existingByIdentity, error: existingByIdentityError } = await admin
     .from("gallery_live_event_participant_overrides")
     .select("id")
     .eq("event_id", liveEventId)
     .eq("participant_identity", targetIdentity)
     .maybeSingle();
 
-  if (existingError) {
-    throw new Error(existingError.message);
+  if (existingByIdentityError) {
+    throw new Error(existingByIdentityError.message);
   }
 
-  if (existingOverride) {
+  let existingId = (existingByIdentity as { id: string } | null)?.id || null;
+
+  if (!existingId && targetUserId) {
+    const { data: existingByUser, error: existingByUserError } = await admin
+      .from("gallery_live_event_participant_overrides")
+      .select("id")
+      .eq("event_id", liveEventId)
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
+    if (existingByUserError) {
+      throw new Error(existingByUserError.message);
+    }
+
+    existingId = (existingByUser as { id: string } | null)?.id || null;
+  }
+
+  if (existingId) {
     const { error } = await admin
       .from("gallery_live_event_participant_overrides")
       .update(overridePayload)
-      .eq("id", (existingOverride as { id: string }).id);
+      .eq("id", existingId);
 
     if (error) {
       throw new Error(error.message);
@@ -215,6 +250,16 @@ async function upsertParticipantOverride(params: {
   if (error) {
     throw new Error(error.message);
   }
+}
+
+function getClientErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "Errore moderazione LiveKit.";
+
+  if (message.toLowerCase().includes("fetch failed")) {
+    return "RoomService LiveKit non raggiungibile. Imposta LIVEKIT_HTTP_URL con https://..., non wss://..., e ridistribuisci su Vercel.";
+  }
+
+  return message;
 }
 
 export async function POST(request: Request) {
@@ -343,7 +388,18 @@ export async function POST(request: Request) {
       {
         success: false,
         error:
-          "LiveKit non configurato. Imposta LIVEKIT_API_KEY, LIVEKIT_API_SECRET e LIVEKIT_WS_URL.",
+          "LiveKit non configurato. Imposta LIVEKIT_API_KEY, LIVEKIT_API_SECRET e LIVEKIT_HTTP_URL.",
+      },
+      { status: 500 }
+    );
+  }
+
+  if (!credentials.httpUrl.startsWith("https://") && !credentials.httpUrl.startsWith("http://")) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "LIVEKIT_HTTP_URL non valido. Per la moderazione server usa https://..., non wss://....",
       },
       { status: 500 }
     );
@@ -387,18 +443,6 @@ export async function POST(request: Request) {
     }
 
     if (action === "block_microphone") {
-      await upsertParticipantOverride({
-        admin,
-        galleryId: gallery.id,
-        liveEventId: liveEvent.id,
-        targetIdentity,
-        targetName,
-        role: "listener",
-        canPublishAudio: false,
-        microphoneBlocked: true,
-        createdBy: user.id,
-      });
-
       if (targetAudioTrackSid) {
         await roomService.mutePublishedTrack(
           roomName,
@@ -421,6 +465,18 @@ export async function POST(request: Request) {
         },
       });
 
+      await upsertParticipantOverride({
+        admin,
+        galleryId: gallery.id,
+        liveEventId: liveEvent.id,
+        targetIdentity,
+        targetName,
+        role: "listener",
+        canPublishAudio: false,
+        microphoneBlocked: true,
+        createdBy: user.id,
+      });
+
       return NextResponse.json({
         success: true,
         message: "Microfono bloccato per il partecipante.",
@@ -428,18 +484,6 @@ export async function POST(request: Request) {
     }
 
     if (action === "allow_microphone") {
-      await upsertParticipantOverride({
-        admin,
-        galleryId: gallery.id,
-        liveEventId: liveEvent.id,
-        targetIdentity,
-        targetName,
-        role: "speaker",
-        canPublishAudio: true,
-        microphoneBlocked: false,
-        createdBy: user.id,
-      });
-
       await roomService.updateParticipant(roomName, targetIdentity, {
         metadata: getMetadataForRole({
           role: "speaker",
@@ -453,6 +497,18 @@ export async function POST(request: Request) {
         },
       });
 
+      await upsertParticipantOverride({
+        admin,
+        galleryId: gallery.id,
+        liveEventId: liveEvent.id,
+        targetIdentity,
+        targetName,
+        role: "speaker",
+        canPublishAudio: true,
+        microphoneBlocked: false,
+        createdBy: user.id,
+      });
+
       return NextResponse.json({
         success: true,
         message: "Partecipante abilitato come speaker.",
@@ -460,18 +516,6 @@ export async function POST(request: Request) {
     }
 
     if (action === "make_listener") {
-      await upsertParticipantOverride({
-        admin,
-        galleryId: gallery.id,
-        liveEventId: liveEvent.id,
-        targetIdentity,
-        targetName,
-        role: "listener",
-        canPublishAudio: false,
-        microphoneBlocked: false,
-        createdBy: user.id,
-      });
-
       if (targetAudioTrackSid) {
         await roomService.mutePublishedTrack(
           roomName,
@@ -492,6 +536,18 @@ export async function POST(request: Request) {
           canSubscribe: true,
           canPublishData: true,
         },
+      });
+
+      await upsertParticipantOverride({
+        admin,
+        galleryId: gallery.id,
+        liveEventId: liveEvent.id,
+        targetIdentity,
+        targetName,
+        role: "listener",
+        canPublishAudio: false,
+        microphoneBlocked: false,
+        createdBy: user.id,
       });
 
       return NextResponse.json({
@@ -509,13 +565,20 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
+    console.error("[Live guided visits moderation]", {
+      action,
+      liveEventId,
+      galleryId,
+      roomName,
+      targetIdentity,
+      liveKitHttpUrl: redactUrl(credentials.httpUrl),
+      error: error instanceof Error ? error.message : error,
+    });
+
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Errore moderazione LiveKit.",
+        error: getClientErrorMessage(error),
       },
       { status: 500 }
     );
