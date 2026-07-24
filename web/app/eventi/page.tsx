@@ -82,32 +82,32 @@ function formatShortDate(value: string) {
   });
 }
 
-function getAccessModeLabel(value: string | null | undefined) {
+function getAccessModeTranslation(value: string | null | undefined) {
   if (value === "password") {
-    return "Password";
+    return { textKey: "events.liveGuidedVisit.access.password", fallback: "Password" };
   }
 
   if (value === "invite_only") {
-    return "Solo invito";
+    return { textKey: "events.liveGuidedVisit.access.inviteOnly", fallback: "Solo invito" };
   }
 
   if (value === "private_link") {
-    return "Link privato";
+    return { textKey: "events.liveGuidedVisit.access.privateLink", fallback: "Link privato" };
   }
 
-  return "Pubblico";
+  return { textKey: "events.liveGuidedVisit.access.public", fallback: "Pubblico" };
 }
 
-function getVoiceModeLabel(value: string | null | undefined) {
+function getVoiceModeTranslation(value: string | null | undefined) {
   if (value === "everyone") {
-    return "Tutti parlano";
+    return { textKey: "events.liveGuidedVisit.voice.everyone", fallback: "Tutti parlano" };
   }
 
   if (value === "request_to_speak") {
-    return "Richiesta parola";
+    return { textKey: "events.liveGuidedVisit.voice.requestToSpeak", fallback: "Richiesta parola" };
   }
 
-  return "Owner-led";
+  return { textKey: "events.liveGuidedVisit.voice.ownerLed", fallback: "Owner-led" };
 }
 
 function sortByDateAscending(a: GalleryEvent, b: GalleryEvent) {
@@ -171,7 +171,10 @@ export default async function PublicEventsPage() {
       (event) =>
         event.status === "completed" || new Date(event.ends_at) <= now
     )
-    .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime()
+    )
     .slice(0, 8);
 
   const galleryIds = Array.from(
@@ -245,13 +248,12 @@ export default async function PublicEventsPage() {
     ((followRows || []) as unknown as FollowRow[]).map((row) => row.following_id)
   );
 
-  const followerCounts = ((followerRows || []) as unknown as FollowerCountRow[]).reduce(
-    (map, row) => {
-      map.set(row.following_id, (map.get(row.following_id) || 0) + 1);
-      return map;
-    },
-    new Map<string, number>()
-  );
+  const followerCounts = (
+    (followerRows || []) as unknown as FollowerCountRow[]
+  ).reduce((map, row) => {
+    map.set(row.following_id, (map.get(row.following_id) || 0) + 1);
+    return map;
+  }, new Map<string, number>());
 
   const featuredEvent =
     upcomingEvents
@@ -287,23 +289,33 @@ export default async function PublicEventsPage() {
       return `/gallerie/${gallery.slug}`;
     }
 
-    return `/eventi`;
+    return "/eventi";
   }
 
   function renderBadges(event: GalleryEvent) {
     const gallery = galleryById.get(event.gallery_id);
     const liveVisit = liveByEventId.get(event.id);
+    const accessTranslation = getAccessModeTranslation(liveVisit?.access_mode);
+    const voiceTranslation = getVoiceModeTranslation(liveVisit?.voice_mode);
 
     return (
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-amber-900 bg-amber-950/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-200">
-          {event.status === "live" ? "Live" : "Evento"}
+          {event.status === "live" ? (
+            <T textKey="events.card.statusLive" fallback="Live" />
+          ) : (
+            <T textKey="events.card.statusEvent" fallback="Evento" />
+          )}
         </span>
 
         {liveVisit?.is_active && (
           <span className="rounded-full border border-sky-800 bg-sky-950/30 px-3 py-1 text-xs uppercase tracking-[0.16em] text-sky-200">
-            Live guided visit · {getAccessModeLabel(liveVisit.access_mode)} ·{" "}
-            {getVoiceModeLabel(liveVisit.voice_mode)}
+            <T
+              textKey="events.card.liveGuidedVisit"
+              fallback="Live guided visit"
+            />{" "}
+            · <T textKey={accessTranslation.textKey} fallback={accessTranslation.fallback} />{" "}
+            · <T textKey={voiceTranslation.textKey} fallback={voiceTranslation.fallback} />
           </span>
         )}
 
@@ -326,17 +338,27 @@ export default async function PublicEventsPage() {
 
     return (
       <p className="mt-2 text-sm text-neutral-500">
-        A cura di{" "}
+        <T textKey="events.card.curatedBy" fallback="A cura di" />{" "}
         {ownerProfileHref ? (
           <Link
             href={ownerProfileHref}
             className="text-neutral-200 underline decoration-neutral-700 underline-offset-4 transition hover:text-white"
           >
-            {ownerName || "Profilo mostra.space"}
+            {ownerName || (
+              <T
+                textKey="events.card.unknownProfile"
+                fallback="Profilo mostra.space"
+              />
+            )}
           </Link>
         ) : (
           <span className="text-neutral-200">
-            {ownerName || "Profilo mostra.space"}
+            {ownerName || (
+              <T
+                textKey="events.card.unknownProfile"
+                fallback="Profilo mostra.space"
+              />
+            )}
           </span>
         )}
       </p>
@@ -391,14 +413,14 @@ export default async function PublicEventsPage() {
 
             <div className="flex flex-wrap gap-3">
               <Link href="/profili" className="museum-button-secondary px-5 py-2.5">
-                Esplora profili
+                <T textKey="events.header.exploreProfiles" fallback="Esplora profili" />
               </Link>
 
               <Link
                 href="/account/calendario"
                 className="museum-button-primary px-5 py-2.5"
               >
-                Il mio calendario
+                <T textKey="events.header.myCalendar" fallback="Il mio calendario" />
               </Link>
             </div>
           </div>
@@ -415,14 +437,20 @@ export default async function PublicEventsPage() {
                     />
                   ) : (
                     <div className="flex h-full min-h-[360px] items-center justify-center text-xs uppercase tracking-[0.35em] text-neutral-600">
-                      Featured event
+                      <T
+                        textKey="events.featured.noCover"
+                        fallback="Evento in evidenza"
+                      />
                     </div>
                   )}
                 </div>
 
                 <div className="p-8 md:p-10">
                   <p className="museum-label text-[var(--museum-bronze-light)]">
-                    Evento in evidenza
+                    <T
+                      textKey="events.featured.label"
+                      fallback="Evento in evidenza"
+                    />
                   </p>
 
                   <div className="mt-5">{renderBadges(featuredEvent)}</div>
@@ -448,7 +476,10 @@ export default async function PublicEventsPage() {
                       href={getEventHref(featuredEvent)}
                       className="museum-button-primary px-6 py-3"
                     >
-                      Apri galleria
+                      <T
+                        textKey="events.actions.openGallery"
+                        fallback="Apri galleria"
+                      />
                     </Link>
 
                     {renderFollowButton(featuredEvent)}
@@ -458,7 +489,10 @@ export default async function PublicEventsPage() {
             </section>
           ) : (
             <section className="mt-12 rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-8 text-sm text-[var(--museum-stone)]">
-              Nessun evento programmato al momento.
+              <T
+                textKey="events.empty.noScheduledEvents"
+                fallback="Nessun evento programmato al momento."
+              />
             </section>
           )}
 
@@ -466,14 +500,21 @@ export default async function PublicEventsPage() {
             <section className="mt-14">
               <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
                 <div>
-                  <p className="museum-label">Eventi selezionati</p>
+                  <p className="museum-label">
+                    <T
+                      textKey="events.slider.label"
+                      fallback="Eventi selezionati"
+                    />
+                  </p>
                   <h2 className="museum-title mt-3 text-5xl">
-                    Da non perdere.
+                    <T textKey="events.slider.title" fallback="Da non perdere." />
                   </h2>
                 </div>
                 <p className="max-w-xl text-sm leading-6 text-[var(--museum-stone-muted)]">
-                  Una selezione editoriale degli appuntamenti più rilevanti:
-                  opening, guided visits e presentazioni pubbliche.
+                  <T
+                    textKey="events.slider.subtitle"
+                    fallback="Una selezione editoriale degli appuntamenti più rilevanti: opening, guided visits e presentazioni pubbliche."
+                  />
                 </p>
               </div>
 
@@ -496,7 +537,7 @@ export default async function PublicEventsPage() {
                             />
                           ) : (
                             <div className="flex h-full items-center justify-center text-xs uppercase tracking-[0.3em] text-neutral-600">
-                              No cover
+                              <T textKey="events.card.noCover" fallback="No cover" />
                             </div>
                           )}
                         </div>
@@ -512,7 +553,12 @@ export default async function PublicEventsPage() {
                         </h3>
 
                         <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                          {gallery?.title || "Galleria rimossa"}
+                          {gallery?.title || (
+                            <T
+                              textKey="events.card.galleryRemoved"
+                              fallback="Galleria rimossa"
+                            />
+                          )}
                         </p>
 
                         <div className="mt-4">{renderBadges(event)}</div>
@@ -527,19 +573,30 @@ export default async function PublicEventsPage() {
           <section className="mt-14">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
               <div>
-                <p className="museum-label">Calendario</p>
+                <p className="museum-label">
+                  <T textKey="events.calendar.label" fallback="Calendario" />
+                </p>
                 <h2 className="museum-title mt-3 text-5xl">
-                  Tutti gli altri eventi.
+                  <T
+                    textKey="events.calendar.title"
+                    fallback="Tutti gli altri eventi."
+                  />
                 </h2>
               </div>
               <p className="text-sm text-[var(--museum-stone-muted)]">
-                Ordinati dal più vicino al più lontano.
+                <T
+                  textKey="events.calendar.orderDescription"
+                  fallback="Ordinati dal più vicino al più lontano."
+                />
               </p>
             </div>
 
             {remainingEvents.length === 0 ? (
               <div className="mt-7 rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-6 text-sm text-[var(--museum-stone)]">
-                Non ci sono altri eventi programmati.
+                <T
+                  textKey="events.calendar.empty"
+                  fallback="Non ci sono altri eventi programmati."
+                />
               </div>
             ) : (
               <div className="mt-7 grid gap-5">
@@ -561,7 +618,7 @@ export default async function PublicEventsPage() {
                           />
                         ) : (
                           <div className="flex h-full min-h-[220px] items-center justify-center text-xs uppercase tracking-[0.25em] text-neutral-600">
-                            No cover
+                            <T textKey="events.card.noCover" fallback="No cover" />
                           </div>
                         )}
                       </div>
@@ -591,11 +648,17 @@ export default async function PublicEventsPage() {
                               href={`/gallerie/${gallery.slug}`}
                               className="museum-button-primary px-5 py-2.5"
                             >
-                              Apri galleria
+                              <T
+                                textKey="events.actions.openGallery"
+                                fallback="Apri galleria"
+                              />
                             </Link>
                           ) : (
                             <span className="rounded-full border border-[var(--museum-border)] px-5 py-2 text-sm text-[var(--museum-stone-muted)]">
-                              Galleria in preparazione
+                              <T
+                                textKey="events.card.galleryInPreparation"
+                                fallback="Galleria in preparazione"
+                              />
                             </span>
                           )}
 
@@ -611,8 +674,12 @@ export default async function PublicEventsPage() {
 
           {pastEvents.length > 0 && (
             <section className="mt-16">
-              <p className="museum-label">Archivio</p>
-              <h2 className="museum-title mt-3 text-4xl">Eventi passati</h2>
+              <p className="museum-label">
+                <T textKey="events.archive.label" fallback="Archivio" />
+              </p>
+              <h2 className="museum-title mt-3 text-4xl">
+                <T textKey="events.archive.title" fallback="Eventi passati" />
+              </h2>
 
               <div className="mt-6 grid gap-3 md:grid-cols-2">
                 {pastEvents.map((event) => {
@@ -630,7 +697,12 @@ export default async function PublicEventsPage() {
                         {event.title}
                       </h3>
                       <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
-                        {gallery?.title || "Galleria rimossa"}
+                        {gallery?.title || (
+                          <T
+                            textKey="events.card.galleryRemoved"
+                            fallback="Galleria rimossa"
+                          />
+                        )}
                       </p>
                     </article>
                   );

@@ -7,6 +7,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import LiveGuidedVoiceRoom from "@/components/gallery/LiveGuidedVoiceRoom";
 
 type GalleryLivePanelProps = {
   galleryId: string;
@@ -72,19 +73,6 @@ type LiveGuidedVisitsStatus = {
   currentEvent: LiveGuidedVisitPreview | null;
   upcomingEvent: LiveGuidedVisitPreview | null;
   events: LiveGuidedVisitPreview[];
-};
-
-type VoiceTokenResult = {
-  success?: boolean;
-  token?: string;
-  wsUrl?: string;
-  url?: string;
-  roomName?: string;
-  identity?: string;
-  role?: string;
-  canPublish?: boolean;
-  canSubscribe?: boolean;
-  error?: string;
 };
 
 const identityStorageKey = "mostraspace_live_identity";
@@ -279,10 +267,6 @@ export default function GalleryLivePanel({
   );
   const [liveErrorMessage, setLiveErrorMessage] = useState<string | null>(null);
   const [voicePassword, setVoicePassword] = useState("");
-  const [voiceJoinState, setVoiceJoinState] = useState<
-    "idle" | "loading" | "ready" | "error"
-  >("idle");
-  const [voiceAccess, setVoiceAccess] = useState<VoiceTokenResult | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -488,54 +472,6 @@ export default function GalleryLivePanel({
       );
     } finally {
       setIsSending(false);
-    }
-  }
-
-  async function prepareVoiceRoom() {
-    const activeEvent = liveStatus?.currentEvent || null;
-
-    if (!identity || !activeEvent || voiceJoinState === "loading") {
-      return;
-    }
-
-    setVoiceJoinState("loading");
-    setVoiceAccess(null);
-    setLiveErrorMessage(null);
-
-    try {
-      const response = await fetch("/api/live-guided-visits/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          liveEventId: activeEvent.id,
-          galleryId,
-          password: voicePassword.trim() || undefined,
-          privateToken: getPrivateTokenFromUrl() || undefined,
-          sessionId: identity.sessionId,
-          visitorName: displayName || identity.visitorName,
-        }),
-      });
-
-      const result = (await response.json().catch(() => null)) as
-        | VoiceTokenResult
-        | null;
-
-      if (!response.ok) {
-        throw new Error(result?.error || "Accesso alla voice room non valido.");
-      }
-
-      setVoiceAccess(result || { success: true });
-      setVoiceJoinState("ready");
-    } catch (error) {
-      setVoiceJoinState("error");
-      setVoiceAccess(null);
-      setLiveErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Accesso alla voice room non valido."
-      );
     }
   }
 
@@ -751,105 +687,20 @@ export default function GalleryLivePanel({
   function renderVoiceTab() {
     const activeEvent = liveStatus?.currentEvent || null;
     const upcomingEvent = liveStatus?.upcomingEvent || null;
-    const eventForDisplay = activeEvent || upcomingEvent;
 
     return (
-      <div className="grid gap-3">
-        <div className="rounded-2xl border border-[rgba(197,151,94,0.28)] bg-[rgba(197,151,94,0.08)] p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[rgba(197,151,94,0.55)] bg-[rgba(197,151,94,0.12)] text-[var(--museum-bronze-light)]">
-              <VoiceIcon />
-            </div>
-
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--museum-bronze-light)]">
-                Live guided visits
-              </p>
-              <h3 className="mt-1 font-editorial text-2xl text-[var(--museum-ivory)]">
-                Voice room audio
-              </h3>
-              <p className="mt-2 text-xs leading-5 text-[var(--museum-stone)]">
-                Questa fase prepara l’ingresso alla room. La connessione audio
-                reale verrà collegata nella prossima fase con LiveKit client.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {!liveStatus && !liveErrorMessage && (
-          <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/32 p-4 text-sm text-[var(--museum-stone-muted)]">
-            Controllo voice room in corso...
-          </div>
-        )}
-
-        {liveStatus && !liveStatus.isInstitutionGallery && (
-          <div className="rounded-2xl border border-yellow-900 bg-yellow-950/25 p-4 text-sm leading-6 text-yellow-100/90">
-            Voice room disponibile solo per gallerie Institution.
-          </div>
-        )}
-
-        {liveStatus?.isInstitutionGallery && !eventForDisplay && (
-          <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/32 p-4 text-sm leading-6 text-[var(--museum-stone-muted)]">
-            Nessuna Live guided visit attiva o programmata.
-          </div>
-        )}
-
-        {eventForDisplay && renderLiveEventCard(eventForDisplay)}
-
-        {eventForDisplay?.accessMode === "password" && (
-          <label className="grid gap-2">
-            <span className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
-              Password evento
-            </span>
-            <input
-              type="password"
-              value={voicePassword}
-              onChange={(event) => setVoicePassword(event.target.value)}
-              placeholder="Inserisci password"
-              className="rounded-2xl border border-[rgba(243,237,226,0.14)] bg-black/45 px-4 py-3 text-sm text-[var(--museum-ivory)] outline-none transition placeholder:text-[var(--museum-stone-muted)] focus:border-[var(--museum-bronze)]"
-            />
-          </label>
-        )}
-
-        {eventForDisplay?.accessMode === "invite_only" && (
-          <div className="rounded-2xl border border-[rgba(197,151,94,0.22)] bg-black/32 p-3 text-xs leading-5 text-[var(--museum-stone)]">
-            Questo evento è su invito. Il token di accesso verrà gestito nella
-            fase inviti/allowlist.
-          </div>
-        )}
-
-        {eventForDisplay?.accessMode === "private_link" && (
-          <div className="rounded-2xl border border-[rgba(197,151,94,0.22)] bg-black/32 p-3 text-xs leading-5 text-[var(--museum-stone)]">
-            Questo evento richiede un link privato. Se il link contiene il token,
-            il pannello lo passerà automaticamente alla API.
-          </div>
-        )}
-
-        {activeEvent ? (
-          <button
-            type="button"
-            onClick={prepareVoiceRoom}
-            disabled={voiceJoinState === "loading"}
-            className="rounded-2xl bg-[var(--museum-bronze)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {voiceJoinState === "loading"
-              ? "Preparo accesso..."
-              : voiceJoinState === "ready"
-                ? "Accesso preparato"
-                : "Prepara ingresso voice room"}
-          </button>
-        ) : eventForDisplay ? (
-          <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/32 p-3 text-xs leading-5 text-[var(--museum-stone-muted)]">
-            L’ingresso sarà disponibile da {formatEventDateTime(eventForDisplay.joinOpensAt)}.
-          </div>
-        ) : null}
-
-        {voiceJoinState === "ready" && voiceAccess && (
-          <div className="rounded-2xl border border-emerald-900 bg-emerald-950/30 p-3 text-xs leading-5 text-emerald-100/90">
-            Token LiveKit generato correttamente. Ruolo: {voiceAccess.role || "listener"}. Permesso microfono: {voiceAccess.canPublish ? "sì" : "no"}. Nella prossima fase useremo questo token per entrare davvero in audio.
-          </div>
-        )}
-      </div>
+      <LiveGuidedVoiceRoom
+        galleryId={galleryId}
+        liveStatus={liveStatus}
+        liveErrorMessage={liveErrorMessage}
+        activeEvent={activeEvent}
+        upcomingEvent={upcomingEvent}
+        identity={identity}
+        displayName={displayName}
+        voicePassword={voicePassword}
+        onVoicePasswordChange={setVoicePassword}
+        privateToken={getPrivateTokenFromUrl()}
+      />
     );
   }
 
