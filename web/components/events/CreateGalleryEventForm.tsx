@@ -21,8 +21,20 @@ type CreateGalleryEventFormProps = {
   galleries: GalleryOption[];
 };
 
+type EventAccessMode = "public" | "password" | "invite_only" | "private_link";
 type LiveAccessMode = "public" | "password" | "invite_only" | "private_link";
 type LiveVoiceMode = "owner_only" | "everyone" | "request_to_speak";
+
+type MessageState =
+  | {
+      type: "success" | "error";
+      textKey: string;
+      fallback: string;
+    }
+  | {
+      type: "success" | "error";
+      raw: string;
+    };
 
 function toLocalDateTimeValue(date: Date) {
   const offsetMs = date.getTimezoneOffset() * 60 * 1000;
@@ -31,32 +43,11 @@ function toLocalDateTimeValue(date: Date) {
   return localDate.toISOString().slice(0, 16);
 }
 
-function getAccessModeDescription(mode: LiveAccessMode) {
-  if (mode === "password") {
-    return "I visitatori potranno entrare nella voice room solo inserendo la password evento.";
-  }
-
-  if (mode === "invite_only") {
-    return "Opzione preparata per gli eventi chiusi: nella fase inviti aggiungeremo allowlist e inviti nominativi.";
-  }
-
-  if (mode === "private_link") {
-    return "Opzione preparata per link privati: la room avrà un token dedicato per l’accesso controllato.";
-  }
-
-  return "Chi visita la galleria durante l’orario dell’evento potrà entrare nella voice room.";
-}
-
-function getVoiceModeDescription(mode: LiveVoiceMode) {
-  if (mode === "everyone") {
-    return "Tutti i partecipanti potranno attivare il microfono. Consigliato solo per gruppi piccoli.";
-  }
-
-  if (mode === "request_to_speak") {
-    return "Il pubblico ascolta e potrà chiedere la parola. La coda richieste verrà attivata nelle fasi successive.";
-  }
-
-  return "Solo owner e moderatori potranno parlare. È la modalità migliore per visite guidate, opening e talk curatoriali.";
+function splitInviteEmails(value: string) {
+  return value
+    .split(/[\n,;]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 export default function CreateGalleryEventForm({
@@ -83,16 +74,20 @@ export default function CreateGalleryEventForm({
   const [startsAt, setStartsAt] = useState(defaultStart);
   const [durationMinutes, setDurationMinutes] = useState("60");
   const [description, setDescription] = useState("");
+
+  const [eventAccessMode, setEventAccessMode] =
+    useState<EventAccessMode>("public");
+  const [eventPassword, setEventPassword] = useState("");
+  const [eventInviteEmails, setEventInviteEmails] = useState("");
+
   const [enableLiveGuidedVisit, setEnableLiveGuidedVisit] = useState(false);
   const [liveAccessMode, setLiveAccessMode] = useState<LiveAccessMode>("public");
   const [liveVoiceMode, setLiveVoiceMode] =
     useState<LiveVoiceMode>("owner_only");
   const [liveMaxParticipants, setLiveMaxParticipants] = useState("50");
   const [livePassword, setLivePassword] = useState("");
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+
+  const [message, setMessage] = useState<MessageState | null>(null);
 
   const selectedGallery = useMemo(
     () => galleries.find((gallery) => gallery.id === galleryId) || null,
@@ -105,49 +100,89 @@ export default function CreateGalleryEventForm({
       selectedGallery.liveGuidedEligible
   );
 
+  const inviteEmails = useMemo(
+    () => splitInviteEmails(eventInviteEmails),
+    [eventInviteEmails]
+  );
+
   useEffect(() => {
     if (!canEnableLiveGuidedVisit) {
       setEnableLiveGuidedVisit(false);
     }
   }, [canEnableLiveGuidedVisit]);
 
+  useEffect(() => {
+    if (eventAccessMode === "password") {
+      setLiveAccessMode("password");
+    }
+
+    if (eventAccessMode === "invite_only") {
+      setLiveAccessMode("invite_only");
+    }
+
+    if (eventAccessMode === "private_link") {
+      setLiveAccessMode("private_link");
+    }
+  }, [eventAccessMode]);
+
+  function setLocalError(textKey: string, fallback: string) {
+    setMessage({ type: "error", textKey, fallback });
+  }
+
   async function createEvent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
 
     if (!galleryId) {
-      setMessage({
-        type: "error",
-        text: "Seleziona una galleria.",
-      });
+      setLocalError(
+        "dashboard.events.create.errors.selectGallery",
+        "Seleziona una galleria."
+      );
       return;
     }
 
     if (!title.trim()) {
-      setMessage({
-        type: "error",
-        text: "Inserisci un titolo evento.",
-      });
+      setLocalError(
+        "dashboard.events.create.errors.titleRequired",
+        "Inserisci un titolo evento."
+      );
+      return;
+    }
+
+    if (eventAccessMode === "password" && eventPassword.trim().length < 4) {
+      setLocalError(
+        "dashboard.events.create.errors.eventPasswordRequired",
+        "Inserisci una password evento di almeno 4 caratteri."
+      );
+      return;
+    }
+
+    if (eventAccessMode === "invite_only" && inviteEmails.length === 0) {
+      setLocalError(
+        "dashboard.events.create.errors.invitesRequired",
+        "Inserisci almeno una email invitata per un evento solo su invito."
+      );
       return;
     }
 
     if (enableLiveGuidedVisit && !canEnableLiveGuidedVisit) {
-      setMessage({
-        type: "error",
-        text: "Le Live guided visits sono disponibili solo per gallerie con piano Institution.",
-      });
+      setLocalError(
+        "dashboard.events.create.errors.liveInstitutionOnly",
+        "Le Live guided visits sono disponibili solo per gallerie con piano Institution."
+      );
       return;
     }
 
     if (
       enableLiveGuidedVisit &&
       liveAccessMode === "password" &&
-      livePassword.trim().length < 4
+      livePassword.trim().length < 4 &&
+      eventAccessMode !== "password"
     ) {
-      setMessage({
-        type: "error",
-        text: "Inserisci una password di almeno 4 caratteri per la Live guided visit.",
-      });
+      setLocalError(
+        "dashboard.events.create.errors.livePasswordRequired",
+        "Inserisci una password di almeno 4 caratteri per la Live guided visit."
+      );
       return;
     }
 
@@ -164,13 +199,21 @@ export default function CreateGalleryEventForm({
           startsAt,
           durationMinutes,
           timezone: "Europe/Rome",
+          eventAccess: {
+            accessMode: eventAccessMode,
+            password: eventAccessMode === "password" ? eventPassword : "",
+            inviteEmails,
+          },
           liveGuidedVisit: enableLiveGuidedVisit
             ? {
                 enabled: true,
                 accessMode: liveAccessMode,
                 voiceMode: liveVoiceMode,
                 maxParticipants: liveMaxParticipants,
-                password: liveAccessMode === "password" ? livePassword : "",
+                password:
+                  liveAccessMode === "password"
+                    ? livePassword || eventPassword
+                    : "",
               }
             : {
                 enabled: false,
@@ -188,6 +231,9 @@ export default function CreateGalleryEventForm({
       setDescription("");
       setDurationMinutes("60");
       setGalleryId("");
+      setEventAccessMode("public");
+      setEventPassword("");
+      setEventInviteEmails("");
       setEnableLiveGuidedVisit(false);
       setLiveAccessMode("public");
       setLiveVoiceMode("owner_only");
@@ -195,9 +241,16 @@ export default function CreateGalleryEventForm({
       setLivePassword("");
       setMessage({
         type: "success",
-        text: result?.liveGuidedVisit
-          ? "Evento creato con Live guided visit. È visibile nel calendario pubblico e sarà pronto per la voice room."
-          : "Evento creato. È visibile nel calendario pubblico e nei calendari dei follower.",
+        textKey: result?.privateEventUrl
+          ? "dashboard.events.create.success.privateLink"
+          : result?.liveGuidedVisit
+            ? "dashboard.events.create.success.liveCreated"
+            : "dashboard.events.create.success.created",
+        fallback: result?.privateEventUrl
+          ? "Evento creato. Copia il link privato dalla scheda evento."
+          : result?.liveGuidedVisit
+            ? "Evento creato con Live guided visit. È pronto per la voice room."
+            : "Evento creato. È visibile nel calendario pubblico e nei calendari dei follower.",
       });
 
       startTransition(() => {
@@ -206,7 +259,7 @@ export default function CreateGalleryEventForm({
     } catch (error) {
       setMessage({
         type: "error",
-        text:
+        raw:
           error instanceof Error
             ? error.message
             : "Non riesco a creare l'evento.",
@@ -242,11 +295,15 @@ export default function CreateGalleryEventForm({
               : "mt-5 rounded-2xl border border-red-900 bg-red-950/35 px-4 py-3 text-sm text-red-200"
           }
         >
-          {message.text}
+          {"raw" in message ? (
+            message.raw
+          ) : (
+            <T textKey={message.textKey} fallback={message.fallback} />
+          )}
         </div>
       )}
 
-      <form onSubmit={createEvent} className="mt-6 grid gap-4">
+      <form onSubmit={createEvent} className="mt-6 grid gap-5">
         <label className="grid gap-2">
           <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
             <T textKey="dashboard.events.create.fields.gallery" fallback="Galleria" />
@@ -257,10 +314,7 @@ export default function CreateGalleryEventForm({
             className="rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-amber-600"
           >
             <option value="">
-              <T
-                textKey="dashboard.events.create.fields.selectGallery"
-                fallback="Seleziona galleria"
-              />
+              Seleziona galleria
             </option>
             {galleries.map((gallery) => (
               <option
@@ -268,7 +322,7 @@ export default function CreateGalleryEventForm({
                 value={gallery.id}
                 disabled={gallery.hasActiveEvent}
               >
-                {gallery.title} · {gallery.status} · piano {gallery.ownerPlanLabel}
+                {gallery.title} · {gallery.status}
                 {gallery.hasActiveEvent ? " · evento attivo già presente" : ""}
               </option>
             ))}
@@ -277,10 +331,7 @@ export default function CreateGalleryEventForm({
 
         <label className="grid gap-2">
           <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            <T
-              textKey="dashboard.events.create.fields.title"
-              fallback="Titolo evento"
-            />
+            <T textKey="dashboard.events.create.fields.title" fallback="Titolo evento" />
           </span>
           <input
             value={title}
@@ -294,10 +345,7 @@ export default function CreateGalleryEventForm({
         <div className="grid gap-4 md:grid-cols-[1fr_180px]">
           <label className="grid gap-2">
             <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-              <T
-                textKey="dashboard.events.create.fields.dateTime"
-                fallback="Data e orario"
-              />
+              <T textKey="dashboard.events.create.fields.dateTime" fallback="Data e orario" />
             </span>
             <input
               type="datetime-local"
@@ -340,102 +388,193 @@ export default function CreateGalleryEventForm({
             className="rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-7 text-neutral-100 outline-none transition focus:border-amber-600"
           />
           <span className="text-xs text-neutral-600">
-            {description.length}/600 caratteri
+            {description.length}/600{" "}
+            <T textKey="dashboard.events.create.fields.characters" fallback="caratteri" />
           </span>
         </label>
 
-        <section className="rounded-[1.75rem] border border-sky-900/60 bg-sky-950/20 p-5">
+        <section className="rounded-3xl border border-neutral-800 bg-neutral-950 p-5">
+          <p className="text-xs uppercase tracking-[0.25em] text-amber-500">
+            <T
+              textKey="dashboard.events.create.access.label"
+              fallback="Accesso evento"
+            />
+          </p>
+          <h3 className="mt-2 text-xl font-medium text-neutral-50">
+            <T
+              textKey="dashboard.events.create.access.title"
+              fallback="Decidi chi può vedere e ricevere questo evento"
+            />
+          </h3>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {([
+              ["public", "Pubblico", "Visibile nel calendario pubblico e nei calendari dei follower."],
+              ["password", "Con password", "Visibile nel calendario pubblico, ma l’accesso live richiederà password."],
+              ["invite_only", "Solo invito", "Visibile solo agli invitati e al proprietario."],
+              ["private_link", "Link privato", "Non listato: entra solo chi riceve il link privato."],
+            ] as Array<[EventAccessMode, string, string]>).map(([mode, label, descriptionText]) => (
+              <label
+                key={mode}
+                className={`cursor-pointer rounded-2xl border p-4 transition ${
+                  eventAccessMode === mode
+                    ? "border-amber-700 bg-amber-950/20"
+                    : "border-neutral-800 bg-neutral-900 hover:border-neutral-600"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="event-access-mode"
+                  value={mode}
+                  checked={eventAccessMode === mode}
+                  onChange={() => setEventAccessMode(mode)}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium text-neutral-100">
+                  {label}
+                </span>
+                <span className="mt-2 block text-xs leading-5 text-neutral-500">
+                  {descriptionText}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {eventAccessMode === "password" && (
+            <label className="mt-4 grid gap-2">
+              <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+                <T
+                  textKey="dashboard.events.create.access.password"
+                  fallback="Password evento"
+                />
+              </span>
+              <input
+                type="password"
+                value={eventPassword}
+                onChange={(event) => setEventPassword(event.target.value)}
+                minLength={4}
+                className="rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-amber-600"
+              />
+            </label>
+          )}
+
+          {eventAccessMode === "invite_only" && (
+            <label className="mt-4 grid gap-2">
+              <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+                <T
+                  textKey="dashboard.events.create.access.invitedEmails"
+                  fallback="Email invitate"
+                />
+              </span>
+              <textarea
+                value={eventInviteEmails}
+                onChange={(event) => setEventInviteEmails(event.target.value)}
+                rows={4}
+                placeholder="mario@email.com, lucia@email.com"
+                className="rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-7 text-neutral-100 outline-none transition focus:border-amber-600"
+              />
+              <span className="text-xs text-neutral-600">
+                {inviteEmails.length} <T textKey="dashboard.events.create.access.invitesParsed" fallback="inviti rilevati" />
+              </span>
+            </label>
+          )}
+        </section>
+
+        <section className="rounded-3xl border border-sky-900/60 bg-sky-950/15 p-5">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-sky-300/80">
-                Live guided visits
+              <p className="text-xs uppercase tracking-[0.25em] text-sky-300">
+                <T
+                  textKey="dashboard.events.create.live.label"
+                  fallback="Live guided visits"
+                />
               </p>
-              <h3 className="mt-2 font-serif text-2xl text-neutral-50">
-                Attiva visita guidata live audio
+              <h3 className="mt-2 text-xl font-medium text-neutral-50">
+                <T
+                  textKey="dashboard.events.create.live.title"
+                  fallback="Aggiungi voice room curatoriale"
+                />
               </h3>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-100/70">
-                Feature Institution-only. Crea una voice room collegata a questo evento: pubblica, con password, su invito o link privato.
+                <T
+                  textKey="dashboard.events.create.live.description"
+                  fallback="Feature premium Institution: trasforma l’evento in una visita guidata live con audio room e moderazione."
+                />
               </p>
+              {selectedGallery && !selectedGallery.liveGuidedEligible && (
+                <p className="mt-3 text-xs text-yellow-200">
+                  <T
+                    textKey="dashboard.events.create.live.institutionOnly"
+                    fallback="Questa galleria non è Institution: puoi creare l’evento, ma non la Live guided visit."
+                  />
+                </p>
+              )}
             </div>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-sky-900/70 bg-neutral-950/70 px-4 py-3 text-sm text-neutral-100">
+            <label className="flex items-center gap-3 rounded-full border border-sky-800 bg-sky-950/30 px-4 py-2 text-sm text-sky-100">
               <input
                 type="checkbox"
                 checked={enableLiveGuidedVisit}
                 disabled={!canEnableLiveGuidedVisit}
                 onChange={(event) => setEnableLiveGuidedVisit(event.target.checked)}
               />
-              Abilita
+              <T
+                textKey="dashboard.events.create.live.enable"
+                fallback="Abilita"
+              />
             </label>
           </div>
 
-          {!selectedGallery && (
-            <p className="mt-4 text-xs text-sky-100/60">
-              Seleziona una galleria per verificare se può usare Live guided visits.
-            </p>
-          )}
-
-          {selectedGallery && !selectedGallery.liveGuidedEligible && (
-            <p className="mt-4 rounded-2xl border border-amber-900/70 bg-amber-950/25 px-4 py-3 text-xs leading-5 text-amber-100/80">
-              Questa galleria appartiene al piano {selectedGallery.ownerPlanLabel}. Per ora le Live guided visits sono disponibili solo per Institution.
-            </p>
-          )}
-
-          {selectedGallery?.hasActiveEvent && (
-            <p className="mt-4 rounded-2xl border border-neutral-800 bg-neutral-950/70 px-4 py-3 text-xs leading-5 text-neutral-400">
-              Questa galleria ha già un evento attivo. Termina o elimina l’evento esistente prima di crearne uno nuovo.
-            </p>
-          )}
-
-          {enableLiveGuidedVisit && canEnableLiveGuidedVisit && (
+          {enableLiveGuidedVisit && (
             <div className="mt-5 grid gap-4">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <label className="grid gap-2">
-                  <span className="text-xs uppercase tracking-[0.2em] text-sky-300/70">
-                    Accesso room
+                  <span className="text-xs uppercase tracking-[0.2em] text-sky-200/80">
+                    <T
+                      textKey="dashboard.events.create.live.accessMode"
+                      fallback="Accesso voice room"
+                    />
                   </span>
                   <select
                     value={liveAccessMode}
                     onChange={(event) =>
                       setLiveAccessMode(event.target.value as LiveAccessMode)
                     }
-                    className="rounded-2xl border border-sky-900/70 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
+                    className="rounded-2xl border border-sky-900 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
                   >
                     <option value="public">Pubblico</option>
                     <option value="password">Password</option>
                     <option value="invite_only">Solo invito</option>
                     <option value="private_link">Link privato</option>
                   </select>
-                  <span className="text-xs leading-5 text-sky-100/55">
-                    {getAccessModeDescription(liveAccessMode)}
-                  </span>
                 </label>
 
                 <label className="grid gap-2">
-                  <span className="text-xs uppercase tracking-[0.2em] text-sky-300/70">
-                    Permessi microfono
+                  <span className="text-xs uppercase tracking-[0.2em] text-sky-200/80">
+                    <T
+                      textKey="dashboard.events.create.live.voiceMode"
+                      fallback="Permessi microfono"
+                    />
                   </span>
                   <select
                     value={liveVoiceMode}
                     onChange={(event) =>
                       setLiveVoiceMode(event.target.value as LiveVoiceMode)
                     }
-                    className="rounded-2xl border border-sky-900/70 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
+                    className="rounded-2xl border border-sky-900 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
                   >
-                    <option value="owner_only">Solo owner/moderatori parlano</option>
-                    <option value="everyone">Tutti possono parlare</option>
+                    <option value="owner_only">Owner/moderatori parlano</option>
+                    <option value="everyone">Tutti parlano</option>
                     <option value="request_to_speak">Richiesta parola</option>
                   </select>
-                  <span className="text-xs leading-5 text-sky-100/55">
-                    {getVoiceModeDescription(liveVoiceMode)}
-                  </span>
                 </label>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-[180px_1fr]">
                 <label className="grid gap-2">
-                  <span className="text-xs uppercase tracking-[0.2em] text-sky-300/70">
-                    Max partecipanti
+                  <span className="text-xs uppercase tracking-[0.2em] text-sky-200/80">
+                    <T
+                      textKey="dashboard.events.create.live.maxParticipants"
+                      fallback="Max partecipanti"
+                    />
                   </span>
                   <input
                     type="number"
@@ -443,28 +582,28 @@ export default function CreateGalleryEventForm({
                     max={1000}
                     value={liveMaxParticipants}
                     onChange={(event) => setLiveMaxParticipants(event.target.value)}
-                    className="rounded-2xl border border-sky-900/70 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
+                    className="rounded-2xl border border-sky-900 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
                   />
                 </label>
-
-                {liveAccessMode === "password" && (
-                  <label className="grid gap-2">
-                    <span className="text-xs uppercase tracking-[0.2em] text-sky-300/70">
-                      Password evento
-                    </span>
-                    <input
-                      type="password"
-                      value={livePassword}
-                      onChange={(event) => setLivePassword(event.target.value)}
-                      placeholder="Es. vienna1900"
-                      className="rounded-2xl border border-sky-900/70 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
-                    />
-                    <span className="text-xs leading-5 text-sky-100/55">
-                      La password verrà salvata come hash, non in chiaro.
-                    </span>
-                  </label>
-                )}
               </div>
+
+              {liveAccessMode === "password" && eventAccessMode !== "password" && (
+                <label className="grid gap-2">
+                  <span className="text-xs uppercase tracking-[0.2em] text-sky-200/80">
+                    <T
+                      textKey="dashboard.events.create.live.password"
+                      fallback="Password Live guided visit"
+                    />
+                  </span>
+                  <input
+                    type="password"
+                    value={livePassword}
+                    onChange={(event) => setLivePassword(event.target.value)}
+                    minLength={4}
+                    className="rounded-2xl border border-sky-900 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-sky-500"
+                  />
+                </label>
+              )}
             </div>
           )}
         </section>
@@ -475,15 +614,9 @@ export default function CreateGalleryEventForm({
           className="w-fit rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? (
-            <T
-              textKey="dashboard.events.create.actions.creating"
-              fallback="Creo evento..."
-            />
+            <T textKey="dashboard.events.create.actions.creating" fallback="Creo evento..." />
           ) : (
-            <T
-              textKey="dashboard.events.create.actions.create"
-              fallback="Crea evento"
-            />
+            <T textKey="dashboard.events.create.actions.create" fallback="Crea evento" />
           )}
         </button>
       </form>

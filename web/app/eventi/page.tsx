@@ -1,9 +1,16 @@
-import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
+
+type PublicEventsPageProps = {
+  searchParams?: Promise<{
+    privateToken?: string;
+  }>;
+};
+
+type EventAccessMode = "public" | "password" | "invite_only" | "private_link";
 
 type GalleryEvent = {
   id: string;
@@ -15,10 +22,13 @@ type GalleryEvent = {
   ends_at: string;
   timezone: string;
   status: "scheduled" | "live" | "completed" | "cancelled";
-  public_featured_enabled: boolean | null;
-  public_featured_sort_order: number | null;
-  public_highlight_enabled: boolean | null;
-  public_highlight_sort_order: number | null;
+  access_mode: EventAccessMode;
+  private_token: string | null;
+  is_listed: boolean;
+  public_featured_enabled: boolean;
+  public_featured_sort_order: number;
+  public_highlight_enabled: boolean;
+  public_highlight_sort_order: number;
 };
 
 type Gallery = {
@@ -46,11 +56,13 @@ type FollowerCountRow = {
   following_id: string;
 };
 
-type LiveGuidedVisit = {
+type EventInviteRow = {
+  event_id: string;
+};
+
+type LiveEventRow = {
   gallery_event_id: string | null;
   is_active: boolean;
-  access_mode: string | null;
-  voice_mode: string | null;
 };
 
 function getProfileName(profile: Profile | undefined) {
@@ -73,63 +85,44 @@ function formatDate(value: string) {
   });
 }
 
-function formatShortDate(value: string) {
-  return new Date(value).toLocaleString("it-IT", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function getAccessBadge(mode: EventAccessMode) {
+  if (mode === "password") {
+    return {
+      textKey: "events.card.access.password",
+      fallback: "Password",
+      className: "border-yellow-900 bg-yellow-950/30 text-yellow-200",
+    };
+  }
+
+  if (mode === "invite_only") {
+    return {
+      textKey: "events.card.access.inviteOnly",
+      fallback: "Solo invito",
+      className: "border-sky-900 bg-sky-950/30 text-sky-200",
+    };
+  }
+
+  if (mode === "private_link") {
+    return {
+      textKey: "events.card.access.privateLink",
+      fallback: "Link privato",
+      className: "border-violet-900 bg-violet-950/30 text-violet-200",
+    };
+  }
+
+  return {
+    textKey: "events.card.access.public",
+    fallback: "Pubblico",
+    className: "border-neutral-800 bg-neutral-950 text-neutral-300",
+  };
 }
 
-function getAccessModeTranslation(value: string | null | undefined) {
-  if (value === "password") {
-    return { textKey: "events.liveGuidedVisit.access.password", fallback: "Password" };
-  }
+export default async function PublicEventsPage({
+  searchParams,
+}: PublicEventsPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const privateToken = resolvedSearchParams.privateToken || "";
 
-  if (value === "invite_only") {
-    return { textKey: "events.liveGuidedVisit.access.inviteOnly", fallback: "Solo invito" };
-  }
-
-  if (value === "private_link") {
-    return { textKey: "events.liveGuidedVisit.access.privateLink", fallback: "Link privato" };
-  }
-
-  return { textKey: "events.liveGuidedVisit.access.public", fallback: "Pubblico" };
-}
-
-function getVoiceModeTranslation(value: string | null | undefined) {
-  if (value === "everyone") {
-    return { textKey: "events.liveGuidedVisit.voice.everyone", fallback: "Tutti parlano" };
-  }
-
-  if (value === "request_to_speak") {
-    return { textKey: "events.liveGuidedVisit.voice.requestToSpeak", fallback: "Richiesta parola" };
-  }
-
-  return { textKey: "events.liveGuidedVisit.voice.ownerLed", fallback: "Owner-led" };
-}
-
-function sortByDateAscending(a: GalleryEvent, b: GalleryEvent) {
-  return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
-}
-
-function sortCuratedEvents(
-  a: GalleryEvent,
-  b: GalleryEvent,
-  sortKey: "public_featured_sort_order" | "public_highlight_sort_order"
-) {
-  const sortA = a[sortKey] ?? 100;
-  const sortB = b[sortKey] ?? 100;
-
-  if (sortA !== sortB) {
-    return sortA - sortB;
-  }
-
-  return sortByDateAscending(a, b);
-}
-
-export default async function PublicEventsPage() {
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -147,43 +140,118 @@ export default async function PublicEventsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: eventsResult } = await admin
+  const nowIso = new Date().toISOString();
+
+  const { data: publicEventsData } = await admin
     .from("gallery_events")
     .select(
-      "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, public_featured_enabled, public_featured_sort_order, public_highlight_enabled, public_highlight_sort_order"
+      "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode, private_token, is_listed, public_featured_enabled, public_featured_sort_order, public_highlight_enabled, public_highlight_sort_order"
     )
     .neq("status", "cancelled")
+    .eq("is_listed", true)
+    .gt("ends_at", nowIso)
     .order("starts_at", { ascending: true });
 
-  const safeEvents = (eventsResult || []) as unknown as GalleryEvent[];
-  const now = new Date();
+  const { data: invitedRows } = user
+    ? await admin
+        .from("gallery_event_invites")
+        .select("event_id")
+        .eq("user_id", user.id)
+        .neq("status", "revoked")
+    : { data: [] };
 
-  const upcomingEvents = safeEvents
-    .filter(
-      (event) =>
-        (event.status === "scheduled" || event.status === "live") &&
-        new Date(event.ends_at) > now
-    )
-    .sort(sortByDateAscending);
+  const invitedEventIds = ((invitedRows || []) as EventInviteRow[]).map(
+    (row) => row.event_id
+  );
 
-  const pastEvents = safeEvents
-    .filter(
-      (event) =>
-        event.status === "completed" || new Date(event.ends_at) <= now
-    )
+  const { data: invitedEventsData } =
+    invitedEventIds.length > 0
+      ? await admin
+          .from("gallery_events")
+          .select(
+            "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode, private_token, is_listed, public_featured_enabled, public_featured_sort_order, public_highlight_enabled, public_highlight_sort_order"
+          )
+          .in("id", invitedEventIds)
+          .neq("status", "cancelled")
+          .gt("ends_at", nowIso)
+      : { data: [] };
+
+  const { data: privateEventData } = privateToken
+    ? await admin
+        .from("gallery_events")
+        .select(
+          "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode, private_token, is_listed, public_featured_enabled, public_featured_sort_order, public_highlight_enabled, public_highlight_sort_order"
+        )
+        .eq("private_token", privateToken)
+        .neq("status", "cancelled")
+        .gt("ends_at", nowIso)
+        .maybeSingle()
+    : { data: null };
+
+  const eventsById = new Map<string, GalleryEvent>();
+
+  for (const event of (publicEventsData || []) as unknown as GalleryEvent[]) {
+    eventsById.set(event.id, event);
+  }
+
+  for (const event of (invitedEventsData || []) as unknown as GalleryEvent[]) {
+    eventsById.set(event.id, event);
+  }
+
+  if (privateEventData) {
+    const event = privateEventData as unknown as GalleryEvent;
+    eventsById.set(event.id, event);
+  }
+
+  const allUpcomingEvents = Array.from(eventsById.values()).sort(
+    (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+  );
+
+  const featuredEvent =
+    allUpcomingEvents
+      .filter((event) => event.public_featured_enabled)
+      .sort(
+        (a, b) =>
+          a.public_featured_sort_order - b.public_featured_sort_order ||
+          new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+      )[0] || allUpcomingEvents[0] || null;
+
+  const highlightEvents = allUpcomingEvents
+    .filter((event) => event.public_highlight_enabled && event.id !== featuredEvent?.id)
     .sort(
       (a, b) =>
-        new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime()
+        a.public_highlight_sort_order - b.public_highlight_sort_order ||
+        new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
     )
     .slice(0, 8);
 
-  const galleryIds = Array.from(
-    new Set(safeEvents.map((event) => event.gallery_id))
+  const regularEvents = allUpcomingEvents.filter(
+    (event) => event.id !== featuredEvent?.id && !highlightEvents.some((item) => item.id === event.id)
   );
-  const ownerIds = Array.from(new Set(safeEvents.map((event) => event.owner_id)));
-  const eventIds = safeEvents.map((event) => event.id);
 
-  const { data: galleriesResult } =
+  const { data: pastEventsData } = await admin
+    .from("gallery_events")
+    .select(
+      "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode, private_token, is_listed, public_featured_enabled, public_featured_sort_order, public_highlight_enabled, public_highlight_sort_order"
+    )
+    .in("access_mode", ["public", "password"])
+    .neq("status", "cancelled")
+    .lte("ends_at", nowIso)
+    .order("starts_at", { ascending: false })
+    .limit(12);
+
+  const pastEvents = (pastEventsData || []) as unknown as GalleryEvent[];
+
+  const allEventsForRelations = [...allUpcomingEvents, ...pastEvents];
+  const galleryIds = Array.from(
+    new Set(allEventsForRelations.map((event) => event.gallery_id))
+  );
+  const ownerIds = Array.from(
+    new Set(allEventsForRelations.map((event) => event.owner_id))
+  );
+  const eventIds = allEventsForRelations.map((event) => event.id);
+
+  const { data: galleries } =
     galleryIds.length > 0
       ? await admin
           .from("galleries")
@@ -191,7 +259,7 @@ export default async function PublicEventsPage() {
           .in("id", galleryIds)
       : { data: [] };
 
-  const { data: profilesResult } =
+  const { data: profiles } =
     ownerIds.length > 0
       ? await admin
           .from("profiles")
@@ -201,12 +269,13 @@ export default async function PublicEventsPage() {
           .in("id", ownerIds)
       : { data: [] };
 
-  const { data: liveVisitsResult } =
+  const { data: liveEvents } =
     eventIds.length > 0
       ? await admin
           .from("gallery_live_events")
-          .select("gallery_event_id, is_active, access_mode, voice_mode")
+          .select("gallery_event_id, is_active")
           .in("gallery_event_id", eventIds)
+          .eq("is_active", true)
       : { data: [] };
 
   const { data: followRows } = user
@@ -225,488 +294,270 @@ export default async function PublicEventsPage() {
       : { data: [] };
 
   const galleryById = new Map(
-    ((galleriesResult || []) as unknown as Gallery[]).map((gallery) => [
-      gallery.id,
-      gallery,
-    ])
+    ((galleries || []) as Gallery[]).map((gallery) => [gallery.id, gallery])
   );
 
   const profileById = new Map(
-    ((profilesResult || []) as unknown as Profile[]).map((profile) => [
-      profile.id,
-      profile,
-    ])
-  );
-
-  const liveByEventId = new Map(
-    ((liveVisitsResult || []) as unknown as LiveGuidedVisit[])
-      .filter((item) => item.gallery_event_id)
-      .map((item) => [item.gallery_event_id as string, item])
+    ((profiles || []) as Profile[]).map((profile) => [profile.id, profile])
   );
 
   const followedIds = new Set(
-    ((followRows || []) as unknown as FollowRow[]).map((row) => row.following_id)
+    ((followRows || []) as FollowRow[]).map((row) => row.following_id)
   );
 
-  const followerCounts = (
-    (followerRows || []) as unknown as FollowerCountRow[]
-  ).reduce((map, row) => {
-    map.set(row.following_id, (map.get(row.following_id) || 0) + 1);
-    return map;
-  }, new Map<string, number>());
-
-  const featuredEvent =
-    upcomingEvents
-      .filter((event) => event.public_featured_enabled)
-      .sort((a, b) => sortCuratedEvents(a, b, "public_featured_sort_order"))[0] ||
-    upcomingEvents[0] ||
-    null;
-
-  const featuredId = featuredEvent?.id || null;
-
-  const highlightedEvents = upcomingEvents
-    .filter(
-      (event) =>
-        event.id !== featuredId && event.public_highlight_enabled === true
-    )
-    .sort((a, b) => sortCuratedEvents(a, b, "public_highlight_sort_order"));
-
-  const sliderEvents =
-    highlightedEvents.length > 0
-      ? highlightedEvents.slice(0, 8)
-      : upcomingEvents.filter((event) => event.id !== featuredId).slice(0, 8);
-
-  const sliderIds = new Set(sliderEvents.map((event) => event.id));
-
-  const remainingEvents = upcomingEvents.filter(
-    (event) => event.id !== featuredId && !sliderIds.has(event.id)
+  const followerCounts = ((followerRows || []) as FollowerCountRow[]).reduce(
+    (map, row) => {
+      map.set(row.following_id, (map.get(row.following_id) || 0) + 1);
+      return map;
+    },
+    new Map<string, number>()
   );
 
-  function getEventHref(event: GalleryEvent) {
+  const liveEventIds = new Set(
+    ((liveEvents || []) as LiveEventRow[])
+      .map((event) => event.gallery_event_id)
+      .filter(Boolean) as string[]
+  );
+
+  function renderEventCard(event: GalleryEvent, variant: "featured" | "slider" | "list" = "list") {
     const gallery = galleryById.get(event.gallery_id);
-
-    if (gallery?.status === "published") {
-      return `/gallerie/${gallery.slug}`;
-    }
-
-    return "/eventi";
-  }
-
-  function renderBadges(event: GalleryEvent) {
-    const gallery = galleryById.get(event.gallery_id);
-    const liveVisit = liveByEventId.get(event.id);
-    const accessTranslation = getAccessModeTranslation(liveVisit?.access_mode);
-    const voiceTranslation = getVoiceModeTranslation(liveVisit?.voice_mode);
-
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-amber-900 bg-amber-950/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-200">
-          {event.status === "live" ? (
-            <T textKey="events.card.statusLive" fallback="Live" />
-          ) : (
-            <T textKey="events.card.statusEvent" fallback="Evento" />
-          )}
-        </span>
-
-        {liveVisit?.is_active && (
-          <span className="rounded-full border border-sky-800 bg-sky-950/30 px-3 py-1 text-xs uppercase tracking-[0.16em] text-sky-200">
-            <T
-              textKey="events.card.liveGuidedVisit"
-              fallback="Live guided visit"
-            />{" "}
-            · <T textKey={accessTranslation.textKey} fallback={accessTranslation.fallback} />{" "}
-            · <T textKey={voiceTranslation.textKey} fallback={voiceTranslation.fallback} />
-          </span>
-        )}
-
-        {gallery && (
-          <span className="rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-400">
-            {gallery.title}
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  function renderOwnerLine(event: GalleryEvent) {
     const owner = profileById.get(event.owner_id);
     const ownerName = getProfileName(owner);
     const ownerProfileHref =
       owner?.profile_slug && owner.public_profile_enabled
         ? `/profili/${owner.profile_slug}`
         : null;
+    const canOpenGallery = gallery?.status === "published";
+    const accessBadge = getAccessBadge(event.access_mode || "public");
+    const hasLiveGuidedVisit = liveEventIds.has(event.id);
 
     return (
-      <p className="mt-2 text-sm text-neutral-500">
-        <T textKey="events.card.curatedBy" fallback="A cura di" />{" "}
-        {ownerProfileHref ? (
-          <Link
-            href={ownerProfileHref}
-            className="text-neutral-200 underline decoration-neutral-700 underline-offset-4 transition hover:text-white"
-          >
-            {ownerName || (
-              <T
-                textKey="events.card.unknownProfile"
-                fallback="Profilo mostra.space"
+      <article
+        key={event.id}
+        className={
+          variant === "featured"
+            ? "grid overflow-hidden rounded-[2.4rem] border border-amber-900/60 bg-[radial-gradient(circle_at_top_left,rgba(217,119,6,0.18),transparent_32%),#0a0a0a] shadow-2xl md:grid-cols-[0.95fr_1.05fr]"
+            : variant === "slider"
+              ? "min-w-[320px] max-w-[360px] overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-950"
+              : "grid overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-950 md:grid-cols-[280px_1fr]"
+        }
+      >
+        <div className={variant === "featured" ? "min-h-[360px] bg-neutral-900" : "min-h-[220px] bg-neutral-900"}>
+          {gallery?.cover_image_url ? (
+            <img
+              src={gallery.cover_image_url}
+              alt={gallery.title}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full min-h-[220px] items-center justify-center text-xs uppercase tracking-[0.25em] text-neutral-600">
+              <T textKey="events.card.noCover" fallback="No cover" />
+            </div>
+          )}
+        </div>
+
+        <div className={variant === "featured" ? "p-8 md:p-10" : "p-6"}>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-amber-900 bg-amber-950/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-200">
+              {event.status === "live" ? (
+                <T textKey="events.card.statusLive" fallback="Live" />
+              ) : (
+                <T textKey="events.card.statusEvent" fallback="Evento" />
+              )}
+            </span>
+
+            <span className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.14em] ${accessBadge.className}`}>
+              <T textKey={accessBadge.textKey} fallback={accessBadge.fallback} />
+            </span>
+
+            {hasLiveGuidedVisit && (
+              <span className="rounded-full border border-sky-900 bg-sky-950/30 px-3 py-1 text-xs uppercase tracking-[0.14em] text-sky-200">
+                Live guided visit
+              </span>
+            )}
+
+            {gallery && (
+              <span className="rounded-full border border-neutral-800 px-3 py-1 text-xs text-neutral-400">
+                {gallery.title}
+              </span>
+            )}
+          </div>
+
+          <h2 className={variant === "featured" ? "font-serif text-5xl text-neutral-50 md:text-6xl" : "font-serif text-3xl text-neutral-50"}>
+            {event.title}
+          </h2>
+
+          <p className="mt-3 text-sm font-medium text-amber-200">
+            {formatDate(event.starts_at)}
+          </p>
+
+          <p className="mt-2 text-sm text-neutral-500">
+            <T textKey="events.card.curatedBy" fallback="A cura di" />{" "}
+            {ownerProfileHref ? (
+              <a
+                href={ownerProfileHref}
+                className="text-neutral-200 underline decoration-neutral-700 underline-offset-4 transition hover:text-white"
+              >
+                {ownerName || (
+                  <T
+                    textKey="events.card.unknownProfile"
+                    fallback="Profilo mostra.space"
+                  />
+                )}
+              </a>
+            ) : (
+              <span className="text-neutral-200">
+                {ownerName || (
+                  <T
+                    textKey="events.card.unknownProfile"
+                    fallback="Profilo mostra.space"
+                  />
+                )}
+              </span>
+            )}
+          </p>
+
+          {event.description && (
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
+              {event.description}
+            </p>
+          )}
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {canOpenGallery && gallery ? (
+              <a
+                href={`/gallerie/${gallery.slug}`}
+                className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+              >
+                <T textKey="events.card.openGallery" fallback="Apri galleria" />
+              </a>
+            ) : (
+              <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
+                <T
+                  textKey="events.card.galleryInPreparation"
+                  fallback="Galleria in preparazione"
+                />
+              </span>
+            )}
+
+            {owner && (
+              <FollowProfileButton
+                profileId={owner.id}
+                initialIsFollowing={followedIds.has(owner.id)}
+                initialFollowerCount={followerCounts.get(owner.id) || 0}
+                canFollow={Boolean(user)}
+                isOwnProfile={user?.id === owner.id}
+                label="Segui gallerista"
+                followingLabel="Segui già"
+                size="sm"
+                showCount={false}
               />
             )}
-          </Link>
-        ) : (
-          <span className="text-neutral-200">
-            {ownerName || (
-              <T
-                textKey="events.card.unknownProfile"
-                fallback="Profilo mostra.space"
-              />
-            )}
-          </span>
-        )}
-      </p>
-    );
-  }
-
-  function renderFollowButton(event: GalleryEvent) {
-    const owner = profileById.get(event.owner_id);
-
-    if (!owner) {
-      return null;
-    }
-
-    return (
-      <FollowProfileButton
-        profileId={owner.id}
-        initialIsFollowing={followedIds.has(owner.id)}
-        initialFollowerCount={followerCounts.get(owner.id) || 0}
-        canFollow={Boolean(user)}
-        isOwnProfile={user?.id === owner.id}
-        label="Segui gallerista"
-        followingLabel="Segui già"
-        size="sm"
-        showCount={false}
-      />
+          </div>
+        </div>
+      </article>
     );
   }
 
   return (
     <>
       <MuseumHeader />
-
-      <main className="museum-page min-h-screen overflow-hidden px-4 py-12 text-[var(--museum-ivory)] md:px-8">
+      <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
         <section className="mx-auto max-w-7xl">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div>
-              <p className="museum-label text-[var(--museum-bronze-light)]">
-                <T textKey="events.header.label" fallback="Calendario pubblico" />
-              </p>
+          <p className="mb-4 text-xs uppercase tracking-[0.35em] text-amber-500">
+            <T textKey="events.header.label" fallback="Calendario pubblico" />
+          </p>
 
-              <h1 className="museum-title mt-4 text-6xl md:text-8xl">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <h1 className="font-serif text-5xl md:text-6xl">
                 <T textKey="events.header.title" fallback="Eventi su mostra.space" />
               </h1>
-
-              <p className="museum-subtitle mt-5 max-w-3xl text-sm leading-7 text-[var(--museum-stone)] md:text-base">
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
                 <T
                   textKey="events.header.subtitle"
-                  fallback="Vernissage digitali, visite guidate, opening online e appuntamenti collegati alle gallerie pubbliche della piattaforma."
+                  fallback="Vernissage digitali, visite guidate e appuntamenti collegati alle gallerie pubbliche della piattaforma."
                 />
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Link href="/profili" className="museum-button-secondary px-5 py-2.5">
+              <a
+                href="/profili"
+                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+              >
                 <T textKey="events.header.exploreProfiles" fallback="Esplora profili" />
-              </Link>
+              </a>
 
-              <Link
+              <a
                 href="/account/calendario"
-                className="museum-button-primary px-5 py-2.5"
+                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
                 <T textKey="events.header.myCalendar" fallback="Il mio calendario" />
-              </Link>
+              </a>
             </div>
           </div>
 
           {featuredEvent ? (
-            <section className="mt-12 overflow-hidden rounded-[2.5rem] border border-[rgba(197,151,94,0.45)] bg-[radial-gradient(circle_at_top_left,rgba(197,151,94,0.2),transparent_26rem),rgba(18,18,18,0.96)] shadow-[var(--museum-shadow-soft)]">
-              <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
-                <div className="min-h-[360px] bg-black">
-                  {galleryById.get(featuredEvent.gallery_id)?.cover_image_url ? (
-                    <img
-                      src={galleryById.get(featuredEvent.gallery_id)?.cover_image_url || ""}
-                      alt={featuredEvent.title}
-                      className="h-full min-h-[360px] w-full object-cover opacity-85"
-                    />
-                  ) : (
-                    <div className="flex h-full min-h-[360px] items-center justify-center text-xs uppercase tracking-[0.35em] text-neutral-600">
-                      <T
-                        textKey="events.featured.noCover"
-                        fallback="Evento in evidenza"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-8 md:p-10">
-                  <p className="museum-label text-[var(--museum-bronze-light)]">
-                    <T
-                      textKey="events.featured.label"
-                      fallback="Evento in evidenza"
-                    />
-                  </p>
-
-                  <div className="mt-5">{renderBadges(featuredEvent)}</div>
-
-                  <h2 className="museum-title mt-7 text-5xl md:text-7xl">
-                    {featuredEvent.title}
-                  </h2>
-
-                  <p className="mt-5 text-base font-medium text-[var(--museum-bronze-light)]">
-                    {formatDate(featuredEvent.starts_at)}
-                  </p>
-
-                  {renderOwnerLine(featuredEvent)}
-
-                  {featuredEvent.description && (
-                    <p className="mt-6 max-w-3xl text-sm leading-8 text-[var(--museum-stone)]">
-                      {featuredEvent.description}
-                    </p>
-                  )}
-
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Link
-                      href={getEventHref(featuredEvent)}
-                      className="museum-button-primary px-6 py-3"
-                    >
-                      <T
-                        textKey="events.actions.openGallery"
-                        fallback="Apri galleria"
-                      />
-                    </Link>
-
-                    {renderFollowButton(featuredEvent)}
-                  </div>
-                </div>
-              </div>
+            <section className="mt-10">
+              <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-500">
+                <T textKey="events.featured.label" fallback="Evento in evidenza" />
+              </p>
+              {renderEventCard(featuredEvent, "featured")}
             </section>
           ) : (
-            <section className="mt-12 rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-8 text-sm text-[var(--museum-stone)]">
+            <section className="mt-10 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-400">
               <T
-                textKey="events.empty.noScheduledEvents"
+                textKey="events.upcoming.empty"
                 fallback="Nessun evento programmato al momento."
               />
             </section>
           )}
 
-          {sliderEvents.length > 0 && (
-            <section className="mt-14">
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          {highlightEvents.length > 0 && (
+            <section className="mt-12">
+              <div className="mb-5 flex items-end justify-between gap-4">
                 <div>
-                  <p className="museum-label">
-                    <T
-                      textKey="events.slider.label"
-                      fallback="Eventi selezionati"
-                    />
+                  <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
+                    <T textKey="events.highlights.label" fallback="Da non perdere" />
                   </p>
-                  <h2 className="museum-title mt-3 text-5xl">
-                    <T textKey="events.slider.title" fallback="Da non perdere." />
+                  <h2 className="mt-2 font-serif text-3xl">
+                    <T textKey="events.highlights.title" fallback="Eventi selezionati" />
                   </h2>
                 </div>
-                <p className="max-w-xl text-sm leading-6 text-[var(--museum-stone-muted)]">
-                  <T
-                    textKey="events.slider.subtitle"
-                    fallback="Una selezione editoriale degli appuntamenti più rilevanti: opening, guided visits e presentazioni pubbliche."
-                  />
-                </p>
               </div>
-
-              <div className="mt-7 flex gap-5 overflow-x-auto pb-4">
-                {sliderEvents.map((event) => {
-                  const gallery = galleryById.get(event.gallery_id);
-
-                  return (
-                    <article
-                      key={event.id}
-                      className="min-w-[320px] max-w-[360px] overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)]"
-                    >
-                      <Link href={getEventHref(event)}>
-                        <div className="h-48 bg-black">
-                          {gallery?.cover_image_url ? (
-                            <img
-                              src={gallery.cover_image_url}
-                              alt={event.title}
-                              className="h-full w-full object-cover transition duration-500 hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-xs uppercase tracking-[0.3em] text-neutral-600">
-                              <T textKey="events.card.noCover" fallback="No cover" />
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-
-                      <div className="p-5">
-                        <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--museum-bronze-light)]">
-                          {formatShortDate(event.starts_at)}
-                        </p>
-
-                        <h3 className="mt-3 font-editorial text-3xl leading-tight text-[var(--museum-ivory)]">
-                          {event.title}
-                        </h3>
-
-                        <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                          {gallery?.title || (
-                            <T
-                              textKey="events.card.galleryRemoved"
-                              fallback="Galleria rimossa"
-                            />
-                          )}
-                        </p>
-
-                        <div className="mt-4">{renderBadges(event)}</div>
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="flex gap-5 overflow-x-auto pb-4">
+                {highlightEvents.map((event) => renderEventCard(event, "slider"))}
               </div>
             </section>
           )}
 
-          <section className="mt-14">
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-              <div>
-                <p className="museum-label">
-                  <T textKey="events.calendar.label" fallback="Calendario" />
-                </p>
-                <h2 className="museum-title mt-3 text-5xl">
-                  <T
-                    textKey="events.calendar.title"
-                    fallback="Tutti gli altri eventi."
-                  />
-                </h2>
-              </div>
-              <p className="text-sm text-[var(--museum-stone-muted)]">
-                <T
-                  textKey="events.calendar.orderDescription"
-                  fallback="Ordinati dal più vicino al più lontano."
-                />
-              </p>
-            </div>
+          <section className="mt-12">
+            <h2 className="font-serif text-3xl">
+              <T textKey="events.upcoming.title" fallback="Tutti gli eventi" />
+            </h2>
 
-            {remainingEvents.length === 0 ? (
-              <div className="mt-7 rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-6 text-sm text-[var(--museum-stone)]">
+            {regularEvents.length === 0 ? (
+              <div className="mt-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-400">
                 <T
-                  textKey="events.calendar.empty"
+                  textKey="events.upcoming.emptyOtherEvents"
                   fallback="Non ci sono altri eventi programmati."
                 />
               </div>
             ) : (
-              <div className="mt-7 grid gap-5">
-                {remainingEvents.map((event) => {
-                  const gallery = galleryById.get(event.gallery_id);
-                  const canOpenGallery = gallery?.status === "published";
-
-                  return (
-                    <article
-                      key={event.id}
-                      className="grid overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)] md:grid-cols-[260px_1fr]"
-                    >
-                      <div className="min-h-[220px] bg-black">
-                        {gallery?.cover_image_url ? (
-                          <img
-                            src={gallery.cover_image_url}
-                            alt={gallery.title}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full min-h-[220px] items-center justify-center text-xs uppercase tracking-[0.25em] text-neutral-600">
-                            <T textKey="events.card.noCover" fallback="No cover" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="p-6">
-                        {renderBadges(event)}
-
-                        <h3 className="mt-4 font-editorial text-4xl leading-tight text-[var(--museum-ivory)]">
-                          {event.title}
-                        </h3>
-
-                        <p className="mt-3 text-sm font-medium text-[var(--museum-bronze-light)]">
-                          {formatDate(event.starts_at)}
-                        </p>
-
-                        {renderOwnerLine(event)}
-
-                        {event.description && (
-                          <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
-                            {event.description}
-                          </p>
-                        )}
-
-                        <div className="mt-6 flex flex-wrap items-center gap-3">
-                          {canOpenGallery && gallery ? (
-                            <Link
-                              href={`/gallerie/${gallery.slug}`}
-                              className="museum-button-primary px-5 py-2.5"
-                            >
-                              <T
-                                textKey="events.actions.openGallery"
-                                fallback="Apri galleria"
-                              />
-                            </Link>
-                          ) : (
-                            <span className="rounded-full border border-[var(--museum-border)] px-5 py-2 text-sm text-[var(--museum-stone-muted)]">
-                              <T
-                                textKey="events.card.galleryInPreparation"
-                                fallback="Galleria in preparazione"
-                              />
-                            </span>
-                          )}
-
-                          {renderFollowButton(event)}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="mt-6 space-y-5">
+                {regularEvents.map((event) => renderEventCard(event, "list"))}
               </div>
             )}
           </section>
 
           {pastEvents.length > 0 && (
-            <section className="mt-16">
-              <p className="museum-label">
-                <T textKey="events.archive.label" fallback="Archivio" />
-              </p>
-              <h2 className="museum-title mt-3 text-4xl">
-                <T textKey="events.archive.title" fallback="Eventi passati" />
+            <section className="mt-12">
+              <h2 className="font-serif text-3xl">
+                <T textKey="events.past.title" fallback="Eventi passati" />
               </h2>
-
-              <div className="mt-6 grid gap-3 md:grid-cols-2">
-                {pastEvents.map((event) => {
-                  const gallery = galleryById.get(event.gallery_id);
-
-                  return (
-                    <article
-                      key={event.id}
-                      className="rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5"
-                    >
-                      <p className="text-xs text-[var(--museum-stone-muted)]">
-                        {formatShortDate(event.starts_at)}
-                      </p>
-                      <h3 className="mt-2 text-lg font-medium text-[var(--museum-ivory-soft)]">
-                        {event.title}
-                      </h3>
-                      <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
-                        {gallery?.title || (
-                          <T
-                            textKey="events.card.galleryRemoved"
-                            fallback="Galleria rimossa"
-                          />
-                        )}
-                      </p>
-                    </article>
-                  );
-                })}
+              <div className="mt-6 space-y-5">
+                {pastEvents.map((event) => renderEventCard(event, "list"))}
               </div>
             </section>
           )}

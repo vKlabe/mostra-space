@@ -103,6 +103,7 @@ type GalleryEvent = {
   starts_at: string;
   ends_at: string;
   status: "scheduled" | "live" | "completed" | "cancelled";
+  access_mode: "public" | "password" | "invite_only" | "private_link";
 };
 
 type EventOwner = {
@@ -116,6 +117,10 @@ type EventOwner = {
 type NotificationRow = {
   id: string;
   read_at: string | null;
+};
+
+type EventInviteRow = {
+  event_id: string;
 };
 
 function getProfileName(profile: FollowedProfile | EventOwner | Profile) {
@@ -415,59 +420,73 @@ export default async function DashboardSocialPage() {
   }
 
   const nowIso = new Date().toISOString();
-
-  const { data: followedOwnerGalleriesData } =
-    followingIds.length > 0
-      ? await admin
-          .from("galleries")
-          .select("id")
-          .in("owner_id", followingIds)
-      : { data: [] };
-
-  const followedOwnerGalleryIds = ((followedOwnerGalleriesData || []) as Array<{
-    id: string;
-  }>).map((gallery) => gallery.id);
-
-  const ownerIdsForCalendar = Array.from(new Set([...followingIds, user.id]));
-  const galleryIdsForCalendar = Array.from(
-    new Set([...favoriteGalleryIds, ...followedOwnerGalleryIds])
-  );
+  const publicAccessModes = ["public", "password"];
 
   const followedEventRows =
-    ownerIdsForCalendar.length > 0
+    followingIds.length > 0
       ? await admin
           .from("gallery_events")
           .select(
-            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
+            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
           )
-          .in("owner_id", ownerIdsForCalendar)
+          .in("owner_id", followingIds)
           .in("status", ["scheduled", "live"])
+          .in("access_mode", publicAccessModes)
           .gt("ends_at", nowIso)
           .order("starts_at", { ascending: true })
-          .limit(12)
+          .limit(8)
       : { data: [] };
 
   const favoriteEventRows =
-    galleryIdsForCalendar.length > 0
+    favoriteGalleryIds.length > 0
       ? await admin
           .from("gallery_events")
           .select(
-            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
+            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
           )
-          .in("gallery_id", galleryIdsForCalendar)
+          .in("gallery_id", favoriteGalleryIds)
+          .in("status", ["scheduled", "live"])
+          .in("access_mode", publicAccessModes)
+          .gt("ends_at", nowIso)
+          .order("starts_at", { ascending: true })
+          .limit(8)
+      : { data: [] };
+
+  const { data: invitedRowsData } = await admin
+    .from("gallery_event_invites")
+    .select("event_id")
+    .eq("user_id", user.id)
+    .neq("status", "revoked");
+
+  const invitedEventIds = ((invitedRowsData || []) as EventInviteRow[]).map(
+    (row) => row.event_id
+  );
+
+  const invitedEventRows =
+    invitedEventIds.length > 0
+      ? await admin
+          .from("gallery_events")
+          .select(
+            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+          )
+          .in("id", invitedEventIds)
           .in("status", ["scheduled", "live"])
           .gt("ends_at", nowIso)
           .order("starts_at", { ascending: true })
-          .limit(12)
+          .limit(8)
       : { data: [] };
 
   const eventsById = new Map<string, GalleryEvent>();
 
-  for (const event of (followedEventRows.data || []) as unknown as GalleryEvent[]) {
+  for (const event of (followedEventRows.data || []) as GalleryEvent[]) {
     eventsById.set(event.id, event);
   }
 
-  for (const event of (favoriteEventRows.data || []) as unknown as GalleryEvent[]) {
+  for (const event of (favoriteEventRows.data || []) as GalleryEvent[]) {
+    eventsById.set(event.id, event);
+  }
+
+  for (const event of (invitedEventRows.data || []) as GalleryEvent[]) {
     eventsById.set(event.id, event);
   }
 
@@ -864,9 +883,22 @@ export default async function DashboardSocialPage() {
                         {formatDateTime(event.starts_at)}
                       </p>
 
-                      <p className="mt-2 font-medium text-neutral-100">
-                        {event.title}
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-neutral-100">
+                          {event.title}
+                        </p>
+                        {event.access_mode !== "public" && (
+                          <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-neutral-400">
+                            {event.access_mode === "password" ? (
+                              <T textKey="dashboard.social.calendar.password" fallback="Password" />
+                            ) : event.access_mode === "invite_only" ? (
+                              <T textKey="dashboard.social.calendar.inviteOnly" fallback="Solo invito" />
+                            ) : (
+                              <T textKey="dashboard.social.calendar.privateLink" fallback="Link privato" />
+                            )}
+                          </span>
+                        )}
+                      </div>
 
                       <p className="mt-1 text-xs text-neutral-500">
                         {gallery?.title || (

@@ -64,6 +64,9 @@ type GalleryEvent = {
   ends_at: string;
   timezone: string | null;
   status: "scheduled" | "live" | "completed" | "cancelled";
+  access_mode: string | null;
+  password_hash: string | null;
+  private_token: string | null;
 };
 
 type Profile = {
@@ -92,6 +95,12 @@ type ModeratorRow = {
 type InviteRow = {
   id: string;
   role: "owner" | "moderator" | "speaker" | "listener" | string;
+  status: "invited" | "accepted" | "revoked" | string;
+};
+
+type CalendarInviteRow = {
+  id: string;
+  role: "attendee" | "speaker" | "moderator" | string;
   status: "invited" | "accepted" | "revoked" | string;
 };
 
@@ -127,6 +136,16 @@ function cleanUuid(value: unknown) {
       text
     )
   ) {
+    return text;
+  }
+
+  return "";
+}
+
+function cleanInviteToken(value: unknown) {
+  const text = cleanText(value, 140);
+
+  if (/^[a-zA-Z0-9:_-]{8,140}$/.test(text)) {
     return text;
   }
 
@@ -422,6 +441,72 @@ async function findInvite(params: {
   return null;
 }
 
+async function findCalendarEventInvite(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  eventId: string;
+  inviteToken: string;
+  userId: string | null;
+  email: string | null;
+}) {
+  const { admin, eventId, inviteToken, userId, email } = params;
+
+  if (inviteToken) {
+    const { data } = await admin
+      .from("gallery_event_invites")
+      .select("id, role, status")
+      .eq("event_id", eventId)
+      .eq("invite_token", inviteToken)
+      .neq("status", "revoked")
+      .maybeSingle();
+
+    return (data || null) as unknown as CalendarInviteRow | null;
+  }
+
+  if (userId) {
+    const { data } = await admin
+      .from("gallery_event_invites")
+      .select("id, role, status")
+      .eq("event_id", eventId)
+      .eq("user_id", userId)
+      .neq("status", "revoked")
+      .maybeSingle();
+
+    if (data) {
+      return data as unknown as CalendarInviteRow;
+    }
+  }
+
+  if (email) {
+    const { data } = await admin
+      .from("gallery_event_invites")
+      .select("id, role, status")
+      .eq("event_id", eventId)
+      .eq("email", email.toLowerCase())
+      .neq("status", "revoked")
+      .maybeSingle();
+
+    return (data || null) as unknown as CalendarInviteRow | null;
+  }
+
+  return null;
+}
+
+function getLiveRoleFromCalendarInvite(invite: CalendarInviteRow | null) {
+  if (!invite || invite.status === "revoked") {
+    return null;
+  }
+
+  if (invite.role === "moderator") {
+    return "moderator" as ParticipantRole;
+  }
+
+  if (invite.role === "speaker") {
+    return "speaker" as ParticipantRole;
+  }
+
+  return "listener" as ParticipantRole;
+}
+
 async function isBlocked(params: {
   admin: ReturnType<typeof createAdminClient>;
   galleryId: string;
@@ -567,7 +652,7 @@ export async function POST(request: Request) {
   const liveEventId = cleanUuid(body.liveEventId);
   const password = cleanText(body.password, 200);
   const privateToken = cleanUuid(body.privateToken);
-  const inviteToken = cleanUuid(body.inviteToken);
+  const inviteToken = cleanInviteToken(body.inviteToken);
   const displayName = cleanText(body.displayName, 80);
   const sessionId = cleanSessionId(body.sessionId);
 
@@ -734,7 +819,7 @@ export async function POST(request: Request) {
   if (liveEvent.gallery_event_id) {
     const { data: calendarEventData } = await admin
       .from("gallery_events")
-      .select("id, gallery_id, owner_id, title, starts_at, ends_at, timezone, status")
+      .select("id, gallery_id, owner_id, title, starts_at, ends_at, timezone, status, access_mode, password_hash, private_token")
       .eq("id", liveEvent.gallery_event_id)
       .maybeSingle();
 
@@ -748,6 +833,56 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         { success: false, error: "L'evento calendario collegato non è disponibile." },
+        { status: 403 }
+      );
+    }
+  }
+
+  let calendarInviteRole: ParticipantRole | null = null;
+
+  if (linkedCalendarEvent) {
+    const calendarAccessMode = normalizeAccessMode(linkedCalendarEvent.access_mode);
+
+    const calendarInvite = await findCalendarEventInvite({
+      admin,
+      eventId: linkedCalendarEvent.id,
+      inviteToken,
+      userId,
+      email: userEmail || profile?.email || null,
+    });
+
+    calendarInviteRole = getLiveRoleFromCalendarInvite(calendarInvite);
+
+    const calendarPrivileged = Boolean(
+      profile?.role === "admin" || (userId && userId === gallery.owner_id)
+    );
+
+    if (calendarAccessMode === "password" && !calendarPrivileged && !calendarInviteRole) {
+      const passwordIsValid = verifyLivePassword(
+        password,
+        linkedCalendarEvent.password_hash
+      );
+
+      if (!passwordIsValid) {
+        return NextResponse.json(
+          { success: false, error: "Password evento non valida." },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (calendarAccessMode === "private_link" && !calendarPrivileged && !calendarInviteRole) {
+      if (!privateToken || privateToken !== linkedCalendarEvent.private_token) {
+        return NextResponse.json(
+          { success: false, error: "Link privato evento non valido." },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (calendarAccessMode === "invite_only" && !calendarPrivileged && !calendarInviteRole) {
+      return NextResponse.json(
+        { success: false, error: "Questo evento è solo su invito." },
         { status: 403 }
       );
     }
@@ -794,7 +929,7 @@ export async function POST(request: Request) {
     email: userEmail || profile?.email || null,
   });
 
-  const inviteRole = getRoleFromInvite(invite);
+  const inviteRole = getRoleFromInvite(invite) || calendarInviteRole;
 
   if (accessMode === "password" && !privileged && !inviteRole) {
     const passwordIsValid = verifyLivePassword(password, liveEvent.password_hash);

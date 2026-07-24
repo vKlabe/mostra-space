@@ -12,6 +12,10 @@ type FavoriteGalleryRow = {
   gallery_id: string;
 };
 
+type EventInviteRow = {
+  event_id: string;
+};
+
 type GalleryEvent = {
   id: string;
   owner_id: string;
@@ -21,6 +25,7 @@ type GalleryEvent = {
   starts_at: string;
   ends_at: string;
   status: "scheduled" | "live" | "completed" | "cancelled";
+  access_mode: "public" | "password" | "invite_only" | "private_link";
 };
 
 type Gallery = {
@@ -104,54 +109,71 @@ export default async function AccountCalendarPage() {
     (row) => row.gallery_id
   );
 
-  const nowIso = new Date().toISOString();
+  const publicAccessModes = ["public", "password"];
+  const eventQueries: Array<PromiseLike<{ data: unknown[] | null }>> = [];
 
-  const { data: followedOwnerGalleriesData } =
-    followedProfileIds.length > 0
-      ? await admin
-          .from("galleries")
-          .select("id")
-          .in("owner_id", followedProfileIds)
-      : { data: [] };
-
-  const followedOwnerGalleryIds = ((followedOwnerGalleriesData || []) as Array<{
-    id: string;
-  }>).map((gallery) => gallery.id);
-
-  const ownerIdsForCalendar = Array.from(
-    new Set([...followedProfileIds, user.id])
-  );
-
-  const galleryIdsForCalendar = Array.from(
-    new Set([...favoriteGalleryIds, ...followedOwnerGalleryIds])
-  );
-
-  const eventQueries: PromiseLike<{ data: unknown[] | null }>[] = [];
-
-  if (ownerIdsForCalendar.length > 0) {
+  if (followedProfileIds.length > 0) {
     eventQueries.push(
       admin
         .from("gallery_events")
         .select(
-          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
+          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
         )
-        .in("owner_id", ownerIdsForCalendar)
+        .in("owner_id", followedProfileIds)
         .in("status", ["scheduled", "live"])
-        .gt("ends_at", nowIso)
+        .in("access_mode", publicAccessModes)
+        .gt("ends_at", new Date().toISOString())
         .order("starts_at", { ascending: true })
     );
   }
 
-  if (galleryIdsForCalendar.length > 0) {
+  if (favoriteGalleryIds.length > 0) {
     eventQueries.push(
       admin
         .from("gallery_events")
         .select(
-          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status"
+          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
         )
-        .in("gallery_id", galleryIdsForCalendar)
+        .in("gallery_id", favoriteGalleryIds)
         .in("status", ["scheduled", "live"])
-        .gt("ends_at", nowIso)
+        .in("access_mode", publicAccessModes)
+        .gt("ends_at", new Date().toISOString())
+        .order("starts_at", { ascending: true })
+    );
+  }
+
+  eventQueries.push(
+    admin
+      .from("gallery_events")
+      .select(
+        "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+      )
+      .eq("owner_id", user.id)
+      .in("status", ["scheduled", "live"])
+      .gt("ends_at", new Date().toISOString())
+      .order("starts_at", { ascending: true })
+  );
+
+  const { data: inviteRows } = await admin
+    .from("gallery_event_invites")
+    .select("event_id")
+    .eq("user_id", user.id)
+    .neq("status", "revoked");
+
+  const invitedEventIds = ((inviteRows || []) as EventInviteRow[]).map(
+    (row) => row.event_id
+  );
+
+  if (invitedEventIds.length > 0) {
+    eventQueries.push(
+      admin
+        .from("gallery_events")
+        .select(
+          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+        )
+        .in("id", invitedEventIds)
+        .in("status", ["scheduled", "live"])
+        .gt("ends_at", new Date().toISOString())
         .order("starts_at", { ascending: true })
     );
   }
@@ -160,7 +182,7 @@ export default async function AccountCalendarPage() {
   const eventsById = new Map<string, GalleryEvent>();
 
   for (const result of queryResults) {
-    for (const event of (result.data || []) as unknown as GalleryEvent[]) {
+    for (const event of (result.data || []) as GalleryEvent[]) {
       eventsById.set(event.id, event);
     }
   }
@@ -327,9 +349,22 @@ export default async function AccountCalendarPage() {
                       {formatDate(event.starts_at)}
                     </p>
 
-                    <h3 className="mt-2 text-2xl font-medium text-neutral-50">
-                      {event.title}
-                    </h3>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <h3 className="text-2xl font-medium text-neutral-50">
+                        {event.title}
+                      </h3>
+                      {event.access_mode !== "public" && (
+                        <span className="rounded-full border border-neutral-700 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-neutral-300">
+                          {event.access_mode === "password" ? (
+                            <T textKey="account.calendar.event.password" fallback="Password" />
+                          ) : event.access_mode === "invite_only" ? (
+                            <T textKey="account.calendar.event.inviteOnly" fallback="Solo invito" />
+                          ) : (
+                            <T textKey="account.calendar.event.privateLink" fallback="Link privato" />
+                          )}
+                        </span>
+                      )}
+                    </div>
 
                     <p className="mt-2 text-sm text-neutral-500">
                       {gallery?.title ? (

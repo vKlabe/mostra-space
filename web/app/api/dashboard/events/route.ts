@@ -37,6 +37,14 @@ type LiveGuidedVisitVoiceMode =
   | "everyone"
   | "request_to_speak";
 
+type EventAccessMode = "public" | "password" | "invite_only" | "private_link";
+
+type EventAccessPayload = {
+  accessMode: EventAccessMode;
+  password: string | null;
+  inviteEmails: string[];
+};
+
 type LiveGuidedVisitPayload = {
   enabled: boolean;
   accessMode: LiveGuidedVisitAccessMode;
@@ -53,6 +61,7 @@ type CreateEventBody = {
   endsAt?: unknown;
   durationMinutes?: unknown;
   timezone?: unknown;
+  eventAccess?: unknown;
   liveGuidedVisit?: unknown;
 };
 
@@ -62,6 +71,11 @@ type FollowRow = {
 
 type FavoriteGalleryRow = {
   user_id: string;
+};
+
+type InviteProfile = {
+  id: string;
+  email: string | null;
 };
 
 function cleanText(value: unknown) {
@@ -159,6 +173,73 @@ function cleanVoiceMode(value: unknown): LiveGuidedVisitVoiceMode {
   }
 
   return "owner_only";
+}
+
+function cleanEventAccessMode(value: unknown): EventAccessMode {
+  if (
+    value === "password" ||
+    value === "invite_only" ||
+    value === "private_link" ||
+    value === "public"
+  ) {
+    return value;
+  }
+
+  return "public";
+}
+
+function cleanEmail(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const cleaned = value.trim().toLowerCase();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned)) {
+    return "";
+  }
+
+  return cleaned.slice(0, 254);
+}
+
+function cleanInviteEmails(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(value.map((item) => cleanEmail(item)).filter(Boolean))
+  ).slice(0, 200);
+}
+
+function parseEventAccess(value: unknown): EventAccessPayload {
+  if (!value || typeof value !== "object") {
+    return {
+      accessMode: "public",
+      password: null,
+      inviteEmails: [],
+    };
+  }
+
+  const payload = value as Record<string, unknown>;
+  const accessMode = cleanEventAccessMode(payload.accessMode);
+
+  return {
+    accessMode,
+    password: cleanNullableText(payload.password),
+    inviteEmails: cleanInviteEmails(payload.inviteEmails),
+  };
+}
+
+function hashEventPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+
+  return `scrypt:${salt}:${hash}`;
+}
+
+function buildPrivateEventToken() {
+  return crypto.randomUUID();
 }
 
 function parseLiveGuidedVisit(value: unknown): LiveGuidedVisitPayload {
@@ -388,6 +469,125 @@ async function createEventNotifications({
   });
 }
 
+async function createEventInvites({
+  admin,
+  eventId,
+  inviteEmails,
+  createdBy,
+}: {
+  admin: ReturnType<typeof createAdminClient>;
+  eventId: string;
+  inviteEmails: string[];
+  createdBy: string;
+}) {
+  if (inviteEmails.length === 0) {
+    return [];
+  }
+
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, email")
+    .in("email", inviteEmails);
+
+  const profileByEmail = new Map(
+    ((profiles || []) as InviteProfile[])
+      .filter((profile) => profile.email)
+      .map((profile) => [profile.email!.toLowerCase(), profile])
+  );
+
+  const rows = inviteEmails.map((email) => {
+    const profile = profileByEmail.get(email);
+
+    return {
+      event_id: eventId,
+      email,
+      user_id: profile?.id || null,
+      role: "attendee",
+      status: "invited",
+      created_by: createdBy,
+      updated_at: new Date().toISOString(),
+    };
+  });
+
+  const { data } = await admin
+    .from("gallery_event_invites")
+    .upsert(rows, {
+      onConflict: "event_id,email",
+      ignoreDuplicates: false,
+    })
+    .select("id, event_id, email, user_id, invite_token, status");
+
+  return data || [];
+}
+
+async function createInviteNotifications({
+  admin,
+  eventId,
+  galleryId,
+  ownerId,
+  galleryTitle,
+  eventTitle,
+  startsAt,
+  invitedUserIds,
+}: {
+  admin: ReturnType<typeof createAdminClient>;
+  eventId: string;
+  galleryId: string;
+  ownerId: string;
+  galleryTitle: string;
+  eventTitle: string;
+  startsAt: Date;
+  invitedUserIds: string[];
+}) {
+  const recipientIds = Array.from(
+    new Set(invitedUserIds.filter((id) => id && id !== ownerId))
+  );
+
+  if (recipientIds.length === 0) {
+    return;
+  }
+
+  const now = new Date();
+
+  await admin.from("account_notifications").upsert(
+    recipientIds.map((userId) => ({
+      user_id: userId,
+      type: "event_created",
+      title: "Invito evento",
+      message: `${eventTitle} · ${galleryTitle}`,
+      event_id: eventId,
+      gallery_id: galleryId,
+      actor_profile_id: ownerId,
+      scheduled_for: now.toISOString(),
+    })),
+    {
+      onConflict: "user_id,event_id,type",
+      ignoreDuplicates: true,
+    }
+  );
+
+  const thirtyMinutesBefore = new Date(startsAt.getTime() - 30 * 60 * 1000);
+
+  if (thirtyMinutesBefore > now) {
+    await admin.from("account_notifications").upsert(
+      recipientIds.map((userId) => ({
+        user_id: userId,
+        type: "event_30_minutes_before",
+        title: "Evento tra 30 minuti",
+        message: `${eventTitle} · ${galleryTitle}`,
+        event_id: eventId,
+        gallery_id: galleryId,
+        actor_profile_id: ownerId,
+        scheduled_for: thirtyMinutesBefore.toISOString(),
+      })),
+      {
+        onConflict: "user_id,event_id,type",
+        ignoreDuplicates: true,
+      }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   const current = await requireEventCreator();
 
@@ -420,6 +620,7 @@ export async function POST(request: Request) {
     (startsAt
       ? new Date(startsAt.getTime() + durationMinutes * 60 * 1000)
       : null);
+  const eventAccess = parseEventAccess(body.eventAccess);
   const liveGuidedVisit = parseLiveGuidedVisit(body.liveGuidedVisit);
 
   if (!galleryId) {
@@ -453,6 +654,29 @@ export async function POST(request: Request) {
   if (endsAt <= startsAt) {
     return NextResponse.json(
       { success: false, error: "La fine evento deve essere successiva all'inizio." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    eventAccess.accessMode === "password" &&
+    (!eventAccess.password || eventAccess.password.length < 4)
+  ) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Inserisci una password evento di almeno 4 caratteri.",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (eventAccess.accessMode === "invite_only" && eventAccess.inviteEmails.length === 0) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Inserisci almeno una email invitata per un evento solo su invito.",
+      },
       { status: 400 }
     );
   }
@@ -564,9 +788,19 @@ export async function POST(request: Request) {
       ends_at: endsAt.toISOString(),
       timezone,
       status: "scheduled",
+      access_mode: eventAccess.accessMode,
+      password_hash:
+        eventAccess.accessMode === "password" && eventAccess.password
+          ? hashEventPassword(eventAccess.password)
+          : null,
+      private_token:
+        eventAccess.accessMode === "private_link" ? buildPrivateEventToken() : null,
+      is_listed:
+        eventAccess.accessMode === "public" || eventAccess.accessMode === "password",
+      requires_login: eventAccess.accessMode === "invite_only",
     })
     .select(
-      "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, created_at"
+      "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode, private_token, is_listed, created_at"
     )
     .single();
 
@@ -657,6 +891,29 @@ export async function POST(request: Request) {
     createdLiveGuidedVisit = liveEvent;
   }
 
+  const createdInvites = await createEventInvites({
+    admin,
+    eventId: createdEvent.id,
+    inviteEmails: eventAccess.inviteEmails,
+    createdBy: current.user.id,
+  });
+
+  const invitedUserIds = ((createdInvites || []) as Array<{ user_id?: string | null }>)
+    .map((invite) => invite.user_id)
+    .filter(Boolean) as string[];
+
+  if (eventAccess.accessMode === "invite_only") {
+    await createInviteNotifications({
+      admin,
+      eventId: createdEvent.id,
+      ownerId: gallery.owner_id,
+      galleryId: gallery.id,
+      galleryTitle: gallery.title,
+      eventTitle: createdEvent.title,
+      startsAt,
+      invitedUserIds,
+    });
+  } else if (eventAccess.accessMode !== "private_link") {
   await createEventNotifications({
     admin,
     eventId: createdEvent.id,
@@ -666,10 +923,19 @@ export async function POST(request: Request) {
     eventTitle: createdEvent.title,
     startsAt,
   });
+  }
 
   return NextResponse.json({
     success: true,
     event: createdEvent,
     liveGuidedVisit: createdLiveGuidedVisit,
+    eventAccess: {
+      accessMode: eventAccess.accessMode,
+      privateToken: createdEvent.private_token || null,
+      invitesCreated: createdInvites.length,
+    },
+    privateEventUrl: createdEvent.private_token
+      ? `/eventi?privateToken=${createdEvent.private_token}`
+      : null,
   });
 }

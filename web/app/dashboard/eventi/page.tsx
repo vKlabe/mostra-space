@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import CreateGalleryEventForm from "@/components/events/CreateGalleryEventForm";
 import GalleryEventActions from "@/components/events/GalleryEventActions";
+import GalleryEventInviteManager from "@/components/events/GalleryEventInviteManager";
 import T from "@/components/i18n/T";
 import { PLAN_LIMITS, normalizePlanName, type PlanName } from "@/lib/plans";
 
@@ -37,6 +38,9 @@ type GalleryEvent = {
   ends_at: string;
   timezone: string;
   status: "scheduled" | "live" | "completed" | "cancelled";
+  access_mode: "public" | "password" | "invite_only" | "private_link";
+  private_token: string | null;
+  is_listed: boolean;
   created_at: string;
 };
 
@@ -49,6 +53,10 @@ type GalleryLiveEvent = {
   is_active: boolean;
   max_participants: number | null;
   room_name: string;
+};
+
+type EventInviteRow = {
+  event_id: string;
 };
 
 function formatDateTime(value: string) {
@@ -128,6 +136,34 @@ function getAccessModeLabel(mode: GalleryLiveEvent["access_mode"]) {
   if (mode === "invite_only") return "Solo invito";
   if (mode === "private_link") return "Link privato";
   return "Pubblico";
+}
+
+function getEventAccessTranslation(mode: GalleryEvent["access_mode"]) {
+  if (mode === "password") {
+    return {
+      textKey: "dashboard.events.access.password",
+      fallback: "Password",
+    };
+  }
+
+  if (mode === "invite_only") {
+    return {
+      textKey: "dashboard.events.access.inviteOnly",
+      fallback: "Solo invito",
+    };
+  }
+
+  if (mode === "private_link") {
+    return {
+      textKey: "dashboard.events.access.privateLink",
+      fallback: "Link privato",
+    };
+  }
+
+  return {
+    textKey: "dashboard.events.access.public",
+    fallback: "Pubblico",
+  };
 }
 
 function getVoiceModeLabel(mode: GalleryLiveEvent["voice_mode"]) {
@@ -211,7 +247,7 @@ export default async function DashboardEventsPage() {
   const eventQuery = admin
     .from("gallery_events")
     .select(
-      "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, created_at"
+      "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode, private_token, is_listed, created_at"
     )
     .order("starts_at", { ascending: true });
 
@@ -256,6 +292,23 @@ export default async function DashboardEventsPage() {
     safeLiveEvents
       .filter((liveEvent) => liveEvent.gallery_event_id)
       .map((liveEvent) => [liveEvent.gallery_event_id as string, liveEvent])
+  );
+
+  const { data: eventInviteRows } =
+    eventIds.length > 0
+      ? await admin
+          .from("gallery_event_invites")
+          .select("event_id")
+          .in("event_id", eventIds)
+          .neq("status", "revoked")
+      : { data: [] };
+
+  const inviteCountByEventId = ((eventInviteRows || []) as EventInviteRow[]).reduce(
+    (map, row) => {
+      map.set(row.event_id, (map.get(row.event_id) || 0) + 1);
+      return map;
+    },
+    new Map<string, number>()
   );
 
   const galleryById = new Map(
@@ -354,6 +407,7 @@ export default async function DashboardEventsPage() {
               {upcomingEvents.map((event) => {
                 const gallery = galleryById.get(event.gallery_id);
                 const liveEvent = liveEventByEventId.get(event.id);
+                const inviteCount = inviteCountByEventId.get(event.id) || 0;
 
                 return (
                   <article
@@ -390,6 +444,13 @@ export default async function DashboardEventsPage() {
                           />
                         </span>
 
+                        <span className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1 text-xs text-neutral-300">
+                          <T
+                            textKey={getEventAccessTranslation(event.access_mode || "public").textKey}
+                            fallback={getEventAccessTranslation(event.access_mode || "public").fallback}
+                          />
+                        </span>
+
                         {liveEvent?.is_active && (
                           <span className="rounded-full border border-sky-800 bg-sky-950/40 px-3 py-1 text-xs font-medium text-sky-200">
                             Live guided visit
@@ -414,6 +475,35 @@ export default async function DashboardEventsPage() {
                       <p className="mt-2 text-sm text-amber-200">
                         {formatDateTime(event.starts_at)}
                       </p>
+
+                      {(event.access_mode === "invite_only" || event.access_mode === "private_link") && (
+                        <div className="mt-3 rounded-2xl border border-neutral-800 bg-black/30 p-3 text-xs leading-5 text-neutral-400">
+                          {event.access_mode === "invite_only" && (
+                            <>
+                              <p>
+                                <T
+                                  textKey="dashboard.events.access.invitesCount"
+                                  fallback="Invitati"
+                                />
+                                : {inviteCount}
+                              </p>
+                              <GalleryEventInviteManager
+                                eventId={event.id}
+                                initialInviteCount={inviteCount}
+                              />
+                            </>
+                          )}
+                          {event.access_mode === "private_link" && event.private_token && (
+                            <p className="break-all">
+                              <T
+                                textKey="dashboard.events.access.privateLinkValue"
+                                fallback="Link privato"
+                              />
+                              : /eventi?privateToken={event.private_token}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {liveEvent?.is_active && (
                         <p className="mt-2 text-xs leading-5 text-sky-200/80">
