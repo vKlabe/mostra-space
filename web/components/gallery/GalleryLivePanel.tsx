@@ -6,8 +6,10 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import LiveGuidedVoiceRoom from "@/components/gallery/LiveGuidedVoiceRoom";
+import T from "@/components/i18n/T";
 
 type GalleryLivePanelProps = {
   galleryId: string;
@@ -267,6 +269,7 @@ export default function GalleryLivePanel({
   );
   const [liveErrorMessage, setLiveErrorMessage] = useState<string | null>(null);
   const [voicePassword, setVoicePassword] = useState("");
+  const [hasMountedVoiceRoom, setHasMountedVoiceRoom] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -420,6 +423,12 @@ export default function GalleryLivePanel({
     return () => window.clearTimeout(timeoutId);
   }, [cooldownSeconds]);
 
+  useEffect(() => {
+    if (activeTab === "voice") {
+      setHasMountedVoiceRoom(true);
+    }
+  }, [activeTab]);
+
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -475,7 +484,7 @@ export default function GalleryLivePanel({
     }
   }
 
-  function renderTabButton(tab: PanelTab, label: string, badge?: string) {
+  function renderTabButton(tab: PanelTab, label: ReactNode, badge?: string) {
     const isActive = activeTab === tab;
 
     return (
@@ -717,7 +726,7 @@ export default function GalleryLivePanel({
       onPointerUp={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >
-      {!isOpen ? (
+      {!isOpen && (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
@@ -737,48 +746,96 @@ export default function GalleryLivePanel({
           </span>
 
           <span className="pointer-events-none absolute right-[calc(100%+0.75rem)] hidden whitespace-nowrap rounded-full border border-[rgba(197,151,94,0.35)] bg-[rgba(8,7,5,0.72)] px-3 py-2 text-xs text-[var(--museum-ivory-soft)] opacity-0 shadow-xl backdrop-blur-md transition group-hover:opacity-100 md:block">
-            Live Panel · {galleryCount} presenti
+            <T
+              textKey="gallery.livePanel.minimized.tooltip"
+              fallback="Live Panel"
+            />{" "}
+            · {galleryCount}{" "}
+            <T
+              textKey="gallery.livePanel.minimized.present"
+              fallback="presenti"
+            />
           </span>
 
           <span className="absolute bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.95)]" />
         </button>
-      ) : (
-        <section className="w-[min(27rem,calc(100vw-2rem))] overflow-hidden rounded-[1.6rem] border border-[rgba(197,151,94,0.46)] bg-[rgba(8,7,5,0.78)] text-[var(--museum-ivory)] shadow-2xl shadow-black/40 backdrop-blur-xl">
-          <div className="flex items-start justify-between gap-4 border-b border-[rgba(197,151,94,0.22)] px-4 py-3">
+      )}
+
+      <section
+        aria-hidden={!isOpen}
+        style={{ maxHeight: "min(38rem, calc(100dvh - 2rem))" }}
+        className={
+          isOpen
+            ? "flex w-[min(27rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.6rem] border border-[rgba(197,151,94,0.46)] bg-[rgba(8,7,5,0.78)] text-[var(--museum-ivory)] shadow-2xl shadow-black/40 backdrop-blur-xl"
+            : "hidden"
+        }
+      >
+        <div className="shrink-0 border-b border-[rgba(197,151,94,0.22)] px-4 py-3">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[var(--museum-bronze-light)]">
-                Live Panel
+                <T textKey="gallery.livePanel.header.label" fallback="Live Panel" />
               </p>
               <p className="mt-1 text-sm text-[var(--museum-ivory-soft)]">
-                {roomLabel} · {roomCount} in sala · {galleryCount} totali
+                {roomLabel} · {roomCount}{" "}
+                <T textKey="gallery.livePanel.header.inRoom" fallback="in sala" /> ·{" "}
+                {galleryCount}{" "}
+                <T textKey="gallery.livePanel.header.total" fallback="totali" />
               </p>
               <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
-                Chat, presenze e Live guided visits.
+                <T
+                  textKey="gallery.livePanel.header.subtitle"
+                  fallback="Chat, presenze e Live guided visits."
+                />
               </p>
             </div>
 
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              aria-label="Chiudi Live Panel"
+              aria-label="Riduci Live Panel a icona"
               className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(243,237,226,0.2)] text-lg leading-none text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
             >
               ×
             </button>
           </div>
+        </div>
 
-          <div className="border-b border-[rgba(197,151,94,0.16)] px-3 py-3">
-            <div className="flex flex-wrap gap-2">
-              {renderTabButton("chat", "Chat", messages.length > 0 ? String(messages.length) : undefined)}
-              {renderTabButton("voice", "Voice", voiceBadge)}
-              {renderTabButton("people", "People", String(activeVisitors.length))}
-              {renderTabButton("events", "Events", liveStatus?.events?.length ? String(liveStatus.events.length) : undefined)}
-            </div>
+        <div className="shrink-0 border-b border-[rgba(197,151,94,0.16)] px-3 py-3">
+          <div className="flex flex-wrap gap-2">
+            {renderTabButton(
+              "chat",
+              <T textKey="gallery.livePanel.tabs.chat" fallback="Chat" />,
+              messages.length > 0 ? String(messages.length) : undefined
+            )}
+            {renderTabButton(
+              "voice",
+              <T textKey="gallery.livePanel.tabs.voice" fallback="Voice" />,
+              voiceBadge
+            )}
+            {renderTabButton(
+              "people",
+              <T textKey="gallery.livePanel.tabs.people" fallback="People" />,
+              String(activeVisitors.length)
+            )}
+            {renderTabButton(
+              "events",
+              <T textKey="gallery.livePanel.tabs.events" fallback="Events" />,
+              liveStatus?.events?.length ? String(liveStatus.events.length) : undefined
+            )}
           </div>
+        </div>
 
-          <div className="grid gap-3 p-3 md:p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 md:p-4">
+          <div className="grid gap-3">
             {activeTab === "chat" && renderChatTab()}
-            {activeTab === "voice" && renderVoiceTab()}
+
+            {(hasMountedVoiceRoom || activeTab === "voice") && (
+              <div className={activeTab === "voice" ? "block" : "hidden"}>
+                {renderVoiceTab()}
+              </div>
+            )}
+
             {activeTab === "people" && renderPeopleTab()}
             {activeTab === "events" && renderEventsTab()}
 
@@ -794,8 +851,8 @@ export default function GalleryLivePanel({
               </p>
             )}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   );
 }
