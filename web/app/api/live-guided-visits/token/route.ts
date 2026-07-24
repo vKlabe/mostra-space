@@ -26,6 +26,7 @@ type TokenRequestBody = {
   privateToken?: unknown;
   inviteToken?: unknown;
   displayName?: unknown;
+  sessionId?: unknown;
 };
 
 type LiveGuidedVisit = {
@@ -98,6 +99,13 @@ type BlockRow = {
   id: string;
 };
 
+type ParticipantOverrideRow = {
+  id: string;
+  role: string | null;
+  can_publish_audio: boolean | null;
+  microphone_blocked: boolean | null;
+};
+
 const JOIN_EARLY_MINUTES = 10;
 const JOIN_LATE_GRACE_MINUTES = 15;
 const MAX_TOKEN_TTL_SECONDS = 2 * 60 * 60;
@@ -119,6 +127,16 @@ function cleanUuid(value: unknown) {
       text
     )
   ) {
+    return text;
+  }
+
+  return "";
+}
+
+function cleanSessionId(value: unknown) {
+  const text = cleanText(value, 120);
+
+  if (/^[a-zA-Z0-9:_-]{8,120}$/.test(text)) {
     return text;
   }
 
@@ -218,9 +236,13 @@ function calculateTokenTtlSeconds(liveEvent: LiveGuidedVisit) {
   );
 }
 
-function getParticipantIdentity(userId: string | null) {
+function getParticipantIdentity(userId: string | null, sessionId: string) {
   if (userId) {
     return `user:${userId}`;
+  }
+
+  if (sessionId) {
+    return `guest:${sessionId}`;
   }
 
   return `guest:${crypto.randomUUID()}`;
@@ -435,6 +457,85 @@ async function isBlocked(params: {
   return false;
 }
 
+async function findParticipantOverride(params: {
+  admin: ReturnType<typeof createAdminClient>;
+  liveEventId: string;
+  userId: string | null;
+  participantIdentity: string;
+}) {
+  const { admin, liveEventId, userId, participantIdentity } = params;
+
+  if (userId) {
+    const { data } = await admin
+      .from("gallery_live_event_participant_overrides")
+      .select("id, role, can_publish_audio, microphone_blocked")
+      .eq("event_id", liveEventId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (data) {
+      return data as unknown as ParticipantOverrideRow;
+    }
+  }
+
+  const { data } = await admin
+    .from("gallery_live_event_participant_overrides")
+    .select("id, role, can_publish_audio, microphone_blocked")
+    .eq("event_id", liveEventId)
+    .eq("participant_identity", participantIdentity)
+    .maybeSingle();
+
+  return (data || null) as unknown as ParticipantOverrideRow | null;
+}
+
+function applyParticipantOverride(params: {
+  baseRole: ParticipantRole;
+  baseCanPublishAudio: boolean;
+  override: ParticipantOverrideRow | null;
+}) {
+  const { baseRole, baseCanPublishAudio, override } = params;
+
+  if (!override) {
+    return {
+      participantRole: baseRole,
+      canPublishAudio: baseCanPublishAudio,
+    };
+  }
+
+  if (override.microphone_blocked) {
+    return {
+      participantRole: "listener" as ParticipantRole,
+      canPublishAudio: false,
+    };
+  }
+
+  if (override.role === "moderator") {
+    return {
+      participantRole: "moderator" as ParticipantRole,
+      canPublishAudio: true,
+    };
+  }
+
+  if (override.role === "speaker" || override.can_publish_audio === true) {
+    return {
+      participantRole: "speaker" as ParticipantRole,
+      canPublishAudio: true,
+    };
+  }
+
+  if (override.role === "listener" || override.can_publish_audio === false) {
+    return {
+      participantRole: "listener" as ParticipantRole,
+      canPublishAudio: false,
+    };
+  }
+
+  return {
+    participantRole: baseRole,
+    canPublishAudio: baseCanPublishAudio,
+  };
+}
+
 export async function POST(request: Request) {
   const admin = createAdminClient();
   const supabase = await createClient();
@@ -468,6 +569,7 @@ export async function POST(request: Request) {
   const privateToken = cleanUuid(body.privateToken);
   const inviteToken = cleanUuid(body.inviteToken);
   const displayName = cleanText(body.displayName, 80);
+  const sessionId = cleanSessionId(body.sessionId);
 
   if (!liveEventId) {
     return NextResponse.json(
@@ -721,7 +823,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const participantRole = getParticipantRole({
+  const baseParticipantRole = getParticipantRole({
     isAdmin,
     isOwner,
     moderatorRole,
@@ -729,8 +831,21 @@ export async function POST(request: Request) {
     voiceMode,
   });
 
-  const canPublishAudio = canPublishAudioForRole(participantRole, voiceMode);
-  const participantIdentity = getParticipantIdentity(userId);
+  const baseCanPublishAudio = canPublishAudioForRole(baseParticipantRole, voiceMode);
+  const participantIdentity = getParticipantIdentity(userId, sessionId);
+  const participantOverride = await findParticipantOverride({
+    admin,
+    liveEventId: liveEvent.id,
+    userId,
+    participantIdentity,
+  });
+
+  const { participantRole, canPublishAudio } = applyParticipantOverride({
+    baseRole: baseParticipantRole,
+    baseCanPublishAudio,
+    override: participantOverride,
+  });
+
   const participantName = getProfileDisplayName(profile, displayName);
   const roomName = liveEvent.room_name || buildFallbackRoomName(gallery.id, liveEvent.id);
   const tokenTtl = calculateTokenTtlSeconds(liveEvent);

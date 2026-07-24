@@ -67,7 +67,15 @@ type ParticipantView = {
   isSpeaking: boolean;
   canPublishAudio: boolean | null;
   role: string | null;
+  audioTrackSid: string | null;
 };
+
+type ModerationAction =
+  | "mute_for_all"
+  | "block_microphone"
+  | "allow_microphone"
+  | "make_listener"
+  | "remove_participant";
 
 type LiveGuidedVoiceRoomProps = {
   galleryId: string;
@@ -194,6 +202,31 @@ function trackIsAudio(track: any) {
   return track?.kind === Track.Kind.Audio || track?.source === Track.Source.Microphone;
 }
 
+function getParticipantAudioTrackSid(participant: any) {
+  const publications = participant?.trackPublications
+    ? Array.from(participant.trackPublications.values())
+    : [];
+
+  const audioPublication = publications.find((publication: any) => {
+    return (
+      publication?.source === Track.Source.Microphone ||
+      publication?.kind === Track.Kind.Audio ||
+      trackIsAudio(publication?.track)
+    );
+  }) as any;
+
+  return (
+    audioPublication?.trackSid ||
+    audioPublication?.sid ||
+    audioPublication?.track?.sid ||
+    null
+  );
+}
+
+function canModerateRole(role: string | null | undefined) {
+  return role === "admin" || role === "owner" || role === "moderator";
+}
+
 export default function LiveGuidedVoiceRoom({
   galleryId,
   liveStatus,
@@ -215,6 +248,9 @@ export default function LiveGuidedVoiceRoom({
   const [mutedRemoteIdentities, setMutedRemoteIdentities] = useState<Set<string>>(
     () => new Set()
   );
+  const [moderationLoadingIdentity, setModerationLoadingIdentity] =
+    useState<string | null>(null);
+  const [moderationMessage, setModerationMessage] = useState<string | null>(null);
 
   const roomRef = useRef<Room | null>(null);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
@@ -222,6 +258,7 @@ export default function LiveGuidedVoiceRoom({
   const eventForDisplay = activeEvent || upcomingEvent;
   const isConnected = connectionState === "connected";
   const canPublishAudio = Boolean(tokenData?.canPublishAudio);
+  const isModerator = canModerateRole(tokenData?.participantRole);
 
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((a, b) => {
@@ -277,6 +314,7 @@ export default function LiveGuidedVoiceRoom({
         activeSpeakerIdentities.has(room.localParticipant.identity),
       canPublishAudio: tokenData?.canPublishAudio ?? null,
       role: tokenData?.participantRole || localMetadata?.role || null,
+      audioTrackSid: getParticipantAudioTrackSid(room.localParticipant),
     };
 
     const remoteParticipants = Array.from(room.remoteParticipants.values()).map(
@@ -294,6 +332,7 @@ export default function LiveGuidedVoiceRoom({
               ? metadata.canPublishAudio
               : null,
           role: metadata?.role || null,
+          audioTrackSid: getParticipantAudioTrackSid(participant),
         } satisfies ParticipantView;
       }
     );
@@ -308,8 +347,8 @@ export default function LiveGuidedVoiceRoom({
 
     try {
       const element = track.attach() as HTMLAudioElement;
-element.autoplay = true;
-element.dataset.participantIdentity = participant.identity;
+      element.autoplay = true;
+      element.dataset.participantIdentity = participant.identity;
       element.muted = mutedRemoteIdentities.has(participant.identity);
       audioContainerRef.current.appendChild(element);
     } catch {
@@ -512,6 +551,59 @@ element.dataset.participantIdentity = participant.identity;
 
       return next;
     });
+  }
+
+  async function moderateParticipant(
+    participant: ParticipantView,
+    action: ModerationAction
+  ) {
+    if (!activeEvent || !tokenData || !isModerator || participant.isLocal) {
+      return;
+    }
+
+    setModerationMessage(null);
+    setErrorMessage(null);
+    setModerationLoadingIdentity(participant.identity);
+
+    try {
+      const response = await fetch("/api/live-guided-visits/moderation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          liveEventId: activeEvent.id,
+          galleryId,
+          roomName: tokenData.roomName,
+          action,
+          targetIdentity: participant.identity,
+          targetName: participant.name,
+          targetAudioTrackSid: participant.audioTrackSid,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { success?: boolean; message?: string; error?: string }
+        | null;
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "Azione di moderazione non riuscita.");
+      }
+
+      setModerationMessage(result.message || "Moderazione aggiornata.");
+
+      window.setTimeout(() => {
+        updateParticipants();
+      }, 500);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Non riesco a completare la moderazione."
+      );
+    } finally {
+      setModerationLoadingIdentity(null);
+    }
   }
 
   function renderStatusNotice() {
@@ -754,6 +846,12 @@ element.dataset.participantIdentity = participant.identity;
         </p>
       )}
 
+      {moderationMessage && isModerator && (
+        <p className="rounded-2xl border border-sky-900 bg-sky-950/25 px-3 py-2 text-xs leading-5 text-sky-100/90">
+          {moderationMessage}
+        </p>
+      )}
+
       {isConnected && (
         <div className="rounded-2xl border border-[rgba(243,237,226,0.12)] bg-black/32 p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -799,17 +897,96 @@ element.dataset.participantIdentity = participant.identity;
                   </div>
 
                   {!participant.isLocal && (
-                    <button
-                      type="button"
-                      onClick={() => toggleRemoteMute(participant.identity)}
-                      className="w-fit rounded-full border border-[rgba(243,237,226,0.16)] px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
-                    >
-                      {isRemoteMuted ? (
-                        <T textKey="gallery.livePanel.voice.remoteUnmute" fallback="Riascolta" />
-                      ) : (
-                        <T textKey="gallery.livePanel.voice.remoteMute" fallback="Muta per me" />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleRemoteMute(participant.identity)}
+                        className="w-fit rounded-full border border-[rgba(243,237,226,0.16)] px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
+                      >
+                        {isRemoteMuted ? (
+                          <T textKey="gallery.livePanel.voice.remoteUnmute" fallback="Riascolta" />
+                        ) : (
+                          <T textKey="gallery.livePanel.voice.remoteMute" fallback="Muta per me" />
+                        )}
+                      </button>
+
+                      {isModerator && (
+                        <>
+                          <button
+                            type="button"
+                            disabled={
+                              moderationLoadingIdentity === participant.identity ||
+                              !participant.audioTrackSid
+                            }
+                            onClick={() =>
+                              void moderateParticipant(participant, "mute_for_all")
+                            }
+                            className="rounded-full border border-yellow-900 bg-yellow-950/25 px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-yellow-100 transition hover:bg-yellow-950/45 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <T
+                              textKey="gallery.livePanel.voice.moderation.muteForAll"
+                              fallback="Muta per tutti"
+                            />
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={moderationLoadingIdentity === participant.identity}
+                            onClick={() =>
+                              void moderateParticipant(participant, "block_microphone")
+                            }
+                            className="rounded-full border border-red-900 bg-red-950/30 px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-red-100 transition hover:bg-red-950/50 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <T
+                              textKey="gallery.livePanel.voice.moderation.blockMic"
+                              fallback="Blocca mic"
+                            />
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={moderationLoadingIdentity === participant.identity}
+                            onClick={() =>
+                              void moderateParticipant(participant, "allow_microphone")
+                            }
+                            className="rounded-full border border-emerald-900 bg-emerald-950/25 px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-emerald-100 transition hover:bg-emerald-950/45 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <T
+                              textKey="gallery.livePanel.voice.moderation.makeSpeaker"
+                              fallback="Rendi speaker"
+                            />
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={moderationLoadingIdentity === participant.identity}
+                            onClick={() =>
+                              void moderateParticipant(participant, "make_listener")
+                            }
+                            className="rounded-full border border-[rgba(243,237,226,0.16)] bg-black/30 px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)] disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <T
+                              textKey="gallery.livePanel.voice.moderation.makeListener"
+                              fallback="Solo ascolto"
+                            />
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={moderationLoadingIdentity === participant.identity}
+                            onClick={() =>
+                              void moderateParticipant(participant, "remove_participant")
+                            }
+                            className="rounded-full border border-red-900 px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-red-200 transition hover:bg-red-950/35 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            <T
+                              textKey="gallery.livePanel.voice.moderation.remove"
+                              fallback="Rimuovi"
+                            />
+                          </button>
+                        </>
                       )}
-                    </button>
+                    </div>
                   )}
                 </div>
               );
