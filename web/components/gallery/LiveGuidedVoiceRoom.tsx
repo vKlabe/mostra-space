@@ -211,6 +211,37 @@ function parseParticipantMetadata(participant: any) {
   }
 }
 
+function getParticipantAudioPublishPermission(
+  participant: any,
+  fallback: boolean | null
+) {
+  const permissions = participant?.permissions as
+    | {
+        canPublish?: boolean;
+        canPublishSources?: string[];
+      }
+    | undefined;
+
+  if (Array.isArray(permissions?.canPublishSources)) {
+    return (
+      permissions.canPublishSources.includes(Track.Source.Microphone) ||
+      permissions.canPublishSources.includes("microphone")
+    );
+  }
+
+  if (typeof permissions?.canPublish === "boolean") {
+    return permissions.canPublish;
+  }
+
+  const metadata = parseParticipantMetadata(participant);
+
+  if (typeof metadata?.canPublishAudio === "boolean") {
+    return metadata.canPublishAudio;
+  }
+
+  return fallback;
+}
+
 function trackIsAudio(track: any) {
   return track?.kind === Track.Kind.Audio || track?.source === Track.Source.Microphone;
 }
@@ -258,10 +289,7 @@ function getMicrophoneOptions(deviceId: string | null | undefined) {
   } as any;
 }
 
-async function setElementSinkId(
-  element: HTMLMediaElement,
-  deviceId: string
-) {
+async function setElementSinkId(element: HTMLMediaElement, deviceId: string) {
   const audioElement = element as HTMLMediaElement & {
     setSinkId?: (sinkId: string) => Promise<void>;
   };
@@ -306,11 +334,25 @@ export default function LiveGuidedVoiceRoom({
 
   const roomRef = useRef<Room | null>(null);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
+  const tokenDataRef = useRef<TokenResponse | null>(null);
 
   const eventForDisplay = activeEvent || upcomingEvent;
   const isConnected = connectionState === "connected";
-  const canPublishAudio = Boolean(tokenData?.canPublishAudio);
-  const isModerator = canModerateRole(tokenData?.participantRole);
+
+  const localVoiceParticipant = participants.find(
+    (participant) => participant.isLocal
+  );
+
+  const effectiveParticipantRole =
+    localVoiceParticipant?.role || tokenData?.participantRole || null;
+
+  const effectiveCanPublishAudio =
+    typeof localVoiceParticipant?.canPublishAudio === "boolean"
+      ? localVoiceParticipant.canPublishAudio
+      : Boolean(tokenData?.canPublishAudio);
+
+  const canPublishAudio = Boolean(effectiveCanPublishAudio);
+  const isModerator = canModerateRole(effectiveParticipantRole);
 
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((a, b) => {
@@ -415,7 +457,9 @@ export default function LiveGuidedVoiceRoom({
       room.activeSpeakers?.map((participant: any) => participant.identity) || []
     );
 
+    const currentTokenData = tokenDataRef.current;
     const localMetadata = parseParticipantMetadata(room.localParticipant);
+
     const localParticipant: ParticipantView = {
       identity: room.localParticipant.identity,
       name: getParticipantName(room.localParticipant),
@@ -423,8 +467,11 @@ export default function LiveGuidedVoiceRoom({
       isSpeaking:
         Boolean(room.localParticipant.isSpeaking) ||
         activeSpeakerIdentities.has(room.localParticipant.identity),
-      canPublishAudio: tokenData?.canPublishAudio ?? null,
-      role: tokenData?.participantRole || localMetadata?.role || null,
+      canPublishAudio: getParticipantAudioPublishPermission(
+        room.localParticipant,
+        currentTokenData?.canPublishAudio ?? null
+      ),
+      role: localMetadata?.role || currentTokenData?.participantRole || null,
       audioTrackSid: getParticipantAudioTrackSid(room.localParticipant),
     };
 
@@ -438,10 +485,7 @@ export default function LiveGuidedVoiceRoom({
           isLocal: false,
           isSpeaking:
             Boolean(participant.isSpeaking) || activeSpeakerIdentities.has(participant.identity),
-          canPublishAudio:
-            typeof metadata?.canPublishAudio === "boolean"
-              ? metadata.canPublishAudio
-              : null,
+          canPublishAudio: getParticipantAudioPublishPermission(participant, null),
           role: metadata?.role || null,
           audioTrackSid: getParticipantAudioTrackSid(participant),
         } satisfies ParticipantView;
@@ -449,7 +493,7 @@ export default function LiveGuidedVoiceRoom({
     );
 
     setParticipants([localParticipant, ...remoteParticipants]);
-  }, [tokenData?.canPublishAudio, tokenData?.participantRole]);
+  }, []);
 
   const changeAudioInputDevice = useCallback(async (deviceId: string) => {
     setSelectedAudioInputId(deviceId);
@@ -489,7 +533,6 @@ export default function LiveGuidedVoiceRoom({
       setDeviceErrorCode("output_switch_failed");
     }
   }, [applyAudioOutputDevice]);
-
 
   const attachAudioTrack = useCallback((track: any, participant: any) => {
     if (!trackIsAudio(track) || !audioContainerRef.current) {
@@ -553,11 +596,34 @@ export default function LiveGuidedVoiceRoom({
     setIsMicrophoneEnabled(false);
     setConnectionState("idle");
     setTokenData(null);
+    tokenDataRef.current = null;
   }, []);
+
+  useEffect(() => {
+    tokenDataRef.current = tokenData;
+  }, [tokenData]);
 
   useEffect(() => {
     applyRemoteMuteState();
   }, [applyRemoteMuteState]);
+
+  useEffect(() => {
+    if (!isConnected || canPublishAudio || !isMicrophoneEnabled) {
+      return;
+    }
+
+    const room = roomRef.current;
+
+    void room?.localParticipant
+      .setMicrophoneEnabled(false)
+      .catch(() => {
+        // Ignora: stiamo solo riallineando lo stato locale.
+      })
+      .finally(() => {
+        setIsMicrophoneEnabled(false);
+        updateParticipants();
+      });
+  }, [canPublishAudio, isConnected, isMicrophoneEnabled, updateParticipants]);
 
   useEffect(() => {
     if (isConnected) {
@@ -605,6 +671,7 @@ export default function LiveGuidedVoiceRoom({
     setConnectionState("requesting");
     setErrorMessage(null);
     setTokenData(null);
+    tokenDataRef.current = null;
 
     try {
       const tokenResponse = await fetch("/api/live-guided-visits/token", {
@@ -630,6 +697,7 @@ export default function LiveGuidedVoiceRoom({
       }
 
       setTokenData(result);
+      tokenDataRef.current = result;
       setConnectionState("connecting");
 
       const room = new Room({
@@ -657,10 +725,12 @@ export default function LiveGuidedVoiceRoom({
         if (audioContainerRef.current) {
           audioContainerRef.current.innerHTML = "";
         }
+
         setIsMicrophoneEnabled(false);
         setParticipants([]);
         setConnectionState("idle");
         setTokenData(null);
+        tokenDataRef.current = null;
       };
 
       room
@@ -671,6 +741,8 @@ export default function LiveGuidedVoiceRoom({
         .on(RoomEvent.TrackMuted, handleRoomUpdate)
         .on(RoomEvent.TrackUnmuted, handleRoomUpdate)
         .on(RoomEvent.ActiveSpeakersChanged, handleRoomUpdate)
+        .on("participantPermissionsChanged" as any, handleRoomUpdate as any)
+        .on("participantMetadataChanged" as any, handleRoomUpdate as any)
         .on(RoomEvent.Disconnected, handleDisconnected);
 
       await room.connect(result.wsUrl || result.url || "", result.token, {
@@ -1155,7 +1227,7 @@ export default function LiveGuidedVoiceRoom({
         <div className="rounded-2xl border border-emerald-900 bg-emerald-950/25 p-3 text-xs leading-5 text-emerald-100/90">
           <T textKey="gallery.livePanel.voice.connected" fallback="Connesso alla voice room." />{" "}
           <T textKey="gallery.livePanel.voice.yourRole" fallback="Ruolo:" />{" "}
-          {getRoleLabel(tokenData.participantRole)} ·{" "}
+          {getRoleLabel(effectiveParticipantRole)} ·{" "}
           {canPublishAudio ? (
             <T textKey="gallery.livePanel.voice.canSpeak" fallback="puoi parlare" />
           ) : (
