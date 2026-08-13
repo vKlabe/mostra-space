@@ -717,12 +717,12 @@ export default async function DashboardPage() {
       )}
 
       <a
-        href="/gallerie"
+        href="/account/opere-preferite"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
         <T
-          textKey="dashboard.community.actions.exploreArtworks"
-          fallback="Esplora opere"
+          textKey="dashboard.community.actions.viewFavoriteArtworks"
+          fallback="Vedi opere preferite"
         />
       </a>
     </article>
