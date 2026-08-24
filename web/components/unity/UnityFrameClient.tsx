@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import T from "@/components/i18n/T";
 import GallerySoundtrackPlayer, {
+  type GalleryCuratorialAudio,
   type GallerySoundtrack,
 } from "@/components/gallery/GallerySoundtrackPlayer";
 
@@ -12,6 +13,7 @@ type UnityFrameClientProps = {
   galleryId: string;
   mode: UnityMode;
   soundtrack?: GallerySoundtrack | null;
+  curatorialAudio?: GalleryCuratorialAudio | null;
   buildPath?: string;
   buildName?: string;
 };
@@ -114,6 +116,7 @@ export default function UnityFrameClient({
   galleryId,
   mode,
   soundtrack = null,
+  curatorialAudio = null,
   buildPath = "/unity/artportal-viewer/Build",
   buildName = "artportal-viewer",
 }: UnityFrameClientProps) {
@@ -305,12 +308,13 @@ export default function UnityFrameClient({
         tabIndex={0}
       />
 
-      {isReady && mode === "visitor" && soundtrack && (
-  <GallerySoundtrackPlayer
-    soundtrack={soundtrack}
-    className="fixed left-4 top-4 z-50 max-w-[calc(100vw-2rem)]"
-  />
-)}
+      {isReady && mode === "visitor" && (soundtrack || curatorialAudio) && (
+        <GallerySoundtrackPlayer
+          soundtrack={soundtrack}
+          curatorialAudio={curatorialAudio}
+          className="fixed left-4 top-4 z-50 max-w-[calc(100vw-2rem)]"
+        />
+      )}
 
       {!isReady && !errorMessage && (
         <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm">

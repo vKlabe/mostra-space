@@ -7,6 +7,7 @@ import AddArtworkToGalleryForm from "@/components/dashboard/AddArtworkToGalleryF
 import RemoveGalleryArtworkButton from "@/components/dashboard/RemoveGalleryArtworkButton";
 import GalleryPublishStatusButton from "@/components/dashboard/GalleryPublishStatusButton";
 import EditGalleryDetailsForm from "@/components/dashboard/EditGalleryDetailsForm";
+import GalleryCuratorialAudioUploadForm from "@/components/dashboard/GalleryCuratorialAudioUploadForm";
 import GalleryCoverUploadForm from "@/components/dashboard/GalleryCoverUploadForm";
 import DeleteGalleryButton from "@/components/dashboard/DeleteGalleryButton";
 import ChangeGalleryTemplateForm from "@/components/dashboard/ChangeGalleryTemplateForm";
@@ -38,6 +39,12 @@ type Gallery = {
   owner_id: string;
   template_id: string | null;
   soundtrack_id: string | null;
+  curatorial_audio_title: string | null;
+  curatorial_audio_url: string | null;
+  curatorial_audio_storage_path: string | null;
+  curatorial_audio_duration_seconds: number | null;
+  curatorial_audio_file_size_bytes: number | null;
+  curatorial_audio_mime_type: string | null;
   title: string;
   slug: string;
   description: string | null;
@@ -652,7 +659,7 @@ export default async function DashboardGalleryDetailPage({
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
     .select(
-      "id, owner_id, template_id, soundtrack_id, title, slug, description, status, cover_image_url, created_at, updated_at, published_at"
+      "id, owner_id, template_id, soundtrack_id, curatorial_audio_title, curatorial_audio_url, curatorial_audio_storage_path, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type, title, slug, description, status, cover_image_url, created_at, updated_at, published_at"
     )
     .eq("id", galleryId)
     .single<Gallery>();
@@ -1316,6 +1323,26 @@ export default async function DashboardGalleryDetailPage({
                 )}
               </dd>
             </div>
+
+            <div>
+              <dt className="text-neutral-500">
+                <T
+                  textKey="dashboard.galleryDetail.details.curatorialAudio"
+                  fallback="Audio guida"
+                />
+              </dt>
+
+              <dd className="mt-1 text-neutral-200">
+                {gallery.curatorial_audio_title ? (
+                  gallery.curatorial_audio_title
+                ) : (
+                  <T
+                    textKey="dashboard.galleryDetail.details.curatorialAudioMissing"
+                    fallback="Nessun audio guida"
+                  />
+                )}
+              </dd>
+            </div>
           </dl>
         </article>
 
@@ -1494,6 +1521,22 @@ export default async function DashboardGalleryDetailPage({
           currentDescription={gallery.description}
           currentSoundtrackId={gallery.soundtrack_id}
           soundtracks={soundtrackOptions}
+        />
+      </div>
+
+      <div className="mt-6">
+        <GalleryCuratorialAudioUploadForm
+          galleryId={gallery.id}
+          plan={plan}
+          isAdmin={isAdmin}
+          currentAudio={{
+            title: gallery.curatorial_audio_title,
+            audioUrl: gallery.curatorial_audio_url,
+            storagePath: gallery.curatorial_audio_storage_path,
+            durationSeconds: gallery.curatorial_audio_duration_seconds,
+            fileSizeBytes: gallery.curatorial_audio_file_size_bytes,
+            mimeType: gallery.curatorial_audio_mime_type,
+          }}
         />
       </div>
 

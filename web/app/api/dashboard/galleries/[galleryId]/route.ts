@@ -9,10 +9,34 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const CURATORIAL_AUDIO_BUCKET = "gallery-curatorial-audio";
+const CURATORIAL_AUDIO_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const CURATORIAL_AUDIO_MAX_DURATION_SECONDS = 10 * 60;
+
+const CURATORIAL_AUDIO_MIME_TYPES = new Set([
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/ogg",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/mp4",
+  "audio/aac",
+  "audio/x-m4a",
+]);
+
 type RouteContext = {
   params: Promise<{
     galleryId: string;
   }>;
+};
+
+type CuratorialAudioPayload = {
+  title?: unknown;
+  audioUrl?: unknown;
+  storagePath?: unknown;
+  durationSeconds?: unknown;
+  fileSizeBytes?: unknown;
+  mimeType?: unknown;
 };
 
 type UpdateGalleryPayload = {
@@ -22,6 +46,8 @@ type UpdateGalleryPayload = {
   coverImageUrl?: unknown;
   templateId?: unknown;
   soundtrackId?: unknown;
+  curatorialAudio?: unknown;
+  removeCuratorialAudio?: unknown;
 };
 
 type Profile = {
@@ -38,6 +64,7 @@ type GalleryPermissionRecord = {
   status: "draft" | "published" | "archived";
   template_id: string | null;
   soundtrack_id: string | null;
+  curatorial_audio_storage_path: string | null;
 };
 
 type TemplateRecord = {
@@ -79,6 +106,29 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function toNumber(value: unknown) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function canUseCuratorialAudio(
+  role: string | null | undefined,
+  planValue: string | null | undefined
+) {
+  if (role === "admin") {
+    return true;
+  }
+
+  const plan = normalizePlanName(planValue);
+
+  return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
 async function getUserAndGalleryPermission(
   supabase: Awaited<ReturnType<typeof createClient>>,
   galleryId: string
@@ -106,7 +156,9 @@ async function getUserAndGalleryPermission(
 
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
-    .select("id, owner_id, title, slug, status, template_id, soundtrack_id")
+    .select(
+      "id, owner_id, title, slug, status, template_id, soundtrack_id, curatorial_audio_storage_path"
+    )
     .eq("id", galleryId)
     .single<GalleryPermissionRecord>();
 
@@ -214,12 +266,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   const templateId = cleanText(body.templateId);
   const wantsTemplateUpdate = templateId.length > 0;
   const wantsSoundtrackUpdate = body.soundtrackId !== undefined;
+  const wantsCuratorialAudioUpdate =
+    body.curatorialAudio !== undefined ||
+    body.removeCuratorialAudio !== undefined;
 
   if (
     !wantsDetailsUpdate &&
     !wantsCoverUpdate &&
     !wantsTemplateUpdate &&
-    !wantsSoundtrackUpdate
+    !wantsSoundtrackUpdate &&
+    !wantsCuratorialAudioUpdate
   ) {
     return NextResponse.json(
       { error: "Nessuna modifica ricevuta." },
@@ -416,6 +472,99 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
+  let oldCuratorialAudioPathToRemove: string | null = null;
+
+  if (wantsCuratorialAudioUpdate) {
+    if (!canUseCuratorialAudio(permission.profile.role, permission.profile.plan)) {
+      return NextResponse.json(
+        {
+          error:
+            "L’audio guida della galleria è disponibile solo dai piani Business, Diamond e Institution.",
+        },
+        { status: 403 }
+      );
+    }
+
+    oldCuratorialAudioPathToRemove =
+      permission.gallery.curatorial_audio_storage_path || null;
+
+    if (body.removeCuratorialAudio === true) {
+      updatePayload.curatorial_audio_title = null;
+      updatePayload.curatorial_audio_url = null;
+      updatePayload.curatorial_audio_storage_path = null;
+      updatePayload.curatorial_audio_duration_seconds = null;
+      updatePayload.curatorial_audio_file_size_bytes = null;
+      updatePayload.curatorial_audio_mime_type = null;
+      updatePayload.curatorial_audio_updated_at = null;
+    } else {
+      if (!isRecord(body.curatorialAudio)) {
+        return NextResponse.json(
+          { error: "Payload audio guida non valido." },
+          { status: 400 }
+        );
+      }
+
+      const audioPayload = body.curatorialAudio as CuratorialAudioPayload;
+      const title = cleanText(audioPayload.title);
+      const audioUrl = cleanText(audioPayload.audioUrl);
+      const storagePath = cleanText(audioPayload.storagePath);
+      const mimeType = cleanText(audioPayload.mimeType).toLowerCase();
+      const durationSeconds = toNumber(audioPayload.durationSeconds);
+      const fileSizeBytes = toNumber(audioPayload.fileSizeBytes);
+
+      if (!title) {
+        return NextResponse.json(
+          { error: "Il titolo dell’audio guida è obbligatorio." },
+          { status: 400 }
+        );
+      }
+
+      if (!audioUrl || !storagePath) {
+        return NextResponse.json(
+          { error: "URL o percorso storage audio mancanti." },
+          { status: 400 }
+        );
+      }
+
+      if (!CURATORIAL_AUDIO_MIME_TYPES.has(mimeType)) {
+        return NextResponse.json(
+          { error: "Formato audio guida non supportato." },
+          { status: 400 }
+        );
+      }
+
+      if (
+        durationSeconds === null ||
+        durationSeconds < 0 ||
+        durationSeconds > CURATORIAL_AUDIO_MAX_DURATION_SECONDS
+      ) {
+        return NextResponse.json(
+          { error: "Audio guida troppo lungo. Il limite massimo è 10 minuti." },
+          { status: 400 }
+        );
+      }
+
+      if (
+        fileSizeBytes === null ||
+        fileSizeBytes <= 0 ||
+        fileSizeBytes > CURATORIAL_AUDIO_MAX_FILE_SIZE_BYTES
+      ) {
+        return NextResponse.json(
+          { error: "Audio guida troppo pesante. Il limite massimo è 25 MB." },
+          { status: 400 }
+        );
+      }
+
+      updatePayload.curatorial_audio_title = title;
+      updatePayload.curatorial_audio_url = audioUrl;
+      updatePayload.curatorial_audio_storage_path = storagePath;
+      updatePayload.curatorial_audio_duration_seconds = Math.round(durationSeconds);
+      updatePayload.curatorial_audio_file_size_bytes = Math.round(fileSizeBytes);
+      updatePayload.curatorial_audio_mime_type = mimeType;
+      updatePayload.curatorial_audio_updated_at = new Date().toISOString();
+    }
+  }
+
   updatePayload.updated_at = new Date().toISOString();
 
   const { data: updated, error: updateError } = await supabase
@@ -423,7 +572,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update(updatePayload)
     .eq("id", permission.gallery.id)
     .select(
-      "id, title, slug, description, cover_image_url, template_id, soundtrack_id, status, updated_at"
+      "id, title, slug, description, cover_image_url, template_id, soundtrack_id, curatorial_audio_title, curatorial_audio_url, curatorial_audio_storage_path, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type, curatorial_audio_updated_at, status, updated_at"
     )
     .single();
 
@@ -435,6 +584,18 @@ export async function PATCH(request: Request, context: RouteContext) {
       },
       { status: 500 }
     );
+  }
+
+  if (
+    oldCuratorialAudioPathToRemove &&
+    oldCuratorialAudioPathToRemove !== updated.curatorial_audio_storage_path
+  ) {
+    await admin.storage
+      .from(CURATORIAL_AUDIO_BUCKET)
+      .remove([oldCuratorialAudioPathToRemove])
+      .catch(() => {
+        // La rimozione del file precedente non deve bloccare l'update dati.
+      });
   }
 
   return NextResponse.json({
@@ -502,6 +663,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
       },
       { status: 500 }
     );
+  }
+
+  if (permission.gallery.curatorial_audio_storage_path) {
+    const admin = createAdminClient();
+
+    await admin.storage
+      .from(CURATORIAL_AUDIO_BUCKET)
+      .remove([permission.gallery.curatorial_audio_storage_path])
+      .catch(() => {
+        // Non blocchiamo la cancellazione galleria per errori storage.
+      });
   }
 
   return NextResponse.json({

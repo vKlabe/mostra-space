@@ -1,7 +1,10 @@
 import UnityFrameClient from "@/components/unity/UnityFrameClient";
 import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { GallerySoundtrack } from "@/components/gallery/GallerySoundtrackPlayer";
+import type {
+  GalleryCuratorialAudio,
+  GallerySoundtrack,
+} from "@/components/gallery/GallerySoundtrackPlayer";
 
 type UnityFramePageProps = {
   searchParams?: Promise<{
@@ -13,6 +16,11 @@ type UnityFramePageProps = {
 type GalleryRecord = {
   id: string;
   soundtrack_id: string | null;
+  curatorial_audio_title: string | null;
+  curatorial_audio_url: string | null;
+  curatorial_audio_duration_seconds: number | null;
+  curatorial_audio_file_size_bytes: number | null;
+  curatorial_audio_mime_type: string | null;
 };
 
 type SoundtrackRecord = {
@@ -24,15 +32,23 @@ type SoundtrackRecord = {
   is_active: boolean;
 };
 
-async function getGallerySoundtrack({
+type GalleryAudioLayer = {
+  soundtrack: GallerySoundtrack | null;
+  curatorialAudio: GalleryCuratorialAudio | null;
+};
+
+async function getGalleryAudioLayer({
   galleryId,
   mode,
 }: {
   galleryId: string;
   mode: "visitor" | "editor";
-}): Promise<GallerySoundtrack | null> {
+}): Promise<GalleryAudioLayer> {
   if (!galleryId || mode !== "visitor") {
-    return null;
+    return {
+      soundtrack: null,
+      curatorialAudio: null,
+    };
   }
 
   try {
@@ -40,37 +56,63 @@ async function getGallerySoundtrack({
 
     const { data: gallery } = await admin
       .from("galleries")
-      .select("id, soundtrack_id")
+      .select(
+        "id, soundtrack_id, curatorial_audio_title, curatorial_audio_url, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type"
+      )
       .eq("id", galleryId)
       .maybeSingle<GalleryRecord>();
 
-    if (!gallery?.soundtrack_id) {
-      return null;
+    if (!gallery) {
+      return {
+        soundtrack: null,
+        curatorialAudio: null,
+      };
     }
 
-    const { data: soundtrack } = await admin
-      .from("gallery_soundtracks")
-      .select("id, title, mood, loop_duration_seconds, audio_url, is_active")
-      .eq("id", gallery.soundtrack_id)
-      .maybeSingle<SoundtrackRecord>();
+    let soundtrack: GallerySoundtrack | null = null;
 
-    if (
-      !soundtrack ||
-      soundtrack.is_active !== true ||
-      !soundtrack.audio_url
-    ) {
-      return null;
+    if (gallery.soundtrack_id) {
+      const { data: soundtrackData } = await admin
+        .from("gallery_soundtracks")
+        .select("id, title, mood, loop_duration_seconds, audio_url, is_active")
+        .eq("id", gallery.soundtrack_id)
+        .maybeSingle<SoundtrackRecord>();
+
+      if (
+        soundtrackData &&
+        soundtrackData.is_active === true &&
+        soundtrackData.audio_url
+      ) {
+        soundtrack = {
+          id: soundtrackData.id,
+          title: soundtrackData.title,
+          mood: soundtrackData.mood,
+          loopDurationSeconds: soundtrackData.loop_duration_seconds,
+          audioUrl: soundtrackData.audio_url,
+        };
+      }
     }
+
+    const curatorialAudio =
+      gallery.curatorial_audio_url && gallery.curatorial_audio_title
+        ? {
+            title: gallery.curatorial_audio_title,
+            audioUrl: gallery.curatorial_audio_url,
+            durationSeconds: gallery.curatorial_audio_duration_seconds,
+            fileSizeBytes: gallery.curatorial_audio_file_size_bytes,
+            mimeType: gallery.curatorial_audio_mime_type,
+          }
+        : null;
 
     return {
-      id: soundtrack.id,
-      title: soundtrack.title,
-      mood: soundtrack.mood,
-      loopDurationSeconds: soundtrack.loop_duration_seconds,
-      audioUrl: soundtrack.audio_url,
+      soundtrack,
+      curatorialAudio,
     };
   } catch {
-    return null;
+    return {
+      soundtrack: null,
+      curatorialAudio: null,
+    };
   }
 }
 
@@ -121,7 +163,7 @@ export default async function UnityFramePage({
     );
   }
 
-  const soundtrack = await getGallerySoundtrack({
+  const { soundtrack, curatorialAudio } = await getGalleryAudioLayer({
     galleryId,
     mode,
   });
@@ -131,6 +173,7 @@ export default async function UnityFramePage({
       galleryId={galleryId}
       mode={mode}
       soundtrack={soundtrack}
+      curatorialAudio={curatorialAudio}
     />
   );
 }
