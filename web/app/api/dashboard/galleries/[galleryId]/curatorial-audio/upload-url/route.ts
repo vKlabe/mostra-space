@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 
 const BUCKET = "gallery-curatorial-audio";
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const BUSINESS_MAX_DURATION_SECONDS = 10 * 60;
+const DIAMOND_MAX_DURATION_SECONDS = 20 * 60;
 
 const ALLOWED_MIME_TYPES = new Set([
   "audio/mpeg",
@@ -30,6 +32,7 @@ type UploadUrlPayload = {
   fileName?: unknown;
   fileSizeBytes?: unknown;
   mimeType?: unknown;
+  durationSeconds?: unknown;
 };
 
 type Profile = {
@@ -62,7 +65,10 @@ function getExtension(fileName: string, mimeType: string) {
   return "mp3";
 }
 
-function canUseCuratorialAudio(role: string | null | undefined, planValue: string | null | undefined) {
+function canUseCuratorialAudio(
+  role: string | null | undefined,
+  planValue: string | null | undefined
+) {
   if (role === "admin") {
     return true;
   }
@@ -70,6 +76,34 @@ function canUseCuratorialAudio(role: string | null | undefined, planValue: strin
   const plan = normalizePlanName(planValue);
 
   return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getMaxCuratorialAudioDurationSeconds({
+  role,
+  planValue,
+}: {
+  role: string | null | undefined;
+  planValue: string | null | undefined;
+}) {
+  if (role === "admin") {
+    return DIAMOND_MAX_DURATION_SECONDS;
+  }
+
+  const plan = normalizePlanName(planValue);
+
+  if (plan === "diamond" || plan === "institution") {
+    return DIAMOND_MAX_DURATION_SECONDS;
+  }
+
+  return BUSINESS_MAX_DURATION_SECONDS;
+}
+
+function getDurationLimitMessage(maxDurationSeconds: number) {
+  if (maxDurationSeconds === DIAMOND_MAX_DURATION_SECONDS) {
+    return "Audio troppo lungo. Il limite massimo per il tuo piano è 20 minuti.";
+  }
+
+  return "Audio troppo lungo. Il limite massimo per il tuo piano è 10 minuti.";
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -90,6 +124,8 @@ export async function POST(request: Request, context: RouteContext) {
   const fileName = cleanText(body.fileName);
   const mimeType = cleanText(body.mimeType).toLowerCase();
   const fileSizeBytes = Number(body.fileSizeBytes);
+  const durationSeconds = Number(body.durationSeconds);
+  const hasDurationSeconds = body.durationSeconds !== undefined;
 
   if (!fileName) {
     return NextResponse.json(
@@ -116,6 +152,16 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json(
       { error: "Audio troppo pesante. Il limite massimo è 25 MB." },
       { status: 413 }
+    );
+  }
+
+  if (
+    hasDurationSeconds &&
+    (!Number.isFinite(durationSeconds) || durationSeconds <= 0)
+  ) {
+    return NextResponse.json(
+      { error: "Durata audio non valida." },
+      { status: 400 }
     );
   }
 
@@ -168,6 +214,21 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
+  const maxDurationSeconds = getMaxCuratorialAudioDurationSeconds({
+    role: profile?.role,
+    planValue: profile?.plan,
+  });
+
+  if (hasDurationSeconds && durationSeconds > maxDurationSeconds) {
+    return NextResponse.json(
+      {
+        error: getDurationLimitMessage(maxDurationSeconds),
+        maxDurationSeconds,
+      },
+      { status: 400 }
+    );
+  }
+
   const extension = getExtension(fileName, mimeType);
   const storagePath = `${gallery.owner_id}/${gallery.id}/${randomUUID()}.${extension}`;
 
@@ -197,5 +258,6 @@ export async function POST(request: Request, context: RouteContext) {
     signedUrl: data.signedUrl,
     publicUrl,
     maxFileSizeBytes: MAX_FILE_SIZE_BYTES,
+    maxDurationSeconds,
   });
 }

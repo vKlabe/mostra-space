@@ -34,7 +34,8 @@ type SignedUploadResponse = {
 };
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
-const MAX_DURATION_SECONDS = 10 * 60;
+const BUSINESS_MAX_DURATION_SECONDS = 10 * 60;
+const DIAMOND_MAX_DURATION_SECONDS = 20 * 60;
 
 const ALLOWED_MIME_TYPES = new Set([
   "audio/mpeg",
@@ -54,6 +55,14 @@ function canUseCuratorialAudio(plan: PlanName, isAdmin?: boolean) {
     plan === "diamond" ||
     plan === "institution"
   );
+}
+
+function getMaxDurationSeconds(plan: PlanName, isAdmin?: boolean) {
+  if (isAdmin === true || plan === "diamond" || plan === "institution") {
+    return DIAMOND_MAX_DURATION_SECONDS;
+  }
+
+  return BUSINESS_MAX_DURATION_SECONDS;
 }
 
 function formatBytes(bytes: number | null | undefined) {
@@ -162,6 +171,8 @@ export default function GalleryCuratorialAudioUploadForm({
   const [message, setMessage] = useState("");
 
   const isAllowed = canUseCuratorialAudio(plan, isAdmin);
+  const maxDurationSeconds = getMaxDurationSeconds(plan, isAdmin);
+  const durationLimitLabel = formatDuration(maxDurationSeconds);
   const hasCurrentAudio = Boolean(currentAudio?.audioUrl);
 
   const effectiveTitle = useMemo(() => {
@@ -200,8 +211,12 @@ export default function GalleryCuratorialAudioUploadForm({
     try {
       const duration = await readAudioDuration(file);
 
-      if (duration > MAX_DURATION_SECONDS) {
-        setMessage("Audio troppo lungo. Il limite massimo è 10 minuti.");
+      if (duration > maxDurationSeconds) {
+        setMessage(
+          maxDurationSeconds === DIAMOND_MAX_DURATION_SECONDS
+            ? "Audio troppo lungo. Il limite massimo per il tuo piano è 20 minuti."
+            : "Audio troppo lungo. Il limite massimo per il tuo piano è 10 minuti."
+        );
         return;
       }
 
@@ -234,8 +249,12 @@ export default function GalleryCuratorialAudioUploadForm({
       return;
     }
 
-    if (!selectedDurationSeconds || selectedDurationSeconds > MAX_DURATION_SECONDS) {
-      setMessage("Durata audio non valida.");
+    if (!selectedDurationSeconds || selectedDurationSeconds > maxDurationSeconds) {
+      setMessage(
+        maxDurationSeconds === DIAMOND_MAX_DURATION_SECONDS
+          ? "Durata audio non valida. Il limite massimo per il tuo piano è 20 minuti."
+          : "Durata audio non valida. Il limite massimo per il tuo piano è 10 minuti."
+      );
       return;
     }
 
@@ -254,6 +273,7 @@ export default function GalleryCuratorialAudioUploadForm({
             fileName: selectedFile.name,
             fileSizeBytes: selectedFile.size,
             mimeType: selectedFile.type,
+            durationSeconds: selectedDurationSeconds,
           }),
         }
       );
@@ -641,9 +661,10 @@ export default function GalleryCuratorialAudioUploadForm({
 
             <p className="mt-2 text-xs leading-5 text-neutral-500">
               <T
-                textKey="dashboard.galleryCuratorialAudio.fields.fileHelp"
-                fallback="Formati supportati: MP3, WAV, OGG, M4A, AAC. Limite massimo: 25 MB e 10 minuti."
-              />
+                textKey="dashboard.galleryCuratorialAudio.fields.fileHelpPrefix"
+                fallback="Formati supportati: MP3, WAV, OGG, M4A, AAC. Limite massimo:"
+              />{" "}
+              25 MB / {durationLimitLabel}.
             </p>
           </div>
 

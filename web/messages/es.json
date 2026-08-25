@@ -927,6 +927,7 @@
   "dashboard.galleryCuratorialAudio.current.untitled": "Audio guía sin título",
   "dashboard.galleryCuratorialAudio.fields.file": "Archivo de audio",
   "dashboard.galleryCuratorialAudio.fields.fileHelp": "Formatos soportados: MP3, WAV, OGG, M4A, AAC. Límite máximo: 25 MB y 10 minutos.",
+  "dashboard.galleryCuratorialAudio.fields.fileHelpPrefix": "Formatos compatibles: MP3, WAV, OGG, M4A, AAC. Límite máximo:",
   "dashboard.galleryCuratorialAudio.fields.initialVolume": "Volumen inicial de la audioguía",
   "dashboard.galleryCuratorialAudio.fields.initialVolumeHelp": "Este es el volumen con el que la audioguía comenzará en el visor. El visitante podrá modificarlo desde el reproductor.",
   "dashboard.galleryCuratorialAudio.fields.title": "Título del audio",
