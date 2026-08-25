@@ -14,6 +14,7 @@ type CurrentCuratorialAudio = {
   durationSeconds: number | null;
   fileSizeBytes: number | null;
   mimeType: string | null;
+  initialVolume?: number | null;
 };
 
 type GalleryCuratorialAudioUploadFormProps = {
@@ -84,6 +85,14 @@ function getBaseFileName(fileName: string) {
   return fileName.replace(/\.[^/.]+$/, "").trim();
 }
 
+function normalizeVolumePercent(value: number | null | undefined, fallback = 75) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 function getBrowserSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -141,6 +150,9 @@ export default function GalleryCuratorialAudioUploadForm({
   const router = useRouter();
 
   const [title, setTitle] = useState(currentAudio?.title || "");
+  const [initialVolume, setInitialVolume] = useState(
+    normalizeVolumePercent(currentAudio?.initialVolume, 75)
+  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedDurationSeconds, setSelectedDurationSeconds] = useState<number | null>(
     null
@@ -287,6 +299,7 @@ export default function GalleryCuratorialAudioUploadForm({
             durationSeconds: selectedDurationSeconds,
             fileSizeBytes: selectedFile.size,
             mimeType: selectedFile.type,
+            initialVolume,
           },
         }),
       });
@@ -308,6 +321,46 @@ export default function GalleryCuratorialAudioUploadForm({
         error instanceof Error
           ? error.message
           : "Errore durante il caricamento audio."
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function handleSaveInitialVolume() {
+    if (!hasCurrentAudio || !isAllowed) {
+      return;
+    }
+
+    setIsUploading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/dashboard/galleries/${galleryId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          curatorialAudioInitialVolume: initialVolume,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Non riesco a salvare il volume iniziale dell’audio guida."
+        );
+      }
+
+      setMessage("Volume iniziale audio guida aggiornato correttamente.");
+      router.refresh();
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Errore durante il salvataggio del volume iniziale."
       );
     } finally {
       setIsUploading(false);
@@ -444,6 +497,52 @@ export default function GalleryCuratorialAudioUploadForm({
             </div>
           </dl>
 
+          {isAllowed && (
+            <div className="mt-4 rounded-2xl border border-neutral-800 bg-black/25 p-4">
+              <label className="grid gap-2 text-sm text-neutral-300">
+                <span className="flex items-center justify-between gap-3">
+                  <span>
+                    <T
+                      textKey="dashboard.galleryCuratorialAudio.fields.initialVolume"
+                      fallback="Volume iniziale audio guida"
+                    />
+                  </span>
+                  <span className="text-xs text-neutral-500">{initialVolume}%</span>
+                </span>
+
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={initialVolume}
+                  onChange={(event) => setInitialVolume(Number(event.target.value))}
+                  disabled={isUploading}
+                  className="w-full accent-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </label>
+
+              <p className="mt-2 text-xs leading-5 text-neutral-500">
+                <T
+                  textKey="dashboard.galleryCuratorialAudio.fields.initialVolumeHelp"
+                  fallback="Questo è il volume con cui l’audio guida partirà nel viewer. Il visitatore potrà comunque modificarlo dal player."
+                />
+              </p>
+
+              <button
+                type="button"
+                onClick={handleSaveInitialVolume}
+                disabled={isUploading}
+                className="mt-3 rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <T
+                  textKey="dashboard.galleryCuratorialAudio.actions.saveInitialVolume"
+                  fallback="Salva volume iniziale"
+                />
+              </button>
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-3">
             {currentAudio?.audioUrl && (
               <audio
@@ -488,6 +587,38 @@ export default function GalleryCuratorialAudioUploadForm({
               className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="Introduzione curatoriale"
             />
+          </div>
+
+          <div>
+            <label className="grid gap-2 text-sm text-neutral-300">
+              <span className="flex items-center justify-between gap-3">
+                <span>
+                  <T
+                    textKey="dashboard.galleryCuratorialAudio.fields.initialVolume"
+                    fallback="Volume iniziale audio guida"
+                  />
+                </span>
+                <span className="text-xs text-neutral-500">{initialVolume}%</span>
+              </span>
+
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={initialVolume}
+                onChange={(event) => setInitialVolume(Number(event.target.value))}
+                disabled={isUploading}
+                className="w-full accent-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </label>
+
+            <p className="mt-2 text-xs leading-5 text-neutral-500">
+              <T
+                textKey="dashboard.galleryCuratorialAudio.fields.initialVolumeHelp"
+                fallback="Questo è il volume con cui l’audio guida partirà nel viewer. Il visitatore potrà comunque modificarlo dal player."
+              />
+            </p>
           </div>
 
           <div>

@@ -9,6 +9,7 @@ export type GallerySoundtrack = {
   mood: string | null;
   loopDurationSeconds: number | null;
   audioUrl: string;
+  initialVolume?: number | null;
 };
 
 export type GalleryCuratorialAudio = {
@@ -17,6 +18,7 @@ export type GalleryCuratorialAudio = {
   durationSeconds: number | null;
   fileSizeBytes: number | null;
   mimeType: string | null;
+  initialVolume?: number | null;
 };
 
 type GallerySoundtrackPlayerProps = {
@@ -38,6 +40,14 @@ function clampVolume(value: number) {
   }
 
   return Math.max(0, Math.min(1, value));
+}
+
+function normalizeInitialVolume(value: number | null | undefined, fallbackPercent: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return clampVolume(fallbackPercent / 100);
+  }
+
+  return clampVolume(value / 100);
 }
 
 function formatDuration(seconds: number | null) {
@@ -93,13 +103,17 @@ export default function GallerySoundtrackPlayer({
   const [isSoundtrackPlaying, setIsSoundtrackPlaying] = useState(false);
   const [soundtrackRequiresGesture, setSoundtrackRequiresGesture] = useState(false);
   const [hasSoundtrackError, setHasSoundtrackError] = useState(false);
-  const [soundtrackVolume, setSoundtrackVolume] = useState(0.35);
+  const [soundtrackVolume, setSoundtrackVolume] = useState(() =>
+    normalizeInitialVolume(soundtrack?.initialVolume, 35)
+  );
   const [isSoundtrackMuted, setIsSoundtrackMuted] = useState(false);
 
   const [isCuratorialPlaying, setIsCuratorialPlaying] = useState(false);
   const [curatorialRequiresGesture, setCuratorialRequiresGesture] = useState(false);
   const [hasCuratorialError, setHasCuratorialError] = useState(false);
-  const [curatorialVolume, setCuratorialVolume] = useState(0.75);
+  const [curatorialVolume, setCuratorialVolume] = useState(() =>
+    normalizeInitialVolume(curatorialAudio?.initialVolume, 75)
+  );
   const [isCuratorialMuted, setIsCuratorialMuted] = useState(false);
   const [curatorialCurrentTime, setCuratorialCurrentTime] = useState(0);
   const [curatorialDuration, setCuratorialDuration] = useState(
@@ -124,29 +138,15 @@ export default function GallerySoundtrackPlayer({
       const soundtrackKeys = getAudioStorageKeys("soundtrack");
       const curatorialKeys = getAudioStorageKeys("curatorial");
 
-      const savedSoundtrackVolume = window.localStorage.getItem(
-        soundtrackKeys.volume
-      );
       const savedSoundtrackMuted = window.localStorage.getItem(
         soundtrackKeys.muted
-      );
-      const savedCuratorialVolume = window.localStorage.getItem(
-        curatorialKeys.volume
       );
       const savedCuratorialMuted = window.localStorage.getItem(
         curatorialKeys.muted
       );
 
-      if (savedSoundtrackVolume !== null) {
-        setSoundtrackVolume(clampVolume(Number(savedSoundtrackVolume)));
-      }
-
       if (savedSoundtrackMuted !== null) {
         setIsSoundtrackMuted(savedSoundtrackMuted === "true");
-      }
-
-      if (savedCuratorialVolume !== null) {
-        setCuratorialVolume(clampVolume(Number(savedCuratorialVolume)));
       }
 
       if (savedCuratorialMuted !== null) {
@@ -158,15 +158,14 @@ export default function GallerySoundtrackPlayer({
   }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        SOUNDTRACK_VOLUME_STORAGE_KEY,
-        String(soundtrackVolume)
-      );
-    } catch {
-      // Ignora localStorage non disponibile.
-    }
+    setSoundtrackVolume(normalizeInitialVolume(soundtrack?.initialVolume, 35));
+  }, [soundtrack?.audioUrl, soundtrack?.initialVolume]);
 
+  useEffect(() => {
+    setCuratorialVolume(normalizeInitialVolume(curatorialAudio?.initialVolume, 75));
+  }, [curatorialAudio?.audioUrl, curatorialAudio?.initialVolume]);
+
+  useEffect(() => {
     const audio = soundtrackAudioRef.current;
 
     if (audio) {
@@ -192,15 +191,6 @@ export default function GallerySoundtrackPlayer({
   }, [isSoundtrackMuted]);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        CURATORIAL_VOLUME_STORAGE_KEY,
-        String(curatorialVolume)
-      );
-    } catch {
-      // Ignora localStorage non disponibile.
-    }
-
     const audio = curatorialAudioRef.current;
 
     if (audio) {

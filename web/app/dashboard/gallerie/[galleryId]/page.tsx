@@ -39,6 +39,8 @@ type Gallery = {
   owner_id: string;
   template_id: string | null;
   soundtrack_id: string | null;
+  soundtrack_initial_volume: number | null;
+  curatorial_audio_initial_volume: number | null;
   curatorial_audio_title: string | null;
   curatorial_audio_url: string | null;
   curatorial_audio_storage_path: string | null;
@@ -659,7 +661,7 @@ export default async function DashboardGalleryDetailPage({
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
     .select(
-      "id, owner_id, template_id, soundtrack_id, curatorial_audio_title, curatorial_audio_url, curatorial_audio_storage_path, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type, title, slug, description, status, cover_image_url, created_at, updated_at, published_at"
+      "id, owner_id, template_id, soundtrack_id, soundtrack_initial_volume, curatorial_audio_initial_volume, curatorial_audio_title, curatorial_audio_url, curatorial_audio_storage_path, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type, title, slug, description, status, cover_image_url, created_at, updated_at, published_at"
     )
     .eq("id", galleryId)
     .single<Gallery>();
@@ -1520,6 +1522,7 @@ export default async function DashboardGalleryDetailPage({
           currentSlug={gallery.slug}
           currentDescription={gallery.description}
           currentSoundtrackId={gallery.soundtrack_id}
+          currentSoundtrackInitialVolume={gallery.soundtrack_initial_volume}
           soundtracks={soundtrackOptions}
         />
       </div>
@@ -1536,6 +1539,7 @@ export default async function DashboardGalleryDetailPage({
             durationSeconds: gallery.curatorial_audio_duration_seconds,
             fileSizeBytes: gallery.curatorial_audio_file_size_bytes,
             mimeType: gallery.curatorial_audio_mime_type,
+            initialVolume: gallery.curatorial_audio_initial_volume,
           }}
         />
       </div>

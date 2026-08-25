@@ -16,6 +16,8 @@ type UnityFramePageProps = {
 type GalleryRecord = {
   id: string;
   soundtrack_id: string | null;
+  soundtrack_initial_volume: number | null;
+  curatorial_audio_initial_volume: number | null;
   curatorial_audio_title: string | null;
   curatorial_audio_url: string | null;
   curatorial_audio_duration_seconds: number | null;
@@ -57,7 +59,7 @@ async function getGalleryAudioLayer({
     const { data: gallery } = await admin
       .from("galleries")
       .select(
-        "id, soundtrack_id, curatorial_audio_title, curatorial_audio_url, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type"
+        "id, soundtrack_id, soundtrack_initial_volume, curatorial_audio_initial_volume, curatorial_audio_title, curatorial_audio_url, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type"
       )
       .eq("id", galleryId)
       .maybeSingle<GalleryRecord>();
@@ -89,6 +91,7 @@ async function getGalleryAudioLayer({
           mood: soundtrackData.mood,
           loopDurationSeconds: soundtrackData.loop_duration_seconds,
           audioUrl: soundtrackData.audio_url,
+          initialVolume: gallery.soundtrack_initial_volume,
         };
       }
     }
@@ -101,6 +104,7 @@ async function getGalleryAudioLayer({
             durationSeconds: gallery.curatorial_audio_duration_seconds,
             fileSizeBytes: gallery.curatorial_audio_file_size_bytes,
             mimeType: gallery.curatorial_audio_mime_type,
+            initialVolume: gallery.curatorial_audio_initial_volume,
           }
         : null;
 

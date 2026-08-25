@@ -18,6 +18,7 @@ type EditGalleryDetailsFormProps = {
   currentSlug?: string | null;
   currentDescription?: string | null;
   currentSoundtrackId?: string | null;
+  currentSoundtrackInitialVolume?: number | null;
   soundtracks?: SoundtrackOption[];
 };
 
@@ -76,12 +77,21 @@ function getSoundtrackOptionLabel(soundtrack: SoundtrackOption) {
   return parts.join(" · ");
 }
 
+function normalizeVolumePercent(value: number | null | undefined, fallback = 35) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 export default function EditGalleryDetailsForm({
   galleryId,
   currentTitle = "",
   currentSlug = "",
   currentDescription = "",
   currentSoundtrackId = null,
+  currentSoundtrackInitialVolume = 35,
   soundtracks = [],
 }: EditGalleryDetailsFormProps) {
   const router = useRouter();
@@ -91,6 +101,9 @@ export default function EditGalleryDetailsForm({
   const [description, setDescription] = useState(currentDescription || "");
   const [selectedSoundtrackId, setSelectedSoundtrackId] = useState(
     currentSoundtrackId || ""
+  );
+  const [soundtrackInitialVolume, setSoundtrackInitialVolume] = useState(
+    normalizeVolumePercent(currentSoundtrackInitialVolume, 35)
   );
 
   const [isLoading, setIsLoading] = useState(false);
@@ -144,6 +157,7 @@ export default function EditGalleryDetailsForm({
           slug: cleanedSlug,
           description: description.trim() || null,
           soundtrackId: selectedSoundtrackId || null,
+          soundtrackInitialVolume,
         }),
       });
 
@@ -186,7 +200,7 @@ export default function EditGalleryDetailsForm({
       <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
         <T
           textKey="dashboard.galleryDetailsForm.header.description"
-          fallback="Queste informazioni vengono usate nella pagina pubblica della galleria. Da qui puoi anche scegliere la musica ambientale della visita."
+          fallback="Queste informazioni vengono usate nella pagina pubblica della galleria. Da qui puoi anche scegliere la musica ambientale della visita e il suo volume iniziale."
         />
       </p>
 
@@ -266,9 +280,7 @@ export default function EditGalleryDetailsForm({
             disabled={isLoading}
             className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <option value="">
-              Nessuna musica
-            </option>
+            <option value="">Nessuna musica</option>
 
             {soundtracks.map((soundtrack) => (
               <option key={soundtrack.id} value={soundtrack.id}>
@@ -281,6 +293,42 @@ export default function EditGalleryDetailsForm({
             <T
               textKey="dashboard.galleryDetailsForm.fields.soundtrackHelp"
               fallback="La musica scelta verrà riprodotta in loop nella pagina pubblica della galleria. Il visitatore potrà disattivarla o regolare il volume."
+            />
+          </p>
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="grid gap-2 text-sm text-neutral-300">
+            <span className="flex items-center justify-between gap-3">
+              <span>
+                <T
+                  textKey="dashboard.galleryDetailsForm.fields.soundtrackInitialVolume"
+                  fallback="Volume iniziale soundtrack"
+                />
+              </span>
+              <span className="text-xs text-neutral-500">
+                {soundtrackInitialVolume}%
+              </span>
+            </span>
+
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={soundtrackInitialVolume}
+              onChange={(event) =>
+                setSoundtrackInitialVolume(Number(event.target.value))
+              }
+              disabled={isLoading}
+              className="w-full accent-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </label>
+
+          <p className="mt-2 text-xs leading-5 text-neutral-500">
+            <T
+              textKey="dashboard.galleryDetailsForm.fields.soundtrackInitialVolumeHelp"
+              fallback="Questo è il volume con cui la soundtrack partirà quando il visitatore entra nella galleria. Il visitatore potrà comunque modificarlo dal player."
             />
           </p>
         </div>
@@ -305,11 +353,7 @@ export default function EditGalleryDetailsForm({
           )}
         </button>
 
-        {message && (
-          <p className="text-sm text-neutral-300">
-            {message}
-          </p>
-        )}
+        {message && <p className="text-sm text-neutral-300">{message}</p>}
       </div>
     </form>
   );

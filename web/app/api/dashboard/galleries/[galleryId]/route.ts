@@ -37,6 +37,7 @@ type CuratorialAudioPayload = {
   durationSeconds?: unknown;
   fileSizeBytes?: unknown;
   mimeType?: unknown;
+  initialVolume?: unknown;
 };
 
 type UpdateGalleryPayload = {
@@ -46,7 +47,9 @@ type UpdateGalleryPayload = {
   coverImageUrl?: unknown;
   templateId?: unknown;
   soundtrackId?: unknown;
+  soundtrackInitialVolume?: unknown;
   curatorialAudio?: unknown;
+  curatorialAudioInitialVolume?: unknown;
   removeCuratorialAudio?: unknown;
 };
 
@@ -64,6 +67,8 @@ type GalleryPermissionRecord = {
   status: "draft" | "published" | "archived";
   template_id: string | null;
   soundtrack_id: string | null;
+  soundtrack_initial_volume: number | null;
+  curatorial_audio_initial_volume: number | null;
   curatorial_audio_storage_path: string | null;
 };
 
@@ -112,6 +117,16 @@ function toNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizeVolumePercent(value: unknown, fallback: number) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(parsed)));
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -157,7 +172,7 @@ async function getUserAndGalleryPermission(
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
     .select(
-      "id, owner_id, title, slug, status, template_id, soundtrack_id, curatorial_audio_storage_path"
+      "id, owner_id, title, slug, status, template_id, soundtrack_id, soundtrack_initial_volume, curatorial_audio_initial_volume, curatorial_audio_storage_path"
     )
     .eq("id", galleryId)
     .single<GalleryPermissionRecord>();
@@ -266,6 +281,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   const templateId = cleanText(body.templateId);
   const wantsTemplateUpdate = templateId.length > 0;
   const wantsSoundtrackUpdate = body.soundtrackId !== undefined;
+  const wantsSoundtrackInitialVolumeUpdate =
+    body.soundtrackInitialVolume !== undefined;
+  const wantsCuratorialAudioInitialVolumeUpdate =
+    body.curatorialAudioInitialVolume !== undefined;
   const wantsCuratorialAudioUpdate =
     body.curatorialAudio !== undefined ||
     body.removeCuratorialAudio !== undefined;
@@ -275,6 +294,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     !wantsCoverUpdate &&
     !wantsTemplateUpdate &&
     !wantsSoundtrackUpdate &&
+    !wantsSoundtrackInitialVolumeUpdate &&
+    !wantsCuratorialAudioInitialVolumeUpdate &&
     !wantsCuratorialAudioUpdate
   ) {
     return NextResponse.json(
@@ -472,6 +493,31 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
   }
 
+  if (wantsSoundtrackInitialVolumeUpdate) {
+    updatePayload.soundtrack_initial_volume = normalizeVolumePercent(
+      body.soundtrackInitialVolume,
+      permission.gallery.soundtrack_initial_volume ?? 35
+    );
+  }
+
+  if (wantsCuratorialAudioInitialVolumeUpdate) {
+    if (!canUseCuratorialAudio(permission.profile.role, permission.profile.plan)) {
+      return NextResponse.json(
+        {
+          error:
+            "L’audio guida della galleria è disponibile solo dai piani Business, Diamond e Institution.",
+        },
+        { status: 403 }
+      );
+    }
+
+    updatePayload.curatorial_audio_initial_volume = normalizeVolumePercent(
+      body.curatorialAudioInitialVolume,
+      permission.gallery.curatorial_audio_initial_volume ?? 75
+    );
+    updatePayload.curatorial_audio_updated_at = new Date().toISOString();
+  }
+
   let oldCuratorialAudioPathToRemove: string | null = null;
 
   if (wantsCuratorialAudioUpdate) {
@@ -495,6 +541,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       updatePayload.curatorial_audio_duration_seconds = null;
       updatePayload.curatorial_audio_file_size_bytes = null;
       updatePayload.curatorial_audio_mime_type = null;
+      updatePayload.curatorial_audio_initial_volume = 75;
       updatePayload.curatorial_audio_updated_at = null;
     } else {
       if (!isRecord(body.curatorialAudio)) {
@@ -555,12 +602,18 @@ export async function PATCH(request: Request, context: RouteContext) {
         );
       }
 
+      const initialVolume = normalizeVolumePercent(
+        audioPayload.initialVolume,
+        permission.gallery.curatorial_audio_initial_volume ?? 75
+      );
+
       updatePayload.curatorial_audio_title = title;
       updatePayload.curatorial_audio_url = audioUrl;
       updatePayload.curatorial_audio_storage_path = storagePath;
       updatePayload.curatorial_audio_duration_seconds = Math.round(durationSeconds);
       updatePayload.curatorial_audio_file_size_bytes = Math.round(fileSizeBytes);
       updatePayload.curatorial_audio_mime_type = mimeType;
+      updatePayload.curatorial_audio_initial_volume = initialVolume;
       updatePayload.curatorial_audio_updated_at = new Date().toISOString();
     }
   }
@@ -572,7 +625,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update(updatePayload)
     .eq("id", permission.gallery.id)
     .select(
-      "id, title, slug, description, cover_image_url, template_id, soundtrack_id, curatorial_audio_title, curatorial_audio_url, curatorial_audio_storage_path, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type, curatorial_audio_updated_at, status, updated_at"
+      "id, title, slug, description, cover_image_url, template_id, soundtrack_id, soundtrack_initial_volume, curatorial_audio_title, curatorial_audio_url, curatorial_audio_storage_path, curatorial_audio_duration_seconds, curatorial_audio_file_size_bytes, curatorial_audio_mime_type, curatorial_audio_initial_volume, curatorial_audio_updated_at, status, updated_at"
     )
     .single();
 
