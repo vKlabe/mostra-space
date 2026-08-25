@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 const CURATORIAL_AUDIO_BUCKET = "gallery-curatorial-audio";
 const CURATORIAL_AUDIO_MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
-const CURATORIAL_AUDIO_MAX_DURATION_SECONDS = 10 * 60;
+const CURATORIAL_AUDIO_BUSINESS_MAX_DURATION_SECONDS = 10 * 60;
+const CURATORIAL_AUDIO_DIAMOND_MAX_DURATION_SECONDS = 20 * 60;
 
 const CURATORIAL_AUDIO_MIME_TYPES = new Set([
   "audio/mpeg",
@@ -142,6 +143,29 @@ function canUseCuratorialAudio(
   const plan = normalizePlanName(planValue);
 
   return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getCuratorialAudioMaxDurationSeconds(
+  role: string | null | undefined,
+  planValue: string | null | undefined
+) {
+  if (role === "admin") {
+    return CURATORIAL_AUDIO_DIAMOND_MAX_DURATION_SECONDS;
+  }
+
+  const plan = normalizePlanName(planValue);
+
+  if (plan === "diamond" || plan === "institution") {
+    return CURATORIAL_AUDIO_DIAMOND_MAX_DURATION_SECONDS;
+  }
+
+  return CURATORIAL_AUDIO_BUSINESS_MAX_DURATION_SECONDS;
+}
+
+function formatDurationLimitMessage(maxDurationSeconds: number) {
+  const minutes = Math.round(maxDurationSeconds / 60);
+
+  return `Audio guida troppo lungo. Il limite massimo è ${minutes} minuti per il tuo piano.`;
 }
 
 async function getUserAndGalleryPermission(
@@ -580,13 +604,21 @@ export async function PATCH(request: Request, context: RouteContext) {
         );
       }
 
+      const maxDurationSeconds = getCuratorialAudioMaxDurationSeconds(
+        permission.profile.role,
+        permission.profile.plan
+      );
+
       if (
         durationSeconds === null ||
         durationSeconds < 0 ||
-        durationSeconds > CURATORIAL_AUDIO_MAX_DURATION_SECONDS
+        durationSeconds > maxDurationSeconds
       ) {
         return NextResponse.json(
-          { error: "Audio guida troppo lungo. Il limite massimo è 10 minuti." },
+          {
+            error: formatDurationLimitMessage(maxDurationSeconds),
+            maxDurationSeconds,
+          },
           { status: 400 }
         );
       }
