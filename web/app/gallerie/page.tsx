@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import T from "@/components/i18n/T";
+
+type PublicGalleriesIndexPageProps = {
+  searchParams?: Promise<{
+    sort?: string;
+  }>;
+};
+
+type ArchiveSort = "followed" | "recent" | "oldest" | "title";
 
 type PublicGallery = {
   id: string;
@@ -16,6 +25,14 @@ type PublicGallery = {
   cover_image_url: string | null;
   published_at: string | null;
   created_at: string;
+};
+
+type FavoriteGalleryCountRow = {
+  gallery_id: string;
+};
+
+type PublicArchiveGallery = PublicGallery & {
+  favoriteCount: number;
 };
 
 type PublicGallerySlotKey = "main" | "featured_1" | "featured_2" | "featured_3";
@@ -39,6 +56,90 @@ const fallbackFeaturedGallerySlugs = [
   "x",
   "prima-galleria-definitiva",
 ];
+
+const archiveSortOptions: Array<{
+  value: ArchiveSort;
+  textKey: string;
+  fallback: string;
+}> = [
+  {
+    value: "followed",
+    textKey: "galleries.archive.sort.followed",
+    fallback: "Più seguite",
+  },
+  {
+    value: "recent",
+    textKey: "galleries.archive.sort.recent",
+    fallback: "Più recenti",
+  },
+  {
+    value: "oldest",
+    textKey: "galleries.archive.sort.oldest",
+    fallback: "Meno recenti",
+  },
+  {
+    value: "title",
+    textKey: "galleries.archive.sort.title",
+    fallback: "A-Z",
+  },
+];
+
+function normalizeArchiveSort(value: string | undefined): ArchiveSort {
+  if (
+    value === "recent" ||
+    value === "oldest" ||
+    value === "title" ||
+    value === "followed"
+  ) {
+    return value;
+  }
+
+  return "followed";
+}
+
+function getArchiveSortHref(sort: ArchiveSort) {
+  if (sort === "followed") {
+    return "/gallerie#gallerie";
+  }
+
+  return `/gallerie?sort=${sort}#gallerie`;
+}
+
+function getGalleryDateTimestamp(gallery: PublicGallery) {
+  const value = gallery.published_at || gallery.created_at;
+  const timestamp = new Date(value).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function sortArchiveGalleries(
+  galleries: PublicArchiveGallery[],
+  archiveSort: ArchiveSort
+) {
+  return [...galleries].sort((left, right) => {
+    if (archiveSort === "recent") {
+      return getGalleryDateTimestamp(right) - getGalleryDateTimestamp(left);
+    }
+
+    if (archiveSort === "oldest") {
+      return getGalleryDateTimestamp(left) - getGalleryDateTimestamp(right);
+    }
+
+    if (archiveSort === "title") {
+      return left.title.localeCompare(right.title, "it", {
+        sensitivity: "base",
+      });
+    }
+
+    const favoriteDifference = right.favoriteCount - left.favoriteCount;
+
+    if (favoriteDifference !== 0) {
+      return favoriteDifference;
+    }
+
+    return getGalleryDateTimestamp(right) - getGalleryDateTimestamp(left);
+  });
+}
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -171,8 +272,14 @@ function SmallEditorialGalleryCard({ gallery }: { gallery: EditorialGallery }) {
   );
 }
 
-export default async function PublicGalleriesIndexPage() {
+export default async function PublicGalleriesIndexPage({
+  searchParams,
+}: PublicGalleriesIndexPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const archiveSort = normalizeArchiveSort(resolvedSearchParams.sort);
+
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const { data: galleries, error } = await supabase
     .from("galleries")
@@ -188,6 +295,33 @@ export default async function PublicGalleriesIndexPage() {
 
   const safeGalleries = (galleries || []) as PublicGallery[];
   const safeGallerySlots = (gallerySlots || []) as PublicGallerySlot[];
+
+  const favoriteCountsByGalleryId = new Map<string, number>();
+  const safeGalleryIds = safeGalleries.map((gallery) => gallery.id);
+
+  if (safeGalleryIds.length > 0) {
+    const { data: favoriteGalleryRows } = await admin
+      .from("favorite_galleries")
+      .select("gallery_id")
+      .in("gallery_id", safeGalleryIds);
+
+    ((favoriteGalleryRows || []) as FavoriteGalleryCountRow[]).forEach(
+      (favorite) => {
+        favoriteCountsByGalleryId.set(
+          favorite.gallery_id,
+          (favoriteCountsByGalleryId.get(favorite.gallery_id) || 0) + 1
+        );
+      }
+    );
+  }
+
+  const archiveGalleries = sortArchiveGalleries(
+    safeGalleries.map((gallery) => ({
+      ...gallery,
+      favoriteCount: favoriteCountsByGalleryId.get(gallery.id) || 0,
+    })),
+    archiveSort
+  );
 
   const galleriesById = new Map(
     safeGalleries.map((gallery) => [gallery.id, gallery])
@@ -604,14 +738,43 @@ export default async function PublicGalleriesIndexPage() {
               </p>
             </div>
 
-            <p className="museum-pill rounded-full px-4 py-2 text-xs uppercase tracking-[0.16em]">
-              <T textKey="galleries.archive.total" fallback="Totale:" />{" "}
-              {safeGalleries.length}
-            </p>
+            <div className="flex flex-col gap-3 md:items-end">
+              <p className="museum-pill rounded-full px-4 py-2 text-xs uppercase tracking-[0.16em]">
+                <T textKey="galleries.archive.total" fallback="Totale:" />{" "}
+                {safeGalleries.length}
+              </p>
+
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                <span className="px-2 py-2 text-xs uppercase tracking-[0.16em] text-[var(--museum-stone-muted)]">
+                  <T
+                    textKey="galleries.archive.sort.label"
+                    fallback="Ordina per"
+                  />
+                </span>
+
+                {archiveSortOptions.map((option) => {
+                  const isActive = archiveSort === option.value;
+
+                  return (
+                    <Link
+                      key={option.value}
+                      href={getArchiveSortHref(option.value)}
+                      className={
+                        isActive
+                          ? "rounded-full border border-[var(--museum-bronze)] bg-[rgba(168,121,69,0.18)] px-4 py-2 text-xs uppercase tracking-[0.14em] text-[var(--museum-bronze-light)]"
+                          : "rounded-full border border-[var(--museum-border)] px-4 py-2 text-xs uppercase tracking-[0.14em] text-[var(--museum-stone-muted)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory-soft)]"
+                      }
+                    >
+                      <T textKey={option.textKey} fallback={option.fallback} />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {safeGalleries.map((gallery) => (
+            {archiveGalleries.map((gallery) => (
               <article
                 key={gallery.id}
                 className="group overflow-hidden rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)] transition hover:border-[var(--museum-bronze)]"
@@ -638,6 +801,14 @@ export default async function PublicGalleriesIndexPage() {
                           {formatDate(gallery.published_at)}
                         </span>
                       )}
+
+                      <span className="rounded-full border border-[rgba(197,151,94,0.35)] bg-[rgba(168,121,69,0.08)] px-3 py-1 text-xs text-[var(--museum-bronze-light)]">
+                        {gallery.favoriteCount}{" "}
+                        <T
+                          textKey="galleries.card.favoriteCount"
+                          fallback="salvataggi"
+                        />
+                      </span>
                     </div>
 
                     <h3 className="mt-5 font-editorial text-3xl font-medium leading-tight text-[var(--museum-ivory)]">
