@@ -22,7 +22,7 @@ const featuredGalleries = [
     worksKey: "home.featured.galleryBarattolo.works",
     worksFallback: "2 opere",
     imageUrl: "/home/featured-1.jpg",
-    href: "/gallerie/aaa",
+    href: "/gallerie",
   },
   {
     initials: "DL",
