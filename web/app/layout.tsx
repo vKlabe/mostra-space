@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
+import GuestSignupNudge from "@/components/public/GuestSignupNudge";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 
 const inter = Inter({
@@ -42,10 +43,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className={`${inter.variable} ${cormorant.variable} bg-neutral-950 text-neutral-100 antialiased`}
->
-  <LanguageProvider>{children}</LanguageProvider>
-</body>
+      <body
+        className={`${inter.variable} ${cormorant.variable} bg-neutral-950 text-neutral-100 antialiased`}
+      >
+        <LanguageProvider>
+          <GuestSignupNudge />
+          {children}
+        </LanguageProvider>
+      </body>
     </html>
   );
 }
