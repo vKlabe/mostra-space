@@ -15,6 +15,7 @@ type DashboardShellProps = {
     | "gallerie"
     | "opere"
     | "richieste"
+    | "help"
     | "account";
   navMode?: "community" | "creator";
   actions?: React.ReactNode;
@@ -45,6 +46,14 @@ const communityNavItems: NavItem[] = [
     section: "social",
     descriptionKey: "dashboard.shell.communityNav.social.description",
     descriptionFallback: "Follow, preferiti, eventi",
+  },
+  {
+    labelKey: "dashboard.shell.communityNav.help.label",
+    labelFallback: "Guida & FAQ",
+    href: "/dashboard/help",
+    section: "help",
+    descriptionKey: "dashboard.shell.communityNav.help.description",
+    descriptionFallback: "Tutorial e risposte rapide",
   },
   {
     labelKey: "dashboard.shell.communityNav.account.label",
@@ -104,6 +113,14 @@ const navItems: NavItem[] = [
     section: "richieste",
     descriptionKey: "dashboard.shell.creatorNav.inquiries.description",
     descriptionFallback: "Richieste e contatti",
+  },
+  {
+    labelKey: "dashboard.shell.creatorNav.help.label",
+    labelFallback: "Guida & FAQ",
+    href: "/dashboard/help",
+    section: "help",
+    descriptionKey: "dashboard.shell.creatorNav.help.description",
+    descriptionFallback: "Tutorial e risposte rapide",
   },
   {
     labelKey: "dashboard.shell.creatorNav.account.label",
@@ -172,10 +189,7 @@ export default function DashboardShell({
                 }
               >
                 <span className="block text-sm font-medium">
-                  <T
-                    textKey={item.labelKey}
-                    fallback={item.labelFallback}
-                  />
+                  <T textKey={item.labelKey} fallback={item.labelFallback} />
                 </span>
 
                 <span
@@ -268,10 +282,7 @@ export default function DashboardShell({
                           : "rounded-full border border-[var(--museum-border)] px-4 py-2 text-xs text-[var(--museum-stone)]"
                       }
                     >
-                      <T
-                        textKey={item.labelKey}
-                        fallback={item.labelFallback}
-                      />
+                      <T textKey={item.labelKey} fallback={item.labelFallback} />
                     </Link>
                   );
                 })}
