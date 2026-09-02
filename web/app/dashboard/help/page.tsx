@@ -66,7 +66,7 @@ const tutorials: TutorialItem[] = [
     durationFallback: "2:40",
     level: "base",
     href: "/dashboard/opere",
-    videoUrl: null,
+    videoUrl: "https://www.youtube.com/embed/42qCNP6JPBY",
     status: "coming_soon",
   },
   {
@@ -81,7 +81,7 @@ const tutorials: TutorialItem[] = [
     durationFallback: "5:10",
     level: "intermedio",
     href: "/dashboard/gallerie",
-    videoUrl: null,
+    videoUrl: "https://www.youtube.com/embed/42qCNP6JPBY",
     status: "coming_soon",
   },
   {
@@ -96,7 +96,7 @@ const tutorials: TutorialItem[] = [
     durationFallback: "3:00",
     level: "base",
     href: "/dashboard/gallerie",
-    videoUrl: null,
+    videoUrl: "https://www.youtube.com/embed/42qCNP6JPBY",
     status: "coming_soon",
   },
   {

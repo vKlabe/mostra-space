@@ -41,17 +41,21 @@ export async function POST() {
   const firstName = cleanText(metadata.first_name);
   const lastName = cleanText(metadata.last_name);
   const metadataFullName = cleanText(metadata.full_name);
+  const googleName = cleanText(metadata.name);
   const fullName =
-    metadataFullName || `${firstName} ${lastName}`.trim() || null;
+    metadataFullName || googleName || `${firstName} ${lastName}`.trim() || null;
 
   const displayName =
     cleanText(metadata.display_name) || fullName || user.email || null;
+
+  const avatarUrl =
+    cleanText(metadata.avatar_url) || cleanText(metadata.picture) || null;
 
   const admin = createAdminClient();
 
   const { data: existingProfile, error: existingProfileError } = await admin
     .from("profiles")
-    .select("id, email, role, plan")
+    .select("id, email, role, plan, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -78,6 +82,7 @@ export async function POST() {
     email: user.email || existingProfile?.email || "",
     full_name: fullName,
     display_name: displayName,
+    avatar_url: existingProfile?.avatar_url || avatarUrl,
     role: nextRole,
     plan: existingProfile?.plan || "free",
   };
@@ -87,7 +92,7 @@ export async function POST() {
     .upsert(payload, {
       onConflict: "id",
     })
-    .select("id, email, full_name, display_name, role, plan, created_at")
+    .select("id, email, full_name, display_name, avatar_url, role, plan, created_at")
     .single();
 
   if (upsertError || !profile) {

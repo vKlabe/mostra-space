@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import T from "@/components/i18n/T";
+import GoogleOAuthButton from "@/components/auth/GoogleOAuthButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -152,12 +153,24 @@ export default function LoginPage() {
             <p className="museum-subtitle mt-5 max-w-xl text-sm text-[var(--museum-stone)]">
               <T
                 textKey="auth.login.form.subtitle"
-                fallback="Entra nel portale per gestire account, gallerie, opere, richieste, abbonamento e allestimenti Unity WebGL."
+                fallback="Entra nel portale per gestire account, gallerie, opere, richieste, abbonamento e allestimenti!"
               />
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="mt-10 space-y-5">
+          <div className="mt-10 space-y-4">
+            <GoogleOAuthButton mode="login" disabled={formDisabled} />
+
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-[var(--museum-border)]" />
+              <span className="text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
+                <T textKey="auth.oauth.separator" fallback="oppure" />
+              </span>
+              <div className="h-px flex-1 bg-[var(--museum-border)]" />
+            </div>
+          </div>
+
+          <form onSubmit={handleLogin} className="mt-6 space-y-5">
             <div>
               <label className="block text-sm text-[var(--museum-ivory-soft)]">
                 <T textKey="auth.login.form.email" fallback="Email" />
