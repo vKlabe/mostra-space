@@ -87,7 +87,9 @@ export async function POST() {
 
   const { data: existingProfile, error: existingProfileError } = await admin
     .from("profiles")
-    .select("id, email, role, plan, avatar_url, has_local_password")
+    .select(
+      "id, email, role, plan, avatar_url, avatar_customized, has_local_password"
+    )
     .eq("id", user.id)
     .maybeSingle<{
       id: string;
@@ -95,6 +97,7 @@ export async function POST() {
       role: "user" | "gallerist" | "admin";
       plan: string | null;
       avatar_url: string | null;
+      avatar_customized: boolean | null;
       has_local_password: boolean | null;
     }>();
 
@@ -121,12 +124,21 @@ export async function POST() {
   const hasLocalPassword =
     existingProfile?.has_local_password === true || hasEmailProvider;
 
+  // Se l’utente ha già scelto o rimosso manualmente l’avatar, Google non deve
+  // più sovrascrivere quella scelta. Se non ha mai personalizzato l’avatar,
+  // manteniamo l’avatar esistente oppure importiamo quello del provider.
+  const avatarCustomized = existingProfile?.avatar_customized === true;
+  const nextAvatarUrl = avatarCustomized
+    ? existingProfile?.avatar_url || null
+    : existingProfile?.avatar_url || avatarUrl;
+
   const payload = {
     id: user.id,
     email: user.email || existingProfile?.email || "",
     full_name: fullName,
     display_name: displayName,
-    avatar_url: existingProfile?.avatar_url || avatarUrl,
+    avatar_url: nextAvatarUrl,
+    avatar_customized: avatarCustomized,
     role: nextRole,
     plan: existingProfile?.plan || "free",
     has_local_password: hasLocalPassword,
@@ -138,7 +150,7 @@ export async function POST() {
       onConflict: "id",
     })
     .select(
-      "id, email, full_name, display_name, avatar_url, role, plan, has_local_password, created_at"
+      "id, email, full_name, display_name, avatar_url, avatar_customized, role, plan, has_local_password, created_at"
     )
     .single();
 

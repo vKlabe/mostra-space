@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState, useTransition } from "react";
+import { type ChangeEvent, type FormEvent, useRef, useState, useTransition } from "react";
 import T from "@/components/i18n/T";
 
 type EditableProfile = {
@@ -11,11 +11,168 @@ type EditableProfile = {
   website_url: string | null;
   instagram_url: string | null;
   bio: string | null;
+  avatar_url: string | null;
 };
 
 type AccountProfileFormProps = {
   profile: EditableProfile;
 };
+
+type AvatarMessageCode =
+  | "processing"
+  | "uploading"
+  | "uploadSuccess"
+  | "removeSuccess"
+  | "invalidType"
+  | "sourceTooLarge"
+  | "invalidImage"
+  | "uploadError"
+  | "removeError";
+
+type AvatarMessage = {
+  type: "info" | "success" | "error";
+  code: AvatarMessageCode;
+};
+
+const MAX_AVATAR_EDGE = 512;
+const MAX_SOURCE_FILE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_SOURCE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+function getAvatarInitial(profile: EditableProfile) {
+  const name = profile.display_name || profile.full_name || profile.email || "M";
+  return name.trim().slice(0, 1).toUpperCase() || "M";
+}
+
+function AvatarMessageContent({ code }: { code: AvatarMessageCode }) {
+  switch (code) {
+    case "processing":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.processing"
+          fallback="Preparazione immagine..."
+        />
+      );
+    case "uploading":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.uploading"
+          fallback="Caricamento immagine profilo..."
+        />
+      );
+    case "uploadSuccess":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.uploadSuccess"
+          fallback="Immagine profilo aggiornata correttamente."
+        />
+      );
+    case "removeSuccess":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.removeSuccess"
+          fallback="Immagine profilo rimossa. Verrà mostrata l’iniziale del nome."
+        />
+      );
+    case "invalidType":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.invalidType"
+          fallback="Formato non supportato. Usa JPG, PNG o WEBP."
+        />
+      );
+    case "sourceTooLarge":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.sourceTooLarge"
+          fallback="Il file originale è troppo pesante. Usa un’immagine fino a 10 MB."
+        />
+      );
+    case "invalidImage":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.invalidImage"
+          fallback="Non riesco a leggere questa immagine. Prova con un altro file."
+        />
+      );
+    case "removeError":
+      return (
+        <T
+          textKey="account.profile.avatar.messages.removeError"
+          fallback="Non riesco a rimuovere l’immagine profilo. Riprova."
+        />
+      );
+    default:
+      return (
+        <T
+          textKey="account.profile.avatar.messages.uploadError"
+          fallback="Non riesco ad aggiornare l’immagine profilo. Riprova."
+        />
+      );
+  }
+}
+
+async function createOptimizedAvatar(file: File) {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const nextImage = new Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error("INVALID_IMAGE"));
+      nextImage.src = objectUrl;
+    });
+
+    const sourceWidth = image.naturalWidth;
+    const sourceHeight = image.naturalHeight;
+
+    if (!sourceWidth || !sourceHeight) {
+      throw new Error("INVALID_IMAGE");
+    }
+
+    const scale = Math.min(
+      1,
+      MAX_AVATAR_EDGE / Math.max(sourceWidth, sourceHeight)
+    );
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext("2d", { alpha: true });
+    if (!context) {
+      throw new Error("INVALID_IMAGE");
+    }
+
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const webpBlob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", 0.88);
+    });
+
+    if (webpBlob) {
+      return webpBlob;
+    }
+
+    const jpegBlob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", 0.9);
+    });
+
+    if (!jpegBlob) {
+      throw new Error("INVALID_IMAGE");
+    }
+
+    return jpegBlob;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 
 type FormState = {
   fullName: string;
@@ -50,6 +207,92 @@ export default function AccountProfileForm({
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
+  const [isAvatarBusy, setIsAvatarBusy] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<AvatarMessage | null>(null);
+
+  async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!ALLOWED_SOURCE_TYPES.has(file.type)) {
+      setAvatarMessage({ type: "error", code: "invalidType" });
+      return;
+    }
+
+    if (file.size > MAX_SOURCE_FILE_BYTES) {
+      setAvatarMessage({ type: "error", code: "sourceTooLarge" });
+      return;
+    }
+
+    setIsAvatarBusy(true);
+    setAvatarMessage({ type: "info", code: "processing" });
+
+    try {
+      const optimizedAvatar = await createOptimizedAvatar(file);
+      const extension = optimizedAvatar.type === "image/jpeg" ? "jpg" : "webp";
+      const formData = new FormData();
+      formData.append("file", optimizedAvatar, `avatar.${extension}`);
+
+      setAvatarMessage({ type: "info", code: "uploading" });
+
+      const response = await fetch("/api/account/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.avatarUrl) {
+        throw new Error(result?.errorCode || "UPLOAD_ERROR");
+      }
+
+      setAvatarUrl(result.avatarUrl);
+      setAvatarMessage({ type: "success", code: "uploadSuccess" });
+
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (error) {
+      setAvatarMessage({
+        type: "error",
+        code:
+          error instanceof Error && error.message === "INVALID_IMAGE"
+            ? "invalidImage"
+            : "uploadError",
+      });
+    } finally {
+      setIsAvatarBusy(false);
+    }
+  }
+
+  async function handleAvatarRemove() {
+    setIsAvatarBusy(true);
+    setAvatarMessage(null);
+
+    try {
+      const response = await fetch("/api/account/avatar", { method: "DELETE" });
+
+      if (!response.ok) {
+        throw new Error("REMOVE_ERROR");
+      }
+
+      setAvatarUrl(null);
+      setAvatarMessage({ type: "success", code: "removeSuccess" });
+
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch {
+      setAvatarMessage({ type: "error", code: "removeError" });
+    } finally {
+      setIsAvatarBusy(false);
+    }
+  }
 
   function updateField(field: keyof FormState, value: string) {
     setFormState((current) => ({
@@ -161,6 +404,98 @@ export default function AccountProfileForm({
               fallback="Modifica dati"
             />
           </button>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-neutral-800 bg-black">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={profile.display_name || profile.full_name || "mostra.space"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="font-serif text-3xl text-amber-500">
+                  {getAvatarInitial(profile)}
+                </span>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <p className="font-medium text-neutral-100">
+                <T
+                  textKey="account.profile.avatar.title"
+                  fallback="Immagine profilo"
+                />
+              </p>
+              <p className="mt-1 max-w-md text-xs leading-5 text-neutral-500">
+                <T
+                  textKey="account.profile.avatar.description"
+                  fallback="Carica JPG, PNG o WEBP. mostra.space ottimizza automaticamente l’immagine fino a un massimo di 512 × 512 px."
+                />
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={isAvatarBusy}
+              className="rounded-full bg-white px-4 py-2 text-xs font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {avatarUrl ? (
+                <T
+                  textKey="account.profile.avatar.actions.change"
+                  fallback="Cambia immagine"
+                />
+              ) : (
+                <T
+                  textKey="account.profile.avatar.actions.upload"
+                  fallback="Carica immagine"
+                />
+              )}
+            </button>
+
+            {avatarUrl && (
+              <button
+                type="button"
+                onClick={handleAvatarRemove}
+                disabled={isAvatarBusy}
+                className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-200 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <T
+                  textKey="account.profile.avatar.actions.remove"
+                  fallback="Rimuovi"
+                />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {avatarMessage && (
+          <div
+            className={
+              avatarMessage.type === "success"
+                ? "mt-4 rounded-xl border border-emerald-900 bg-emerald-950/30 px-3 py-2 text-xs text-emerald-200"
+                : avatarMessage.type === "error"
+                  ? "mt-4 rounded-xl border border-red-900 bg-red-950/30 px-3 py-2 text-xs text-red-200"
+                  : "mt-4 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs text-neutral-300"
+            }
+          >
+            <AvatarMessageContent code={avatarMessage.code} />
+          </div>
         )}
       </div>
 

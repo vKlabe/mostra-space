@@ -263,6 +263,7 @@ export default async function AccountPage() {
               website_url: profile.website_url,
               instagram_url: profile.instagram_url,
               bio: profile.bio,
+              avatar_url: profile.avatar_url,
             }}
           />
 
