@@ -38,6 +38,7 @@ export default function FollowProfileButton({
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
   const [message, setMessage] = useState<string | null>(null);
+  const [blockedMessage, setBlockedMessage] = useState(false);
 
   const resolvedSize = compact ? "sm" : size;
 
@@ -83,6 +84,7 @@ export default function FollowProfileButton({
 
   async function toggleFollow() {
     setMessage(null);
+    setBlockedMessage(false);
 
     if (isOwnProfile) {
       return;
@@ -110,6 +112,13 @@ export default function FollowProfileButton({
       const result = await response.json().catch(() => null);
 
       if (!response.ok) {
+        if (result?.code === "FOLLOW_BLOCKED") {
+          setIsFollowing(previousIsFollowing);
+          setFollowerCount(previousFollowerCount);
+          setBlockedMessage(true);
+          return;
+        }
+
         throw new Error(
           result?.error || "Non riesco ad aggiornare il follow."
         );
@@ -179,6 +188,14 @@ export default function FollowProfileButton({
         {getButtonText()}
       </button>
 
+      {blockedMessage && (
+        <p className="text-xs text-red-300">
+          <T
+            textKey="profile.follow.errors.blocked"
+            fallback="Il follow non è disponibile perché tra questi profili è attivo un blocco."
+          />
+        </p>
+      )}
       {message && <p className="text-xs text-red-300">{message}</p>}
     </div>
   );

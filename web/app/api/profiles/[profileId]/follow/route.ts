@@ -106,6 +106,34 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 
+  // Messaging blocks also prevent new follows. If the V1 migration is not present yet,
+  // the check fails open so this existing follow route is not broken during rollout.
+  const [blockedByCurrent, blockedByTarget] = await Promise.all([
+    admin
+      .from("direct_user_blocks")
+      .select("blocker_id")
+      .eq("blocker_id", user.id)
+      .eq("blocked_id", profileId)
+      .maybeSingle(),
+    admin
+      .from("direct_user_blocks")
+      .select("blocker_id")
+      .eq("blocker_id", profileId)
+      .eq("blocked_id", user.id)
+      .maybeSingle(),
+  ]);
+
+  const hasMessagingBlock =
+    (!blockedByCurrent.error && Boolean(blockedByCurrent.data)) ||
+    (!blockedByTarget.error && Boolean(blockedByTarget.data));
+
+  if (hasMessagingBlock) {
+    return NextResponse.json(
+      { success: false, code: "FOLLOW_BLOCKED" },
+      { status: 403 }
+    );
+  }
+
   const { error: insertError } = await admin.from("account_follows").insert({
     follower_id: user.id,
     following_id: profileId,

@@ -6,6 +6,7 @@ import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import T from "@/components/i18n/T";
 import Link from "next/link";
 import DashboardNotificationCenter from "@/components/dashboard/DashboardNotificationCenter";
+import DashboardMessagesDock from "@/components/dashboard/DashboardMessagesDock";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -490,6 +491,8 @@ export default function DashboardShell({
           <div className="mx-auto max-w-7xl">{children}</div>
         </section>
       </div>
+
+      {!isMobileSidebarOpen && <DashboardMessagesDock />}
     </main>
   );
 }

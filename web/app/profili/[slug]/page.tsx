@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
+import ProfileMessageButton from "@/components/profiles/ProfileMessageButton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import T from "@/components/i18n/T";
 import ProfileStatusLikeButton from "@/components/social/ProfileStatusLikeButton";
+import { DIRECT_MESSAGES_TERMS_VERSION } from "@/lib/messages/directMessages";
 
 type PublicProfilePageProps = {
   params: Promise<{
@@ -201,17 +203,67 @@ export default async function PublicProfilePage({
   const followingCount = followingCountResult || 0;
 
   let isFollowing = false;
+  let isMutualFollowing = false;
+  let targetMessagingEnabled = false;
+  let hasMessagingBlock = false;
 
   if (user && user.id !== profile.id) {
-    const { data: followRow } = await admin
-      .from("account_follows")
-      .select("follower_id")
-      .eq("follower_id", user.id)
-      .eq("following_id", profile.id)
-      .maybeSingle();
+    const [
+      followResult,
+      reverseFollowResult,
+      messagingResult,
+      blockedByCurrentResult,
+      blockedByTargetResult,
+    ] = await Promise.all([
+      admin
+        .from("account_follows")
+        .select("follower_id")
+        .eq("follower_id", user.id)
+        .eq("following_id", profile.id)
+        .maybeSingle(),
+      admin
+        .from("account_follows")
+        .select("follower_id")
+        .eq("follower_id", profile.id)
+        .eq("following_id", user.id)
+        .maybeSingle(),
+      admin
+        .from("direct_messaging_settings")
+        .select("user_id, terms_version")
+        .eq("user_id", profile.id)
+        .maybeSingle(),
+      admin
+        .from("direct_user_blocks")
+        .select("blocker_id")
+        .eq("blocker_id", user.id)
+        .eq("blocked_id", profile.id)
+        .maybeSingle(),
+      admin
+        .from("direct_user_blocks")
+        .select("blocker_id")
+        .eq("blocker_id", profile.id)
+        .eq("blocked_id", user.id)
+        .maybeSingle(),
+    ]);
 
-    isFollowing = Boolean(followRow);
+    isFollowing = Boolean(followResult.data);
+    isMutualFollowing = Boolean(followResult.data && reverseFollowResult.data);
+    targetMessagingEnabled = Boolean(
+      messagingResult.data &&
+        messagingResult.data.terms_version === DIRECT_MESSAGES_TERMS_VERSION
+    );
+    hasMessagingBlock = Boolean(
+      blockedByCurrentResult.data || blockedByTargetResult.data
+    );
   }
+
+  const canMessageProfile = Boolean(
+    user &&
+      user.id !== profile.id &&
+      isMutualFollowing &&
+      targetMessagingEnabled &&
+      !hasMessagingBlock
+  );
 
   const { data: currentStatusData } = await admin
     .from("profile_statuses")
@@ -324,6 +376,11 @@ export default async function PublicProfilePage({
                 initialFollowerCount={followerCount}
                 canFollow={Boolean(user)}
                 isOwnProfile={user?.id === profile.id}
+              />
+
+              <ProfileMessageButton
+                profileId={profile.id}
+                canMessage={canMessageProfile}
               />
 
               <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
