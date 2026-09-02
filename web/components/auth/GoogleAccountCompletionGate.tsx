@@ -2,39 +2,23 @@
 
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import T from "@/components/i18n/T";
 
 const DISMISS_SESSION_KEY = "mostraspace_google_password_prompt_dismissed";
 const CREATOR_UPGRADE_PATH = "/account/upgrade-gallerist";
 
-function getProviderNames(
-  identities: Array<{ provider?: string | null }> | null | undefined,
-  appProviders: unknown
-) {
-  const values = new Set<string>();
-
-  for (const identity of identities || []) {
-    if (identity.provider) {
-      values.add(identity.provider.toLowerCase());
-    }
-  }
-
-  if (Array.isArray(appProviders)) {
-    for (const provider of appProviders) {
-      if (typeof provider === "string") {
-        values.add(provider.toLowerCase());
-      }
-    }
-  }
-
-  return values;
-}
+type AccountAuthStatus = {
+  authenticated?: boolean;
+  isGoogleUser?: boolean;
+  hasLocalPassword?: boolean;
+  email?: string | null;
+  error?: string;
+};
 
 export default function GoogleAccountCompletionGate() {
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
-  const [isGoogleOnly, setIsGoogleOnly] = useState(false);
+  const [needsLocalPassword, setNeedsLocalPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -58,61 +42,74 @@ export default function GoogleAccountCompletionGate() {
     let cancelled = false;
 
     async function inspectAuthMethod() {
+      setChecking(true);
+
       if (shouldIgnorePath) {
         setChecking(false);
         setOpen(false);
         return;
       }
 
-      const supabase = createClient();
+      try {
+        const response = await fetch("/api/auth/account-auth-status", {
+          method: "GET",
+          cache: "no-store",
+        });
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        if (cancelled) {
+          return;
+        }
 
-      if (cancelled || !user) {
+        if (response.status === 401) {
+          setNeedsLocalPassword(false);
+          setChecking(false);
+          setOpen(false);
+          return;
+        }
+
+        const status = (await response.json().catch(() => null)) as
+          | AccountAuthStatus
+          | null;
+
+        if (!response.ok || !status) {
+          setNeedsLocalPassword(false);
+          setChecking(false);
+          setOpen(false);
+          return;
+        }
+
+        const needsPassword =
+          status.isGoogleUser === true && status.hasLocalPassword !== true;
+
+        setNeedsLocalPassword(needsPassword);
+        setEmail(status.email || "");
         setChecking(false);
-        setOpen(false);
-        return;
-      }
 
-      const { data: identityData } = await supabase.auth.getUserIdentities();
+        if (!needsPassword) {
+          setOpen(false);
+          return;
+        }
 
-      if (cancelled) {
-        return;
-      }
+        if (isMandatory) {
+          setOpen(true);
+          return;
+        }
 
-      const providers = getProviderNames(
-        identityData?.identities,
-        user.app_metadata?.providers
-      );
+        const dismissedThisSession =
+          window.sessionStorage.getItem(DISMISS_SESSION_KEY) === "1";
 
-      const hasGoogle = providers.has("google");
-      const hasEmailPassword = providers.has("email");
-      const googleOnly = hasGoogle && !hasEmailPassword;
+        const cameFromGoogle =
+          new URLSearchParams(window.location.search).get("oauth") === "google";
 
-      setEmail(user.email || "");
-      setIsGoogleOnly(googleOnly);
-      setChecking(false);
-
-      if (!googleOnly) {
-        setOpen(false);
-        return;
-      }
-
-      if (isMandatory) {
-        setOpen(true);
-        return;
-      }
-
-      const dismissedThisSession =
-        window.sessionStorage.getItem(DISMISS_SESSION_KEY) === "1";
-
-      const cameFromGoogle =
-        new URLSearchParams(window.location.search).get("oauth") === "google";
-
-      if (cameFromGoogle && !dismissedThisSession) {
-        setOpen(true);
+        if (cameFromGoogle && !dismissedThisSession) {
+          setOpen(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setNeedsLocalPassword(false);
+          setChecking(false);
+          setOpen(false);
+        }
       }
     }
 
@@ -161,32 +158,24 @@ export default function GoogleAccountCompletionGate() {
     setSaving(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({ password });
+      const response = await fetch("/api/auth/set-local-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
 
-      if (error) {
-        throw error;
-      }
+      const result = await response.json().catch(() => null);
 
-      await supabase.auth.refreshSession();
-
-      const { data: identityData } = await supabase.auth.getUserIdentities();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      const providers = getProviderNames(
-        identityData?.identities,
-        user?.app_metadata?.providers
-      );
-
-      if (!providers.has("email")) {
-        // Supabase può aggiornare i claims con un piccolo ritardo. La password è
-        // comunque stata impostata correttamente se updateUser non ha restituito errore.
+      if (!response.ok) {
+        throw new Error(
+          result?.error || "Non riesco a impostare la password. Riprova."
+        );
       }
 
       window.sessionStorage.removeItem(DISMISS_SESSION_KEY);
-      setIsGoogleOnly(false);
+      setNeedsLocalPassword(false);
       setSuccessMessage(
         <T
           textKey="auth.googleCompletion.success"
@@ -202,8 +191,14 @@ export default function GoogleAccountCompletionGate() {
         const url = new URL(window.location.href);
         if (url.searchParams.get("oauth") === "google") {
           url.searchParams.delete("oauth");
-          window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+          window.history.replaceState(
+            {},
+            "",
+            `${url.pathname}${url.search}${url.hash}`
+          );
         }
+
+        window.location.reload();
       }, 700);
     } catch (error) {
       setErrorMessage(
@@ -221,7 +216,7 @@ export default function GoogleAccountCompletionGate() {
     }
   }
 
-  if (checking || !isGoogleOnly || !open) {
+  if (checking || !needsLocalPassword || !open) {
     return null;
   }
 
@@ -283,7 +278,9 @@ export default function GoogleAccountCompletionGate() {
             <span className="text-[var(--museum-stone-muted)]">
               <T textKey="auth.googleCompletion.email" fallback="Email:" />
             </span>{" "}
-            <span className="break-all text-[var(--museum-ivory-soft)]">{email}</span>
+            <span className="break-all text-[var(--museum-ivory-soft)]">
+              {email}
+            </span>
           </div>
         )}
 
