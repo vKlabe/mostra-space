@@ -248,7 +248,15 @@ export default function LoginPage() {
             </p>
           </form>
 
-          <div className="mt-6">
+          <div className="mt-7">
+            <div className="mb-5 flex items-center gap-4">
+              <div className="h-px flex-1 bg-[var(--museum-border)]" />
+              <span className="text-xs uppercase tracking-[0.16em] text-[var(--museum-stone-muted)]">
+                <T textKey="auth.oauth.or" fallback="oppure" />
+              </span>
+              <div className="h-px flex-1 bg-[var(--museum-border)]" />
+            </div>
+
             <GoogleOAuthButton mode="login" />
           </div>
 

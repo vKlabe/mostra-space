@@ -589,29 +589,39 @@ export default function RegisterPage() {
               </p>
             </form>
 
-            <div className="museum-card mt-6 rounded-[1.75rem] border border-neutral-800 bg-neutral-900/60 p-6 opacity-90">
-              <p className="museum-label">
-                <T
-                  textKey="auth.oauth.registerCard.soonLabel"
-                  fallback="Accesso rapido"
-                />
-              </p>
+            <div className="mt-7">
+              <div className="mb-5 flex items-center gap-4">
+                <div className="h-px flex-1 bg-[var(--museum-border)]" />
+                <span className="text-xs uppercase tracking-[0.16em] text-[var(--museum-stone-muted)]">
+                  <T textKey="auth.oauth.or" fallback="oppure" />
+                </span>
+                <div className="h-px flex-1 bg-[var(--museum-border)]" />
+              </div>
 
-              <h2 className="mt-3 font-editorial text-4xl text-neutral-500">
-                <T
-                  textKey="auth.oauth.registerCard.soonTitle"
-                  fallback="Google presto disponibile."
-                />
-              </h2>
+              <div className="museum-card rounded-[1.75rem] border border-[var(--museum-border)] p-6">
+                <p className="museum-label">
+                  <T
+                    textKey="auth.oauth.registerCard.label"
+                    fallback="Accesso rapido"
+                  />
+                </p>
 
-              <p className="mt-3 text-sm leading-6 text-[var(--museum-stone-muted)]">
-                <T
-                  textKey="auth.oauth.registerCard.soonDescription"
-                  fallback="Stiamo preparando l’accesso con Google. Per ora puoi registrarti normalmente con email e password."
-                />
-              </p>
+                <h2 className="mt-3 font-editorial text-4xl text-[var(--museum-ivory)]">
+                  <T
+                    textKey="auth.oauth.registerCard.title"
+                    fallback="Continua con Google."
+                  />
+                </h2>
 
-              <GoogleOAuthButton mode="register" className="mt-5" />
+                <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
+                  <T
+                    textKey="auth.oauth.registerCard.description"
+                    fallback="Puoi entrare subito nella community con il tuo account Google. Se vorrai creare e pubblicare gallerie, completerai successivamente il profilo Creator e imposterai una password mostra.space."
+                  />
+                </p>
+
+                <GoogleOAuthButton mode="register" className="mt-5" />
+              </div>
             </div>
 
             <p className="mt-6 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
