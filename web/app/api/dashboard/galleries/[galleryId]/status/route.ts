@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createGalleryPublishedNotifications } from "@/lib/notifications/socialNotifications";
 import { validateGalleryForPublish } from "@/lib/gallery/validateGalleryForPublish";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +18,7 @@ type GalleryRecord = {
   id: string;
   owner_id: string;
   title: string | null;
+  slug: string | null;
   status: GalleryStatus;
   cover_image_url: string | null;
 };
@@ -94,7 +97,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: gallery, error: galleryError } = await supabase
     .from("galleries")
-    .select("id, owner_id, title, status, cover_image_url")
+    .select("id, owner_id, title, slug, status, cover_image_url")
     .eq("id", galleryId)
     .single<GalleryRecord>();
 
@@ -203,6 +206,25 @@ export async function PATCH(request: Request, context: RouteContext) {
       },
       { status: 500 }
     );
+  }
+
+  if (nextStatus === "published" && gallery.status !== "published") {
+    try {
+      const admin = createAdminClient();
+      await createGalleryPublishedNotifications({
+        admin,
+        ownerId: gallery.owner_id,
+        galleryId: gallery.id,
+        galleryTitle: gallery.title,
+        gallerySlug: gallery.slug,
+      });
+    } catch (notificationError) {
+      // Publication must never fail because a social notification could not be created.
+      console.error(
+        "Gallery published but follower notifications failed",
+        notificationError
+      );
+    }
   }
 
   return NextResponse.json({

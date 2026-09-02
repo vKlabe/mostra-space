@@ -3,16 +3,26 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import NotificationReadButton from "@/components/account/NotificationReadButton";
+import NotificationMarkAllReadButton from "@/components/account/NotificationMarkAllReadButton";
+import NotificationOpenLink from "@/components/account/NotificationOpenLink";
 import T from "@/components/i18n/T";
 
 type Notification = {
   id: string;
-  type: "event_created" | "event_3_days_before" | "event_30_minutes_before";
+  type:
+    | "event_created"
+    | "event_3_days_before"
+    | "event_30_minutes_before"
+    | "gallery_published"
+    | "status_published";
   title: string;
   message: string;
   event_id: string | null;
   gallery_id: string | null;
   actor_profile_id: string | null;
+  status_id: string | null;
+  href: string | null;
+  source_key: string | null;
   scheduled_for: string;
   read_at: string | null;
   created_at: string;
@@ -60,7 +70,7 @@ export default async function AccountNotificationsPage() {
   const { data: notifications } = await admin
     .from("account_notifications")
     .select(
-      "id, type, title, message, event_id, gallery_id, actor_profile_id, scheduled_for, read_at, created_at"
+      "id, type, title, message, event_id, gallery_id, actor_profile_id, status_id, href, source_key, scheduled_for, read_at, created_at"
     )
     .eq("user_id", user.id)
     .lte("scheduled_for", new Date().toISOString())
@@ -126,7 +136,7 @@ export default async function AccountNotificationsPage() {
   subtitle={
     <T
       textKey="account.notifications.shell.subtitle"
-      fallback="Promemoria collegati agli eventi dei profili che segui e delle gallerie salvate."
+      fallback="Attività, nuove gallerie, stati e promemoria collegati ai profili che segui."
     />
   }
   activeSection="account"
@@ -159,11 +169,12 @@ export default async function AccountNotificationsPage() {
         <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
           <T
             textKey="account.notifications.header.label"
-            fallback="Eventi"
+            fallback="Centro notifiche"
           />
         </p>
 
-        <h2 className="font-serif text-3xl text-neutral-50">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+          <h2 className="font-serif text-3xl text-neutral-50">
           {unreadCount > 0 ? (
             <>
               {unreadCount}{" "}
@@ -178,13 +189,16 @@ export default async function AccountNotificationsPage() {
               fallback="Nessuna nuova notifica"
             />
           )}
-        </h2>
+          </h2>
+
+          <NotificationMarkAllReadButton disabled={unreadCount === 0} />
+        </div>
 
         {safeNotifications.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-400">
             <T
               textKey="account.notifications.empty.message"
-              fallback="Non hai ancora notifiche evento. Segui profili o salva gallerie per costruire il tuo calendario."
+              fallback="Non hai ancora notifiche. Quando i profili che segui pubblicheranno nuovi contenuti, li troverai qui."
             />
           </p>
         ) : (
@@ -196,6 +210,11 @@ export default async function AccountNotificationsPage() {
               const gallery = notification.gallery_id
                 ? galleryById.get(notification.gallery_id)
                 : null;
+              const notificationHref =
+                notification.href ||
+                (gallery?.status === "published"
+                  ? `/gallerie/${gallery.slug}`
+                  : null);
 
               return (
                 <article
@@ -230,28 +249,21 @@ export default async function AccountNotificationsPage() {
                         </p>
                       )}
 
-                      {gallery && (
-                        <div className="mt-4">
-                          {gallery.status === "published" ? (
-                            <a
-                              href={`/gallerie/${gallery.slug}`}
-                              className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-                            >
-                              <T
-                                textKey="account.notifications.event.openGallery"
-                                fallback="Apri galleria"
-                              />
-                            </a>
-                          ) : (
-                            <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
-                              <T
-                                textKey="account.notifications.event.galleryInPreparation"
-                                fallback="Galleria in preparazione"
-                              />
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      <div className="mt-4">
+                        {notificationHref ? (
+                          <NotificationOpenLink
+                            notificationId={notification.id}
+                            href={notificationHref}
+                          />
+                        ) : gallery ? (
+                          <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
+                            <T
+                              textKey="account.notifications.event.galleryInPreparation"
+                              fallback="Galleria in preparazione"
+                            />
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
 
                     <NotificationReadButton

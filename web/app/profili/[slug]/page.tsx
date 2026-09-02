@@ -1,7 +1,9 @@
-﻿import { notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import T from "@/components/i18n/T";
+import ProfileStatusLikeButton from "@/components/social/ProfileStatusLikeButton";
 
 type PublicProfilePageProps = {
   params: Promise<{
@@ -45,6 +47,12 @@ type PublicArtwork = {
   image_url: string;
   thumbnail_url: string | null;
   is_for_sale: boolean;
+};
+
+type PublicStatus = {
+  id: string;
+  content: string;
+  created_at: string;
 };
 
 function getDisplayName(profile: PublicProfile) {
@@ -104,6 +112,15 @@ function formatPrice(price: number | string | null, currency: string | null) {
   } catch {
     return `${numericPrice} ${currency || "EUR"}`;
   }
+}
+
+function formatStatusDate(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    day: "2-digit",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function normalizeExternalUrl(value: string | null) {
@@ -194,6 +211,38 @@ export default async function PublicProfilePage({
       .maybeSingle();
 
     isFollowing = Boolean(followRow);
+  }
+
+  const { data: currentStatusData } = await admin
+    .from("profile_statuses")
+    .select("id, content, created_at")
+    .eq("profile_id", profile.id)
+    .eq("is_current", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<PublicStatus>();
+
+  let currentStatusLikeCount = 0;
+  let currentUserLikedStatus = false;
+
+  if (currentStatusData) {
+    const { count } = await admin
+      .from("profile_status_likes")
+      .select("status_id", { count: "exact", head: true })
+      .eq("status_id", currentStatusData.id);
+
+    currentStatusLikeCount = count || 0;
+
+    if (user) {
+      const { data: currentUserLike } = await admin
+        .from("profile_status_likes")
+        .select("status_id")
+        .eq("status_id", currentStatusData.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      currentUserLikedStatus = Boolean(currentUserLike);
+    }
   }
 
   const safeGalleries = (galleries || []) as PublicGallery[];
@@ -332,6 +381,36 @@ export default async function PublicProfilePage({
             </aside>
           </div>
         </section>
+
+        {currentStatusData && (
+          <section
+            id="stato"
+            className="mt-8 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-6 md:p-8"
+          >
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
+              <div className="max-w-4xl">
+                <p className="museum-label">
+                  <T textKey="profiles.status.label" fallback="Stato" />
+                </p>
+
+                <blockquote className="mt-5 font-serif text-2xl leading-relaxed text-[var(--museum-ivory)] md:text-3xl">
+                  “{currentStatusData.content}”
+                </blockquote>
+
+                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
+                  {formatStatusDate(currentStatusData.created_at)}
+                </p>
+              </div>
+
+              <ProfileStatusLikeButton
+                statusId={currentStatusData.id}
+                initialLiked={currentUserLikedStatus}
+                initialCount={currentStatusLikeCount}
+                canLike={Boolean(user)}
+              />
+            </div>
+          </section>
+        )}
 
         <section className="mt-8 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-6 md:p-8">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">

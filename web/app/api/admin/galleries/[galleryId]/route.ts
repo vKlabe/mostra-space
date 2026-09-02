@@ -6,6 +6,7 @@ import {
   apiUnauthorized,
 } from "@/lib/api/responses";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
+import { createGalleryPublishedNotifications } from "@/lib/notifications/socialNotifications";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -91,6 +92,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     });
   }
 
+  const { data: existingGallery } = await admin
+    .from("galleries")
+    .select("id, title, slug, status, owner_id")
+    .eq("id", galleryId)
+    .maybeSingle();
+
   const updatePayload: {
     status: GalleryStatus;
     published_at?: string | null;
@@ -123,6 +130,24 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       code: "ADMIN_GALLERY_UPDATE_FAILED",
       details: updateError,
     });
+  }
+
+  if (body.status === "published" && existingGallery?.status !== "published") {
+    try {
+      await createGalleryPublishedNotifications({
+        admin,
+        ownerId: updatedGallery.owner_id,
+        galleryId: updatedGallery.id,
+        galleryTitle: updatedGallery.title,
+        gallerySlug: updatedGallery.slug,
+      });
+    } catch (notificationError) {
+      // Admin publication must remain successful even if notification fan-out fails.
+      console.error(
+        "Admin gallery publication notification failed",
+        notificationError
+      );
+    }
   }
 
   return apiSuccess({

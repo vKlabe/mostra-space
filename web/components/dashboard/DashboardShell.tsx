@@ -5,6 +5,7 @@ import LogoutButton from "@/components/auth/LogoutButton";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import T from "@/components/i18n/T";
 import Link from "next/link";
+import DashboardNotificationCenter from "@/components/dashboard/DashboardNotificationCenter";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -477,6 +478,8 @@ export default function DashboardShell({
 
             <div className="flex flex-wrap items-center gap-3">
               {actions}
+
+              <DashboardNotificationCenter />
 
               <LogoutButton />
             </div>

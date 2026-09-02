@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
+import ProfileStatusComposer from "@/components/social/ProfileStatusComposer";
 
 type Profile = {
   id: string;
@@ -123,6 +124,12 @@ type EventInviteRow = {
   event_id: string;
 };
 
+type ProfileStatus = {
+  id: string;
+  content: string;
+  created_at: string;
+};
+
 function getProfileName(profile: FollowedProfile | EventOwner | Profile) {
   return (
     profile.display_name ||
@@ -214,6 +221,15 @@ export default async function DashboardSocialPage() {
     profile.profile_slug && profile.public_profile_enabled
       ? `/profili/${profile.profile_slug}`
       : null;
+
+  const { data: currentStatusData } = await admin
+    .from("profile_statuses")
+    .select("id, content, created_at")
+    .eq("profile_id", user.id)
+    .eq("is_current", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<ProfileStatus>();
 
   const { data: followRowsData } = await admin
     .from("account_follows")
@@ -719,6 +735,19 @@ export default async function DashboardSocialPage() {
             </div>
           </article>
         </section>
+
+        <ProfileStatusComposer
+          currentStatus={
+            currentStatusData
+              ? {
+                  id: currentStatusData.id,
+                  content: currentStatusData.content,
+                  createdAt: currentStatusData.created_at,
+                }
+              : null
+          }
+          publicProfileEnabled={profile.public_profile_enabled}
+        />
 
         <section className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
           <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
