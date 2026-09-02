@@ -750,7 +750,7 @@ export default function DashboardMessagesDock() {
 
   function renderActivation() {
     return (
-      <div className="p-5 md:p-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
         <p className="text-xs uppercase tracking-[0.24em] text-amber-500">
           <T textKey="messages.activation.label" fallback="Attiva Messaggi" />
         </p>
