@@ -340,46 +340,6 @@ export default function RegisterPage() {
               </button>
             </div>
 
-            <div className="museum-card mt-6 rounded-[1.75rem] p-6">
-              <p className="museum-label">
-                <T
-                  textKey="auth.oauth.registerCard.label"
-                  fallback="Registrazione rapida"
-                />
-              </p>
-
-              <h2 className="mt-3 font-editorial text-4xl text-[var(--museum-ivory)]">
-                <T
-                  textKey="auth.oauth.registerCard.title"
-                  fallback="Entra con Google."
-                />
-              </h2>
-
-              <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-                <T
-                  textKey="auth.oauth.registerCard.description"
-                  fallback="Con Google crei un account community gratuito. Potrai poi attivare gli strumenti creator dalla dashboard."
-                />
-              </p>
-
-              <GoogleOAuthButton
-                mode="register"
-                disabled={formDisabled}
-                className="mt-5"
-              />
-            </div>
-
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-[var(--museum-border)]" />
-              <span className="text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
-                <T
-                  textKey="auth.oauth.registerSeparator"
-                  fallback="oppure registrati con email"
-                />
-              </span>
-              <div className="h-px flex-1 bg-[var(--museum-border)]" />
-            </div>
-
             <form
               onSubmit={handleRegister}
               className="museum-card mt-6 rounded-[1.75rem] p-6"
@@ -628,6 +588,31 @@ export default function RegisterPage() {
                 </Link>
               </p>
             </form>
+
+            <div className="museum-card mt-6 rounded-[1.75rem] border border-neutral-800 bg-neutral-900/60 p-6 opacity-90">
+              <p className="museum-label">
+                <T
+                  textKey="auth.oauth.registerCard.soonLabel"
+                  fallback="Accesso rapido"
+                />
+              </p>
+
+              <h2 className="mt-3 font-editorial text-4xl text-neutral-500">
+                <T
+                  textKey="auth.oauth.registerCard.soonTitle"
+                  fallback="Google presto disponibile."
+                />
+              </h2>
+
+              <p className="mt-3 text-sm leading-6 text-[var(--museum-stone-muted)]">
+                <T
+                  textKey="auth.oauth.registerCard.soonDescription"
+                  fallback="Stiamo preparando l’accesso con Google. Per ora puoi registrarti normalmente con email e password."
+                />
+              </p>
+
+              <GoogleOAuthButton mode="register" className="mt-5" />
+            </div>
 
             <p className="mt-6 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
               <T

@@ -158,19 +158,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <div className="mt-10 space-y-4">
-            <GoogleOAuthButton mode="login" disabled={formDisabled} />
-
-            <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-[var(--museum-border)]" />
-              <span className="text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
-                <T textKey="auth.oauth.separator" fallback="oppure" />
-              </span>
-              <div className="h-px flex-1 bg-[var(--museum-border)]" />
-            </div>
-          </div>
-
-          <form onSubmit={handleLogin} className="mt-6 space-y-5">
+          <form onSubmit={handleLogin} className="mt-10 space-y-5">
             <div>
               <label className="block text-sm text-[var(--museum-ivory-soft)]">
                 <T textKey="auth.login.form.email" fallback="Email" />
@@ -259,6 +247,10 @@ export default function LoginPage() {
               </Link>
             </p>
           </form>
+
+          <div className="mt-6">
+            <GoogleOAuthButton mode="login" />
+          </div>
 
           <p className="mt-8 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
             <T

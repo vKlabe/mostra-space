@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import T from "@/components/i18n/T";
 
 type GoogleOAuthButtonProps = {
@@ -10,84 +8,44 @@ type GoogleOAuthButtonProps = {
   className?: string;
 };
 
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Non riesco ad avviare l’accesso con Google. Riprova tra qualche secondo.";
-}
-
 export default function GoogleOAuthButton({
   mode,
-  disabled = false,
   className = "",
 }: GoogleOAuthButtonProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  async function handleGoogleOAuth() {
-    if (disabled || isLoading) {
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMessage("");
-
-    try {
-      const supabase = createClient();
-      const redirectTo = new URL("/auth/callback", window.location.origin);
-
-      redirectTo.searchParams.set("next", "/dashboard");
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectTo.toString(),
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-      setIsLoading(false);
-    }
-  }
-
   return (
     <div className={className}>
       <button
         type="button"
-        onClick={handleGoogleOAuth}
-        disabled={disabled || isLoading}
-        className="flex w-full items-center justify-center gap-3 rounded-full border border-[var(--museum-border)] bg-white px-6 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled
+        aria-disabled="true"
+        className="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-full border border-neutral-800 bg-neutral-900/75 px-6 py-3 text-sm font-medium text-neutral-500 opacity-80"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full border border-neutral-300 bg-white font-semibold text-neutral-900">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full border border-neutral-700 bg-neutral-950 font-semibold text-neutral-500">
           G
         </span>
 
-        {isLoading ? (
-          <T textKey="auth.oauth.google.loading" fallback="Apertura Google..." />
-        ) : mode === "register" ? (
-          <T
-            textKey="auth.oauth.google.register"
-            fallback="Registrati con Google"
-          />
-        ) : (
-          <T textKey="auth.oauth.google.login" fallback="Accedi con Google" />
-        )}
+        <span>
+          {mode === "register" ? (
+            <T
+              textKey="auth.oauth.google.registerSoon"
+              fallback="Registrati con Google"
+            />
+          ) : (
+            <T textKey="auth.oauth.google.loginSoon" fallback="Accedi con Google" />
+          )}
+        </span>
+
+        <span className="rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-0.5 text-[0.68rem] uppercase tracking-[0.16em] text-neutral-500">
+          <T textKey="auth.oauth.google.soonBadge" fallback="Soon" />
+        </span>
       </button>
 
-      {errorMessage && (
-        <div className="mt-3 rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
-          {errorMessage}
-        </div>
-      )}
+      <p className="mt-3 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
+        <T
+          textKey="auth.oauth.google.soonDescription"
+          fallback="L’accesso con Google sarà disponibile presto. Per ora usa email e password."
+        />
+      </p>
     </div>
   );
 }
