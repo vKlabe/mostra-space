@@ -13,6 +13,7 @@ type RouteContext = {
 type Profile = {
   id: string;
   role: "user" | "gallerist" | "admin";
+  plan: string | null;
 };
 
 type GalleryRecord = {
@@ -21,6 +22,13 @@ type GalleryRecord = {
 };
 
 type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+type CatalogTheme =
+  | "classic"
+  | "contemporary"
+  | "essential"
+  | "noir"
+  | "modernist_78";
+type CatalogPlan = "free" | "pro" | "business" | "diamond" | "institution";
 
 type CatalogSettingsPayload = {
   title?: unknown;
@@ -31,6 +39,7 @@ type CatalogSettingsPayload = {
   contactEmail?: unknown;
   website?: unknown;
   layoutVariant?: unknown;
+  catalogTheme?: unknown;
   includeDescriptions?: unknown;
   includePrices?: unknown;
   includePublicLink?: unknown;
@@ -63,6 +72,66 @@ function cleanLayoutVariant(value: unknown): CatalogLayoutVariant {
   return "elegant";
 }
 
+function cleanCatalogTheme(value: unknown): CatalogTheme {
+  if (
+    value === "contemporary" ||
+    value === "essential" ||
+    value === "noir" ||
+    value === "modernist_78" ||
+    value === "classic"
+  ) {
+    return value;
+  }
+
+  return "classic";
+}
+
+function normalizeCatalogPlan(value: string | null | undefined): CatalogPlan {
+  if (
+    value === "pro" ||
+    value === "business" ||
+    value === "diamond" ||
+    value === "institution"
+  ) {
+    return value;
+  }
+
+  return "free";
+}
+
+function canUseCatalogLayout(
+  plan: CatalogPlan,
+  layoutVariant: CatalogLayoutVariant
+) {
+  if (layoutVariant === "elegant") {
+    return true;
+  }
+
+  return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getAllowedCatalogLayout(
+  plan: CatalogPlan,
+  layoutVariant: CatalogLayoutVariant
+): CatalogLayoutVariant {
+  return canUseCatalogLayout(plan, layoutVariant) ? layoutVariant : "elegant";
+}
+
+function canUseCatalogTheme(plan: CatalogPlan, theme: CatalogTheme) {
+  if (theme === "classic") {
+    return true;
+  }
+
+  return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getAllowedCatalogTheme(
+  plan: CatalogPlan,
+  theme: CatalogTheme
+): CatalogTheme {
+  return canUseCatalogTheme(plan, theme) ? theme : "classic";
+}
+
 async function requireGalleryPermission(galleryId: string) {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -77,13 +146,14 @@ async function requireGalleryPermission(galleryId: string) {
       status: 401,
       error: "Unauthorized",
       gallery: null,
+      profile: null,
       admin,
     };
   }
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("id, role")
+    .select("id, role, plan")
     .eq("id", user.id)
     .single<Profile>();
 
@@ -93,6 +163,7 @@ async function requireGalleryPermission(galleryId: string) {
       status: 404,
       error: "Profilo non trovato.",
       gallery: null,
+      profile: null,
       admin,
     };
   }
@@ -109,6 +180,7 @@ async function requireGalleryPermission(galleryId: string) {
       status: 404,
       error: "Galleria non trovata.",
       gallery: null,
+      profile: null,
       admin,
     };
   }
@@ -122,6 +194,7 @@ async function requireGalleryPermission(galleryId: string) {
       status: 403,
       error: "Non puoi modificare le impostazioni catalogo di questa galleria.",
       gallery,
+      profile,
       admin,
     };
   }
@@ -131,6 +204,7 @@ async function requireGalleryPermission(galleryId: string) {
     status: 200,
     error: null,
     gallery,
+    profile,
     admin,
   };
 }
@@ -146,6 +220,7 @@ const CATALOG_SELECT = [
   "contact_email",
   "website",
   "layout_variant",
+  "catalog_theme",
   "include_descriptions",
   "include_prices",
   "include_public_link",
@@ -225,6 +300,10 @@ export async function PUT(request: Request, context: RouteContext) {
     );
   }
 
+  const normalizedPlan = permission.profile?.role === "admin"
+    ? "institution"
+    : normalizeCatalogPlan(permission.profile?.plan);
+
   const payload = {
     gallery_id: permission.gallery.id,
 
@@ -235,7 +314,14 @@ export async function PUT(request: Request, context: RouteContext) {
     intro_text: cleanNullableText(body.introText),
     contact_email: cleanNullableText(body.contactEmail),
     website: cleanNullableText(body.website),
-    layout_variant: cleanLayoutVariant(body.layoutVariant),
+    layout_variant: getAllowedCatalogLayout(
+      normalizedPlan,
+      cleanLayoutVariant(body.layoutVariant)
+    ),
+    catalog_theme: getAllowedCatalogTheme(
+      normalizedPlan,
+      cleanCatalogTheme(body.catalogTheme)
+    ),
 
     include_descriptions: cleanBoolean(body.includeDescriptions, true),
     include_prices: cleanBoolean(body.includePrices, true),

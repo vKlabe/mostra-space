@@ -79,6 +79,7 @@ type CatalogSettingsRecord = {
   contact_email: string | null;
   website: string | null;
   layout_variant: string | null;
+  catalog_theme: string | null;
   include_descriptions: boolean;
   include_prices: boolean;
   include_public_link: boolean;
@@ -86,6 +87,12 @@ type CatalogSettingsRecord = {
 };
 
 type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+type CatalogTheme =
+  | "classic"
+  | "contemporary"
+  | "essential"
+  | "noir"
+  | "modernist_78";
 
 type CatalogPlan = "free" | "pro" | "business" | "diamond" | "institution";
 
@@ -138,6 +145,20 @@ function normalizeCatalogLayout(
   return "elegant";
 }
 
+function normalizeCatalogTheme(value: string | null | undefined): CatalogTheme {
+  if (
+    value === "contemporary" ||
+    value === "essential" ||
+    value === "noir" ||
+    value === "modernist_78" ||
+    value === "classic"
+  ) {
+    return value;
+  }
+
+  return "classic";
+}
+
 function normalizeCatalogPlan(value: string | null | undefined): CatalogPlan {
   if (
     value === "pro" ||
@@ -175,6 +196,21 @@ function getAllowedCatalogLayout(
   }
 
   return "elegant";
+}
+
+function canUseCatalogTheme(plan: CatalogPlan, theme: CatalogTheme) {
+  if (theme === "classic") {
+    return true;
+  }
+
+  return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getAllowedCatalogTheme(
+  plan: CatalogPlan,
+  theme: CatalogTheme
+): CatalogTheme {
+  return canUseCatalogTheme(plan, theme) ? theme : "classic";
 }
 
 function slugify(value: string) {
@@ -352,6 +388,7 @@ export async function GET(_request: Request, context: RouteContext) {
         "contact_email",
         "website",
         "layout_variant",
+        "catalog_theme",
         "include_descriptions",
         "include_prices",
         "include_public_link",
@@ -368,6 +405,10 @@ export async function GET(_request: Request, context: RouteContext) {
     normalizedPlan,
     normalizeCatalogLayout(catalogSettingsData?.layout_variant)
   );
+  const selectedTheme = getAllowedCatalogTheme(
+    normalizedPlan,
+    normalizeCatalogTheme(catalogSettingsData?.catalog_theme)
+  );
 
   const settings: PdfCatalogSettings = {
     title: catalogSettingsData?.title || gallery.title,
@@ -383,6 +424,7 @@ export async function GET(_request: Request, context: RouteContext) {
       catalogSettingsData?.contact_email || profile.email || user.email || "",
     website: catalogSettingsData?.website || publicUrl,
     layoutVariant: selectedLayout,
+    catalogTheme: selectedTheme,
     includeDescriptions: catalogSettingsData?.include_descriptions ?? true,
     includePrices: catalogSettingsData?.include_prices ?? true,
     includePublicLink: catalogSettingsData?.include_public_link ?? true,

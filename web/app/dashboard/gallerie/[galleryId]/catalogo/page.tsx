@@ -71,6 +71,7 @@ type CatalogSettingsRecord = {
   contact_email: string | null;
   website: string | null;
   layout_variant: string | null;
+  catalog_theme: string | null;
   include_descriptions: boolean;
   include_prices: boolean;
   include_public_link: boolean;
@@ -117,6 +118,12 @@ function getAppUrl() {
 }
 
 type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+type CatalogTheme =
+  | "classic"
+  | "contemporary"
+  | "essential"
+  | "noir"
+  | "modernist_78";
 
 function normalizeCatalogLayout(
   value: string | null | undefined
@@ -126,6 +133,20 @@ function normalizeCatalogLayout(
   }
 
   return "elegant";
+}
+
+function normalizeCatalogTheme(value: string | null | undefined): CatalogTheme {
+  if (
+    value === "contemporary" ||
+    value === "essential" ||
+    value === "noir" ||
+    value === "modernist_78" ||
+    value === "classic"
+  ) {
+    return value;
+  }
+
+  return "classic";
 }
 
 export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
@@ -340,6 +361,8 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
         "intro_text",
         "contact_email",
         "website",
+        "layout_variant",
+        "catalog_theme",
         "include_descriptions",
         "include_prices",
         "include_public_link",
@@ -361,6 +384,7 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
         layoutVariant: normalizeCatalogLayout(
           catalogSettingsData.layout_variant
         ),
+        catalogTheme: normalizeCatalogTheme(catalogSettingsData.catalog_theme),
         includeDescriptions: catalogSettingsData.include_descriptions,
         includePrices: catalogSettingsData.include_prices,
         includePublicLink: catalogSettingsData.include_public_link,
@@ -383,7 +407,7 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
       defaultCuratorName={profile.full_name || profile.display_name || ""}
       defaultContactEmail={profile.email || user.email || ""}
       initialSettings={catalogSettings}
-      userPlan={profile.plan || "free"}
+      userPlan={isAdmin ? "institution" : profile.plan || "free"}
     />
   );
 }

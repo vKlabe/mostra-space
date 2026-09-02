@@ -5,6 +5,12 @@ import * as QRCode from "qrcode";
 import T from "@/components/i18n/T";
 
 type CatalogLayoutVariant = "elegant" | "compact" | "price_list";
+type CatalogTheme =
+  | "classic"
+  | "contemporary"
+  | "essential"
+  | "noir"
+  | "modernist_78";
 
 type CatalogPlan = "free" | "pro" | "business" | "diamond" | "institution";
 
@@ -47,6 +53,7 @@ type CatalogSettings = {
   contactEmail: string | null;
   website: string | null;
   layoutVariant: CatalogLayoutVariant | null;
+  catalogTheme?: CatalogTheme | null;
   includeDescriptions: boolean;
   includePrices: boolean;
   includePublicLink: boolean;
@@ -94,6 +101,62 @@ const catalogLayouts: Array<{
       "Fino a 6 opere per pagina. Pensato per vendita e invio rapido.",
   },
 ];
+
+const catalogThemes: Array<{
+  key: CatalogTheme;
+  labelKey: string;
+  labelFallback: string;
+  descriptionKey: string;
+  descriptionFallback: string;
+  previewClassName: string;
+}> = [
+  {
+    key: "classic",
+    labelKey: "catalog.theme.classic",
+    labelFallback: "MostraSpace Classic",
+    descriptionKey: "catalog.theme.classicDescription",
+    descriptionFallback:
+      "Lo stile originale mostra.space: avorio, nero, bronzo e impaginazione editoriale.",
+    previewClassName: "catalog-theme-preview-classic",
+  },
+  {
+    key: "contemporary",
+    labelKey: "catalog.theme.contemporary",
+    labelFallback: "Contemporary",
+    descriptionKey: "catalog.theme.contemporaryDescription",
+    descriptionFallback:
+      "Tipografia netta, contrasti forti e ritmo visivo da catalogo d’arte contemporanea.",
+    previewClassName: "catalog-theme-preview-contemporary",
+  },
+  {
+    key: "essential",
+    labelKey: "catalog.theme.essential",
+    labelFallback: "Essential",
+    descriptionKey: "catalog.theme.essentialDescription",
+    descriptionFallback:
+      "Minimale, luminoso e raffinato. Lascia il massimo spazio alle opere e ai testi.",
+    previewClassName: "catalog-theme-preview-essential",
+  },
+  {
+    key: "noir",
+    labelKey: "catalog.theme.noir",
+    labelFallback: "Noir",
+    descriptionKey: "catalog.theme.noirDescription",
+    descriptionFallback:
+      "Dark elegante, fondi profondi e dettagli caldi per una presenza più scenografica.",
+    previewClassName: "catalog-theme-preview-noir",
+  },
+  {
+    key: "modernist_78",
+    labelKey: "catalog.theme.modernist78",
+    labelFallback: "Modernist 78",
+    descriptionKey: "catalog.theme.modernist78Description",
+    descriptionFallback:
+      "Griglia modernista, accenti grafici e carattere editoriale ispirato agli anni ’70/’80.",
+    previewClassName: "catalog-theme-preview-modernist",
+  },
+];
+
 
 function chunkItems<T>(items: T[], size: number) {
   const chunks: T[][] = [];
@@ -201,6 +264,21 @@ function getAllowedCatalogLayout(
   return "elegant";
 }
 
+function canUseCatalogTheme(plan: CatalogPlan, theme: CatalogTheme) {
+  if (theme === "classic") {
+    return true;
+  }
+
+  return plan === "business" || plan === "diamond" || plan === "institution";
+}
+
+function getAllowedCatalogTheme(
+  plan: CatalogPlan,
+  theme: CatalogTheme
+): CatalogTheme {
+  return canUseCatalogTheme(plan, theme) ? theme : "classic";
+}
+
 function getPlanLabel(plan: CatalogPlan) {
   if (plan === "free") {
     return "Free";
@@ -259,6 +337,12 @@ export default function GalleryCatalogBuilder({
       initialSettings?.layoutVariant || "elegant"
     )
   );
+  const [catalogTheme, setCatalogTheme] = useState<CatalogTheme>(
+    getAllowedCatalogTheme(
+      normalizedPlan,
+      initialSettings?.catalogTheme || "classic"
+    )
+  );
   const [includeDescriptions, setIncludeDescriptions] = useState(
     initialSettings?.includeDescriptions ?? true
   );
@@ -283,6 +367,13 @@ export default function GalleryCatalogBuilder({
     normalizedPlan,
     layoutVariant
   );
+  const allowedCatalogTheme = getAllowedCatalogTheme(
+    normalizedPlan,
+    catalogTheme
+  );
+  const selectedThemeDefinition =
+    catalogThemes.find((theme) => theme.key === allowedCatalogTheme) ||
+    catalogThemes[0];
 
   const displayedArtworks = useMemo(() => {
     if (includePrivateArtworks) {
@@ -298,6 +389,12 @@ export default function GalleryCatalogBuilder({
   useEffect(() => {
     setLayoutVariant((currentLayout) =>
       getAllowedCatalogLayout(normalizedPlan, currentLayout)
+    );
+  }, [normalizedPlan]);
+
+  useEffect(() => {
+    setCatalogTheme((currentTheme) =>
+      getAllowedCatalogTheme(normalizedPlan, currentTheme)
     );
   }, [normalizedPlan]);
 
@@ -380,6 +477,7 @@ export default function GalleryCatalogBuilder({
             contactEmail,
             website,
             layoutVariant: allowedLayoutVariant,
+            catalogTheme: allowedCatalogTheme,
             includeDescriptions,
             includePrices,
             includePublicLink,
@@ -456,6 +554,7 @@ export default function GalleryCatalogBuilder({
             contactEmail,
             website,
             layoutVariant: allowedLayoutVariant,
+            catalogTheme: allowedCatalogTheme,
             includeDescriptions,
             includePrices,
             includePublicLink,
@@ -475,6 +574,7 @@ export default function GalleryCatalogBuilder({
       }
 
       setLayoutVariant(allowedLayoutVariant);
+      setCatalogTheme(allowedCatalogTheme);
       setSettingsMessageType("success");
       setSettingsMessage("Impostazioni catalogo salvate correttamente.");
     } catch {
@@ -491,6 +591,292 @@ export default function GalleryCatalogBuilder({
         @page {
           size: A4;
           margin: 0;
+        }
+
+        .catalog-print-root {
+          --catalog-paper: #f7f2e8;
+          --catalog-ink: #16120d;
+          --catalog-dark: #15120e;
+          --catalog-dark-ink: #f7f2e8;
+          --catalog-accent: #8b6a43;
+          --catalog-accent-dark: #b9905b;
+          --catalog-muted: #5c4b39;
+          --catalog-dark-muted: #d8c9b0;
+          --catalog-border: #d8c9b0;
+          --catalog-image-bg: #eee6d8;
+          --catalog-body-font: Georgia, "Times New Roman", serif;
+          --catalog-title-font: Georgia, "Times New Roman", serif;
+          --catalog-label-font: Arial, Helvetica, sans-serif;
+        }
+
+        .catalog-theme-contemporary {
+          --catalog-paper: #ffffff;
+          --catalog-ink: #0b0b0b;
+          --catalog-dark: #0a0a0a;
+          --catalog-dark-ink: #ffffff;
+          --catalog-accent: #2246ff;
+          --catalog-accent-dark: #7f97ff;
+          --catalog-muted: #4d4d4d;
+          --catalog-dark-muted: #d6d6d6;
+          --catalog-border: #bfc7ff;
+          --catalog-image-bg: #f2f3f7;
+          --catalog-body-font: Arial, Helvetica, sans-serif;
+          --catalog-title-font: Arial, Helvetica, sans-serif;
+          --catalog-label-font: Arial, Helvetica, sans-serif;
+        }
+
+        .catalog-theme-essential {
+          --catalog-paper: #fbfaf7;
+          --catalog-ink: #1f1f1d;
+          --catalog-dark: #fbfaf7;
+          --catalog-dark-ink: #1f1f1d;
+          --catalog-accent: #77736d;
+          --catalog-accent-dark: #77736d;
+          --catalog-muted: #68645f;
+          --catalog-dark-muted: #68645f;
+          --catalog-border: #d8d4ce;
+          --catalog-image-bg: #f1efeb;
+          --catalog-body-font: Georgia, "Times New Roman", serif;
+          --catalog-title-font: Georgia, "Times New Roman", serif;
+          --catalog-label-font: Arial, Helvetica, sans-serif;
+        }
+
+        .catalog-theme-noir {
+          --catalog-paper: #11110f;
+          --catalog-ink: #f5efe5;
+          --catalog-dark: #070706;
+          --catalog-dark-ink: #fffaf0;
+          --catalog-accent: #bd9561;
+          --catalog-accent-dark: #d7b27d;
+          --catalog-muted: #b9ad9d;
+          --catalog-dark-muted: #d7ccbd;
+          --catalog-border: #4a4339;
+          --catalog-image-bg: #1b1a17;
+          --catalog-body-font: Georgia, "Times New Roman", serif;
+          --catalog-title-font: Georgia, "Times New Roman", serif;
+          --catalog-label-font: Arial, Helvetica, sans-serif;
+        }
+
+        .catalog-theme-modernist_78 {
+          --catalog-paper: #eee3cd;
+          --catalog-ink: #20292d;
+          --catalog-dark: #273238;
+          --catalog-dark-ink: #f6eddc;
+          --catalog-accent: #c84f2a;
+          --catalog-accent-dark: #f09a4c;
+          --catalog-muted: #4a565a;
+          --catalog-dark-muted: #eadcc5;
+          --catalog-border: #9c917b;
+          --catalog-image-bg: #ddd0b7;
+          --catalog-body-font: Arial, Helvetica, sans-serif;
+          --catalog-title-font: Arial, Helvetica, sans-serif;
+          --catalog-label-font: Arial, Helvetica, sans-serif;
+        }
+
+        .catalog-print-root .catalog-page {
+          position: relative;
+          background: var(--catalog-paper) !important;
+          color: var(--catalog-ink) !important;
+          font-family: var(--catalog-body-font) !important;
+          border-color: var(--catalog-border) !important;
+        }
+
+        .catalog-print-root .catalog-page-dark {
+          background: var(--catalog-dark) !important;
+          color: var(--catalog-dark-ink) !important;
+        }
+
+        .catalog-print-root .catalog-page h1,
+        .catalog-print-root .catalog-page h2,
+        .catalog-print-root .catalog-page h3 {
+          font-family: var(--catalog-title-font) !important;
+        }
+
+        .catalog-print-root .catalog-small-caps {
+          font-family: var(--catalog-label-font) !important;
+          color: var(--catalog-accent) !important;
+        }
+
+        .catalog-print-root [class*="text-[#8b6a43]"] {
+          color: var(--catalog-accent) !important;
+        }
+
+        .catalog-print-root [class*="text-[#b9905b]"] {
+          color: var(--catalog-accent-dark) !important;
+        }
+
+        .catalog-print-root [class*="text-[#5c4b39]"] {
+          color: var(--catalog-muted) !important;
+        }
+
+        .catalog-print-root [class*="text-[#d8c9b0]"] {
+          color: var(--catalog-dark-muted) !important;
+        }
+
+        .catalog-print-root [class*="text-[#f7f2e8]"] {
+          color: var(--catalog-dark-ink) !important;
+        }
+
+        .catalog-print-root [class*="text-[#8e7f6c]"] {
+          color: var(--catalog-muted) !important;
+        }
+
+        .catalog-print-root [class*="border-[#d8c9b0]"],
+        .catalog-print-root [class*="border-[#3a3024]"] {
+          border-color: var(--catalog-border) !important;
+        }
+
+        .catalog-print-root [class*="bg-[#eee6d8]"] {
+          background: var(--catalog-image-bg) !important;
+        }
+
+        .catalog-theme-contemporary .catalog-page {
+          padding: 10mm 12mm 12mm 16mm;
+        }
+
+        .catalog-theme-contemporary .catalog-page::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 4mm;
+          height: 100%;
+          background: var(--catalog-accent);
+        }
+
+        .catalog-theme-contemporary .catalog-page h1,
+        .catalog-theme-contemporary .catalog-page h2,
+        .catalog-theme-contemporary .catalog-page h3 {
+          font-weight: 700 !important;
+          letter-spacing: -0.035em;
+        }
+
+        .catalog-theme-contemporary .catalog-small-caps {
+          letter-spacing: 0.22em;
+          font-weight: 700;
+        }
+
+        .catalog-theme-essential .catalog-page {
+          padding: 16mm;
+        }
+
+        .catalog-theme-essential .catalog-page-dark {
+          border: 1px solid var(--catalog-border);
+        }
+
+        .catalog-theme-essential .catalog-small-caps {
+          letter-spacing: 0.28em;
+        }
+
+        .catalog-theme-noir .catalog-page {
+          box-shadow: inset 0 0 0 1px var(--catalog-border);
+        }
+
+        .catalog-theme-noir .catalog-page [class*="bg-white"] {
+          background: #ffffff !important;
+        }
+
+        .catalog-theme-modernist_78 .catalog-page {
+          padding-top: 18mm;
+        }
+
+        .catalog-theme-modernist_78 .catalog-page::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 46mm;
+          height: 7mm;
+          background: var(--catalog-accent);
+        }
+
+        .catalog-theme-modernist_78 .catalog-page::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 46mm;
+          width: 24mm;
+          height: 7mm;
+          background: #d9a63d;
+        }
+
+        .catalog-theme-modernist_78 .catalog-page h1,
+        .catalog-theme-modernist_78 .catalog-page h2,
+        .catalog-theme-modernist_78 .catalog-page h3 {
+          font-weight: 700 !important;
+          letter-spacing: -0.025em;
+        }
+
+        .catalog-theme-preview {
+          height: 92px;
+          overflow: hidden;
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.08);
+          position: relative;
+        }
+
+        .catalog-theme-preview::before,
+        .catalog-theme-preview::after {
+          content: "";
+          position: absolute;
+        }
+
+        .catalog-theme-preview-classic {
+          background: linear-gradient(90deg, #15120e 0 39%, #f7f2e8 39% 100%);
+        }
+        .catalog-theme-preview-classic::before {
+          left: 12px; top: 15px; width: 54px; height: 5px; background: #b9905b;
+          box-shadow: 0 13px 0 #f7f2e8, 0 24px 0 #d8c9b0;
+        }
+        .catalog-theme-preview-classic::after {
+          right: 16px; top: 15px; width: 78px; height: 55px; border: 1px solid #d8c9b0; background: #eee6d8;
+        }
+
+        .catalog-theme-preview-contemporary {
+          background: #ffffff;
+          border-left: 10px solid #2246ff;
+        }
+        .catalog-theme-preview-contemporary::before {
+          left: 16px; top: 14px; width: 115px; height: 10px; background: #0b0b0b;
+          box-shadow: 0 18px 0 #0b0b0b, 0 34px 0 #c7c7c7;
+        }
+        .catalog-theme-preview-contemporary::after {
+          right: 13px; bottom: 12px; width: 58px; height: 46px; background: #f1f2f6; border: 2px solid #0b0b0b;
+        }
+
+        .catalog-theme-preview-essential {
+          background: #fbfaf7;
+        }
+        .catalog-theme-preview-essential::before {
+          left: 18px; right: 18px; top: 20px; height: 1px; background: #b7b1aa;
+          box-shadow: 0 22px 0 #dedad4, 0 44px 0 #dedad4;
+        }
+        .catalog-theme-preview-essential::after {
+          left: 18px; bottom: 12px; width: 46px; height: 6px; background: #77736d;
+        }
+
+        .catalog-theme-preview-noir {
+          background: #0b0b09;
+          box-shadow: inset 0 0 0 1px #4a4339;
+        }
+        .catalog-theme-preview-noir::before {
+          left: 16px; top: 14px; width: 75px; height: 5px; background: #bd9561;
+          box-shadow: 0 17px 0 #f5efe5, 0 31px 0 #b9ad9d;
+        }
+        .catalog-theme-preview-noir::after {
+          right: 15px; top: 14px; width: 62px; height: 58px; border: 1px solid #4a4339; background: #1b1a17;
+        }
+
+        .catalog-theme-preview-modernist {
+          background: #eee3cd;
+        }
+        .catalog-theme-preview-modernist::before {
+          left: 0; top: 0; width: 72px; height: 11px; background: #c84f2a;
+          box-shadow: 72px 0 0 #d9a63d;
+        }
+        .catalog-theme-preview-modernist::after {
+          left: 16px; top: 28px; width: 122px; height: 10px; background: #273238;
+          box-shadow: 0 17px 0 #273238, 102px 35px 0 -1px #c84f2a;
         }
 
         .catalog-page {
@@ -691,14 +1077,14 @@ export default function GalleryCatalogBuilder({
             <p>
               <T
                 textKey="catalog.plan.freeNotice"
-                fallback="Piano Free: puoi configurare e vedere l’anteprima del catalogo, ma l’export PDF è disponibile dal piano Pro."
+                fallback="Piano Free: puoi configurare e vedere l’anteprima Classic del catalogo, ma l’export PDF è disponibile dal piano Pro."
               />
             </p>
           ) : normalizedPlan === "pro" ? (
             <p>
               <T
                 textKey="catalog.plan.proNotice"
-                fallback="Piano Pro: puoi esportare il catalogo PDF nel layout Elegante, una opera per pagina, con branding MostraSpace."
+                fallback="Piano Pro: puoi esportare il catalogo con il layout Elegante e lo stile MostraSpace Classic. Layout e stili avanzati si sbloccano dal Business."
               />
             </p>
           ) : (
@@ -707,7 +1093,7 @@ export default function GalleryCatalogBuilder({
               {getPlanLabel(normalizedPlan)}:{" "}
               <T
                 textKey="catalog.plan.allLayoutsNotice"
-                fallback="puoi esportare il catalogo PDF con tutti i layout: Elegante, Compatto e Listino."
+                fallback="puoi usare tutti i layout e tutti i 5 stili grafici: Classic, Contemporary, Essential, Noir e Modernist 78."
               />
             </p>
           )}
@@ -899,6 +1285,99 @@ export default function GalleryCatalogBuilder({
                 </div>
               </div>
 
+              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-neutral-600">
+                      <T
+                        textKey="catalog.theme.label"
+                        fallback="Stile grafico"
+                      />
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-neutral-500">
+                      <T
+                        textKey="catalog.theme.description"
+                        fallback="Lo stile grafico cambia colori, tipografia e carattere editoriale senza modificare il layout scelto."
+                      />
+                    </p>
+                  </div>
+
+                  <span className="shrink-0 rounded-full border border-neutral-800 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-neutral-500">
+                    <T
+                      textKey="catalog.theme.businessUnlock"
+                      fallback="5 stili da Business"
+                    />
+                  </span>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {catalogThemes.map((theme) => {
+                    const isAllowed = canUseCatalogTheme(normalizedPlan, theme.key);
+                    const isSelected = catalogTheme === theme.key;
+
+                    return (
+                      <button
+                        key={theme.key}
+                        type="button"
+                        disabled={!isAllowed}
+                        onClick={() => {
+                          if (!isAllowed) {
+                            return;
+                          }
+
+                          setCatalogTheme(theme.key);
+                        }}
+                        className={
+                          isSelected
+                            ? "overflow-hidden rounded-2xl border border-amber-600 bg-amber-950/20 p-3 text-left"
+                            : isAllowed
+                              ? "overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900 p-3 text-left transition hover:border-neutral-600"
+                              : "cursor-not-allowed overflow-hidden rounded-2xl border border-neutral-900 bg-neutral-950 p-3 text-left opacity-45"
+                        }
+                      >
+                        <div
+                          className={`catalog-theme-preview ${theme.previewClassName}`}
+                          aria-hidden="true"
+                        />
+
+                        <div className="mt-3 flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-neutral-100">
+                              <T
+                                textKey={theme.labelKey}
+                                fallback={theme.labelFallback}
+                              />
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-neutral-500">
+                              <T
+                                textKey={theme.descriptionKey}
+                                fallback={theme.descriptionFallback}
+                              />
+                            </p>
+                          </div>
+
+                          {theme.key === "classic" ? (
+                            <span className="shrink-0 rounded-full border border-neutral-700 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-neutral-400">
+                              <T
+                                textKey="catalog.theme.proBadge"
+                                fallback="Pro"
+                              />
+                            </span>
+                          ) : !isAllowed ? (
+                            <span className="shrink-0 rounded-full border border-neutral-800 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-neutral-500">
+                              <T
+                                textKey="catalog.theme.businessRequired"
+                                fallback="Business"
+                              />
+                            </span>
+                          ) : null}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <label className="flex cursor-pointer items-start gap-3 text-sm text-neutral-300">
                   <input
@@ -995,6 +1474,17 @@ export default function GalleryCatalogBuilder({
                   />{" "}
                   {getLayoutLabel(layoutVariant)}
                 </p>
+
+                <p className="mt-1 text-xs leading-5 text-neutral-500">
+                  <T
+                    textKey="catalog.summary.selectedTheme"
+                    fallback="Stile grafico:"
+                  />{" "}
+                  <T
+                    textKey={selectedThemeDefinition.labelKey}
+                    fallback={selectedThemeDefinition.labelFallback}
+                  />
+                </p>
               </div>
             </div>
           </section>
@@ -1007,14 +1497,14 @@ export default function GalleryCatalogBuilder({
             <p className="text-sm leading-6 text-neutral-400">
               <T
                 textKey="catalog.preview.description"
-                fallback="L’anteprima qui sotto cambia in base al layout selezionato: Elegante, Compatto o Listino."
+                fallback="L’anteprima qui sotto combina il layout selezionato con lo stile grafico scelto."
               />
             </p>
           </section>
         </div>
       </div>
 
-      <div className="catalog-print-root">
+      <div className={`catalog-print-root catalog-theme-${allowedCatalogTheme}`}>
         <section className="catalog-page catalog-page-dark flex flex-col justify-between">
           <div>
             <p className="catalog-small-caps text-[#b9905b]">
