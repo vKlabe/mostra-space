@@ -937,8 +937,8 @@ export default async function DashboardGalleryDetailPage({
   title={gallery.title}
   subtitle={
     <T
-      textKey="dashboard.galleryDetail.header.subtitle"
-      fallback="Gestisci dati pubblici, opere collegate, template, pubblicazione e apertura dell’editor Unity WebGL."
+      textKey="dashboard.galleryDetail.header.subtitleClean"
+      fallback="Gestisci dati pubblici, opere collegate, template, pubblicazione e apertura dell’editor."
     />
   }
   activeSection="gallerie"
@@ -979,8 +979,8 @@ export default async function DashboardGalleryDetailPage({
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
             <T
-              textKey="dashboard.galleryDetail.actions.openUnityEditor"
-              fallback="Apri editor Unity"
+              textKey="dashboard.galleryDetail.actions.openEditor"
+              fallback="Apri editor"
             />
           </a>
 
@@ -1377,18 +1377,20 @@ export default async function DashboardGalleryDetailPage({
               </dd>
             </div>
 
-            <div>
-              <dt className="text-neutral-500">
-                <T
-                  textKey="dashboard.galleryDetail.limits.unitySceneKey"
-                  fallback="Unity scene key"
-                />
-              </dt>
+            {isAdmin && (
+              <div>
+                <dt className="text-neutral-500">
+                  <T
+                    textKey="dashboard.galleryDetail.limits.sceneKey"
+                    fallback="Chiave scena tecnica"
+                  />
+                </dt>
 
-              <dd className="mt-1 text-neutral-200">
-                {template?.unity_scene_key || "N/D"}
-              </dd>
-            </div>
+                <dd className="mt-1 text-neutral-200">
+                  {template?.unity_scene_key || "N/D"}
+                </dd>
+              </div>
+            )}
 
             <div>
               <dt className="text-neutral-500">
@@ -1843,97 +1845,99 @@ export default async function DashboardGalleryDetailPage({
         </div>
       </div>
 
-      <div className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-        <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-          <T
-            textKey="dashboard.galleryDetail.unity.label"
-            fallback="Unity readiness"
-          />
-        </p>
-
-        <h2 className="text-2xl font-medium">
-          <T
-            textKey="dashboard.galleryDetail.unity.title"
-            fallback="Dati pronti per il viewer 3D"
-          />
-        </h2>
-
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-          <T
-            textKey="dashboard.galleryDetail.unity.descriptionPrefix"
-            fallback="Ogni opera aggiunta qui crea una riga in"
-          />{" "}
-          <span className="text-neutral-100">gallery_artworks</span>.{" "}
-          <T
-            textKey="dashboard.galleryDetail.unity.descriptionMiddle"
-            fallback="Unity leggerà queste righe, scaricherà le immagini da"
-          />{" "}
-          <span className="text-neutral-100">image_url</span>{" "}
-          <T
-            textKey="dashboard.galleryDetail.unity.descriptionSuffix"
-            fallback="e creerà i quadri nello spazio 3D usando posizione, rotazione, scala, dimensioni espositive e cornici."
-          />
-        </p>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            href={`/unity-frame?galleryId=${gallery.id}&mode=visitor`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
-          >
+      {isAdmin && (
+        <div className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T
-              textKey="dashboard.galleryDetail.actions.viewerPreview"
-              fallback="Anteprima viewer 3D"
-            />
-          </a>
-
-          {gallery.status === "published" && (
-            <a
-              href={`/gallerie/${gallery.slug}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
-            >
-              <T
-                textKey="dashboard.galleryDetail.actions.openPublicPage"
-                fallback="Apri pagina pubblica"
-              />
-            </a>
-          )}
-
-          <a
-            href={`/dashboard/gallerie-editor/${gallery.id}`}
-            className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-          >
-            <T
-              textKey="dashboard.galleryDetail.actions.openUnityEditor"
-              fallback="Apri editor Unity"
-            />
-          </a>
-
-          <a
-            href={`/api/unity/galleries/${gallery.id}?mode=editor`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-          >
-            <T
-              textKey="dashboard.galleryDetail.actions.openUnityJson"
-              fallback="Apri JSON Unity"
-            />
-          </a>
-        </div>
-
-        {gallery.status !== "published" && (
-          <p className="mt-4 text-xs leading-5 text-neutral-500">
-            <T
-              textKey="dashboard.galleryDetail.unity.unpublishedNotice"
-              fallback="La pagina pubblica completa sarà disponibile dopo la pubblicazione. Puoi comunque usare l’anteprima viewer 3D per controllare l’allestimento in modalità visitatore."
+              textKey="dashboard.galleryDetail.technicalReadiness.label"
+              fallback="Readiness tecnica"
             />
           </p>
-        )}
-      </div>
+  
+          <h2 className="text-2xl font-medium">
+            <T
+              textKey="dashboard.galleryDetail.technicalReadiness.title"
+              fallback="Dati pronti per il viewer 3D"
+            />
+          </h2>
+  
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
+            <T
+              textKey="dashboard.galleryDetail.technicalReadiness.descriptionPrefix"
+              fallback="Ogni opera aggiunta qui crea una riga in"
+            />{" "}
+            <span className="text-neutral-100">gallery_artworks</span>.{" "}
+            <T
+              textKey="dashboard.galleryDetail.technicalReadiness.descriptionMiddle"
+              fallback="Il viewer 3D leggerà queste righe e scaricherà le immagini da"
+            />{" "}
+            <span className="text-neutral-100">image_url</span>{" "}
+            <T
+              textKey="dashboard.galleryDetail.technicalReadiness.descriptionSuffix"
+              fallback="e creerà i quadri nello spazio 3D usando posizione, rotazione, scala, dimensioni espositive e cornici."
+            />
+          </p>
+  
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a
+              href={`/unity-frame?galleryId=${gallery.id}&mode=visitor`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-full border border-blue-800 px-5 py-2 text-sm text-blue-200 transition hover:border-blue-500"
+            >
+              <T
+                textKey="dashboard.galleryDetail.actions.viewerPreview"
+                fallback="Anteprima viewer 3D"
+              />
+            </a>
+  
+            {gallery.status === "published" && (
+              <a
+                href={`/gallerie/${gallery.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex rounded-full border border-green-800 px-5 py-2 text-sm text-green-200 transition hover:border-green-500"
+              >
+                <T
+                  textKey="dashboard.galleryDetail.actions.openPublicPage"
+                  fallback="Apri pagina pubblica"
+                />
+              </a>
+            )}
+  
+            <a
+              href={`/dashboard/gallerie-editor/${gallery.id}`}
+              className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+            >
+              <T
+                textKey="dashboard.galleryDetail.actions.openEditor"
+                fallback="Apri editor"
+              />
+            </a>
+  
+            <a
+              href={`/api/unity/galleries/${gallery.id}?mode=editor`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            >
+              <T
+                textKey="dashboard.galleryDetail.actions.openTechnicalJson"
+                fallback="Apri JSON tecnico"
+              />
+            </a>
+          </div>
+  
+          {gallery.status !== "published" && (
+            <p className="mt-4 text-xs leading-5 text-neutral-500">
+              <T
+                textKey="dashboard.galleryDetail.technicalReadiness.unpublishedNotice"
+                fallback="La pagina pubblica completa sarà disponibile dopo la pubblicazione. Puoi comunque usare l’anteprima viewer 3D per controllare l’allestimento in modalità visitatore."
+              />
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-6">
         <DeleteGalleryButton

@@ -73,6 +73,10 @@ type FavoriteGalleryRow = {
   user_id: string;
 };
 
+type NotificationMuteRow = {
+  user_id: string;
+};
+
 type InviteProfile = {
   id: string;
   email: string | null;
@@ -404,8 +408,29 @@ async function createEventNotifications({
     (row) => row.user_id
   );
 
-  const recipientIds = Array.from(
+  const candidateRecipientIds = Array.from(
     new Set([...followerIds, ...favoriteUserIds].filter((id) => id !== ownerId))
+  );
+
+  if (candidateRecipientIds.length === 0) {
+    return;
+  }
+
+  const { data: muteRows, error: muteError } = await admin
+    .from("account_notification_mutes")
+    .select("user_id")
+    .eq("muted_profile_id", ownerId)
+    .in("user_id", candidateRecipientIds);
+
+  // Fail open so event creation is never blocked by the preference table.
+  const mutedUserIds = muteError
+    ? new Set<string>()
+    : new Set(
+        ((muteRows || []) as NotificationMuteRow[]).map((row) => row.user_id)
+      );
+
+  const recipientIds = candidateRecipientIds.filter(
+    (userId) => !mutedUserIds.has(userId)
   );
 
   if (recipientIds.length === 0) {

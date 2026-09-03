@@ -24,6 +24,11 @@ type FollowRow = {
   created_at: string;
 };
 
+type FollowerRow = {
+  follower_id: string;
+  created_at: string;
+};
+
 type FollowedProfile = {
   id: string;
   email: string | null;
@@ -255,6 +260,15 @@ export default async function DashboardSocialPage() {
       .map((id) => profileById.get(id))
       .filter(Boolean) as FollowedProfile[];
   }
+
+  const { data: followerRowsData } = await admin
+    .from("account_follows")
+    .select("follower_id, created_at")
+    .eq("following_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const followerRows = (followerRowsData || []) as FollowerRow[];
+  const followerCount = followerRows.length;
 
   const { data: favoriteGalleryRowsData } = await admin
     .from("favorite_galleries")
@@ -678,9 +692,12 @@ export default async function DashboardSocialPage() {
             </p>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <a
+                href="/dashboard/social/rete?tab=following"
+                className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
+              >
                 <p className="text-2xl font-semibold text-neutral-100">
-                  {followedProfiles.length}
+                  {followingIds.length}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">
                   <T
@@ -688,7 +705,22 @@ export default async function DashboardSocialPage() {
                     fallback="profili seguiti"
                   />
                 </p>
-              </div>
+              </a>
+
+              <a
+                href="/dashboard/social/rete?tab=followers"
+                className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
+              >
+                <p className="text-2xl font-semibold text-neutral-100">
+                  {followerCount}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  <T
+                    textKey="dashboard.social.summary.followers"
+                    fallback="ti seguono"
+                  />
+                </p>
+              </a>
 
               <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <p className="text-2xl font-semibold text-neutral-100">
@@ -714,7 +746,7 @@ export default async function DashboardSocialPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <div className="col-span-2 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
                 <p className="text-2xl font-semibold text-neutral-100">
                   {unreadNotificationCount}
                 </p>
@@ -762,12 +794,12 @@ export default async function DashboardSocialPage() {
               </div>
 
               <a
-                href="/profili"
+                href="/dashboard/social/rete?tab=following"
                 className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
               >
                 <T
-                  textKey="dashboard.social.community.findProfiles"
-                  fallback="Trova profili"
+                  textKey="dashboard.social.community.manageNetwork"
+                  fallback="Gestisci rete"
                 />
               </a>
             </div>
@@ -1040,12 +1072,12 @@ export default async function DashboardSocialPage() {
               </div>
 
               <a
-                href="/gallerie"
+                href="/account/opere-preferite"
                 className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
               >
                 <T
-                  textKey="dashboard.social.favoriteArtworks.explore"
-                  fallback="Esplora"
+                  textKey="dashboard.social.favoriteArtworks.viewFavorites"
+                  fallback="Vedi opere preferite"
                 />
               </a>
             </div>

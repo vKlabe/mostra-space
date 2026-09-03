@@ -6,6 +6,10 @@ type FollowerRow = {
   follower_id: string;
 };
 
+type NotificationMuteRow = {
+  user_id: string;
+};
+
 type ActorProfile = {
   id: string;
   display_name: string | null;
@@ -29,13 +33,34 @@ async function getFollowers(admin: AdminClient, profileId: string) {
     .select("follower_id")
     .eq("following_id", profileId);
 
-  return Array.from(
+  const followerIds = Array.from(
     new Set(
       ((data || []) as FollowerRow[])
         .map((row) => row.follower_id)
         .filter((id) => id && id !== profileId)
     )
   );
+
+  if (followerIds.length === 0) {
+    return followerIds;
+  }
+
+  const { data: muteRows, error: muteError } = await admin
+    .from("account_notification_mutes")
+    .select("user_id")
+    .eq("muted_profile_id", profileId)
+    .in("user_id", followerIds);
+
+  // Fail open: a temporary/migration error must never break publication.
+  if (muteError) {
+    return followerIds;
+  }
+
+  const mutedUserIds = new Set(
+    ((muteRows || []) as NotificationMuteRow[]).map((row) => row.user_id)
+  );
+
+  return followerIds.filter((userId) => !mutedUserIds.has(userId));
 }
 
 async function getActor(admin: AdminClient, profileId: string) {
