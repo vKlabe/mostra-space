@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 import ProfileStatusComposer from "@/components/social/ProfileStatusComposer";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type Profile = {
   id: string;
@@ -103,6 +104,7 @@ type GalleryEvent = {
   description: string | null;
   starts_at: string;
   ends_at: string;
+  timezone: string;
   status: "scheduled" | "live" | "completed" | "cancelled";
   access_mode: "public" | "password" | "invite_only" | "private_link";
 };
@@ -144,20 +146,11 @@ function getInitial(name: string | null | undefined) {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  return <LocalDateTime value={value} format="date" />;
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("it-IT", {
-    day: "2-digit",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatDateTime(value: string, timeZone?: string | null) {
+  return <LocalDateTime value={value} format="datetime-long-no-year" timeZone={timeZone} />;
 }
 
 function normalizeGalleryRelation(
@@ -443,7 +436,7 @@ export default async function DashboardSocialPage() {
       ? await admin
           .from("gallery_events")
           .select(
-            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+            "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode"
           )
           .in("owner_id", followingIds)
           .in("status", ["scheduled", "live"])
@@ -458,7 +451,7 @@ export default async function DashboardSocialPage() {
       ? await admin
           .from("gallery_events")
           .select(
-            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+            "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode"
           )
           .in("gallery_id", favoriteGalleryIds)
           .in("status", ["scheduled", "live"])
@@ -483,7 +476,7 @@ export default async function DashboardSocialPage() {
       ? await admin
           .from("gallery_events")
           .select(
-            "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+            "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode"
           )
           .in("id", invitedEventIds)
           .in("status", ["scheduled", "live"])
@@ -909,7 +902,7 @@ export default async function DashboardSocialPage() {
                       className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
                     >
                       <p className="text-xs text-amber-300">
-                        {formatDateTime(event.starts_at)}
+                        {formatDateTime(event.starts_at, event.timezone)}
                       </p>
 
                       <div className="mt-2 flex flex-wrap items-center gap-2">

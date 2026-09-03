@@ -1,6 +1,7 @@
 import AdminShell from "@/components/admin/AdminShell";
 import AdminUserControls from "@/components/admin/AdminUserControls";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type UserRole = "user" | "gallerist" | "admin";
 type UserPlan = "free" | "pro" | "business" | "diamond" | "institution";
@@ -76,7 +77,7 @@ function formatDate(value: string | null) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("it-IT");
+  return <LocalDateTime value={value} format="datetime" fallback="-" />;
 }
 
 function formatBytes(bytes: number) {

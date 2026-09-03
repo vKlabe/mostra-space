@@ -5,6 +5,7 @@ import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ComponentProps } from "react";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type TTextKey = ComponentProps<typeof T>["textKey"];
 
@@ -86,6 +87,7 @@ type GalleryEventRow = {
   status: string;
   starts_at: string;
   ends_at: string;
+  timezone: string;
   created_at: string;
 };
 
@@ -216,22 +218,9 @@ function formatPercent(value: number) {
   return `${value.toFixed(1).replace(".", ",")}%`;
 }
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "N/D";
-  }
-
-  try {
-    return new Date(value).toLocaleString("it-IT", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "N/D";
-  }
+function formatDateTime(value: string | null | undefined, timeZone?: string | null) {
+  if (!value) return "N/D";
+  return <LocalDateTime value={value} format="datetime-medium" timeZone={timeZone} fallback="N/D" />;
 }
 
 function formatRangeLabel(range: RangeOption) {
@@ -562,7 +551,7 @@ export default async function DashboardAnalyticsPage({
 
   const { data: eventsData, error: eventsError } = await admin
     .from("gallery_events")
-    .select("id, gallery_id, title, status, starts_at, ends_at, created_at")
+    .select("id, gallery_id, title, status, starts_at, ends_at, timezone, created_at")
     .eq("owner_id", user.id)
     .order("starts_at", { ascending: false })
     .range(0, 9999);
@@ -1424,7 +1413,7 @@ export default async function DashboardAnalyticsPage({
                               fallback="Galleria non trovata"
                             />
                           )}{" "}
-                          · {formatDateTime(event.starts_at)}
+                          · {formatDateTime(event.starts_at, event.timezone)}
                         </p>
                       </div>
 

@@ -3,6 +3,7 @@ import AdminGalleryDeleteButton from "@/components/admin/AdminGalleryDeleteButto
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import PublicGalleryShowcaseForm from "@/components/admin/PublicGalleryShowcaseForm";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type GalleryStatus = "draft" | "published" | "archived";
 
@@ -51,7 +52,7 @@ function formatDate(value: string | null) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("it-IT");
+  return <LocalDateTime value={value} format="datetime" fallback="-" />;
 }
 
 function getStatusLabel(status: GalleryStatus) {

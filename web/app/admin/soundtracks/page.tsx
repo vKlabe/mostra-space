@@ -2,6 +2,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import AdminCreateSoundtrackForm from "@/components/admin/AdminCreateSoundtrackForm";
 import AdminSoundtrackControls from "@/components/admin/AdminSoundtrackControls";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type GallerySoundtrack = {
   id: string;
@@ -26,7 +27,7 @@ function formatDate(value: string | null) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("it-IT");
+  return <LocalDateTime value={value} format="datetime" fallback="-" />;
 }
 
 function formatDuration(seconds: number | null) {

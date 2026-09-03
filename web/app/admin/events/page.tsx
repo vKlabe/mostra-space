@@ -2,6 +2,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import AdminEventCurationControls from "@/components/admin/AdminEventCurationControls";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 export const dynamic = "force-dynamic";
 
@@ -47,11 +48,8 @@ type LiveGuidedVisit = {
   voice_mode: string | null;
 };
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("it-IT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+function formatDateTime(value: string, timeZone?: string | null) {
+  return <LocalDateTime value={value} format="datetime-medium" timeZone={timeZone} />;
 }
 
 function getProfileName(profile: Profile | undefined) {
@@ -336,7 +334,7 @@ export default async function AdminEventsPage() {
                       </h3>
 
                       <p className="mt-2 text-sm text-amber-200">
-                        {formatDateTime(event.starts_at)} → {formatDateTime(event.ends_at)}
+                        {formatDateTime(event.starts_at, event.timezone)} → {formatDateTime(event.ends_at, event.timezone)}
                       </p>
 
                       <p className="mt-2 text-sm text-neutral-500">

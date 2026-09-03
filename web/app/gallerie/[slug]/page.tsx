@@ -13,6 +13,7 @@ import FavoriteGalleryButton from "@/components/galleries/FavoriteGalleryButton"
 import FavoriteArtworkButton from "@/components/galleries/FavoriteArtworkButton";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type PublicGalleryPageProps = {
   params: Promise<{
@@ -144,11 +145,7 @@ function formatPublishedDate(value: string | null) {
     return null;
   }
 
-  return new Date(value).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  return <LocalDateTime value={value} format="date" />;
 }
 
 function GalleryImagePreview({

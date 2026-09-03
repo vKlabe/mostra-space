@@ -7,6 +7,7 @@ import {
   normalizeTemplateAccessPlan,
   type TemplateAccessPlan,
 } from "@/lib/plans";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type TemplatePlan = TemplateAccessPlan;
 
@@ -50,7 +51,7 @@ function formatDate(value: string | null) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("it-IT");
+  return <LocalDateTime value={value} format="datetime" fallback="-" />;
 }
 
 function normalizeTemplatePlan(value: unknown): TemplatePlan {

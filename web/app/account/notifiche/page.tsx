@@ -6,6 +6,7 @@ import NotificationReadButton from "@/components/account/NotificationReadButton"
 import NotificationMarkAllReadButton from "@/components/account/NotificationMarkAllReadButton";
 import NotificationOpenLink from "@/components/account/NotificationOpenLink";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type Notification = {
   id: string;
@@ -32,6 +33,7 @@ type GalleryEvent = {
   id: string;
   title: string;
   starts_at: string;
+  timezone: string;
   gallery_id: string;
 };
 
@@ -42,11 +44,8 @@ type Gallery = {
   status: "draft" | "published" | "archived";
 };
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString("it-IT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+function formatDate(value: string, timeZone?: string | null) {
+  return <LocalDateTime value={value} format="datetime-medium" timeZone={timeZone} />;
 }
 
 export default async function AccountNotificationsPage() {
@@ -98,7 +97,7 @@ export default async function AccountNotificationsPage() {
     eventIds.length > 0
       ? await admin
           .from("gallery_events")
-          .select("id, title, starts_at, gallery_id")
+          .select("id, title, starts_at, timezone, gallery_id")
           .in("id", eventIds)
       : { data: [] };
 
@@ -245,7 +244,7 @@ export default async function AccountNotificationsPage() {
                             textKey="account.notifications.event.date"
                             fallback="Evento:"
                           />{" "}
-                          {formatDate(event.starts_at)}
+                          {formatDate(event.starts_at, event.timezone)}
                         </p>
                       )}
 

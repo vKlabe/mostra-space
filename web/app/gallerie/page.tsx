@@ -7,6 +7,7 @@ import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type PublicGalleriesIndexPageProps = {
   searchParams?: Promise<{
@@ -142,15 +143,8 @@ function sortArchiveGalleries(
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  return new Date(value).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  if (!value) return null;
+  return <LocalDateTime value={value} format="date" />;
 }
 
 function getInitials(title: string) {

@@ -1,6 +1,7 @@
 import AdminInquiryControls from "@/components/admin/AdminInquiryControls";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type InquiryStatus = "new" | "read" | "closed";
 
@@ -46,7 +47,7 @@ function formatDate(value: string | null) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("it-IT");
+  return <LocalDateTime value={value} format="datetime" fallback="-" />;
 }
 
 function getStatusLabel(status: InquiryStatus) {

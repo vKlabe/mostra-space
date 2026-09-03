@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type FollowRow = {
   following_id: string;
@@ -24,6 +25,7 @@ type GalleryEvent = {
   description: string | null;
   starts_at: string;
   ends_at: string;
+  timezone: string;
   status: "scheduled" | "live" | "completed" | "cancelled";
   access_mode: "public" | "password" | "invite_only" | "private_link";
 };
@@ -44,14 +46,8 @@ type Profile = {
   profile_slug: string | null;
 };
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString("it-IT", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatDate(value: string, timeZone?: string | null) {
+  return <LocalDateTime value={value} format="datetime-weekday-no-year" timeZone={timeZone} />;
 }
 
 function getProfileName(profile: Profile | undefined) {
@@ -117,7 +113,7 @@ export default async function AccountCalendarPage() {
       admin
         .from("gallery_events")
         .select(
-          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+          "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode"
         )
         .in("owner_id", followedProfileIds)
         .in("status", ["scheduled", "live"])
@@ -132,7 +128,7 @@ export default async function AccountCalendarPage() {
       admin
         .from("gallery_events")
         .select(
-          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+          "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode"
         )
         .in("gallery_id", favoriteGalleryIds)
         .in("status", ["scheduled", "live"])
@@ -146,7 +142,7 @@ export default async function AccountCalendarPage() {
     admin
       .from("gallery_events")
       .select(
-        "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+        "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode"
       )
       .eq("owner_id", user.id)
       .in("status", ["scheduled", "live"])
@@ -169,7 +165,7 @@ export default async function AccountCalendarPage() {
       admin
         .from("gallery_events")
         .select(
-          "id, owner_id, gallery_id, title, description, starts_at, ends_at, status, access_mode"
+          "id, owner_id, gallery_id, title, description, starts_at, ends_at, timezone, status, access_mode"
         )
         .in("id", invitedEventIds)
         .in("status", ["scheduled", "live"])
@@ -346,7 +342,7 @@ export default async function AccountCalendarPage() {
 
                   <div>
                     <p className="text-sm text-amber-200">
-                      {formatDate(event.starts_at)}
+                      {formatDate(event.starts_at, event.timezone)}
                     </p>
 
                     <div className="mt-2 flex flex-wrap items-center gap-2">

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type PublicEventsPageProps = {
   searchParams?: Promise<{
@@ -74,15 +75,8 @@ function getProfileName(profile: Profile | undefined) {
   );
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString("it-IT", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatDate(value: string, timeZone?: string | null) {
+  return <LocalDateTime value={value} format="datetime-weekday" timeZone={timeZone} />;
 }
 
 function getAccessBadge(mode: EventAccessMode) {
@@ -388,7 +382,7 @@ export default async function PublicEventsPage({
           </h2>
 
           <p className="mt-3 text-sm font-medium text-amber-200">
-            {formatDate(event.starts_at)}
+            {formatDate(event.starts_at, event.timezone)}
           </p>
 
           <p className="mt-2 text-sm text-neutral-500">

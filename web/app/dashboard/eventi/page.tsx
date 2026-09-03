@@ -7,6 +7,7 @@ import GalleryEventActions from "@/components/events/GalleryEventActions";
 import GalleryEventInviteManager from "@/components/events/GalleryEventInviteManager";
 import T from "@/components/i18n/T";
 import { PLAN_LIMITS, normalizePlanName, type PlanName } from "@/lib/plans";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type Profile = {
   id: string;
@@ -59,11 +60,8 @@ type EventInviteRow = {
   event_id: string;
 };
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("it-IT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+function formatDateTime(value: string, timeZone?: string | null) {
+  return <LocalDateTime value={value} format="datetime-medium" timeZone={timeZone} />;
 }
 
 function getEventStatusTranslation(status: GalleryEvent["status"]) {
@@ -473,7 +471,7 @@ export default async function DashboardEventsPage() {
                       </h3>
 
                       <p className="mt-2 text-sm text-amber-200">
-                        {formatDateTime(event.starts_at)}
+                        {formatDateTime(event.starts_at, event.timezone)}
                       </p>
 
                       {(event.access_mode === "invite_only" || event.access_mode === "private_link") && (
@@ -588,7 +586,7 @@ export default async function DashboardEventsPage() {
                             fallback="Galleria rimossa"
                           />
                         )}{" "}
-                        · {formatDateTime(event.starts_at)} ·{" "}
+                        · {formatDateTime(event.starts_at, event.timezone)} ·{" "}
                         <T
                           textKey={getEventStatusTranslation(event.status).textKey}
                           fallback={getEventStatusTranslation(event.status).fallback}

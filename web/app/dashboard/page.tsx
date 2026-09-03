@@ -5,6 +5,7 @@ import T from "@/components/i18n/T";
 import PlanUsageCard from "@/components/dashboard/PlanUsageCard";
 import { normalizePlanName } from "@/lib/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type Profile = {
   id: string;
@@ -230,19 +231,8 @@ function getCurrentMonthStart() {
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "N/D";
-  }
-
-  try {
-    return new Date(value).toLocaleDateString("it-IT", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return "N/D";
-  }
+  if (!value) return "N/D";
+  return <LocalDateTime value={value} format="date-medium" fallback="N/D" />;
 }
 
 function formatStorage(bytes: number) {
@@ -540,7 +530,7 @@ export default async function DashboardPage() {
                   textKey="dashboard.community.recentGalleries.visitedAt"
                   fallback="Visitata il"
                 />{" "}
-                {new Date(gallery.visited_at).toLocaleDateString("it-IT")}
+                <LocalDateTime value={gallery.visited_at} format="date-short" />
               </p>
             </a>
           ))}
@@ -636,7 +626,7 @@ export default async function DashboardPage() {
                     textKey="dashboard.community.sentInquiries.sentAt"
                     fallback="Inviata il"
                   />{" "}
-                  {new Date(inquiry.created_at).toLocaleDateString("it-IT")}
+                  <LocalDateTime value={inquiry.created_at} format="date-short" />
                 </p>
               </a>
             );
@@ -709,7 +699,7 @@ export default async function DashboardPage() {
                   textKey="dashboard.community.favoriteArtworks.savedAt"
                   fallback="Salvata il"
                 />{" "}
-                {new Date(artwork.saved_at).toLocaleDateString("it-IT")}
+                <LocalDateTime value={artwork.saved_at} format="date-short" />
               </p>
             </a>
           ))}
@@ -761,7 +751,7 @@ export default async function DashboardPage() {
                   textKey="dashboard.community.favoriteGalleries.savedAt"
                   fallback="Salvata il"
                 />{" "}
-                {new Date(gallery.saved_at).toLocaleDateString("it-IT")}
+                <LocalDateTime value={gallery.saved_at} format="date-short" />
               </p>
             </a>
           ))}

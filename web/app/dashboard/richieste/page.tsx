@@ -8,6 +8,7 @@ import EmptyStateCard from "@/components/system/EmptyStateCard";
 import T from "@/components/i18n/T";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import { getPlanLimits, normalizePlanName } from "@/lib/plans";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type DashboardInquiriesPageProps = {
   searchParams?: Promise<{
@@ -586,9 +587,7 @@ export default async function DashboardInquiriesPage({
                             />{" "}
                           </dt>
                           <dd className="inline">
-                            {new Date(inquiry.created_at).toLocaleString(
-                              "it-IT"
-                            )}
+                            <LocalDateTime value={inquiry.created_at} format="datetime" />
                           </dd>
                         </div>
                       </dl>

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import UnityGalleryViewer from "@/components/unity/UnityGalleryViewer";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type DashboardGalleryUnityEditorPageProps = {
   params: Promise<{
@@ -66,17 +67,7 @@ function formatDate(value: string | null) {
     return "N/D";
   }
 
-  try {
-    return new Date(value).toLocaleString("it-IT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "N/D";
-  }
+  return <LocalDateTime value={value} format="datetime" fallback="N/D" />;
 }
 
 export default async function DashboardGalleryUnityEditorPage({

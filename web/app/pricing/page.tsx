@@ -13,6 +13,7 @@ import {
   normalizePlanName,
   type PlanName,
 } from "@/lib/plans";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 export const dynamic = "force-dynamic";
 
@@ -259,15 +260,8 @@ function getCatalogPdfContent(plan: PlanName) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  if (!value) return null;
+  return <LocalDateTime value={value} format="date-short" />;
 }
 
 function isStripeCheckoutPlan(plan: PlanName): plan is StripeCheckoutPlan {

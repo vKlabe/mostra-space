@@ -10,6 +10,7 @@ import {
   type PlanName,
 } from "@/lib/plans";
 import CustomerPortalButton from "@/components/billing/CustomerPortalButton";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type PlanUsageCardProps = {
   plan: PlanName | string | null | undefined;
@@ -62,15 +63,8 @@ function UsageRow({
 }
 
 function formatBillingDate(value?: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  if (!value) return null;
+  return <LocalDateTime value={value} format="date-short" />;
 }
 
 export default function PlanUsageCard({

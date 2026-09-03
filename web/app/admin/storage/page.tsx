@@ -1,5 +1,6 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type Artwork = {
   id: string;
@@ -41,7 +42,7 @@ function formatDate(value: string | null) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("it-IT");
+  return <LocalDateTime value={value} format="datetime" fallback="-" />;
 }
 
 function getOwnerDisplayName(profile: Profile | undefined) {

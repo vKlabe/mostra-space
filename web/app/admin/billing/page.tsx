@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 export const dynamic = "force-dynamic";
 
@@ -39,29 +40,13 @@ type WebhookEvent = {
 };
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  if (!value) return "—";
+  return <LocalDateTime value={value} format="datetime" />;
 }
 
 function formatShortDate(value?: string | null) {
-  if (!value) {
-    return "—";
-  }
-
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  if (!value) return "—";
+  return <LocalDateTime value={value} format="date-short" />;
 }
 
 function getDisplayName(profile: BillingProfile) {

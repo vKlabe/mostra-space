@@ -15,6 +15,7 @@ import {
   normalizePlanName,
   type PlanName,
 } from "@/lib/plans";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type DashboardGalleriesPageProps = {
   searchParams?: Promise<{
@@ -688,9 +689,7 @@ export default async function DashboardGalleriesPage({
                               />{" "}
                             </dt>
                             <dd className="inline">
-                              {new Date(gallery.created_at).toLocaleString(
-                                "it-IT"
-                              )}
+                              <LocalDateTime value={gallery.created_at} format="datetime" />
                             </dd>
                           </div>
 
@@ -703,9 +702,7 @@ export default async function DashboardGalleriesPage({
                                 />{" "}
                               </dt>
                               <dd className="inline">
-                                {new Date(gallery.published_at).toLocaleString(
-                                  "it-IT"
-                                )}
+                                <LocalDateTime value={gallery.published_at} format="datetime" />
                               </dd>
                             </div>
                           )}

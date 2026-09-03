@@ -1,6 +1,7 @@
 import AdminShell from "@/components/admin/AdminShell";
 import AdminLiveGuidedVisitControls from "@/components/admin/AdminLiveGuidedVisitControls";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type AccessMode = "public" | "password" | "invite_only" | "private_link";
 type VoiceMode = "owner_only" | "everyone" | "request_to_speak";
@@ -64,15 +65,9 @@ type LiveSetting = {
   owner_plan_required: string | null;
 };
 
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Date(value).toLocaleString("it-IT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+function formatDateTime(value: string | null, timeZone?: string | null) {
+  if (!value) return "-";
+  return <LocalDateTime value={value} format="datetime-medium" timeZone={timeZone} fallback="-" />;
 }
 
 function getProfileName(profile: Profile | undefined) {
@@ -504,8 +499,8 @@ const settings = (settingsResult.data || []) as unknown as LiveSetting[];
                       </h3>
 
                       <p className="mt-2 text-sm text-amber-200">
-                        {formatDateTime(liveEvent.starts_at)} →{" "}
-                        {formatDateTime(liveEvent.ends_at)} ·{" "}
+                        {formatDateTime(liveEvent.starts_at, liveEvent.timezone)} →{" "}
+                        {formatDateTime(liveEvent.ends_at, liveEvent.timezone)} ·{" "}
                         {liveEvent.timezone || "Europe/Rome"}
                       </p>
 

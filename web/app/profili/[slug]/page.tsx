@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import T from "@/components/i18n/T";
 import ProfileStatusLikeButton from "@/components/social/ProfileStatusLikeButton";
 import { DIRECT_MESSAGES_TERMS_VERSION } from "@/lib/messages/directMessages";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type PublicProfilePageProps = {
   params: Promise<{
@@ -117,12 +118,7 @@ function formatPrice(price: number | string | null, currency: string | null) {
 }
 
 function formatStatusDate(value: string) {
-  return new Date(value).toLocaleString(undefined, {
-    day: "2-digit",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return <LocalDateTime value={value} format="datetime-long-no-year" />;
 }
 
 function normalizeExternalUrl(value: string | null) {

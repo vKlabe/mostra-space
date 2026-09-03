@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type Profile = {
   id: string;
@@ -55,11 +56,7 @@ function normalizeGalleryRelation(
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  return <LocalDateTime value={value} format="date" />;
 }
 
 export default async function AccountFavoriteArtworksPage() {

@@ -3,6 +3,7 @@ import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
 import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import LocalDateTime from "@/components/time/LocalDateTime";
 
 type DashboardArtworkDetailPageProps = {
   params: Promise<{
@@ -81,7 +82,7 @@ function formatDate(value: string | null) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("it-IT");
+  return <LocalDateTime value={value} format="datetime" fallback="-" />;
 }
 
 function formatBytes(bytes: number | null) {
