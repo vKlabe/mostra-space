@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import T from "@/components/i18n/T";
+import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 
 type ArtworkInventoryItem = {
   id: string;
@@ -345,7 +346,7 @@ export default function ArtworkInventoryTable({
         <div>
           {artworks.map((artwork) => {
             const draft = drafts[artwork.id] || toDraft(artwork);
-            const imageUrl = artwork.thumbnail_url || artwork.image_url;
+            const imageUrl = getArtworkThumbnailUrl(artwork);
             const isBusy =
               savingId === artwork.id ||
               deletingId === artwork.id ||
@@ -364,6 +365,8 @@ export default function ArtworkInventoryTable({
                           <img
                             src={imageUrl}
                             alt={artwork.title}
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover"
                           />
                         ) : (

@@ -5,6 +5,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 import ProfileStatusComposer from "@/components/social/ProfileStatusComposer";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 
 type Profile = {
   id: string;
@@ -1102,10 +1103,12 @@ export default async function DashboardSocialPage() {
                     className="flex gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
                   >
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-neutral-800 bg-black">
-                      {artwork.thumbnail_url || artwork.image_url ? (
+                      {getArtworkThumbnailUrl(artwork) ? (
   <img
-    src={artwork.thumbnail_url || artwork.image_url || ""}
+    src={getArtworkThumbnailUrl(artwork)}
     alt={artwork.title}
+    loading="lazy"
+    decoding="async"
     className="h-full w-full object-cover"
   />
 ) : null}

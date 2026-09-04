@@ -4,6 +4,7 @@ import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { getArtworkDetailUrl } from "@/lib/artworks/imageUrls";
 
 type DashboardArtworkDetailPageProps = {
   params: Promise<{
@@ -36,6 +37,8 @@ type Artwork = {
   description: string | null;
   image_url: string;
   thumbnail_url: string | null;
+  card_url: string | null;
+  optimized_url: string | null;
   is_for_sale: boolean;
   is_public: boolean;
   file_size_bytes: number | null;
@@ -234,7 +237,7 @@ export default async function DashboardArtworkDetailPage({
   const { data: artwork, error: artworkError } = await db
     .from("artworks")
     .select(
-      "id, owner_id, title, artist_name, year, technique, dimensions, width_cm, height_cm, depth_cm, price, currency, description, image_url, thumbnail_url, is_for_sale, is_public, file_size_bytes, storage_path, created_at, updated_at"
+      "id, owner_id, title, artist_name, year, technique, dimensions, width_cm, height_cm, depth_cm, price, currency, description, image_url, thumbnail_url, card_url, optimized_url, is_for_sale, is_public, file_size_bytes, storage_path, created_at, updated_at"
     )
     .eq("id", artworkId)
     .single<Artwork>();
@@ -354,8 +357,9 @@ export default async function DashboardArtworkDetailPage({
           <section className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900">
             <div className="bg-neutral-950">
               <img
-                src={artwork.thumbnail_url || artwork.image_url}
+                src={getArtworkDetailUrl(artwork)}
                 alt={artwork.title}
+                decoding="async"
                 className="max-h-[680px] w-full object-contain"
               />
             </div>

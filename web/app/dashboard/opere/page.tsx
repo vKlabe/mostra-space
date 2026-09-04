@@ -8,6 +8,7 @@ import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
 import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
+import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 import {
   bytesToMb,
   canUploadArtwork,
@@ -520,7 +521,7 @@ export default async function DashboardArtworksPage({
                       height_cm: artwork.height_cm,
                       depth_cm: artwork.depth_cm,
                       description: artwork.description,
-                      image_url: artwork.thumbnail_url || artwork.image_url,
+                      image_url: getArtworkThumbnailUrl(artwork),
                       price:
                         artwork.price === null || artwork.price === undefined
                           ? null

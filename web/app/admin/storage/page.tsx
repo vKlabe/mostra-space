@@ -1,12 +1,14 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 
 type Artwork = {
   id: string;
   owner_id: string;
   title: string;
   image_url: string;
+  thumbnail_url: string | null;
   storage_path: string | null;
   file_size_bytes: number | null;
   created_at: string;
@@ -76,7 +78,7 @@ export default async function AdminStoragePage() {
     admin
       .from("artworks")
       .select(
-        "id, owner_id, title, image_url, storage_path, file_size_bytes, created_at"
+        "id, owner_id, title, image_url, thumbnail_url, storage_path, file_size_bytes, created_at"
       )
       .order("file_size_bytes", { ascending: false }),
     admin
@@ -294,8 +296,10 @@ export default async function AdminStoragePage() {
                   <div className="grid gap-4 md:grid-cols-[90px_1fr_220px] md:items-center">
                     <div className="h-20 w-20 overflow-hidden rounded-2xl bg-neutral-900">
                       <img
-                        src={artwork.image_url}
+                        src={getArtworkThumbnailUrl(artwork)}
                         alt={artwork.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     </div>

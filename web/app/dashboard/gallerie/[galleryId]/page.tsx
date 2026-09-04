@@ -21,6 +21,7 @@ import {
   type PlanName,
 } from "@/lib/plans";
 import { validateGalleryForPublish } from "@/lib/gallery/validateGalleryForPublish";
+import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 
 type GalleryDetailPageProps = {
   params: Promise<{
@@ -100,6 +101,7 @@ type Artwork = {
   artist_name: string | null;
   year: string | null;
   image_url: string;
+  thumbnail_url: string | null;
 };
 
 type GalleryArtworkRelation = {
@@ -815,7 +817,7 @@ export default async function DashboardGalleryDetailPage({
 
   const { data: artworks } = await supabase
     .from("artworks")
-    .select("id, title, artist_name, year, image_url")
+    .select("id, title, artist_name, year, image_url, thumbnail_url")
     .eq("owner_id", gallery.owner_id)
     .order("created_at", { ascending: false });
 
@@ -866,7 +868,10 @@ export default async function DashboardGalleryDetailPage({
     .eq("gallery_id", gallery.id)
     .order("sort_order", { ascending: true });
 
-  const safeArtworks = (artworks || []) as Artwork[];
+  const safeArtworks = ((artworks || []) as Artwork[]).map((artwork) => ({
+    ...artwork,
+    image_url: getArtworkThumbnailUrl(artwork),
+  }));
   const safeGalleryArtworks =
     (galleryArtworks || []) as unknown as GalleryArtworkRow[];
   const linkedArtworkIds = safeGalleryArtworks.map((item) => item.artwork_id);
@@ -1636,10 +1641,12 @@ export default async function DashboardGalleryDetailPage({
                   >
                     <div className="grid gap-0 md:grid-cols-[180px_1fr]">
                       <div className="aspect-[4/3] bg-neutral-900 md:aspect-auto">
-                        {artwork?.image_url ? (
+                        {artwork && getArtworkThumbnailUrl(artwork) ? (
                           <img
-                            src={artwork.image_url}
+                            src={getArtworkThumbnailUrl(artwork)}
                             alt={artwork.title}
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover"
                           />
                         ) : (

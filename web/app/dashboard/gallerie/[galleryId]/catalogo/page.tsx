@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import GalleryCatalogBuilder from "@/components/catalog/GalleryCatalogBuilder";
 import T from "@/components/i18n/T";
+import {
+  getArtworkCardUrl,
+  getArtworkDetailUrl,
+  getArtworkThumbnailUrl,
+} from "@/lib/artworks/imageUrls";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +46,7 @@ type ArtworkRelation = {
   description: string | null;
   image_url: string | null;
   thumbnail_url: string | null;
+  card_url: string | null;
   optimized_url: string | null;
   webgl_url: string | null;
   price: number | string | null;
@@ -96,16 +102,6 @@ function toNullableNumber(value: number | string | null | undefined) {
   const parsed = Number(value);
 
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function getArtworkImageUrl(artwork: ArtworkRelation) {
-  return (
-    artwork.webgl_url ||
-    artwork.optimized_url ||
-    artwork.thumbnail_url ||
-    artwork.image_url ||
-    ""
-  );
 }
 
 function getAppUrl() {
@@ -268,6 +264,7 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
         description,
         image_url,
         thumbnail_url,
+        card_url,
         optimized_url,
         webgl_url,
         price,
@@ -332,7 +329,10 @@ export default async function GalleryCatalogPage({ params }: CatalogPageProps) {
         technique: artwork.technique || "",
         dimensions: artwork.dimensions || "",
         description: artwork.description || "",
-        imageUrl: getArtworkImageUrl(artwork),
+        imageUrl: getArtworkDetailUrl(artwork),
+        thumbnailImageUrl: getArtworkThumbnailUrl(artwork),
+        cardImageUrl: getArtworkCardUrl(artwork),
+        detailImageUrl: getArtworkDetailUrl(artwork),
         price: artwork.price,
         currency: artwork.currency || "EUR",
         isForSale: artwork.is_for_sale === true,

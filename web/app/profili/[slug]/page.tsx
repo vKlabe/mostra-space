@@ -7,6 +7,7 @@ import T from "@/components/i18n/T";
 import ProfileStatusLikeButton from "@/components/social/ProfileStatusLikeButton";
 import { DIRECT_MESSAGES_TERMS_VERSION } from "@/lib/messages/directMessages";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { getArtworkCardUrl } from "@/lib/artworks/imageUrls";
 
 type PublicProfilePageProps = {
   params: Promise<{
@@ -49,6 +50,8 @@ type PublicArtwork = {
   currency: string | null;
   image_url: string;
   thumbnail_url: string | null;
+  card_url: string | null;
+  optimized_url: string | null;
   is_for_sale: boolean;
 };
 
@@ -179,7 +182,7 @@ export default async function PublicProfilePage({
   const { data: artworks } = await admin
     .from("artworks")
     .select(
-      "id, title, artist_name, year, technique, price, currency, image_url, thumbnail_url, is_for_sale"
+      "id, title, artist_name, year, technique, price, currency, image_url, thumbnail_url, card_url, optimized_url, is_for_sale"
     )
     .eq("owner_id", profile.id)
     .eq("is_public", true)
@@ -541,7 +544,7 @@ export default async function PublicProfilePage({
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {safeArtworks.map((artwork) => {
                 const price = formatPrice(artwork.price, artwork.currency);
-                const imageUrl = artwork.thumbnail_url || artwork.image_url;
+                const imageUrl = getArtworkCardUrl(artwork);
 
                 return (
                   <article
@@ -552,6 +555,8 @@ export default async function PublicProfilePage({
                       <img
                         src={imageUrl}
                         alt={artwork.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover"
                       />
                     </div>

@@ -14,6 +14,10 @@ import FavoriteArtworkButton from "@/components/galleries/FavoriteArtworkButton"
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import {
+  getArtworkCardUrl,
+  getArtworkDetailUrl,
+} from "@/lib/artworks/imageUrls";
 
 type PublicGalleryPageProps = {
   params: Promise<{
@@ -64,6 +68,8 @@ type Artwork = {
   description: string | null;
   image_url: string;
   thumbnail_url: string | null;
+  card_url: string | null;
+  optimized_url: string | null;
   is_for_sale: boolean;
   is_public: boolean;
 };
@@ -279,6 +285,8 @@ export default async function PublicGalleryDetailPage({
         description,
         image_url,
         thumbnail_url,
+        card_url,
+        optimized_url,
         is_for_sale,
         is_public
       )
@@ -514,11 +522,9 @@ export default async function PublicGalleryDetailPage({
               <div className="overflow-hidden rounded-[1.5rem] border border-[var(--museum-border)] bg-[var(--museum-black)]">
                 {featuredArtwork ? (
                   <img
-                    src={
-                      featuredArtwork.artwork.thumbnail_url ||
-                      featuredArtwork.artwork.image_url
-                    }
+                    src={getArtworkDetailUrl(featuredArtwork.artwork)}
                     alt={featuredArtwork.artwork.title}
+                    decoding="async"
                     className="aspect-[4/3] w-full object-cover"
                   />
                 ) : (
@@ -927,8 +933,10 @@ export default async function PublicGalleryDetailPage({
                   <div className="grid gap-0 md:grid-cols-[260px_1fr]">
                     <div className="relative aspect-[4/3] overflow-hidden bg-[var(--museum-black)] md:aspect-auto">
                       <img
-                        src={artwork.thumbnail_url || artwork.image_url}
+                        src={getArtworkCardUrl(artwork)}
                         alt={artwork.title}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
 

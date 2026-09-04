@@ -10,6 +10,7 @@ import GalleryCatalogPdfDocument, {
   type PdfCatalogGallery,
   type PdfCatalogSettings,
 } from "@/components/catalog/GalleryCatalogPdfDocument";
+import { getArtworkCatalogUrl } from "@/lib/artworks/imageUrls";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -49,6 +50,7 @@ type ArtworkRelation = {
   description: string | null;
   image_url: string | null;
   thumbnail_url: string | null;
+  card_url: string | null;
   optimized_url: string | null;
   webgl_url: string | null;
   price: number | string | null;
@@ -114,16 +116,6 @@ function toNullableNumber(value: number | string | null | undefined) {
   const parsed = Number(value);
 
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function getArtworkImageUrl(artwork: ArtworkRelation) {
-  return (
-    artwork.webgl_url ||
-    artwork.optimized_url ||
-    artwork.thumbnail_url ||
-    artwork.image_url ||
-    ""
-  );
 }
 
 function getAppUrl() {
@@ -450,6 +442,7 @@ export async function GET(_request: Request, context: RouteContext) {
         description,
         image_url,
         thumbnail_url,
+        card_url,
         optimized_url,
         webgl_url,
         price,
@@ -495,7 +488,7 @@ export async function GET(_request: Request, context: RouteContext) {
         technique: artwork.technique || "",
         dimensions: artwork.dimensions || "",
         description: artwork.description || "",
-        imageUrl: getArtworkImageUrl(artwork),
+        imageUrl: getArtworkCatalogUrl(artwork, selectedLayout),
         price: artwork.price,
         currency: artwork.currency || "EUR",
         isForSale: artwork.is_for_sale === true,

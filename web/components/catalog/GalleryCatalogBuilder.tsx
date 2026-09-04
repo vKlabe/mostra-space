@@ -34,6 +34,9 @@ type CatalogArtwork = {
   dimensions: string;
   description: string;
   imageUrl: string;
+  thumbnailImageUrl: string;
+  cardImageUrl: string;
+  detailImageUrl: string;
   price: number | string | null;
   currency: string;
   isForSale: boolean;
@@ -166,6 +169,21 @@ function chunkItems<T>(items: T[], size: number) {
   }
 
   return chunks;
+}
+
+function getCatalogArtworkImageUrl(
+  artwork: CatalogArtwork,
+  layoutVariant: CatalogLayoutVariant
+) {
+  if (layoutVariant === "price_list") {
+    return artwork.thumbnailImageUrl || artwork.imageUrl;
+  }
+
+  if (layoutVariant === "compact") {
+    return artwork.cardImageUrl || artwork.imageUrl;
+  }
+
+  return artwork.detailImageUrl || artwork.imageUrl;
 }
 
 function formatPrice(value: number | string | null, currency: string) {
@@ -384,7 +402,10 @@ export default function GalleryCatalogBuilder({
   }, [artworks, includePrivateArtworks]);
 
   const coverImageUrl =
-    gallery.coverImageUrl || displayedArtworks[0]?.imageUrl || "";
+    gallery.coverImageUrl ||
+    (displayedArtworks[0]
+      ? getCatalogArtworkImageUrl(displayedArtworks[0], allowedLayoutVariant)
+      : "");
 
   useEffect(() => {
     setLayoutVariant((currentLayout) =>
@@ -1728,9 +1749,9 @@ export default function GalleryCatalogBuilder({
                 </div>
 
                 <div className="flex flex-1 items-center justify-center border border-[#d8c9b0] bg-[#eee6d8] p-4">
-                  {artwork.imageUrl ? (
+                  {getCatalogArtworkImageUrl(artwork, "elegant") ? (
                     <img
-                      src={artwork.imageUrl}
+                      src={getCatalogArtworkImageUrl(artwork, "elegant")}
                       alt={getArtworkCaption(artwork)}
                       className="catalog-artwork-image"
                     />
@@ -1862,9 +1883,9 @@ export default function GalleryCatalogBuilder({
                       className="grid grid-cols-[58mm_1fr] gap-6 border-b border-[#d8c9b0] pb-6"
                     >
                       <div className="flex h-[82mm] items-center justify-center border border-[#d8c9b0] bg-[#eee6d8] p-2">
-                        {artwork.imageUrl ? (
+                        {getCatalogArtworkImageUrl(artwork, "compact") ? (
                           <img
-                            src={artwork.imageUrl}
+                            src={getCatalogArtworkImageUrl(artwork, "compact")}
                             alt={getArtworkCaption(artwork)}
                             className="h-full w-full object-contain"
                           />
@@ -2015,9 +2036,9 @@ export default function GalleryCatalogBuilder({
                       className="min-h-[70mm] border border-[#d8c9b0] p-3"
                     >
                       <div className="flex h-[30mm] items-center justify-center bg-[#eee6d8] p-1">
-                        {artwork.imageUrl ? (
+                        {getCatalogArtworkImageUrl(artwork, "price_list") ? (
                           <img
-                            src={artwork.imageUrl}
+                            src={getCatalogArtworkImageUrl(artwork, "price_list")}
                             alt={getArtworkCaption(artwork)}
                             className="h-full w-full object-contain"
                           />

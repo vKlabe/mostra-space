@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 
 type Profile = {
   id: string;
@@ -271,7 +272,7 @@ export default async function AccountFavoriteArtworksPage() {
         ) : (
           <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {favoriteArtworks.map((artwork) => {
-              const imageUrl = artwork.thumbnail_url || artwork.image_url;
+              const imageUrl = getArtworkThumbnailUrl(artwork);
               const artworkHref = artwork.gallery_slug
                 ? `/gallerie/${artwork.gallery_slug}#catalogo`
                 : "/gallerie";
@@ -287,6 +288,8 @@ export default async function AccountFavoriteArtworksPage() {
                         <img
                           src={imageUrl}
                           alt={artwork.title}
+                          loading="lazy"
+                          decoding="async"
                           className="h-full w-full object-cover"
                         />
                       ) : (
