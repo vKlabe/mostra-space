@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getArtworkViewerUrl } from "@/lib/artworks/imageUrls";
 
 export const dynamic = "force-dynamic";
 
@@ -117,16 +118,6 @@ function formatPrice(value: number | string | null | undefined) {
   }
 
   return String(value);
-}
-
-function getUnityImageUrl(artwork: ArtworkRecord) {
-  return (
-    artwork.webgl_url ||
-    artwork.optimized_url ||
-    artwork.thumbnail_url ||
-    artwork.image_url ||
-    ""
-  );
 }
 
 function normalizePlan(value: string | null | undefined) {
@@ -349,7 +340,7 @@ export async function GET(request: Request, context: RouteContext) {
         return null;
       }
 
-      const unityImageUrl = getUnityImageUrl(artwork);
+      const unityImageUrl = getArtworkViewerUrl(artwork);
 
 if (!unityImageUrl) {
   return null;

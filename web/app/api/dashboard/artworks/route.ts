@@ -11,6 +11,16 @@ import {
   parseDimensionCm,
   parseOptionalDepthCm,
 } from "@/lib/artworks/dimensions";
+import {
+  ARTWORK_IMAGE_CACHE_CONTROL,
+  ARTWORK_IMAGE_PIPELINE_VERSION,
+  ArtworkImageProcessingError,
+  downloadArtworkSource,
+  generateAndUploadArtworkVariants,
+  getArtworkVariantPaths,
+  inspectArtworkImage,
+  removeArtworkStorageFiles,
+} from "@/lib/artworks/imageVariants.server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -91,19 +101,34 @@ function cleanPrice(value: unknown) {
   return numberValue;
 }
 
-function getFileExtension(filename: string) {
-  const parts = filename.split(".");
-  const extension = parts.length > 1 ? parts[parts.length - 1] : "";
-
-  return extension.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-}
-
 function isAllowedImageContentType(contentType: string) {
   return (
     contentType === "image/jpeg" ||
     contentType === "image/png" ||
     contentType === "image/webp"
   );
+}
+
+function getImageExtensionFromContentType(contentType: string) {
+  if (contentType === "image/png") {
+    return "png";
+  }
+
+  if (contentType === "image/webp") {
+    return "webp";
+  }
+
+  return "jpg";
+}
+
+function getImageProcessingError(error: unknown, fallback: string) {
+  return {
+    error:
+      error instanceof ArtworkImageProcessingError
+        ? error.publicMessage
+        : fallback,
+    details: error instanceof Error ? error.message : null,
+  };
 }
 
 function isAllowedImageFile(file: File) {
@@ -334,7 +359,7 @@ if (!imagePixelCheck.ok) {
     );
   }
 
-  const extension = getFileExtension(fileName);
+  const extension = getImageExtensionFromContentType(fileType);
   const safeFileName = `${crypto.randomUUID()}.${extension}`;
   const storagePath = `${userId}/${safeFileName}`;
 
@@ -420,30 +445,74 @@ async function handleCreateArtworkFromUploadedFile({
     );
   }
 
-  const imagePixelSize = getImagePixelSizeFromBody(body);
-const imagePixelCheck = validateImagePixelSize(
-  imagePixelSize.width,
-  imagePixelSize.height
-);
-
-if (!imagePixelCheck.ok) {
-  await admin.storage.from("artworks").remove([storagePath]);
-
-  return NextResponse.json(
-    { error: imagePixelCheck.error },
-    { status: 400 }
+  const browserPixelSize = getImagePixelSizeFromBody(body);
+  const browserPixelCheck = validateImagePixelSize(
+    browserPixelSize.width,
+    browserPixelSize.height
   );
-}
 
+  if (!browserPixelCheck.ok) {
+    await removeArtworkStorageFiles(admin, [storagePath]);
+
+    return NextResponse.json(
+      { error: browserPixelCheck.error },
+      { status: 400 }
+    );
+  }
+
+  let sourceBuffer: Buffer;
+
+  try {
+    sourceBuffer = await downloadArtworkSource(admin, storagePath);
+  } catch (error) {
+    await removeArtworkStorageFiles(admin, [storagePath]);
+
+    return NextResponse.json(
+      getImageProcessingError(
+        error,
+        "Non e stato possibile recuperare l'immagine caricata."
+      ),
+      { status: 500 }
+    );
+  }
+
+  let inspectedImage: Awaited<ReturnType<typeof inspectArtworkImage>>;
+
+  try {
+    inspectedImage = await inspectArtworkImage(sourceBuffer, fileType);
+  } catch (error) {
+    await removeArtworkStorageFiles(admin, [storagePath]);
+
+    return NextResponse.json(
+      getImageProcessingError(error, "Immagine non valida."),
+      { status: 400 }
+    );
+  }
+
+  const serverPixelCheck = validateImagePixelSize(
+    inspectedImage.width,
+    inspectedImage.height
+  );
+
+  if (!serverPixelCheck.ok) {
+    await removeArtworkStorageFiles(admin, [storagePath]);
+
+    return NextResponse.json(
+      { error: serverPixelCheck.error },
+      { status: 400 }
+    );
+  }
+
+  const actualFileSizeBytes = inspectedImage.sizeBytes;
   const limitCheck = await checkUploadLimits({
     admin,
     userId,
     plan,
-    fileSizeBytes,
+    fileSizeBytes: actualFileSizeBytes,
   });
 
   if (!limitCheck.ok) {
-    await admin.storage.from("artworks").remove([storagePath]);
+    await removeArtworkStorageFiles(admin, [storagePath]);
 
     return NextResponse.json(
       {
@@ -454,6 +523,33 @@ if (!imagePixelCheck.ok) {
         upgradeTo: limitCheck.uploadCheck?.upgradeTo,
       },
       { status: limitCheck.status }
+    );
+  }
+
+  let generatedVariants: Awaited<
+    ReturnType<typeof generateAndUploadArtworkVariants>
+  >;
+
+  try {
+    generatedVariants = await generateAndUploadArtworkVariants({
+      admin,
+      storagePath,
+      sourceBuffer,
+    });
+  } catch (error) {
+    const variantPaths = getArtworkVariantPaths(storagePath);
+
+    await removeArtworkStorageFiles(admin, [
+      storagePath,
+      ...Object.values(variantPaths),
+    ]);
+
+    return NextResponse.json(
+      getImageProcessingError(
+        error,
+        "Non e stato possibile creare le versioni ottimizzate dell'immagine."
+      ),
+      { status: 500 }
     );
   }
 
@@ -477,23 +573,32 @@ if (!imagePixelCheck.ok) {
       depth_cm: fields.depthCm,
       description: fields.description,
       image_url: imageUrl,
-      thumbnail_url: imageUrl,
+      thumbnail_url: generatedVariants.thumbnailUrl,
+      card_url: generatedVariants.cardUrl,
       webgl_url: imageUrl,
-      optimized_url: imageUrl,
+      optimized_url: generatedVariants.detailUrl,
       storage_path: storagePath,
-      file_size_bytes: fileSizeBytes,
+      file_size_bytes: actualFileSizeBytes,
+      image_width: inspectedImage.width,
+      image_height: inspectedImage.height,
+      image_pipeline_version: ARTWORK_IMAGE_PIPELINE_VERSION,
+      image_variants_generated_at: generatedVariants.generatedAt,
+      image_processing_error: null,
       price: fields.price,
       currency: fields.currency,
       is_for_sale: fields.isForSale,
       is_public: fields.isPublic,
     })
     .select(
-      "id, title, artist_name, year, dimensions, width_cm, height_cm, depth_cm, image_url, file_size_bytes, created_at"
+      "id, title, artist_name, year, dimensions, width_cm, height_cm, depth_cm, image_url, thumbnail_url, card_url, optimized_url, webgl_url, image_width, image_height, image_pipeline_version, file_size_bytes, created_at"
     )
     .single();
 
   if (insertError || !artwork) {
-    await admin.storage.from("artworks").remove([storagePath]);
+    await removeArtworkStorageFiles(admin, [
+      storagePath,
+      ...Object.values(generatedVariants.paths),
+    ]);
 
     return NextResponse.json(
       {
@@ -512,10 +617,10 @@ if (!imagePixelCheck.ok) {
       artworksCurrent: limitCheck.usage.currentArtworkCount + 1,
       artworksLimit: limitCheck.limits.maxArtworksTotal,
       storageUsedMb: bytesToMb(
-        limitCheck.usage.currentStorageUsedBytes + fileSizeBytes
+        limitCheck.usage.currentStorageUsedBytes + actualFileSizeBytes
       ),
       storageLimitMb: limitCheck.limits.maxStorageMb,
-      fileSizeMb: bytesToMb(fileSizeBytes),
+      fileSizeMb: bytesToMb(actualFileSizeBytes),
       fileLimitMb: limitCheck.limits.maxArtworkFileMb,
     },
   });
@@ -574,11 +679,38 @@ async function handleLegacyFormUpload({
     );
   }
 
+  const arrayBuffer = await fileValue.arrayBuffer();
+  const fileBuffer = Buffer.from(arrayBuffer);
+
+  let inspectedImage: Awaited<ReturnType<typeof inspectArtworkImage>>;
+
+  try {
+    inspectedImage = await inspectArtworkImage(fileBuffer, fileValue.type);
+  } catch (error) {
+    return NextResponse.json(
+      getImageProcessingError(error, "Immagine non valida."),
+      { status: 400 }
+    );
+  }
+
+  const pixelCheck = validateImagePixelSize(
+    inspectedImage.width,
+    inspectedImage.height
+  );
+
+  if (!pixelCheck.ok) {
+    return NextResponse.json(
+      { error: pixelCheck.error },
+      { status: 400 }
+    );
+  }
+
+  const actualFileSizeBytes = inspectedImage.sizeBytes;
   const limitCheck = await checkUploadLimits({
     admin,
     userId,
     plan,
-    fileSizeBytes: fileValue.size,
+    fileSizeBytes: actualFileSizeBytes,
   });
 
   if (!limitCheck.ok) {
@@ -594,17 +726,15 @@ async function handleLegacyFormUpload({
     );
   }
 
-  const extension = getFileExtension(fileValue.name);
+  const extension = getImageExtensionFromContentType(inspectedImage.contentType);
   const safeFileName = `${crypto.randomUUID()}.${extension}`;
   const storagePath = `${userId}/${safeFileName}`;
-
-  const arrayBuffer = await fileValue.arrayBuffer();
-  const fileBuffer = Buffer.from(arrayBuffer);
 
   const { error: uploadError } = await admin.storage
     .from("artworks")
     .upload(storagePath, fileBuffer, {
-      contentType: fileValue.type,
+      contentType: inspectedImage.contentType,
+      cacheControl: ARTWORK_IMAGE_CACHE_CONTROL,
       upsert: false,
     });
 
@@ -614,6 +744,33 @@ async function handleLegacyFormUpload({
         error: "Errore upload immagine.",
         details: uploadError.message,
       },
+      { status: 500 }
+    );
+  }
+
+  let generatedVariants: Awaited<
+    ReturnType<typeof generateAndUploadArtworkVariants>
+  >;
+
+  try {
+    generatedVariants = await generateAndUploadArtworkVariants({
+      admin,
+      storagePath,
+      sourceBuffer: fileBuffer,
+    });
+  } catch (error) {
+    const variantPaths = getArtworkVariantPaths(storagePath);
+
+    await removeArtworkStorageFiles(admin, [
+      storagePath,
+      ...Object.values(variantPaths),
+    ]);
+
+    return NextResponse.json(
+      getImageProcessingError(
+        error,
+        "Non e stato possibile creare le versioni ottimizzate dell'immagine."
+      ),
       { status: 500 }
     );
   }
@@ -638,23 +795,32 @@ async function handleLegacyFormUpload({
       depth_cm: fields.depthCm,
       description: fields.description,
       image_url: imageUrl,
-      thumbnail_url: imageUrl,
+      thumbnail_url: generatedVariants.thumbnailUrl,
+      card_url: generatedVariants.cardUrl,
       webgl_url: imageUrl,
-      optimized_url: imageUrl,
+      optimized_url: generatedVariants.detailUrl,
       storage_path: storagePath,
-      file_size_bytes: fileValue.size,
+      file_size_bytes: actualFileSizeBytes,
+      image_width: inspectedImage.width,
+      image_height: inspectedImage.height,
+      image_pipeline_version: ARTWORK_IMAGE_PIPELINE_VERSION,
+      image_variants_generated_at: generatedVariants.generatedAt,
+      image_processing_error: null,
       price: fields.price,
       currency: fields.currency,
       is_for_sale: fields.isForSale,
       is_public: fields.isPublic,
     })
     .select(
-      "id, title, artist_name, year, dimensions, width_cm, height_cm, depth_cm, image_url, file_size_bytes, created_at"
+      "id, title, artist_name, year, dimensions, width_cm, height_cm, depth_cm, image_url, thumbnail_url, card_url, optimized_url, webgl_url, image_width, image_height, image_pipeline_version, file_size_bytes, created_at"
     )
     .single();
 
   if (insertError || !artwork) {
-    await admin.storage.from("artworks").remove([storagePath]);
+    await removeArtworkStorageFiles(admin, [
+      storagePath,
+      ...Object.values(generatedVariants.paths),
+    ]);
 
     return NextResponse.json(
       {
@@ -673,10 +839,10 @@ async function handleLegacyFormUpload({
       artworksCurrent: limitCheck.usage.currentArtworkCount + 1,
       artworksLimit: limitCheck.limits.maxArtworksTotal,
       storageUsedMb: bytesToMb(
-        limitCheck.usage.currentStorageUsedBytes + fileValue.size
+        limitCheck.usage.currentStorageUsedBytes + actualFileSizeBytes
       ),
       storageLimitMb: limitCheck.limits.maxStorageMb,
-      fileSizeMb: bytesToMb(fileValue.size),
+      fileSizeMb: bytesToMb(actualFileSizeBytes),
       fileLimitMb: limitCheck.limits.maxArtworkFileMb,
     },
   });
