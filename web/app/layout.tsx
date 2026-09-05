@@ -4,6 +4,7 @@ import "./globals.css";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import GuestSignupNudge from "@/components/public/GuestSignupNudge";
 import GoogleAccountCompletionGate from "@/components/auth/GoogleAccountCompletionGate";
+import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 
 const inter = Inter({
@@ -62,6 +63,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${cormorant.variable} bg-neutral-950 text-neutral-100 antialiased`}
       >
+        <ServiceWorkerRegistration />
         <LanguageProvider>
           <GuestSignupNudge />
           <GoogleAccountCompletionGate />
