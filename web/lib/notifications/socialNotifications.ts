@@ -102,6 +102,7 @@ export async function createGalleryPublishedNotifications({
   const rows = followerIds.map((userId) => ({
     user_id: userId,
     type: "gallery_published",
+    push_category: "gallery_updates",
     title: "Nuova galleria pubblicata",
     message: `${actorName} ha pubblicato ${safeGalleryTitle}`,
     event_id: null,
@@ -153,6 +154,7 @@ export async function createStatusPublishedNotifications({
   const rows = followerIds.map((userId) => ({
     user_id: userId,
     type: "status_published",
+    push_category: "publications",
     title: `${actorName} ha pubblicato un nuovo stato`,
     message: content,
     event_id: null,
