@@ -13,6 +13,7 @@ import {
   type PlanName,
 } from "@/lib/plans";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import PwaInstallPanel from "@/components/pwa/PwaInstallPanel";
 
 function getRoleLabelContent(role?: string | null) {
   if (role === "admin") {
@@ -593,6 +594,8 @@ export default async function AccountPage() {
           </p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <PwaInstallPanel />
+
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
               <p className="font-medium text-neutral-200">
                 <T

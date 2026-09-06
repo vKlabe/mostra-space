@@ -5,6 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Mostra.Space",
     short_name: "Mostra.Space",
     description: "La piattaforma espositiva digitale per l'arte.",
+    id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",
