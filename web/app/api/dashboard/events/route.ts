@@ -446,6 +446,7 @@ async function createEventNotifications({
       {
         user_id: userId,
         type: "event_created",
+        push_category: "events",
         title: "Nuovo evento in calendario",
         message: `${eventTitle} · ${galleryTitle}`,
         event_id: eventId,
@@ -459,6 +460,7 @@ async function createEventNotifications({
       notifications.push({
         user_id: userId,
         type: "event_3_days_before",
+        push_category: "event_reminders",
         title: "Evento tra 3 giorni",
         message: `${eventTitle} · ${galleryTitle}`,
         event_id: eventId,
@@ -472,6 +474,7 @@ async function createEventNotifications({
       notifications.push({
         user_id: userId,
         type: "event_30_minutes_before",
+        push_category: "event_reminders",
         title: "Evento tra 30 minuti",
         message: `${eventTitle} · ${galleryTitle}`,
         event_id: eventId,
@@ -578,6 +581,7 @@ async function createInviteNotifications({
     recipientIds.map((userId) => ({
       user_id: userId,
       type: "event_created",
+      push_category: "invitations",
       title: "Invito evento",
       message: `${eventTitle} · ${galleryTitle}`,
       event_id: eventId,
@@ -598,6 +602,7 @@ async function createInviteNotifications({
       recipientIds.map((userId) => ({
         user_id: userId,
         type: "event_30_minutes_before",
+        push_category: "event_reminders",
         title: "Evento tra 30 minuti",
         message: `${eventTitle} · ${galleryTitle}`,
         event_id: eventId,
