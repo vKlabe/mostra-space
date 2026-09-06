@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -48,7 +49,7 @@ export async function GET() {
   const { data, error } = await admin
     .from("pwa_push_subscriptions")
     .select(
-      "id, device_label, locale, timezone, active, created_at, updated_at, last_seen_at, expires_at, disabled_at"
+      "id, endpoint, device_label, locale, timezone, active, created_at, updated_at, last_seen_at, expires_at, disabled_at"
     )
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
@@ -63,6 +64,9 @@ export async function GET() {
 
   const subscriptions = (data || []).map((subscription) => ({
     id: subscription.id,
+    endpointHash: createHash("sha256")
+      .update(subscription.endpoint)
+      .digest("base64url"),
     deviceLabel: subscription.device_label,
     locale: subscription.locale,
     timezone: subscription.timezone,
@@ -231,8 +235,44 @@ export async function DELETE(request: Request) {
     return json({ success: false, code: "SUBSCRIPTION_NOT_FOUND" }, 404);
   }
 
+  const { count: remainingActiveSubscriptions, error: countError } =
+    await admin
+      .from("pwa_push_subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("active", true);
+
+  if (countError) {
+    console.error("Unable to count active PWA push subscriptions", {
+      userId: user.id,
+      code: countError.code,
+    });
+    return json({ success: false, code: "DISABLE_FAILED" }, 500);
+  }
+
+  if (!remainingActiveSubscriptions) {
+    const { error: preferenceError } = await admin
+      .from("pwa_push_preferences")
+      .upsert(
+        {
+          user_id: user.id,
+          push_enabled: false,
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (preferenceError) {
+      console.error("Unable to disable PWA push preference", {
+        userId: user.id,
+        code: preferenceError.code,
+      });
+      return json({ success: false, code: "DISABLE_FAILED" }, 500);
+    }
+  }
+
   return json({
     success: true,
+    remainingActiveSubscriptions: remainingActiveSubscriptions || 0,
     subscription: {
       id: data.id,
       active: data.active,
