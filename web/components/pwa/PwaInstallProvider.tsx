@@ -33,6 +33,7 @@ type PwaInstallContextValue = {
   isInstalled: boolean;
   isIos: boolean;
   isReady: boolean;
+  isStandalone: boolean;
   promptInstall: () => Promise<InstallOutcome>;
 };
 
@@ -177,9 +178,17 @@ export default function PwaInstallProvider({
       isInstalled,
       isIos,
       isReady,
+      isStandalone,
       promptInstall,
     }),
-    [deferredPrompt, isInstalled, isIos, isReady, promptInstall]
+    [
+      deferredPrompt,
+      isInstalled,
+      isIos,
+      isReady,
+      isStandalone,
+      promptInstall,
+    ]
   );
 
   return (
