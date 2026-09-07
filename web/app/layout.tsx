@@ -33,9 +33,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mostra.Space",
-  description: "La piattaforma espositiva digitale per l'arte.",
+  metadataBase: new URL("https://mostra.space"),
+  title: {
+    default: "Mostra.Space — L’arte senza confini",
+    template: "%s | Mostra.Space",
+  },
+  description:
+    "La piattaforma espositiva digitale per artisti, curatori, gallerie, collezionisti e amanti dell’arte.",
   applicationName: "Mostra.Space",
+  openGraph: {
+    type: "website",
+    locale: "it_IT",
+    siteName: "Mostra.Space",
+    title: "Mostra.Space — L’arte senza confini",
+    description:
+      "La piattaforma espositiva digitale per artisti, curatori, gallerie, collezionisti e amanti dell’arte.",
+    images: [
+      {
+        url: "/home/hero-gallery.jpg",
+        alt: "Mostra.Space — L’arte senza confini",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mostra.Space — L’arte senza confini",
+    description:
+      "La piattaforma espositiva digitale per artisti, curatori, gallerie, collezionisti e amanti dell’arte.",
+    images: ["/home/hero-gallery.jpg"],
+  },
   appleWebApp: {
     capable: true,
     title: "Mostra.Space",
