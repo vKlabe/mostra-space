@@ -26,15 +26,32 @@ async function verifyIcon(relativePath, width, height) {
 }
 
 async function verifyStaticContract() {
-  const [worker, manifestSource, registration, safeNavigation] =
+  const [
+    worker,
+    manifestSource,
+    registration,
+    safeNavigation,
+    internalDispatcher,
+    adminDispatcher,
+    healthRoute,
+    readiness,
+    telemetry,
+    migration,
+  ] =
     await Promise.all([
       read("public/sw.js"),
       read("app/manifest.ts"),
       read("components/pwa/ServiceWorkerRegistration.tsx"),
       read("lib/auth/safeNavigation.ts"),
+      read("app/api/internal/pwa/push-dispatch/route.ts"),
+      read("app/api/admin/pwa/route.ts"),
+      read("app/api/admin/pwa/health/route.ts"),
+      read("lib/pwa/pwaReadiness.server.ts"),
+      read("lib/pwa/pushDispatchRun.server.ts"),
+      read("supabase/migrations/20260907_add_pwa_release_observability.sql"),
     ]);
 
-  assert(worker.includes('PWA_WORKER_VERSION = "pwa-9"'), "PWA 9 worker version missing");
+  assert(worker.includes('PWA_WORKER_VERSION = "pwa-10"'), "PWA 10 worker version missing");
   assert(worker.includes('new URL("/pwa/open"'), "Safe notification gateway missing");
   assert(worker.includes("notificationId"), "Notification read synchronization missing");
   assert(
@@ -43,10 +60,29 @@ async function verifyStaticContract() {
   );
   assert(!/\bcaches\s*\./.test(worker), "The service worker must not cache application data");
   assert(manifestSource.includes('display: "standalone"'), "Standalone manifest mode missing");
+  assert(manifestSource.includes('id: "/"'), "Manifest identity missing");
   assert(manifestSource.includes('start_url: "/"'), "Manifest start URL missing");
+  assert(manifestSource.includes('scope: "/"'), "Manifest scope missing");
   assert(registration.includes('updateViaCache: "none"'), "Service worker update policy missing");
   assert(registration.includes("reconcileCurrentPushLifecycle"), "Permission reconciliation missing");
   assert(safeNavigation.includes("parsed.origin !== NAVIGATION_ORIGIN"), "Same-origin navigation guard missing");
+  assert(
+    internalDispatcher.includes('runRecordedPushDispatch("cron")'),
+    "Automatic dispatcher heartbeat missing"
+  );
+  assert(
+    adminDispatcher.includes('runRecordedPushDispatch("admin")'),
+    "Manual dispatcher heartbeat missing"
+  );
+  assert(healthRoute.includes("requireAdminApi"), "Readiness endpoint is not admin protected");
+  assert(readiness.includes('export const PWA_RELEASE = "pwa-10"'), "PWA 10 readiness release missing");
+  assert(readiness.includes("PWA_PUSH_DISPATCH_SECRET"), "Dispatcher configuration check missing");
+  assert(telemetry.includes("pwa_push_dispatch_runs"), "Dispatcher telemetry writer missing");
+  assert(migration.includes("enable row level security"), "Dispatcher telemetry RLS missing");
+  assert(
+    migration.includes("revoke all on table public.pwa_push_dispatch_runs from anon, authenticated"),
+    "Dispatcher telemetry grants are unsafe"
+  );
 
   await Promise.all([
     verifyIcon("public/pwa/icon-192x192.png", 192, 192),
@@ -70,17 +106,23 @@ async function verifyLiveContract() {
     return;
   }
 
+  const isLocalTarget = ["localhost", "127.0.0.1", "::1"].includes(
+    baseUrl.hostname
+  );
+
   const manifestResponse = await request("/manifest.webmanifest");
   assert(manifestResponse.status === 200, "Manifest is not publicly reachable");
   const manifest = await manifestResponse.json();
   assert(manifest.display === "standalone", "Live manifest is not standalone");
+  assert(manifest.id === "/", "Live manifest identity is invalid");
   assert(manifest.start_url === "/", "Live manifest start URL is invalid");
+  assert(manifest.scope === "/", "Live manifest scope is invalid");
   assert(Array.isArray(manifest.icons) && manifest.icons.length >= 3, "Live manifest icons are incomplete");
 
   const workerResponse = await request("/sw.js");
   assert(workerResponse.status === 200, "Service worker is not publicly reachable");
   const worker = await workerResponse.text();
-  assert(worker.includes('PWA_WORKER_VERSION = "pwa-9"'), "Production is not serving the PWA 9 worker");
+  assert(worker.includes('PWA_WORKER_VERSION = "pwa-10"'), "Target is not serving the PWA 10 worker");
   assert(!/addEventListener\s*\(\s*["']fetch["']/.test(worker), "Live worker intercepts fetch requests");
 
   for (const icon of [
@@ -104,10 +146,30 @@ async function verifyLiveContract() {
     headers: { "Content-Type": "application/json" },
     body: "{}",
   });
-  assert(dispatchResponse.status === 401, "Push dispatcher is not protected");
+  assert(
+    dispatchResponse.status === 401 ||
+      (isLocalTarget && dispatchResponse.status === 503),
+    "Push dispatcher is not protected or configured"
+  );
 
   const badgeResponse = await request("/api/account/pwa-badge");
   assert(badgeResponse.status === 401, "Badge endpoint must reject anonymous requests");
+
+  const adminHealthResponse = await request("/api/admin/pwa/health");
+  assert(
+    adminHealthResponse.status === 401,
+    "PWA readiness endpoint must reject anonymous requests"
+  );
+
+  const adminDispatchResponse = await request("/api/admin/pwa", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "dispatch" }),
+  });
+  assert(
+    adminDispatchResponse.status === 401,
+    "PWA admin dispatcher must reject anonymous requests"
+  );
 
   const gatewayResponse = await request(
     "/pwa/open?next=https%3A%2F%2Fexample.com%2Foutside"
@@ -128,8 +190,8 @@ try {
   await verifyLiveContract();
   console.log(
     baseUrl
-      ? `PWA 9 checks passed for ${baseUrl.origin}`
-      : "PWA 9 static checks passed"
+      ? `PWA 10 checks passed for ${baseUrl.origin}`
+      : "PWA 10 static checks passed"
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);

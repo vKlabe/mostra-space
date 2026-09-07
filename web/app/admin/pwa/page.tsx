@@ -1,7 +1,9 @@
 import AdminShell from "@/components/admin/AdminShell";
 import AdminPwaControls from "@/components/admin/AdminPwaControls";
+import AdminPwaReadiness from "@/components/admin/AdminPwaReadiness";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import { getPwaReadiness } from "@/lib/pwa/pwaReadiness.server";
 
 type SubscriptionRow = {
   id: string;
@@ -98,6 +100,7 @@ export default async function AdminPwaPage() {
   // eslint-disable-next-line react-hooks/purity
   const snapshotTime = Date.now();
   const since24Hours = new Date(snapshotTime - 24 * 60 * 60 * 1000).toISOString();
+  const readiness = await getPwaReadiness(admin);
 
   const [
     subscriptionsResult,
@@ -230,6 +233,8 @@ export default async function AdminPwaPage() {
       subtitle="Controlla dispositivi, coda, consegne, errori e operazioni amministrative del sistema Web Push."
       activeSection="pwa"
     >
+      <AdminPwaReadiness initialReport={readiness} />
+
       {loadErrors.length > 0 && (
         <div className="mb-6 rounded-3xl border border-red-800 bg-red-950/30 p-6">
           <p className="text-lg font-medium">Dati PWA incompleti</p>

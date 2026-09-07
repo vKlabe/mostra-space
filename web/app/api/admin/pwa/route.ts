@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/requireAdminApi";
 import {
-  dispatchDuePushNotifications,
   PushDeliveryConfigurationError,
 } from "@/lib/pwa/pushDelivery.server";
+import { runRecordedPushDispatch } from "@/lib/pwa/pushDispatchRun.server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
 
   if (body.action === "dispatch") {
     try {
-      const summary = await dispatchDuePushNotifications();
+      const summary = await runRecordedPushDispatch("admin");
       await recordAction({
         admin: current.admin,
         adminUserId: current.user.id,

@@ -7,7 +7,7 @@
 
 const DEFAULT_NOTIFICATION_URL = "/account/notifiche";
 const NOTIFICATION_ICON = "/pwa/icon-192x192.png";
-const PWA_WORKER_VERSION = "pwa-9";
+const PWA_WORKER_VERSION = "pwa-10";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
