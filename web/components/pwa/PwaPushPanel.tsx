@@ -8,6 +8,10 @@ import {
   PUSH_PREFERENCE_DEFAULTS,
   type PushPreferences,
 } from "@/lib/pwa/pushValidation";
+import {
+  forgetCurrentPushSubscriptionId,
+  rememberCurrentPushSubscriptionId,
+} from "@/lib/pwa/pushLifecycle.client";
 
 type PushStatus =
   | "loading"
@@ -246,10 +250,19 @@ async function saveBrowserSubscription(
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
     }),
   });
+  const payload = (await response.json().catch(() => null)) as
+    | { success?: boolean; subscription?: { id?: string } }
+    | null;
 
-  if (!response.ok) {
+  if (
+    !response.ok ||
+    !payload?.success ||
+    typeof payload.subscription?.id !== "string"
+  ) {
     throw new Error("Unable to save the push subscription.");
   }
+
+  rememberCurrentPushSubscriptionId(payload.subscription.id);
 }
 
 async function patchPreferences(patch: Partial<PushPreferences>) {
@@ -380,6 +393,15 @@ export default function PwaPushPanel() {
               subscription.endpointHash === endpointHash
           )
       );
+      const currentServerSubscription = endpointHash
+        ? serverSettings.subscriptions.find(
+            (subscription) => subscription.endpointHash === endpointHash
+          )
+        : null;
+
+      if (currentServerSubscription) {
+        rememberCurrentPushSubscriptionId(currentServerSubscription.id);
+      }
 
       setCurrentEndpointHash(endpointHash);
       setStatus(
@@ -469,6 +491,10 @@ export default function PwaPushPanel() {
 
       if (createdSubscription) {
         await createdSubscription.unsubscribe().catch(() => false);
+      }
+
+      if (savedOnServer) {
+        forgetCurrentPushSubscriptionId();
       }
 
       showFeedback(
@@ -584,6 +610,7 @@ export default function PwaPushPanel() {
         const browserSubscription =
           await registration.pushManager.getSubscription();
         await browserSubscription?.unsubscribe().catch(() => false);
+        forgetCurrentPushSubscriptionId();
       }
 
       showFeedback(

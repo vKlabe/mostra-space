@@ -97,6 +97,15 @@ function storeInstalledState() {
   }
 }
 
+function clearStoredInstallState() {
+  try {
+    window.localStorage.removeItem(INSTALLED_STORAGE_KEY);
+    window.dispatchEvent(new Event(INSTALLED_STATE_EVENT));
+  } catch {
+    // The native install prompt remains authoritative without local storage.
+  }
+}
+
 export default function PwaInstallProvider({
   children,
 }: {
@@ -133,6 +142,9 @@ export default function PwaInstallProvider({
       event.preventDefault();
 
       if (!getIsStandalone()) {
+        // Receiving this event proves the app is currently installable. Clear
+        // a stale marker left behind when a user uninstalled the PWA.
+        clearStoredInstallState();
         setDeferredPrompt(event as BeforeInstallPromptEvent);
       }
     };

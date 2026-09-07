@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import T from "@/components/i18n/T";
+import { getSafePostAuthPath } from "@/lib/auth/safeNavigation";
 
 type GoogleOAuthButtonProps = {
   mode: "login" | "register";
@@ -29,8 +30,15 @@ export default function GoogleOAuthButton({
     try {
       const supabase = createClient();
       const redirectTo = new URL("/auth/callback", window.location.origin);
+      const requestedNext = new URL(window.location.href).searchParams.get(
+        "next"
+      );
+      const next =
+        mode === "login"
+          ? getSafePostAuthPath(requestedNext)
+          : "/dashboard?oauth=google";
 
-      redirectTo.searchParams.set("next", "/dashboard?oauth=google");
+      redirectTo.searchParams.set("next", next);
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",

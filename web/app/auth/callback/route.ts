@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getSafePostAuthPath } from "@/lib/auth/safeNavigation";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,14 +13,6 @@ function cleanText(value: unknown) {
   }
 
   return value.trim();
-}
-
-function getSafeNextPath(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return value;
 }
 
 function getRedirectOrigin(request: Request, origin: string) {
@@ -89,7 +82,7 @@ async function syncOAuthProfile(user: User) {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = getSafeNextPath(searchParams.get("next"));
+  const next = getSafePostAuthPath(searchParams.get("next"));
   const redirectOrigin = getRedirectOrigin(request, origin);
 
   if (!code) {

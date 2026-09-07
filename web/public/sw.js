@@ -7,6 +7,9 @@
 
 const DEFAULT_NOTIFICATION_URL = "/account/notifiche";
 const NOTIFICATION_ICON = "/pwa/icon-192x192.png";
+const PWA_WORKER_VERSION = "pwa-9";
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function cleanText(value, fallback, maximumLength) {
   if (typeof value !== "string") {
@@ -60,6 +63,22 @@ function badgeCount(value) {
   return Math.min(999, Math.floor(parsed));
 }
 
+function notificationIdentifier(value) {
+  return typeof value === "string" && UUID_PATTERN.test(value) ? value : null;
+}
+
+function notificationGatewayUrl(url, notificationId) {
+  const gateway = new URL("/pwa/open", self.location.origin);
+
+  gateway.searchParams.set("next", notificationUrl(url));
+
+  if (notificationId) {
+    gateway.searchParams.set("notification", notificationId);
+  }
+
+  return `${gateway.pathname}${gateway.search}`;
+}
+
 async function updateAppBadge(count) {
   try {
     if (count > 0 && typeof self.navigator?.setAppBadge === "function") {
@@ -105,6 +124,7 @@ self.addEventListener("push", (event) => {
   const url = notificationUrl(payload.url);
   const tag = cleanText(payload.tag, "mostra-space-notification", 120);
   const unreadCount = badgeCount(payload.badgeCount);
+  const notificationId = notificationIdentifier(payload.notificationId);
 
   event.waitUntil(
     Promise.all([
@@ -112,7 +132,7 @@ self.addEventListener("push", (event) => {
         body,
         icon: NOTIFICATION_ICON,
         badge: NOTIFICATION_ICON,
-        data: { url },
+        data: { url, notificationId },
         tag,
       }),
       updateAppBadge(unreadCount),
@@ -125,6 +145,10 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const url = notificationUrl(event.notification.data?.url);
+  const notificationId = notificationIdentifier(
+    event.notification.data?.notificationId
+  );
+  const gatewayUrl = notificationGatewayUrl(url, notificationId);
 
   event.waitUntil(
     (async () => {
@@ -134,14 +158,27 @@ self.addEventListener("notificationclick", (event) => {
       });
 
       for (const client of windowClients) {
-        if ("navigate" in client) {
-          await client.navigate(url);
-        }
+        try {
+          if ("navigate" in client) {
+            await client.navigate(gatewayUrl);
+          }
 
-        return client.focus();
+          return await client.focus();
+        } catch {
+          // Try another window or open a new one below.
+        }
       }
 
-      return self.clients.openWindow(url);
+      return self.clients.openWindow(gatewayUrl);
     })()
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "MOSTRASPACE_PWA_VERSION") {
+    event.source?.postMessage({
+      type: "MOSTRASPACE_PWA_VERSION",
+      version: PWA_WORKER_VERSION,
+    });
+  }
 });

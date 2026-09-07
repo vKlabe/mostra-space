@@ -220,6 +220,7 @@ function payloadFor(
       body,
       url: safeNotificationUrl(notification.href),
       tag: `account-notification-${notification.id}`,
+      notificationId: notification.id,
       badgeCount: Math.max(0, Math.min(999, Math.floor(unreadCount))),
     }),
   };

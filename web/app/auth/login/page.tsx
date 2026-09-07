@@ -6,6 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import T from "@/components/i18n/T";
 import GoogleOAuthButton from "@/components/auth/GoogleOAuthButton";
+import { getSafePostAuthPath } from "@/lib/auth/safeNavigation";
+
+function currentPostAuthPath() {
+  if (typeof window === "undefined") {
+    return "/dashboard";
+  }
+
+  return getSafePostAuthPath(
+    new URL(window.location.href).searchParams.get("next")
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,7 +43,7 @@ export default function LoginPage() {
       }
 
       if (user) {
-        router.replace("/dashboard");
+        router.replace(currentPostAuthPath());
         router.refresh();
         return;
       }
@@ -71,7 +82,7 @@ export default function LoginPage() {
         method: "POST",
       });
 
-      router.replace("/dashboard");
+      router.replace(currentPostAuthPath());
       router.refresh();
     } catch {
       setErrorMessage(
