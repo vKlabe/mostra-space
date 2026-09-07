@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import T from "@/components/i18n/T";
+import { deactivateCurrentDevicePush } from "@/lib/pwa/pushLifecycle.client";
 
 type DeleteAccountPanelProps = {
   email: string;
@@ -66,7 +67,12 @@ export default function DeleteAccountPanel({ email }: DeleteAccountPanelProps) {
         text: "Account eliminato definitivamente. Reindirizzamento...",
       });
 
-      window.location.href = "/";
+      // The database rows have already been removed through the account
+      // cascade. Remove the browser-side endpoint and badge as well.
+      await deactivateCurrentDevicePush({ notifyServer: false }).catch(
+        () => undefined
+      );
+      window.location.replace("/");
     } catch {
       setMessage({
         type: "error",

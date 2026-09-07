@@ -5,6 +5,7 @@ import { useState } from "react";
 import T from "@/components/i18n/T";
 import { createClient } from "@/lib/supabase/client";
 import { setAppBadgeCount } from "@/lib/pwa/appBadge.client";
+import { deactivateCurrentDevicePush } from "@/lib/pwa/pushLifecycle.client";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -15,6 +16,10 @@ export default function LogoutButton() {
 
     const supabase = createClient();
 
+    // Only this browser endpoint is removed. Other registered devices keep
+    // receiving notifications for the same account. Cleanup is best-effort so
+    // a browser API failure can never trap the user in the signed-in session.
+    await deactivateCurrentDevicePush().catch(() => undefined);
     await supabase.auth.signOut();
     await setAppBadgeCount(0);
 
