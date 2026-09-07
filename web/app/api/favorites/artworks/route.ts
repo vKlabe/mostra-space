@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createArtworkFavoritedNotification } from "@/lib/notifications/socialNotifications";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -141,6 +142,24 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  }
+
+  try {
+    await createArtworkFavoritedNotification({
+      admin,
+      actorId: user.id,
+      artworkId,
+      favoriteId: data.id,
+    });
+  } catch (notificationError) {
+    console.error("Unable to create artwork favorite notification", {
+      favoriteId: data.id,
+      artworkId,
+      error:
+        notificationError instanceof Error
+          ? notificationError.message
+          : "UNKNOWN_ERROR",
+    });
   }
 
   return NextResponse.json({

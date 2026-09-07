@@ -13,7 +13,11 @@ type NotificationRow = {
     | "event_3_days_before"
     | "event_30_minutes_before"
     | "gallery_published"
-    | "status_published";
+    | "status_published"
+    | "message_received"
+    | "profile_followed"
+    | "artwork_favorited"
+    | "gallery_favorited";
   title: string;
   message: string;
   event_id: string | null;

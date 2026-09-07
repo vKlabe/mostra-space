@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import T from "@/components/i18n/T";
+import { requestAppBadgeSync } from "@/lib/pwa/appBadge.client";
 
 type Contact = {
   profileId: string;
@@ -358,7 +359,14 @@ export default function DashboardMessagesDock() {
     setFeedbackCode(null);
     if (!options?.keepView) setView("conversation");
 
-    await fetch(`/api/messages/conversations/${conversationId}/read`, { method: "PATCH" }).catch(() => null);
+    const readResponse = await fetch(
+      `/api/messages/conversations/${conversationId}/read`,
+      { method: "PATCH" }
+    ).catch(() => null);
+
+    if (readResponse?.ok) {
+      requestAppBadgeSync();
+    }
     await fetchBootstrap();
     return true;
   }
@@ -945,6 +953,7 @@ export default function DashboardMessagesDock() {
                           <details className="relative">
                             <summary className="cursor-pointer list-none px-1 text-neutral-500 opacity-50 transition group-hover:opacity-100">•••</summary>
                             <div className={`absolute bottom-full z-[5] mb-1 w-44 rounded-2xl border border-neutral-800 bg-neutral-950 p-2 shadow-2xl ${message.mine ? "right-0" : "left-0"}`}>
+                              {/* eslint-disable-next-line react-hooks/refs */}
                               <button type="button" onClick={() => void hideMessage(message.id)} className="block w-full rounded-xl px-3 py-2 text-left text-xs text-neutral-300 hover:bg-neutral-900"><T textKey="messages.message.deleteForMe" fallback="Elimina per te" /></button>
                               {message.mine && message.canWithdraw && !message.withdrawnAt && <button type="button" onClick={() => void withdrawMessage(message.id)} className="block w-full rounded-xl px-3 py-2 text-left text-xs text-amber-300 hover:bg-neutral-900"><T textKey="messages.message.withdraw" fallback="Ritira per tutti" /></button>}
                               {!message.mine && <button type="button" onClick={() => { setReportMessageId(message.id); setReportReason("spam"); setReportNote(""); }} className="block w-full rounded-xl px-3 py-2 text-left text-xs text-red-300 hover:bg-neutral-900"><T textKey="messages.message.report" fallback="Segnala" /></button>}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { createNewFollowerNotification } from "@/lib/notifications/socialNotifications";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -148,6 +149,25 @@ export async function POST(_request: Request, context: RouteContext) {
       },
       { status: 500 }
     );
+  }
+
+  if (!insertError) {
+    try {
+      await createNewFollowerNotification({
+        admin,
+        followerId: user.id,
+        followedProfileId: profileId,
+      });
+    } catch (notificationError) {
+      console.error("Unable to create follower notification", {
+        followerId: user.id,
+        followedProfileId: profileId,
+        error:
+          notificationError instanceof Error
+            ? notificationError.message
+            : "UNKNOWN_ERROR",
+      });
+    }
   }
 
   const followerCount = await getFollowerCount(admin, profileId);

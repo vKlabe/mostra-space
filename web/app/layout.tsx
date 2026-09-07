@@ -6,6 +6,7 @@ import GuestSignupNudge from "@/components/public/GuestSignupNudge";
 import GoogleAccountCompletionGate from "@/components/auth/GoogleAccountCompletionGate";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import PwaInstallProvider from "@/components/pwa/PwaInstallProvider";
+import PwaBadgeSync from "@/components/pwa/PwaBadgeSync";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 
 const inter = Inter({
@@ -65,6 +66,7 @@ export default function RootLayout({
         className={`${inter.variable} ${cormorant.variable} bg-neutral-950 text-neutral-100 antialiased`}
       >
         <ServiceWorkerRegistration />
+        <PwaBadgeSync />
         <LanguageProvider>
           <PwaInstallProvider>
             <GuestSignupNudge />

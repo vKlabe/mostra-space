@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createGalleryFavoritedNotification } from "@/lib/notifications/socialNotifications";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -156,6 +157,24 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  }
+
+  try {
+    await createGalleryFavoritedNotification({
+      admin,
+      actorId: user.id,
+      galleryId,
+      favoriteId: data.id,
+    });
+  } catch (notificationError) {
+    console.error("Unable to create gallery favorite notification", {
+      favoriteId: data.id,
+      galleryId,
+      error:
+        notificationError instanceof Error
+          ? notificationError.message
+          : "UNKNOWN_ERROR",
+    });
   }
 
   return NextResponse.json({

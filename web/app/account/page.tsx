@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -10,7 +11,6 @@ import {
   formatLimitValue,
   formatMb,
   normalizePlanName,
-  type PlanName,
 } from "@/lib/plans";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import PwaInstallPanel from "@/components/pwa/PwaInstallPanel";
@@ -228,7 +228,7 @@ export default async function AccountPage() {
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <a
+                <Link
                   href="/dashboard/social"
                   className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                 >
@@ -236,7 +236,7 @@ export default async function AccountPage() {
                     textKey="account.profile.goToSocial"
                     fallback="Vai alla sezione Social"
                   />
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -327,12 +327,12 @@ export default async function AccountPage() {
                 </dt>
                 <dd className="mt-1 break-all text-neutral-200">
                   {publicProfileHref ? (
-                    <a
+                    <Link
                       href={publicProfileHref}
                       className="text-neutral-100 underline decoration-neutral-700 underline-offset-4 transition hover:decoration-neutral-300"
                     >
                       {publicProfileHref}
-                    </a>
+                    </Link>
                   ) : (
                     <T
                       textKey="account.platformStatus.notAvailable"
@@ -428,7 +428,7 @@ export default async function AccountPage() {
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <a
+              <Link
                 href="/dashboard"
                 className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
@@ -436,10 +436,10 @@ export default async function AccountPage() {
                   textKey="account.actions.goToDashboard"
                   fallback="Vai alla dashboard"
                 />
-              </a>
+              </Link>
 
               {!isCreator && (
-                <a
+                <Link
                   href="/account/upgrade-gallerist"
                   className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                 >
@@ -447,11 +447,11 @@ export default async function AccountPage() {
                     textKey="account.actions.upgradeToGallerist"
                     fallback="Passa a Gallerista / Artista"
                   />
-                </a>
+                </Link>
               )}
 
               {isCreator && (
-                <a
+                <Link
                   href="/dashboard/gallerie"
                   className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                 >
@@ -459,11 +459,11 @@ export default async function AccountPage() {
                     textKey="account.actions.manageGalleries"
                     fallback="Gestisci gallerie"
                   />
-                </a>
+                </Link>
               )}
 
               {isAdmin && (
-                <a
+                <Link
                   href="/admin"
                   className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                 >
@@ -471,7 +471,7 @@ export default async function AccountPage() {
                     textKey="account.actions.adminArea"
                     fallback="Area admin"
                   />
-                </a>
+                </Link>
               )}
             </div>
           </article>
@@ -609,21 +609,6 @@ export default async function AccountPage() {
                 <T
                   textKey="account.settings.security.description"
                   fallback="Gestione password, magic link e sessioni verrà aggiunta nelle prossime fasi."
-                />
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-              <p className="font-medium text-neutral-200">
-                <T
-                  textKey="account.settings.preferences.title"
-                  fallback="Preferenze"
-                />
-              </p>
-              <p className="mt-2 text-sm leading-6 text-neutral-500">
-                <T
-                  textKey="account.settings.preferences.description"
-                  fallback="Qui arriveranno notifiche, lingua, privacy e preferenze community."
                 />
               </p>
             </div>
