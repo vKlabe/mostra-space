@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import T from "@/components/i18n/T";
+import { createClient } from "@/lib/supabase/server";
 
 const heroGallery = {
   titleKey: "home.hero.gallery.title",
@@ -213,7 +215,16 @@ function GalleryImage({
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect("/home");
+  }
+
   return (
     <main className="museum-page overflow-hidden">
       <MuseumHeader />
