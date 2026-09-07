@@ -1,9 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
-  dispatchDuePushNotifications,
   PushDeliveryConfigurationError,
 } from "@/lib/pwa/pushDelivery.server";
+import { runRecordedPushDispatch } from "@/lib/pwa/pushDispatchRun.server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const summary = await dispatchDuePushNotifications();
+    const summary = await runRecordedPushDispatch("cron");
     return json({ success: true, ...summary });
   } catch (error) {
     if (error instanceof PushDeliveryConfigurationError) {

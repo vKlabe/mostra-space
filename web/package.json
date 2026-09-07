@@ -10,6 +10,7 @@
     "i18n:sync": "node scripts/i18n-sync.mjs",
     "i18n:check": "node scripts/i18n-check.mjs",
     "pwa:check": "node scripts/pwa-smoke-check.mjs",
+    "pwa:release": "npm run pwa:check && npm run build",
     "build:checked": "npm run i18n:check && npm run build"
   },
   "dependencies": {
