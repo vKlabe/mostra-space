@@ -15,6 +15,7 @@ type AdminShellProps = {
     | "live-guided-visits"
     | "events"
     | "storage"
+    | "pwa"
     | "billing";
   children: ReactNode;
   actions?: ReactNode;
@@ -65,6 +66,11 @@ const navItems = [
     label: "Storage",
     href: "/admin/storage",
     key: "storage",
+  },
+  {
+    label: "PWA / Push",
+    href: "/admin/pwa",
+    key: "pwa",
   },
   {
     label: "Billing",

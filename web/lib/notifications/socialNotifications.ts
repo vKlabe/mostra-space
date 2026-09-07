@@ -18,6 +18,18 @@ type ActorProfile = {
   profile_slug: string | null;
 };
 
+type ArtworkTarget = {
+  id: string;
+  owner_id: string;
+  title: string | null;
+};
+
+type GalleryTarget = {
+  id: string;
+  owner_id: string;
+  title: string | null;
+};
+
 function getActorName(profile: ActorProfile | null) {
   return (
     profile?.display_name ||
@@ -71,6 +83,193 @@ async function getActor(admin: AdminClient, profileId: string) {
     .maybeSingle<ActorProfile>();
 
   return data || null;
+}
+
+async function upsertActivityNotification(
+  admin: AdminClient,
+  row: Record<string, unknown>,
+  errorLabel: string
+) {
+  const { error } = await admin.from("account_notifications").upsert(row, {
+    onConflict: "user_id,source_key",
+    ignoreDuplicates: true,
+  });
+
+  if (error) {
+    throw new Error(`${errorLabel}: ${error.message}`);
+  }
+
+  return { created: 1 };
+}
+
+export async function createMessageReceivedNotification({
+  admin,
+  senderId,
+  recipientId,
+  messageId,
+  recipientMuted,
+}: {
+  admin: AdminClient;
+  senderId: string;
+  recipientId: string;
+  messageId: string;
+  recipientMuted: boolean;
+}) {
+  if (senderId === recipientId || recipientMuted) {
+    return { created: 0 };
+  }
+
+  const actor = await getActor(admin, senderId);
+  const actorName = getActorName(actor);
+  const now = new Date().toISOString();
+
+  return upsertActivityNotification(
+    admin,
+    {
+      user_id: recipientId,
+      type: "message_received",
+      push_category: "messages",
+      title: `Nuovo messaggio da ${actorName}`,
+      message: "Hai ricevuto un nuovo messaggio privato.",
+      event_id: null,
+      gallery_id: null,
+      status_id: null,
+      actor_profile_id: senderId,
+      href: `/dashboard/social?messageProfile=${encodeURIComponent(senderId)}`,
+      source_key: `direct_message:${messageId}`,
+      scheduled_for: now,
+    },
+    "Message notification insert failed"
+  );
+}
+
+export async function createNewFollowerNotification({
+  admin,
+  followerId,
+  followedProfileId,
+}: {
+  admin: AdminClient;
+  followerId: string;
+  followedProfileId: string;
+}) {
+  if (followerId === followedProfileId) {
+    return { created: 0 };
+  }
+
+  const actor = await getActor(admin, followerId);
+  const actorName = getActorName(actor);
+  const href = actor?.profile_slug
+    ? `/profili/${actor.profile_slug}`
+    : "/profili";
+
+  return upsertActivityNotification(
+    admin,
+    {
+      user_id: followedProfileId,
+      type: "profile_followed",
+      push_category: "followers",
+      title: "Hai un nuovo follower",
+      message: `${actorName} ha iniziato a seguirti.`,
+      event_id: null,
+      gallery_id: null,
+      status_id: null,
+      actor_profile_id: followerId,
+      href,
+      source_key: `profile_followed:${followerId}`,
+      scheduled_for: new Date().toISOString(),
+    },
+    "Follower notification insert failed"
+  );
+}
+
+export async function createArtworkFavoritedNotification({
+  admin,
+  actorId,
+  artworkId,
+  favoriteId,
+}: {
+  admin: AdminClient;
+  actorId: string;
+  artworkId: string;
+  favoriteId: string;
+}) {
+  const { data: artwork, error } = await admin
+    .from("artworks")
+    .select("id, owner_id, title")
+    .eq("id", artworkId)
+    .maybeSingle<ArtworkTarget>();
+
+  if (error || !artwork || artwork.owner_id === actorId) {
+    return { created: 0 };
+  }
+
+  const actor = await getActor(admin, actorId);
+  const actorName = getActorName(actor);
+  const artworkTitle = artwork.title?.trim() || "una tua opera";
+
+  return upsertActivityNotification(
+    admin,
+    {
+      user_id: artwork.owner_id,
+      type: "artwork_favorited",
+      push_category: "favorites",
+      title: "Una tua opera è stata salvata",
+      message: `${actorName} ha aggiunto ${artworkTitle} ai preferiti.`,
+      event_id: null,
+      gallery_id: null,
+      status_id: null,
+      actor_profile_id: actorId,
+      href: `/dashboard/opere/${encodeURIComponent(artwork.id)}`,
+      source_key: `artwork_favorited:${favoriteId}`,
+      scheduled_for: new Date().toISOString(),
+    },
+    "Artwork favorite notification insert failed"
+  );
+}
+
+export async function createGalleryFavoritedNotification({
+  admin,
+  actorId,
+  galleryId,
+  favoriteId,
+}: {
+  admin: AdminClient;
+  actorId: string;
+  galleryId: string;
+  favoriteId: string;
+}) {
+  const { data: gallery, error } = await admin
+    .from("galleries")
+    .select("id, owner_id, title")
+    .eq("id", galleryId)
+    .maybeSingle<GalleryTarget>();
+
+  if (error || !gallery || gallery.owner_id === actorId) {
+    return { created: 0 };
+  }
+
+  const actor = await getActor(admin, actorId);
+  const actorName = getActorName(actor);
+  const galleryTitle = gallery.title?.trim() || "una tua galleria";
+
+  return upsertActivityNotification(
+    admin,
+    {
+      user_id: gallery.owner_id,
+      type: "gallery_favorited",
+      push_category: "favorites",
+      title: "Una tua galleria è stata salvata",
+      message: `${actorName} ha aggiunto ${galleryTitle} ai preferiti.`,
+      event_id: null,
+      gallery_id: gallery.id,
+      status_id: null,
+      actor_profile_id: actorId,
+      href: `/dashboard/gallerie/${encodeURIComponent(gallery.id)}`,
+      source_key: `gallery_favorited:${favoriteId}`,
+      scheduled_for: new Date().toISOString(),
+    },
+    "Gallery favorite notification insert failed"
+  );
 }
 
 export async function createGalleryPublishedNotifications({

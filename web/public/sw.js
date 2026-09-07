@@ -50,6 +50,42 @@ function readPushPayload(event) {
   }
 }
 
+function badgeCount(value) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+
+  return Math.min(999, Math.floor(parsed));
+}
+
+async function updateAppBadge(count) {
+  try {
+    if (count > 0 && typeof self.navigator?.setAppBadge === "function") {
+      await self.navigator.setAppBadge(count);
+    } else if (
+      count === 0 &&
+      typeof self.navigator?.clearAppBadge === "function"
+    ) {
+      await self.navigator.clearAppBadge();
+    }
+  } catch {
+    // App badging is optional and must never prevent notification delivery.
+  }
+}
+
+async function notifyOpenClients() {
+  const windowClients = await self.clients.matchAll({
+    type: "window",
+    includeUncontrolled: true,
+  });
+
+  for (const client of windowClients) {
+    client.postMessage({ type: "MOSTRASPACE_BADGE_SYNC" });
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -68,14 +104,20 @@ self.addEventListener("push", (event) => {
   );
   const url = notificationUrl(payload.url);
   const tag = cleanText(payload.tag, "mostra-space-notification", 120);
+  const unreadCount = badgeCount(payload.badgeCount);
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: NOTIFICATION_ICON,
-      data: { url },
-      tag,
-    })
+    Promise.all([
+      self.registration.showNotification(title, {
+        body,
+        icon: NOTIFICATION_ICON,
+        badge: NOTIFICATION_ICON,
+        data: { url },
+        tag,
+      }),
+      updateAppBadge(unreadCount),
+      notifyOpenClients(),
+    ])
   );
 });
 

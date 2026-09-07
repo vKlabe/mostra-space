@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import T from "@/components/i18n/T";
+import { requestAppBadgeSync } from "@/lib/pwa/appBadge.client";
 
 type NotificationReadButtonProps = {
   notificationId: string;
@@ -35,6 +36,8 @@ export default function NotificationReadButton({
           result?.error || "Non riesco ad aggiornare la notifica."
         );
       }
+
+      requestAppBadgeSync();
 
       startTransition(() => {
         router.refresh();

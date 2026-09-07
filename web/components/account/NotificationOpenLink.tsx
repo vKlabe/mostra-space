@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import T from "@/components/i18n/T";
+import { requestAppBadgeSync } from "@/lib/pwa/appBadge.client";
 
 type NotificationOpenLinkProps = {
   notificationId: string;
@@ -25,6 +26,7 @@ export default function NotificationOpenLink({
       await fetch(`/api/account/notifications/${notificationId}/read`, {
         method: "PATCH",
       });
+      requestAppBadgeSync();
     } finally {
       window.location.assign(href);
     }

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   validatePushSubscription,
+  validatePushSubscriptionMetadataPatch,
   validateSubscriptionSelector,
 } from "@/lib/pwa/pushValidation";
 
@@ -49,10 +50,11 @@ export async function GET() {
   const { data, error } = await admin
     .from("pwa_push_subscriptions")
     .select(
-      "id, endpoint, device_label, locale, timezone, active, created_at, updated_at, last_seen_at, expires_at, disabled_at"
+      "id, endpoint, device_label, locale, timezone, active, created_at, updated_at, last_seen_at, expires_at, disabled_at, failure_count, last_error_code, last_error_at"
     )
     .eq("user_id", user.id)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(50);
 
   if (error) {
     console.error("Unable to load PWA push subscriptions", {
@@ -76,6 +78,9 @@ export async function GET() {
     lastSeenAt: subscription.last_seen_at,
     expiresAt: subscription.expires_at,
     disabledAt: subscription.disabled_at,
+    failureCount: subscription.failure_count,
+    lastErrorCode: subscription.last_error_code,
+    lastErrorAt: subscription.last_error_at,
   }));
 
   return json({ success: true, subscriptions });
@@ -182,6 +187,55 @@ export async function POST(request: Request) {
       createdAt: saved.created_at,
       updatedAt: saved.updated_at,
       lastSeenAt: saved.last_seen_at,
+    },
+  });
+}
+
+export async function PATCH(request: Request) {
+  const { admin, user } = await getRequestContext();
+
+  if (!user) {
+    return json({ success: false, code: "UNAUTHORIZED" }, 401);
+  }
+
+  const body = await readJson(request);
+
+  if (!body.success) {
+    return json({ success: false, code: "INVALID_JSON" }, 400);
+  }
+
+  const parsed = validatePushSubscriptionMetadataPatch(body.value);
+
+  if (!parsed.success) {
+    return json({ success: false, code: parsed.code }, 400);
+  }
+
+  const { data, error } = await admin
+    .from("pwa_push_subscriptions")
+    .update({ device_label: parsed.value.deviceLabel })
+    .eq("id", parsed.value.subscriptionId)
+    .eq("user_id", user.id)
+    .select("id, device_label, updated_at")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Unable to rename PWA push subscription", {
+      userId: user.id,
+      code: error.code,
+    });
+    return json({ success: false, code: "SAVE_FAILED" }, 500);
+  }
+
+  if (!data) {
+    return json({ success: false, code: "SUBSCRIPTION_NOT_FOUND" }, 404);
+  }
+
+  return json({
+    success: true,
+    subscription: {
+      id: data.id,
+      deviceLabel: data.device_label,
+      updatedAt: data.updated_at,
     },
   });
 }

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import T from "@/components/i18n/T";
 import { createClient } from "@/lib/supabase/client";
+import { setAppBadgeCount } from "@/lib/pwa/appBadge.client";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function LogoutButton() {
     const supabase = createClient();
 
     await supabase.auth.signOut();
+    await setAppBadgeCount(0);
 
     router.push("/auth/login");
     router.refresh();

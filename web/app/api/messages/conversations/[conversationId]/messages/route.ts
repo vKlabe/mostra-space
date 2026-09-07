@@ -10,6 +10,7 @@ import {
   getDirectRequestContext,
   secondsAgo,
 } from "@/lib/messages/directMessages";
+import { createMessageReceivedNotification } from "@/lib/notifications/socialNotifications";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -121,6 +122,25 @@ export async function POST(request: Request, context: RouteContext) {
       .update({ hidden_at: null })
       .eq("id", access.peerMember.id),
   ]);
+
+  try {
+    await createMessageReceivedNotification({
+      admin,
+      senderId: user.id,
+      recipientId: access.peerMember.profile_id,
+      messageId: inserted.id,
+      recipientMuted: Boolean(access.peerMember.muted_at),
+    });
+  } catch (notificationError) {
+    console.error("Unable to create direct message notification", {
+      messageId: inserted.id,
+      conversationId,
+      error:
+        notificationError instanceof Error
+          ? notificationError.message
+          : "UNKNOWN_ERROR",
+    });
+  }
 
   return NextResponse.json({
     success: true,

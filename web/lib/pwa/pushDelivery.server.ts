@@ -62,6 +62,11 @@ type PushPreferenceRow = {
   platform_updates_enabled: boolean;
 };
 
+type UnreadCountRow = {
+  user_id: string;
+  unread_count: number | string;
+};
+
 type WebPushFailure = Error & {
   statusCode?: number;
   headers?: Record<string, string | string[] | undefined>;
@@ -200,7 +205,8 @@ function safeNotificationUrl(value: string | null) {
 
 function payloadFor(
   notification: AccountNotification,
-  subscription: PushSubscriptionRow
+  subscription: PushSubscriptionRow,
+  unreadCount: number
 ) {
   const category = categoryFor(notification);
   const language = subscription.locale?.toLowerCase().split("-")[0] || "it";
@@ -214,6 +220,7 @@ function payloadFor(
       body,
       url: safeNotificationUrl(notification.href),
       tag: `account-notification-${notification.id}`,
+      badgeCount: Math.max(0, Math.min(999, Math.floor(unreadCount))),
     }),
   };
 }
@@ -332,6 +339,21 @@ export async function dispatchDuePushNotifications(): Promise<PushDispatchSummar
   const preferences = new Map(
     ((preferenceData || []) as PushPreferenceRow[]).map((row) => [row.user_id, row])
   );
+  const { data: unreadCountData, error: unreadCountError } = await admin.rpc(
+    "pwa_unread_notification_counts",
+    { p_user_ids: userIds }
+  );
+
+  if (unreadCountError) {
+    throw new Error(`Push unread count load failed: ${unreadCountError.code}`);
+  }
+
+  const unreadCounts = new Map(
+    ((unreadCountData || []) as UnreadCountRow[]).map((row) => [
+      row.user_id,
+      Math.max(0, Number(row.unread_count) || 0),
+    ])
+  );
 
   async function settle(
     delivery: ClaimedDelivery,
@@ -381,7 +403,11 @@ export async function dispatchDuePushNotifications(): Promise<PushDispatchSummar
       return skip(delivery, "CATEGORY_DISABLED");
     }
 
-    const payload = payloadFor(notification, subscription);
+    const payload = payloadFor(
+      notification,
+      subscription,
+      unreadCounts.get(subscription.user_id) || 0
+    );
 
     try {
       const response = await webPush.sendNotification(

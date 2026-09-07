@@ -3,13 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import T from "@/components/i18n/T";
+import {
+  requestAppBadgeSync,
+  setAppBadgeCount,
+} from "@/lib/pwa/appBadge.client";
 
 type NotificationType =
   | "event_created"
   | "event_3_days_before"
   | "event_30_minutes_before"
   | "gallery_published"
-  | "status_published";
+  | "status_published"
+  | "message_received"
+  | "profile_followed"
+  | "artwork_favorited"
+  | "gallery_favorited";
 
 type NotificationItem = {
   id: string;
@@ -142,7 +150,9 @@ export default function DashboardNotificationCenter() {
 
       knownIdsRef.current = new Set(nextNotifications.map((item) => item.id));
       setNotifications(nextNotifications);
-      setUnreadCount(Number(result.unreadCount) || 0);
+      const nextUnreadCount = Number(result.unreadCount) || 0;
+      setUnreadCount(nextUnreadCount);
+      void setAppBadgeCount(nextUnreadCount);
 
 
       if (newlyDue.length > 0) {
@@ -195,7 +205,9 @@ export default function DashboardNotificationCenter() {
           const items = result.notifications || [];
           knownIdsRef.current = new Set(items.map((item) => item.id));
           setNotifications(items);
-          setUnreadCount(Number(result.unreadCount) || 0);
+          const nextUnreadCount = Number(result.unreadCount) || 0;
+          setUnreadCount(nextUnreadCount);
+          void setAppBadgeCount(nextUnreadCount);
           setIsLoading(false);
 
           const newlyDeliveredUnread = items.filter(
@@ -331,6 +343,7 @@ export default function DashboardNotificationCenter() {
       )
     );
     setUnreadCount((current) => Math.max(0, current - 1));
+    requestAppBadgeSync();
     return true;
   }
 
@@ -367,6 +380,7 @@ export default function DashboardNotificationCenter() {
         )
       );
       setUnreadCount(0);
+      void setAppBadgeCount(0);
     } finally {
       setIsMarkingAll(false);
     }

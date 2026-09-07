@@ -47,8 +47,19 @@ export type PushPreferenceDatabasePatch = Partial<
   Record<(typeof PREFERENCE_COLUMN_BY_KEY)[keyof typeof PREFERENCE_COLUMN_BY_KEY], boolean>
 >;
 
+export type PushSubscriptionMetadataPatch = {
+  subscriptionId: string;
+  deviceLabel: string;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
 }
 
 function optionalText(value: unknown, maximumLength: number) {
@@ -189,11 +200,7 @@ export function validateSubscriptionSelector(
   if (typeof payload.subscriptionId === "string") {
     const subscriptionId = payload.subscriptionId.trim();
 
-    if (
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        subscriptionId
-      )
-    ) {
+    if (isUuid(subscriptionId)) {
       return { success: true, value: { subscriptionId } };
     }
   }
@@ -205,6 +212,33 @@ export function validateSubscriptionSelector(
   }
 
   return { success: false, code: "INVALID_SUBSCRIPTION_SELECTOR" };
+}
+
+export function validatePushSubscriptionMetadataPatch(
+  payload: unknown
+): ValidationResult<PushSubscriptionMetadataPatch> {
+  if (!isRecord(payload)) {
+    return { success: false, code: "INVALID_PAYLOAD" };
+  }
+
+  const subscriptionId =
+    typeof payload.subscriptionId === "string"
+      ? payload.subscriptionId.trim()
+      : "";
+  const deviceLabel = optionalText(payload.deviceLabel, 120);
+
+  if (!isUuid(subscriptionId)) {
+    return { success: false, code: "INVALID_SUBSCRIPTION_SELECTOR" };
+  }
+
+  if (!deviceLabel) {
+    return { success: false, code: "INVALID_DEVICE_LABEL" };
+  }
+
+  return {
+    success: true,
+    value: { subscriptionId, deviceLabel },
+  };
 }
 
 export function validatePushPreferencePatch(

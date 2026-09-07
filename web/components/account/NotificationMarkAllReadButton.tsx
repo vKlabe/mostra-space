@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import T from "@/components/i18n/T";
+import { setAppBadgeCount } from "@/lib/pwa/appBadge.client";
 
 type NotificationMarkAllReadButtonProps = {
   disabled?: boolean;
@@ -26,6 +27,8 @@ export default function NotificationMarkAllReadButton({
       if (!response.ok) {
         throw new Error("read_all_failed");
       }
+
+      await setAppBadgeCount(0);
 
       startTransition(() => {
         router.refresh();
