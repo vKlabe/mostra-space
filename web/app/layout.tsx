@@ -7,6 +7,7 @@ import GoogleAccountCompletionGate from "@/components/auth/GoogleAccountCompleti
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import PwaInstallProvider from "@/components/pwa/PwaInstallProvider";
 import PwaGlobalInstallPrompt from "@/components/pwa/PwaGlobalInstallPrompt";
+import PwaPushActivationPrompt from "@/components/pwa/PwaPushActivationPrompt";
 import PwaBadgeSync from "@/components/pwa/PwaBadgeSync";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 
@@ -97,6 +98,7 @@ export default function RootLayout({
         <LanguageProvider>
           <PwaInstallProvider>
             <PwaGlobalInstallPrompt />
+            <PwaPushActivationPrompt />
             <GuestSignupNudge />
             <GoogleAccountCompletionGate />
             {children}
