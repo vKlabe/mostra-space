@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -14,10 +15,18 @@ import FavoriteArtworkButton from "@/components/galleries/FavoriteArtworkButton"
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import JsonLd from "@/components/seo/JsonLd";
 import {
   getArtworkCardUrl,
   getArtworkDetailUrl,
 } from "@/lib/artworks/imageUrls";
+import {
+  absoluteUrl,
+  createPublicMetadata,
+  createSeoDescription,
+  NO_INDEX_METADATA,
+  resolvePublicUrl,
+} from "@/lib/seo/site";
 
 type PublicGalleryPageProps = {
   params: Promise<{
@@ -40,6 +49,11 @@ type Gallery = {
   published_at: string | null;
   created_at: string;
 };
+
+type GalleryMetadataRecord = Pick<
+  Gallery,
+  "title" | "slug" | "description" | "cover_image_url"
+>;
 
 type OwnerProfile = {
   id: string;
@@ -152,6 +166,47 @@ function formatPublishedDate(value: string | null) {
   }
 
   return <LocalDateTime value={value} format="date" />;
+}
+
+export async function generateMetadata({
+  params,
+}: PublicGalleryPageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  try {
+    const admin = createAdminClient();
+    const { data: gallery } = await admin
+      .from("galleries")
+      .select("title, slug, description, cover_image_url")
+      .eq("slug", slug)
+      .eq("status", "published")
+      .maybeSingle<GalleryMetadataRecord>();
+
+    if (!gallery) {
+      return {
+        ...NO_INDEX_METADATA,
+        title: "Galleria non disponibile",
+      };
+    }
+
+    const description = createSeoDescription(
+      gallery.description,
+      `Visita ${gallery.title}, una galleria d’arte virtuale immersiva su Mostra.Space.`
+    );
+
+    return createPublicMetadata({
+      title: gallery.title,
+      description,
+      path: `/gallerie/${encodeURIComponent(gallery.slug)}`,
+      image: gallery.cover_image_url,
+      imageAlt: `Anteprima della galleria ${gallery.title}`,
+    });
+  } catch {
+    return {
+      ...NO_INDEX_METADATA,
+      title: "Galleria non disponibile",
+    };
+  }
 }
 
 function GalleryImagePreview({
@@ -347,8 +402,100 @@ export default async function PublicGalleryDetailPage({
 
   const featuredArtwork = selectedArtwork || publicArtworks[0] || null;
 
+  const galleryUrl = absoluteUrl(
+    `/gallerie/${encodeURIComponent(gallery.slug)}`
+  );
+  const galleryDescription = createSeoDescription(
+    gallery.description,
+    `Visita ${gallery.title}, una galleria d’arte virtuale immersiva su Mostra.Space.`
+  );
+  const galleryCoverImageUrl = resolvePublicUrl(gallery.cover_image_url);
+  const galleryStructuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": galleryUrl,
+        url: galleryUrl,
+        name: gallery.title,
+        description: galleryDescription,
+        inLanguage: "it-IT",
+        isPartOf: {
+          "@id": `${absoluteUrl("/")}#website`,
+        },
+        primaryImageOfPage: galleryCoverImageUrl
+          ? {
+              "@type": "ImageObject",
+              contentUrl: galleryCoverImageUrl,
+            }
+          : undefined,
+        creator: ownerProfile
+          ? {
+              "@type": "Person",
+              name: ownerDisplayName,
+              url: ownerProfileHref
+                ? absoluteUrl(ownerProfileHref)
+                : undefined,
+            }
+          : undefined,
+        mainEntity: {
+          "@id": `${galleryUrl}#opere`,
+        },
+      },
+      {
+        "@type": "ItemList",
+        "@id": `${galleryUrl}#opere`,
+        name: `Opere esposte in ${gallery.title}`,
+        numberOfItems: publicArtworks.length,
+        itemListElement: publicArtworks.map(({ artwork }, index) => {
+          const artworkImageUrl = resolvePublicUrl(getArtworkCardUrl(artwork));
+
+          return {
+            "@type": "ListItem",
+            position: index + 1,
+            item: {
+              "@type": "VisualArtwork",
+              name: artwork.title,
+              image: artworkImageUrl || undefined,
+              creator: artwork.artist_name
+                ? {
+                    "@type": "Person",
+                    name: artwork.artist_name,
+                  }
+                : undefined,
+            },
+          };
+        }),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: absoluteUrl("/"),
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Gallerie",
+            item: absoluteUrl("/gallerie"),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: gallery.title,
+            item: galleryUrl,
+          },
+        ],
+      },
+    ],
+  };
+
   return (
     <main className="museum-page min-h-screen overflow-hidden">
+      <JsonLd data={galleryStructuredData} />
       <MuseumHeader />
 
       <section className="relative isolate overflow-hidden border-b border-[var(--museum-border)]">

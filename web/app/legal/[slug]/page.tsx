@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import JsonLd from "@/components/seo/JsonLd";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import { getLegalPage, legalPages } from "@/lib/legal/legal-pages";
+import {
+  absoluteUrl,
+  createPublicMetadata,
+  NO_INDEX_METADATA,
+} from "@/lib/seo/site";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +17,28 @@ export function generateStaticParams() {
   return legalPages.map((page) => ({
     slug: page.slug,
   }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const page = getLegalPage(slug);
+
+  if (!page) {
+    return {
+      ...NO_INDEX_METADATA,
+      title: "Documento non disponibile",
+    };
+  }
+
+  return createPublicMetadata({
+    title: page.title,
+    description: page.description,
+    path: `/legal/${encodeURIComponent(page.slug)}`,
+  });
 }
 
 export default async function LegalDetailPage({
@@ -24,8 +53,50 @@ export default async function LegalDetailPage({
     notFound();
   }
 
+  const pageUrl = absoluteUrl(`/legal/${encodeURIComponent(page.slug)}`);
+  const legalStructuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": pageUrl,
+        url: pageUrl,
+        name: page.title,
+        description: page.description,
+        inLanguage: "it-IT",
+        isPartOf: {
+          "@id": `${absoluteUrl("/")}#website`,
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: absoluteUrl("/"),
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Area legale",
+            item: absoluteUrl("/legal"),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: page.title,
+            item: pageUrl,
+          },
+        ],
+      },
+    ],
+  };
+
   return (
     <main className="museum-page min-h-screen">
+      <JsonLd data={legalStructuredData} />
       <MuseumHeader />
 
       <article className="mx-auto max-w-5xl px-4 py-12 md:px-8 md:py-16">

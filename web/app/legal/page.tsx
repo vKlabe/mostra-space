@@ -1,10 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import { legalPages, LEGAL_OWNER } from "@/lib/legal/legal-pages";
 import T from "@/components/i18n/T";
+import { createPublicMetadata } from "@/lib/seo/site";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = createPublicMetadata({
+  title: "Informazioni legali",
+  description:
+    "Consulta termini di utilizzo, privacy, cookie, pagamenti, cancellazioni e altre informazioni legali di Mostra.Space.",
+  path: "/legal",
+});
 
 export default function LegalIndexPage() {
   return (

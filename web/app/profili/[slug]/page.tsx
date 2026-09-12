@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import ProfileMessageButton from "@/components/profiles/ProfileMessageButton";
@@ -8,6 +9,14 @@ import ProfileStatusLikeButton from "@/components/social/ProfileStatusLikeButton
 import { DIRECT_MESSAGES_TERMS_VERSION } from "@/lib/messages/directMessages";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { getArtworkCardUrl } from "@/lib/artworks/imageUrls";
+import JsonLd from "@/components/seo/JsonLd";
+import {
+  absoluteUrl,
+  createPublicMetadata,
+  createSeoDescription,
+  NO_INDEX_METADATA,
+  resolvePublicUrl,
+} from "@/lib/seo/site";
 
 type PublicProfilePageProps = {
   params: Promise<{
@@ -30,6 +39,22 @@ type PublicProfile = {
   public_profile_enabled: boolean;
   created_at: string;
 };
+
+type ProfileNameSource = Pick<
+  PublicProfile,
+  "display_name" | "full_name" | "email"
+>;
+
+type ProfileMetadataRecord = Pick<
+  PublicProfile,
+  | "display_name"
+  | "full_name"
+  | "email"
+  | "avatar_url"
+  | "bio"
+  | "profile_slug"
+  | "public_profile_enabled"
+>;
 
 type PublicGallery = {
   id: string;
@@ -61,7 +86,7 @@ type PublicStatus = {
   created_at: string;
 };
 
-function getDisplayName(profile: PublicProfile) {
+function getDisplayName(profile: ProfileNameSource) {
   return (
     profile.display_name ||
     profile.full_name ||
@@ -140,6 +165,63 @@ function normalizeExternalUrl(value: string | null) {
   }
 
   return `https://${cleaned}`;
+}
+
+function isValidExternalUrl(value: string | null): value is string {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: PublicProfilePageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  try {
+    const admin = createAdminClient();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select(
+        "display_name, full_name, email, avatar_url, bio, profile_slug, public_profile_enabled"
+      )
+      .eq("profile_slug", slug)
+      .eq("public_profile_enabled", true)
+      .maybeSingle<ProfileMetadataRecord>();
+
+    if (!profile?.profile_slug) {
+      return {
+        ...NO_INDEX_METADATA,
+        title: "Profilo non disponibile",
+      };
+    }
+
+    const displayName = getDisplayName(profile);
+    const description = createSeoDescription(
+      profile.bio,
+      `Scopri il profilo pubblico di ${displayName}, le sue gallerie e le opere pubblicate su Mostra.Space.`
+    );
+
+    return createPublicMetadata({
+      title: displayName,
+      description,
+      path: `/profili/${encodeURIComponent(profile.profile_slug)}`,
+      image: profile.avatar_url,
+      imageAlt: `Profilo di ${displayName} su Mostra.Space`,
+    });
+  } catch {
+    return {
+      ...NO_INDEX_METADATA,
+      title: "Profilo non disponibile",
+    };
+  }
 }
 
 export default async function PublicProfilePage({
@@ -299,8 +381,76 @@ export default async function PublicProfilePage({
   const safeGalleries = (galleries || []) as PublicGallery[];
   const safeArtworks = (artworks || []) as PublicArtwork[];
 
+  const profileUrl = absoluteUrl(
+    `/profili/${encodeURIComponent(profile.profile_slug || slug)}`
+  );
+  const profileDescription = createSeoDescription(
+    profile.bio,
+    `Scopri il profilo pubblico di ${displayName}, le sue gallerie e le opere pubblicate su Mostra.Space.`
+  );
+  const externalProfileLinks = [websiteUrl, instagramUrl].filter(
+    isValidExternalUrl
+  );
+  const profileAvatarUrl = resolvePublicUrl(profile.avatar_url);
+  const profileStructuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ProfilePage",
+        "@id": profileUrl,
+        url: profileUrl,
+        name: `${displayName} su Mostra.Space`,
+        description: profileDescription,
+        inLanguage: "it-IT",
+        dateCreated: profile.created_at,
+        isPartOf: {
+          "@id": `${absoluteUrl("/")}#website`,
+        },
+        mainEntity: {
+          "@id": `${profileUrl}#profilo`,
+        },
+      },
+      {
+        "@type": "Person",
+        "@id": `${profileUrl}#profilo`,
+        name: displayName,
+        description: profileDescription,
+        url: profileUrl,
+        image: profileAvatarUrl || undefined,
+        sameAs:
+          externalProfileLinks.length > 0
+            ? externalProfileLinks
+            : undefined,
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: absoluteUrl("/"),
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Profili",
+            item: absoluteUrl("/profili"),
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: displayName,
+            item: profileUrl,
+          },
+        ],
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-[var(--museum-black)] px-6 py-10 text-[var(--museum-ivory)]">
+      <JsonLd data={profileStructuredData} />
       <section className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <a

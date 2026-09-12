@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -5,8 +6,16 @@ import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import TemplateCheckoutButton from "@/components/marketplace/TemplateCheckoutButton";
 import T from "@/components/i18n/T";
+import { createPublicMetadata } from "@/lib/seo/site";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = createPublicMetadata({
+  title: "Marketplace di gallerie virtuali",
+  description:
+    "Scopri spazi e template immersivi per creare mostre d’arte digitali professionali su Mostra.Space.",
+  path: "/marketplace",
+});
 
 type MarketplaceTemplate = {
   id: string;

@@ -1,14 +1,45 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { createPublicMetadata } from "@/lib/seo/site";
+
+const profilesMetadata: Metadata = createPublicMetadata({
+  title: "Artisti, galleristi e curatori",
+  description:
+    "Scopri i profili pubblici di artisti, galleristi, curatori e protagonisti della community d’arte di Mostra.Space.",
+  path: "/profili",
+});
 
 type ProfilesIndexPageProps = {
   searchParams?: Promise<{
     q?: string;
   }>;
 };
+
+export async function generateMetadata({
+  searchParams,
+}: ProfilesIndexPageProps): Promise<Metadata> {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+
+  if ((resolvedSearchParams.q || "").trim()) {
+    return {
+      ...profilesMetadata,
+      robots: {
+        index: false,
+        follow: true,
+        googleBot: {
+          index: false,
+          follow: true,
+        },
+      },
+    };
+  }
+
+  return profilesMetadata;
+}
 
 type PublicProfile = {
   id: string;

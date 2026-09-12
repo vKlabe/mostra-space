@@ -13,11 +13,16 @@ import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Home | Mostra.Space",
+  title: "Home",
   description: "Il tuo spazio personale per scoprire arte su Mostra.Space.",
   robots: {
     index: false,
     follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
   },
 };
 

@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import T from "@/components/i18n/T";
+import { createPublicMetadata } from "@/lib/seo/site";
+
+export const metadata: Metadata = createPublicMetadata({
+  title: "Presentazione ufficiale di Mostra.Space",
+  description:
+    "Partecipa alla presentazione ufficiale di Mostra.Space e scopri dal vivo come funzionano le gallerie d’arte digitali immersive.",
+  path: "/launch",
+});
 
 const launchStartsAtUtc = "20260915T160000Z";
 const launchEndsAtUtc = "20260915T170000Z";
