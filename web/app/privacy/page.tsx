@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import T from "@/components/i18n/T";
+import { createPublicMetadata } from "@/lib/seo/site";
+
+export const metadata: Metadata = createPublicMetadata({
+  title: "Privacy delle richieste nelle gallerie",
+  description:
+    "Informativa sul trattamento dei dati inviati tramite i moduli di richiesta presenti nelle gallerie virtuali di Mostra.Space.",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   const lastUpdate = "4 giugno 2026";

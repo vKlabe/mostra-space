@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -8,6 +9,14 @@ import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import T from "@/components/i18n/T";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { createPublicMetadata } from "@/lib/seo/site";
+
+export const metadata: Metadata = createPublicMetadata({
+  title: "Gallerie virtuali e mostre immersive",
+  description:
+    "Esplora gallerie virtuali, mostre digitali e opere d’arte in spazi 3D visitabili direttamente dal browser.",
+  path: "/gallerie",
+});
 
 type PublicGalleriesIndexPageProps = {
   searchParams?: Promise<{

@@ -1,15 +1,42 @@
+import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import {
+  createPublicMetadata,
+  NO_INDEX_METADATA,
+} from "@/lib/seo/site";
+
+const publicEventsMetadata: Metadata = createPublicMetadata({
+  title: "Eventi d’arte e visite guidate online",
+  description:
+    "Scopri vernissage digitali, mostre, visite guidate ed eventi d’arte collegati alle gallerie virtuali di Mostra.Space.",
+  path: "/eventi",
+});
 
 type PublicEventsPageProps = {
   searchParams?: Promise<{
     privateToken?: string;
   }>;
 };
+
+export async function generateMetadata({
+  searchParams,
+}: PublicEventsPageProps): Promise<Metadata> {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+
+  if (resolvedSearchParams.privateToken) {
+    return {
+      ...NO_INDEX_METADATA,
+      title: "Evento riservato",
+    };
+  }
+
+  return publicEventsMetadata;
+}
 
 type EventAccessMode = "public" | "password" | "invite_only" | "private_link";
 

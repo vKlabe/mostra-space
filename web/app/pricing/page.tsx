@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CheckoutButton from "@/components/billing/CheckoutButton";
@@ -14,8 +15,16 @@ import {
   type PlanName,
 } from "@/lib/plans";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { createPublicMetadata } from "@/lib/seo/site";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = createPublicMetadata({
+  title: "Piani e prezzi",
+  description:
+    "Confronta i piani Mostra.Space per creare gallerie virtuali, pubblicare opere e realizzare cataloghi digitali professionali.",
+  path: "/pricing",
+});
 
 type Profile = {
   id: string;

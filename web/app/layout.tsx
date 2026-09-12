@@ -43,10 +43,22 @@ export const metadata: Metadata = {
   description:
     "La piattaforma espositiva digitale per artisti, curatori, gallerie, collezionisti e amanti dell’arte.",
   applicationName: "Mostra.Space",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   openGraph: {
     type: "website",
     locale: "it_IT",
     siteName: "Mostra.Space",
+    url: "/",
     title: "Mostra.Space — L’arte senza confini",
     description:
       "La piattaforma espositiva digitale per artisti, curatori, gallerie, collezionisti e amanti dell’arte.",
@@ -87,7 +99,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="it"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body

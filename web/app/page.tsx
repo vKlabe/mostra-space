@@ -1,9 +1,51 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import JsonLd from "@/components/seo/JsonLd";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import T from "@/components/i18n/T";
+import {
+  absoluteUrl,
+  createPublicMetadata,
+  DEFAULT_SITE_DESCRIPTION,
+  SITE_NAME,
+} from "@/lib/seo/site";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = createPublicMetadata({
+  title: "Mostra.Space — L’arte senza confini",
+  description: DEFAULT_SITE_DESCRIPTION,
+  path: "/",
+  absoluteTitle: true,
+});
+
+const homeStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${absoluteUrl("/")}#organization`,
+      name: SITE_NAME,
+      url: absoluteUrl("/"),
+      logo: {
+        "@type": "ImageObject",
+        url: absoluteUrl("/pwa/icon-512x512.png"),
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${absoluteUrl("/")}#website`,
+      name: SITE_NAME,
+      url: absoluteUrl("/"),
+      description: DEFAULT_SITE_DESCRIPTION,
+      inLanguage: "it-IT",
+      publisher: {
+        "@id": `${absoluteUrl("/")}#organization`,
+      },
+    },
+  ],
+};
 
 const heroGallery = {
   titleKey: "home.hero.gallery.title",
@@ -227,6 +269,7 @@ export default async function HomePage() {
 
   return (
     <main className="museum-page overflow-hidden">
+      <JsonLd data={homeStructuredData} />
       <MuseumHeader />
 
       <section className="border-b border-[var(--museum-border)]">
