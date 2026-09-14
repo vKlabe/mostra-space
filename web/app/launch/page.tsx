@@ -6,7 +6,7 @@ import { createPublicMetadata } from "@/lib/seo/site";
 export const metadata: Metadata = createPublicMetadata({
   title: "Presentazione ufficiale di Mostra.Space",
   description:
-    "Partecipa alla presentazione ufficiale di Mostra.Space e scopri dal vivo come funzionano le gallerie d’arte digitali immersive.",
+    "Registrati gratuitamente e partecipa alla presentazione ufficiale di Mostra.Space: il 15 settembre scopri dal vivo la piattaforma e le gallerie d’arte digitali immersive.",
   path: "/launch",
 });
 
@@ -22,39 +22,8 @@ const googleCalendarUrl = `https://calendar.google.com/calendar/render?${new URL
   location: "Online — mostra.space/launch",
 }).toString()}`;
 
-const trailerUrl = process.env.NEXT_PUBLIC_LAUNCH_TRAILER_URL || "";
 const joinUrl = process.env.NEXT_PUBLIC_LAUNCH_JOIN_URL || "";
-
-function getEmbeddableTrailerUrl(url: string) {
-  if (!url) {
-    return "";
-  }
-
-  try {
-    const parsedUrl = new URL(url);
-
-    if (parsedUrl.hostname.includes("youtube.com")) {
-      const videoId = parsedUrl.searchParams.get("v");
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-    }
-
-    if (parsedUrl.hostname.includes("youtu.be")) {
-      const videoId = parsedUrl.pathname.replace("/", "");
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
-    }
-
-    if (parsedUrl.hostname.includes("vimeo.com")) {
-      const videoId = parsedUrl.pathname.replace("/", "");
-      return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
-    }
-
-    return url;
-  } catch {
-    return "";
-  }
-}
-
-const embeddableTrailerUrl = getEmbeddableTrailerUrl(trailerUrl);
+const registerUrl = process.env.NEXT_PUBLIC_REGISTER_URL || "/register";
 
 export default function LaunchPage() {
   return (
@@ -85,10 +54,20 @@ export default function LaunchPage() {
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
+                  <a
+                    href={registerUrl}
+                    className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                  >
+                    <T
+                      textKey="launchPage.hero.register"
+                      fallback="Iscriviti gratis per partecipare"
+                    />
+                  </a>
+
                   {joinUrl ? (
                     <a
                       href={joinUrl}
-                      className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                      className="rounded-full border border-amber-700 bg-amber-950/25 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-500"
                     >
                       <T
                         textKey="launchPage.hero.joinEvent"
@@ -177,44 +156,61 @@ export default function LaunchPage() {
           <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
             <article className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-6">
               <p className="text-xs uppercase tracking-[0.28em] text-amber-500">
-                <T textKey="launchPage.trailer.label" fallback="Trailer" />
+                <T textKey="launchPage.register.label" fallback="Prima dell’evento" />
               </p>
 
               <h2 className="mt-3 font-serif text-3xl text-neutral-50">
                 <T
-                  textKey="launchPage.trailer.title"
-                  fallback="Un’anteprima dello spazio"
+                  textKey="launchPage.register.title"
+                  fallback="Entra in mostra.space prima del lancio"
                 />
               </h2>
 
-              <div className="mt-6 aspect-video overflow-hidden rounded-[1.5rem] border border-neutral-800 bg-black">
-                {embeddableTrailerUrl ? (
-                  <iframe
-                    src={embeddableTrailerUrl}
-                    title="Trailer di lancio MostraSpace"
-                    className="h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center p-8 text-center">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-neutral-600">
-                        <T
-                          textKey="launchPage.trailer.placeholder.label"
-                          fallback="Trailer in arrivo"
-                        />
-                      </p>
-                      <p className="mt-4 max-w-lg text-sm leading-7 text-neutral-400">
-                        <T
-                          textKey="launchPage.trailer.placeholder.description"
-                          fallback="Il trailer di lancio sarà disponibile qui prima della presentazione."
-                        />
-                      </p>
-                    </div>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-400">
+                <T
+                  textKey="launchPage.register.description"
+                  fallback="La partecipazione è gratuita. Crea ora il tuo account mostra.space: domani potrai arrivare già dentro la piattaforma, seguire la presentazione e iniziare subito a esplorarla."
+                />
+              </p>
+
+              <div className="mt-6 grid gap-3">
+                {[
+                  {
+                    key: "launchPage.register.benefit1",
+                    fallback: "Registrazione gratuita",
+                  },
+                  {
+                    key: "launchPage.register.benefit2",
+                    fallback: "Accesso immediato alla piattaforma",
+                  },
+                  {
+                    key: "launchPage.register.benefit3",
+                    fallback: "Pronto a partecipare al lancio del 15 settembre",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.key}
+                    className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-800 bg-amber-950/30 text-sm text-amber-300">
+                      ✓
+                    </span>
+                    <p className="text-sm text-neutral-200">
+                      <T textKey={item.key} fallback={item.fallback} />
+                    </p>
                   </div>
-                )}
+                ))}
               </div>
+
+              <a
+                href={registerUrl}
+                className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+              >
+                <T
+                  textKey="launchPage.register.cta"
+                  fallback="Iscriviti gratuitamente"
+                />
+              </a>
             </article>
 
             <article className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-6">
@@ -305,31 +301,41 @@ export default function LaunchPage() {
             <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <p className="text-xs uppercase tracking-[0.28em] text-amber-500">
-                  <T textKey="launchPage.finalCta.label" fallback="Un solo link per la campagna" />
+                  <T textKey="launchPage.finalCta.label" fallback="Preparati al lancio" />
                 </p>
                 <h2 className="mt-3 font-serif text-3xl text-neutral-50">
                   <T
                     textKey="launchPage.finalCta.title"
-                    fallback="Salva questa pagina e torna il giorno del lancio"
+                    fallback="Crea il tuo account oggi. Domani entra direttamente nell’evento."
                   />
                 </h2>
                 <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
                   <T
                     textKey="launchPage.finalCta.description"
-                    fallback="Questa è la pagina centrale per il lancio ufficiale di mostra.space: link calendario, trailer, programma e accesso alla presentazione live resteranno tutti qui."
+                    fallback="Registrati gratuitamente e salva questa pagina: il 15 settembre troverai qui l’accesso alla presentazione live e tutte le informazioni per partecipare."
                   />
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3 md:justify-end">
+                <a
+                  href={registerUrl}
+                  className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                >
+                  <T
+                    textKey="launchPage.finalCta.register"
+                    fallback="Iscriviti gratis"
+                  />
+                </a>
+
                 {joinUrl ? (
                   <a
                     href={joinUrl}
-                    className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
+                    className="rounded-full border border-amber-700 bg-amber-950/25 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-500"
                   >
                     <T
                       textKey="launchPage.finalCta.join"
-                      fallback="Partecipa alla presentazione"
+                      fallback="Entra nell’evento"
                     />
                   </a>
                 ) : null}
