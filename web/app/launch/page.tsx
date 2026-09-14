@@ -23,7 +23,7 @@ const googleCalendarUrl = `https://calendar.google.com/calendar/render?${new URL
 }).toString()}`;
 
 const joinUrl = process.env.NEXT_PUBLIC_LAUNCH_JOIN_URL || "";
-const registerUrl = process.env.NEXT_PUBLIC_REGISTER_URL || "/register";
+const registerUrl = "https://mostra.space/auth/register";
 
 export default function LaunchPage() {
   return (
