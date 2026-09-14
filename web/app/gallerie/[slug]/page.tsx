@@ -1,3 +1,4 @@
+import PremioWinnerBadge from "@/components/premio/PremioWinnerBadge";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -606,6 +607,7 @@ export default async function PublicGalleryDetailPage({
                 </a>
 
                 <FavoriteGalleryButton galleryId={gallery.id} />
+                <PremioWinnerBadge artistId={gallery.owner_id} galleryId={gallery.id} />
 
                 {ownerProfile && (
                   <FollowProfileButton

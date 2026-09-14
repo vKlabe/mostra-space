@@ -1,4 +1,6 @@
+import PremioWinnerBadge from "@/components/premio/PremioWinnerBadge";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import ProfileMessageButton from "@/components/profiles/ProfileMessageButton";
@@ -453,12 +455,12 @@ export default async function PublicProfilePage({
       <JsonLd data={profileStructuredData} />
       <section className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <a
+          <Link
             href="/gallerie"
             className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
           >
             Elenco pubblico
-          </a>
+          </Link>
 
           <a
             href="/account"
@@ -492,6 +494,7 @@ export default async function PublicProfilePage({
                   <h1 className="font-serif text-5xl text-[var(--museum-ivory)] md:text-6xl">
                     {displayName}
                   </h1>
+                  <PremioWinnerBadge artistId={profile.id} />
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="rounded-full border border-[var(--museum-border-soft)] px-4 py-2 text-sm text-[var(--museum-ivory-soft)]">

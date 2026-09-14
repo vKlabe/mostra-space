@@ -1,3 +1,4 @@
+import { deletePremioAccountArchives } from "@/lib/premio/deleteAccount";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type DeleteAccountStep = {
@@ -282,6 +283,7 @@ export async function deleteUserAccount({
   const artworkIds = artworks.map((artwork) => artwork.id);
   const eventIds = await getEventIds({ admin, userId, galleryIds });
 
+  await deletePremioAccountArchives(admin, userId);
   await removeArtworkFiles({ admin, artworks, steps });
   await clearPublicGallerySlots({ admin, galleryIds, steps });
 

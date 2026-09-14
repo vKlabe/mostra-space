@@ -242,7 +242,7 @@ export default function ArtworkInventoryTable({
           <h2 className="mt-3 font-serif text-3xl text-[var(--museum-ivory)]">
             <T
               textKey="dashboard.artworkInventory.header.title"
-              fallback="Modifica opere"
+              fallback="Inventario opere"
             />
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--museum-stone-muted)]">

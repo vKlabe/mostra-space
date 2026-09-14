@@ -14,6 +14,7 @@ type DashboardShellProps = {
   subtitle?: React.ReactNode;
   eyebrow?: React.ReactNode;
   activeSection?:
+    | "premio"
     | "dashboard"
     | "social"
     | "analytics"
@@ -38,6 +39,7 @@ type NavItem = {
 const SIDEBAR_STORAGE_KEY = "mostraspace:dashboard-sidebar-collapsed";
 
 const communityNavItems: NavItem[] = [
+  { labelKey: "premio.navMenu", labelFallback: "Premio Mostra.Space", href: "/dashboard/premiomostraspace", section: "premio", descriptionKey: "premio.navDescription", descriptionFallback: "La tua candidatura" },
   {
     labelKey: "dashboard.shell.communityNav.dashboard.label",
     labelFallback: "Dashboard",
@@ -73,6 +75,7 @@ const communityNavItems: NavItem[] = [
 ];
 
 const navItems: NavItem[] = [
+  { labelKey: "premio.navMenu", labelFallback: "Premio Mostra.Space", href: "/dashboard/premiomostraspace", section: "premio", descriptionKey: "premio.navDescription", descriptionFallback: "La tua candidatura" },
   {
     labelKey: "dashboard.shell.creatorNav.dashboard.label",
     labelFallback: "Dashboard",
@@ -216,6 +219,7 @@ export default function DashboardShell({
     useState(false);
 
   useEffect(() => {
+    const restoreTimer = window.setTimeout(() => {
     try {
       const storedValue = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
       setIsDesktopSidebarCollapsed(storedValue === "true");
@@ -224,6 +228,8 @@ export default function DashboardShell({
     } finally {
       setHasLoadedSidebarPreference(true);
     }
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
   }, []);
 
   useEffect(() => {
