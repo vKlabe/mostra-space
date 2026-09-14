@@ -1,3 +1,4 @@
+import { premioSitemap } from "@/lib/premio/sitemap";
 import type { MetadataRoute } from "next";
 import { legalPages } from "@/lib/legal/legal-pages";
 import { absoluteUrl, resolvePublicUrl } from "@/lib/seo/site";
@@ -123,7 +124,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         };
       });
 
-    return [...staticEntries, ...galleryEntries, ...profileEntries];
+    const prizeEntries = await premioSitemap().catch(() => []);
+    return [...staticEntries, ...galleryEntries, ...profileEntries, ...prizeEntries];
   } catch {
     return staticEntries;
   }

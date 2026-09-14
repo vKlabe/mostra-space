@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [registrationPath, setRegistrationPath] = useState("/auth/register");
   const [checkingSession, setCheckingSession] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -48,6 +49,10 @@ export default function LoginPage() {
         return;
       }
 
+      const destination = currentPostAuthPath();
+      if (destination.startsWith("/premiomostraspace/") || destination === "/dashboard/premiomostraspace") {
+        setRegistrationPath(destination === "/dashboard/premiomostraspace" ? "/premiomostraspace/iscriviti" : `/premiomostraspace/iscriviti?intent=support&next=${encodeURIComponent(destination)}`);
+      }
       setCheckingSession(false);
     }
 
@@ -248,7 +253,7 @@ export default function LoginPage() {
                 fallback="Non hai un account?"
               />{" "}
               <Link
-                href="/auth/register"
+                href={registrationPath}
                 className="text-[var(--museum-bronze-light)] underline-offset-4 hover:underline"
               >
                 <T

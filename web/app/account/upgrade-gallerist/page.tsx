@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getSafePostAuthPath } from "@/lib/auth/safeNavigation";
 
 export default function UpgradeGalleristPage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function UpgradeGalleristPage() {
 
       setMessage("Upgrade completato. Ti sto portando alla dashboard gallerista...");
 
-      router.replace("/dashboard");
+      router.replace(getSafePostAuthPath(new URL(window.location.href).searchParams.get("next")));
       router.refresh();
     } catch {
       setErrorMessage("Errore di rete durante l’upgrade.");

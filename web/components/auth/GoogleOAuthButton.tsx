@@ -9,12 +9,16 @@ type GoogleOAuthButtonProps = {
   mode: "login" | "register";
   disabled?: boolean;
   className?: string;
+  nextPath?: string;
+  compactNotice?: boolean;
 };
 
 export default function GoogleOAuthButton({
   mode,
   disabled = false,
   className = "",
+  nextPath,
+  compactNotice = false,
 }: GoogleOAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | null>(null);
@@ -34,7 +38,7 @@ export default function GoogleOAuthButton({
         "next"
       );
       const next =
-        mode === "login"
+        nextPath ? getSafePostAuthPath(nextPath) : mode === "login"
           ? getSafePostAuthPath(requestedNext)
           : "/dashboard?oauth=google";
 
@@ -92,12 +96,12 @@ export default function GoogleOAuthButton({
         )}
       </button>
 
-      <p className="mt-3 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
+      {!compactNotice && <p className="mt-3 text-center text-xs leading-5 text-[var(--museum-stone-muted)]">
         <T
           textKey="auth.oauth.google.visitorNotice"
           fallback="Se crei un nuovo account con Google, entri come Visitor. Per creare gallerie e pubblicare mostre potrai completare il profilo Creator e impostare una password mostra.space."
         />
-      </p>
+      </p>}
 
       {errorMessage && (
         <div className="mt-3 rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">

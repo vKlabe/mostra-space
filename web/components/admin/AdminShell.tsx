@@ -6,6 +6,7 @@ type AdminShellProps = {
   title: ReactNode;
   subtitle?: ReactNode;
   activeSection?:
+    | "premio"
     | "overview"
     | "users"
     | "galleries"
@@ -22,6 +23,7 @@ type AdminShellProps = {
 };
 
 const navItems = [
+  { label: "Premio Mostra.Space", href: "/admin/premiomostraspace", key: "premio" },
   {
     label: "Overview",
     href: "/admin",
@@ -87,7 +89,7 @@ export default function AdminShell({
 }: AdminShellProps) {
   return (
     <main className="museum-app-layout min-h-screen">
-      <aside className="museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-y-auto px-5 py-6">
+      <aside className="museum-sidebar fixed inset-y-0 left-0 z-40 hidden w-72 lg:flex flex-col overflow-y-auto px-5 py-6">
         <div>
           <Link
             href="/admin"
@@ -154,7 +156,7 @@ export default function AdminShell({
         </div>
       </aside>
 
-      <div className="min-h-screen min-w-0 pl-72">
+      <div className="min-h-screen min-w-0 lg:pl-72">
         <header className="museum-topbar sticky top-0 z-30 px-5 py-8 lg:px-8">
           <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
@@ -175,6 +177,9 @@ export default function AdminShell({
               Vedi piani
             </Link>
           </div>
+          <nav className="mt-5 flex gap-4 overflow-x-auto lg:hidden">
+            {navItems.map(item => <Link key={item.href} href={item.href} className="shrink-0 text-sm text-[var(--museum-bronze-light)]">{item.label}</Link>)}
+          </nav>
         </header>
 
         <section className="px-5 py-8 lg:px-8">

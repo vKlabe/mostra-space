@@ -151,6 +151,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const prize = await admin.from("premio_grants").select("id")
+      .eq("artist_id", user.id).eq("status", "active").gt("ends_at", new Date().toISOString()).maybeSingle();
+    if (prize.error && !["42P01", "PGRST205"].includes(prize.error.code)) {
+      return NextResponse.json({ error: "Verifica del piano temporaneamente non disponibile." }, { status: 503 });
+    }
+    if (prize.data) return NextResponse.json({ error: "Hai un premio Mostra.Space attivo. Contatta billing@mostra.space per concordare un cambio piano senza sovrapporre gli addebiti.", action: "contact_billing" }, { status: 409 });
+
     const currentPlan = normalizePlanName(profile.plan);
     const currentPlanIndex = PLAN_ORDER.indexOf(currentPlan);
     const targetPlanIndex = PLAN_ORDER.indexOf(targetPlan);

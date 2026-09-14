@@ -273,6 +273,7 @@ export default async function AdminUsersPage() {
               return (
                 <article
                   key={profile.id}
+                  id={`utente-${profile.id}`}
                   className="rounded-3xl border border-neutral-800 bg-neutral-950 p-5"
                 >
                   <div className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">

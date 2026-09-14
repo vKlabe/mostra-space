@@ -7,6 +7,7 @@ import T from "@/components/i18n/T";
 import { createClient } from "@/lib/supabase/client";
 
 const navLinks = [
+  { href: "/premiomostraspace", labelKey: "premio.navMenu", labelFallback: "Premio Mostra.Space" },
   {
     href: "/eventi",
     labelKey: "site.header.navigation.events",
@@ -104,7 +105,7 @@ export default function MuseumHeader() {
           <span className="text-[var(--museum-ivory-soft)]">space</span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-5 xl:flex">
           {navLinks.map((item) => (
             <Link
               key={item.href + item.labelFallback}
@@ -153,6 +154,9 @@ export default function MuseumHeader() {
           )}
         </div>
       </div>
+      <nav aria-label="Menu" className="mx-auto flex max-w-7xl gap-5 overflow-x-auto pb-3 xl:hidden">
+        {navLinks.map(item => <Link key={item.href} href={item.href} className="shrink-0 text-xs text-[var(--museum-ivory-soft)]"><T textKey={item.labelKey} fallback={item.labelFallback} /></Link>)}
+      </nav>
     </header>
   );
 }
