@@ -22,6 +22,8 @@ import {
 } from "@/lib/plans";
 import { validateGalleryForPublish } from "@/lib/gallery/validateGalleryForPublish";
 import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
+import GalleryShareEmbedSection from "@/components/dashboard/GalleryShareEmbedSection";
+import { absoluteUrl } from "@/lib/seo/site";
 
 type GalleryDetailPageProps = {
   params: Promise<{
@@ -1851,6 +1853,11 @@ export default async function DashboardGalleryDetailPage({
           )}
         </div>
       </div>
+
+      <GalleryShareEmbedSection
+        publicUrl={absoluteUrl(`/gallerie/${encodeURIComponent(gallery.slug)}`)}
+        published={gallery.status === "published"}
+      />
 
       {isAdmin && (
         <div className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
