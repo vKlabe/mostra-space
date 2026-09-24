@@ -288,7 +288,7 @@ async function registerWebhookEvent(event: Stripe.Event) {
   }
 
   if (!existingEvent) {
-    const { error } = await admin.from("stripe_webhook_events").insert({
+    const eventRow = {
       stripe_event_id: event.id,
       event_type: event.type,
       livemode: event.livemode,
@@ -297,7 +297,26 @@ async function registerWebhookEvent(event: Stripe.Event) {
       user_id: userId,
       status: "received",
       payload: event as unknown as Record<string, unknown>,
-    });
+    };
+
+    let { error } = await admin.from("stripe_webhook_events").insert(eventRow);
+
+    // A Stripe event can refer to a user who no longer exists.
+    // Keep the event for audit while preserving the user_id foreign key.
+    if (
+      error?.code === "23503" &&
+      error.message.includes("stripe_webhook_events_user_id_fkey") &&
+      userId
+    ) {
+      console.warn("Stripe webhook: orphaned user_id in event metadata", {
+        eventId: event.id,
+        eventType: event.type,
+      });
+
+      ({ error } = await admin
+        .from("stripe_webhook_events")
+        .insert({ ...eventRow, user_id: null }));
+    }
 
     if (error) {
       throw new Error(`Webhook event insert failed: ${error.message}`);
