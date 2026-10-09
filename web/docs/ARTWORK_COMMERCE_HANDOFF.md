@@ -3,6 +3,8 @@
 Aggiornato: 2026-10-09. Repository: `vKlabe/mostra-space`.
 Branch locale: `feature/artwork-commerce-payments-off`.
 Base: `219767d031fbf22c76ed12f9f97a0088b251e143`.
+Commit implementazione: `a67ecb1977bda9b5df534a22af6d9453bedbf085`.
+L'ultimo commit del branch aggiunge soltanto gli esiti finali a questo documento.
 
 ## Vincolo permanente
 
@@ -28,6 +30,19 @@ La creazione del branch GitHub tramite il connettore ha restituito
 **403 “Resource not accessible by integration”**. Il branch è quindi locale;
 nessun push, merge o deploy del nuovo codice è stato effettuato. Il salvataggio
 locale va pubblicato quando sarà disponibile un accesso GitHub in scrittura.
+
+Una copia trasferibile dei commit è salvata accanto al clone:
+`../mostra-space-commerce-20261009.bundle`. Include il lavoro successivo alla base
+`219767d`, che deve essere presente nel repository di destinazione. Per importarlo
+senza modificare main, dalla cartella di un repository che contiene già la base:
+
+```powershell
+git bundle verify PERCORSO/mostra-space-commerce-20261009.bundle
+git fetch PERCORSO/mostra-space-commerce-20261009.bundle feature/artwork-commerce-payments-off:feature/artwork-commerce-payments-off
+```
+
+Verificare poi il branch importato e il suo log. Non usare `reset --hard`, force
+push o cancellazioni per risolvere eventuali divergenze.
 
 ## Modifiche realizzate
 
@@ -98,7 +113,11 @@ La sola configurazione locale originale conteneva una chiave TEST; nessun segret
   checkout, firme, CSRF, autenticazione, proprietà ordini, isolamento abbonamenti,
   copie nelle quattro lingue e controlli acquisto visibili/disabilitati.
 - Lint finale del nuovo modulo e TypeScript finale passati senza errori.
-  Build in fase di verifica finale.
+- **Build di produzione completa passata**: `next build --webpack`, Next.js
+  16.2.7, Node 24.19.0. Compilazione, controllo tipi e generazione pagine conclusi
+  con exit code 0 il 2026-10-09. Usate variabili Supabase placeholder per la build,
+  senza configurare credenziali o attivare pagamenti. I test di runtime integrato
+  con credenziali reali restano distinti e non sono stati eseguiti.
 - i18n check e PWA static check passati. Il controllo i18n segnala anche testi
   hardcoded preesistenti e falsi positivi sui nuovi componenti, senza chiavi mancanti.
 - Primo build bloccato dal junction node_modules su un altro disco; le dipendenze
