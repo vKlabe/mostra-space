@@ -3,7 +3,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { CommerceError, commerceConfig, configurationBlockers, cents } from '@/lib/commerce/config';
 import { actor, checkedId, commerceStore, failure, json, payload, publicQuote, requirePayments, sameOrigin, stripeClient } from '@/lib/commerce/server';
-import { expireCheckout, objectId, requestRefund, startCheckout, syncSession, syncRefund, syncFailedPayment } from '@/lib/commerce/engine';
+import { expireCheckout, objectId, requestRefund, startCheckout, syncSession, refreshRefund, syncFailedPayment } from '@/lib/commerce/engine';
 import type { Order } from '@/lib/commerce/engine';
 
 export const runtime = 'nodejs';
@@ -38,7 +38,7 @@ async function reconcile(order: Order, cancel = false) {
   await syncSession(store, session, order.stripe_account_id);
   if (session.payment_status === 'paid') {
     const latest = await store.getOrder(order.id);
-    for await (const refund of stripe.refunds.list({ payment_intent: latest.stripe_payment_intent_id!, limit: 100 }, { stripeAccount: latest.stripe_account_id })) await syncRefund(store, refund, latest);
+    for await (const refund of stripe.refunds.list({ payment_intent: latest.stripe_payment_intent_id!, limit: 100 }, { stripeAccount: latest.stripe_account_id })) await refreshRefund(store, stripe, latest, refund.id);
   }
   if (session.status === 'complete' && session.payment_status !== 'paid') {
     const intentId = objectId(session.payment_intent);

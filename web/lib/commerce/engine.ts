@@ -11,6 +11,7 @@ export type Order = {
   stripe_payment_intent_id: string | null; checkout_expires_at: string; refunded_cents: number;
   created_at: string; fulfillment_status: string; tracking_reference: string | null;
   shipping_details: Record<string, unknown> | null;
+  refund_revision: number;
 };
 export type Refund = { id: string; order_id: string; amount_cents: number; stripe_refund_id: string | null; state: string; created_at: string };
 export type Store = {
@@ -129,9 +130,28 @@ export async function syncRefund(store: Store, refund: Stripe.Refund, order: Ord
     order_id: order.id, account_id: order.stripe_account_id, livemode: order.livemode,
     payment_intent_id: objectId(refund.payment_intent), refund_id: refund.id,
     request_id: /^[0-9a-f-]{36}$/i.test(refund.metadata?.requestId || '') ? refund.metadata?.requestId : null, amount_cents: refund.amount,
-    state: refund.status,
+    state: refund.status, expected_refund_revision: order.refund_revision,
     ...(event ? { event_id: `${event.id}:${refund.id}`, event_type: event.type } : {}),
   });
+}
+
+// Read the order revision BEFORE Stripe. A competing update invalidates this read.
+export async function refreshRefund(store: Store, stripe: Payments, order: Order, refundId: string, event?: { id: string; type: string }) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await store.getOrder(order.id);
+    if (current.stripe_account_id !== order.stripe_account_id || current.livemode !== order.livemode) throw new CommerceError('ACCOUNT_MISMATCH');
+    if (!Number.isSafeInteger(current.refund_revision) || current.refund_revision < 0) throw new CommerceError('REVIEW_REQUIRED');
+    const refund = await stripe.refunds.retrieve(refundId, {}, { stripeAccount: current.stripe_account_id });
+    if (refund.id !== refundId) throw new CommerceError('PAYMENT_MISMATCH');
+    try {
+      await syncRefund(store, refund, current, event);
+      return refund;
+    } catch (error) {
+      const code = error instanceof CommerceError ? error.code : error instanceof Error ? error.message : '';
+      if (code !== 'STALE_REFUND_SNAPSHOT') throw error;
+    }
+  }
+  throw new CommerceError('REVIEW_REQUIRED', 503);
 }
 
 export async function requestRefund(store: Store, stripe: Payments, order: Order, actor: string, requestId: string, amount: number) {
@@ -139,20 +159,15 @@ export async function requestRefund(store: Store, stripe: Payments, order: Order
   if (!order.stripe_payment_intent_id) throw new CommerceError('NOT_REFUNDABLE');
   // Include refunds performed directly in Stripe before reserving a new amount.
   for await (const existing of stripe.refunds.list({ payment_intent: order.stripe_payment_intent_id, limit: 100 }, { stripeAccount: order.stripe_account_id })) {
-    await syncRefund(store, existing, order);
+    await refreshRefund(store, stripe, order, existing.id);
   }
   const request = await store.command<Refund>('refund_request', actor, { order_id: order.id, request_id: requestId, amount_cents: amount });
-  if (request.stripe_refund_id) {
-    const existing = await stripe.refunds.retrieve(request.stripe_refund_id, {}, { stripeAccount: order.stripe_account_id });
-    await syncRefund(store, existing, order);
-    return existing;
-  }
+  if (request.stripe_refund_id) return refreshRefund(store, stripe, order, request.stripe_refund_id);
   if (Date.now() - new Date(request.created_at).getTime() > 23 * 3600000) throw new CommerceError('REVIEW_REQUIRED');
   const refund = await stripe.refunds.create({
     payment_intent: order.stripe_payment_intent_id, amount: request.amount_cents,
     refund_application_fee: order.fee_cents > 0 && order.refund_application_fee,
     metadata: { type: 'artwork_refund', orderId: order.id, requestId: request.id },
   }, { stripeAccount: order.stripe_account_id, idempotencyKey: `artwork-refund:${request.id}` });
-  await syncRefund(store, refund, order);
-  return refund;
+  return refreshRefund(store, stripe, order, refund.id);
 }

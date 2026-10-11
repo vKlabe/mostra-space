@@ -1,7 +1,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -17,12 +17,16 @@ for (const name of ['config', 'engine', 'translations']) {
   writeFileSync(new URL(`${name}.js`, compiled), ts.transpileModule(readFileSync(`${root}/lib/commerce/${name}.ts`, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText);
 }
 const { commerceConfig, configurationBlockers, cents } = require('./.compiled/config.js');
-const { startCheckout, syncSession, syncRefund, requestRefund, syncFailedPayment } = require('./.compiled/engine.js');
+const { startCheckout, syncSession, syncRefund: applyRefundSnapshot, refreshRefund, requestRefund, syncFailedPayment } = require('./.compiled/engine.js');
 const config = commerceConfig({ STRIPE_SECRET_KEY: 'sk_test_fake', STRIPE_CONNECT_WEBHOOK_SECRET: 'whsec_fake', STRIPE_CONNECT_CLIENT_ID: 'ca_fake', NEXT_PUBLIC_SITE_URL: 'https://commerce.example', COMMERCE_FEE_BPS: '500', COMMERCE_FEE_BASE: 'artwork', COMMERCE_REFUND_APPLICATION_FEE: 'false', COMMERCE_COMMERCIAL_REVIEWED: 'true', COMMERCE_ACTIVATION_APPROVED: 'true' });
 const ids = { admin: randomUUID(), seller: randomUUID(), buyer: randomUUID(), other: randomUUID() };
 let db;
 const command = async (action, actor, data = {}) => (await db.query('select public.commerce_command($1,$2,$3::jsonb) as result', [action, actor, JSON.stringify(data)])).rows[0].result;
 const store = { command, getOrder: async id => (await db.query('select * from commerce_orders where id=$1', [id])).rows[0], enabled: async () => (await db.query('select payments_enabled from commerce_settings')).rows[0].payments_enabled };
+// Legacy SQL fixtures are sequential. Production uses refreshRefund around Stripe reads.
+async function syncRefund(s, refund, order, incoming) {
+  return applyRefundSnapshot(s, refund, await s.getOrder(order.id), incoming);
+}
 async function enabled(value) { return command('set_payments', ids.admin, { enabled: value }); }
 async function artwork() {
   const id = randomUUID();
@@ -71,7 +75,11 @@ before(async () => {
     grant usage on schema public to anon,authenticated,service_role;
     grant select,update on public.artworks to service_role; grant select on public.profiles to service_role;`);
   for (const [name, id] of Object.entries(ids)) await db.query('insert into profiles values($1,$2,$3,null)', [id, name === 'admin' ? 'admin' : name === 'seller' ? 'gallerist' : 'user', name]);
+  // Both scripts below run ONLY in this ephemeral in-memory PGlite fixture.
   await db.exec(readFileSync(`${root}/supabase/artwork-commerce.sql`, 'utf8'));
+  const fixes = readdirSync(`${root}/supabase/migrations`).filter(name => /^\d+_fix_commerce_refund_sync\.sql$/.test(name));
+  assert.equal(fixes.length, 1, 'Exactly one incremental refund migration is required');
+  await db.exec(readFileSync(`${root}/supabase/migrations/${fixes[0]}`, 'utf8'));
   await db.query('insert into commerce_sellers(seller_id,stripe_account_id,livemode,charges_enabled,payouts_enabled,details_submitted) values($1,\'acct_seller\',false,true,true,true)', [ids.seller]);
 });
 after(async () => { await db?.close(); });
@@ -136,7 +144,8 @@ test('paid settlement works OFF, rejects mismatches, duplicate and late events p
   const request = attempts.find(r => r.status === 'fulfilled').value;
   const refund = { id: 're_concurrent', payment_intent: paid.payment_intent, amount: 7000, status: 'succeeded', metadata: { requestId: request.id } };
   await syncRefund(store, refund, saved); // use the authoritative PI snapshot
-  await syncRefund(store, { ...refund, status: 'pending' }, saved);
+  const currentRefund = gateway(); currentRefund.refundList.push(refund);
+  await refreshRefund(store, currentRefund.api, saved, refund.id, event('refund.updated'));
   assert.equal((await store.getOrder(saved.id)).refunded_cents, 7000);
   await assert.rejects(command('refund_request', ids.seller, { order_id: saved.id, request_id: request.id, amount_cents: 200 }), /IDEMPOTENCY_CONFLICT/);
   const full = { id: 're_external', payment_intent: paid.payment_intent, amount: 4000, status: 'succeeded', metadata: {} };
@@ -235,6 +244,20 @@ test('HTTP: Connect signatures, account/mode isolation, duplicates, retries and 
   assert.equal((await send({ ...e, ...event('refund.created'), data: { object: refund } })).status, 200);
   assert.equal((await store.getOrder(o.id)).state, 'partially_refunded');
   await enabled(false);
+  // Delayed webhook contents say succeeded; the current Stripe GET says failed.
+  refund.status = 'failed';
+  const failure = { ...e, ...event('refund.failed'), data: { object: { ...refund, status: 'succeeded' } } };
+  assert.equal((await send(failure)).status, 200);
+  assert.equal((await store.getOrder(o.id)).state, 'paid');
+  assert.equal((await store.getOrder(o.id)).refunded_cents, 0);
+  const revision = (await store.getOrder(o.id)).refund_revision;
+  assert.equal((await send(failure)).status, 200);
+  assert.equal((await store.getOrder(o.id)).refund_revision, revision);
+  refund.status = 'requires_action';
+  assert.equal((await send({ ...e, ...event('refund.updated'), data: { object: refund } })).status, 200);
+  assert.equal((await store.getOrder(o.id)).refunded_cents, 0);
+  refund.status = 'succeeded';
+  assert.equal((await send({ ...e, ...event('refund.updated'), data: { object: refund } })).status, 200);
   assert.equal((await send(e)).status, 200); assert.equal((await send(e)).status, 200);
   assert.equal((await store.getOrder(o.id)).refunded_cents, 500);
   const retrieve = g.api.checkout.sessions.retrieve; g.api.checkout.sessions.retrieve = async () => { throw Error('network down'); };
@@ -299,4 +322,136 @@ test('UI: purchase controls are visible but disabled initially in IT/EN/FR/ES; o
     const panel = renderToStaticMarkup(React.createElement(ui.CommercePanel, { mode: 'seller' }));
     assert.ok(panel.includes(translations.commerceTranslations[locale].off)); assert.ok(panel.includes(translations.commerceTranslations[locale].orders));
   }
+});
+
+async function paidRefundFixture() {
+  await enabled(true);
+  const order = await reserve();
+  await syncSession(store, session(order, { status: 'complete', payment_status: 'paid' }), 'acct_seller');
+  await enabled(false);
+  const saved = await store.getOrder(order.id);
+  const g = gateway();
+  const refund = { id: `re_${randomUUID()}`, payment_intent: saved.stripe_payment_intent_id, amount: saved.total_cents, status: 'succeeded', metadata: {} };
+  g.refundList.push(refund);
+  return { order: saved, g, refund };
+}
+
+test('refund correction OFF: succeeded -> failed restores paid without releasing the artwork', async () => {
+  const { order, g, refund } = await paidRefundFixture();
+  try {
+    await refreshRefund(store, g.api, order, refund.id);
+    assert.equal((await store.getOrder(order.id)).state, 'refunded');
+    refund.status = 'failed';
+    const failure = event('refund.failed');
+    await refreshRefund(store, g.api, order, refund.id, failure);
+    let saved = await store.getOrder(order.id);
+    assert.equal(saved.state, 'paid'); assert.equal(saved.refunded_cents, 0);
+    assert.equal(saved.inventory_held, true); assert.equal(saved.refund_revision, 2);
+    await refreshRefund(store, g.api, order, refund.id, failure);
+    saved = await store.getOrder(order.id);
+    assert.equal(saved.refund_revision, 2);
+    assert.equal((await db.query('select is_for_sale from artworks where id=$1', [order.artwork_id])).rows[0].is_for_sale, false);
+    await command('refund_request', ids.seller, { order_id: order.id, request_id: randomUUID(), amount_cents: order.total_cents });
+    assert.equal(await store.enabled(), false);
+  } finally { await enabled(true); }
+});
+
+test('refund correction OFF: requires_action and pending reserve the amount until resolved', async () => {
+  const { order, g, refund } = await paidRefundFixture();
+  try {
+    for (const status of ['succeeded', 'requires_action', 'pending', 'succeeded', 'canceled']) {
+      refund.status = status;
+      await refreshRefund(store, g.api, order, refund.id);
+      const saved = await store.getOrder(order.id);
+      assert.equal(saved.state, status === 'succeeded' ? 'refunded' : 'paid');
+      assert.equal(saved.refunded_cents, status === 'succeeded' ? order.total_cents : 0);
+      assert.equal(saved.inventory_held, true);
+      if (['requires_action', 'pending'].includes(status)) {
+        await assert.rejects(command('refund_request', ids.seller, { order_id: order.id, request_id: randomUUID(), amount_cents: 1 }), /REFUND_TOO_LARGE/);
+      }
+    }
+    await command('refund_request', ids.seller, { order_id: order.id, request_id: randomUUID(), amount_cents: order.total_cents });
+  } finally { await enabled(true); }
+});
+
+test('late failures recompute multiple refunds and preserve fulfillment while OFF', async () => {
+  const { order, g, refund } = await paidRefundFixture();
+  try {
+    await command('fulfill', ids.seller, { order_id: order.id, status: 'shipped', tracking: 'TEST-REFUND' });
+    refund.amount = 7000;
+    const second = { ...refund, id: `re_${randomUUID()}`, amount: 4000 };
+    g.refundList.push(second);
+    await refreshRefund(store, g.api, order, refund.id);
+    assert.equal((await store.getOrder(order.id)).state, 'partially_refunded');
+    await refreshRefund(store, g.api, order, second.id);
+    assert.equal((await store.getOrder(order.id)).state, 'refunded');
+    refund.status = 'failed'; await refreshRefund(store, g.api, order, refund.id);
+    let saved = await store.getOrder(order.id);
+    assert.equal(saved.refunded_cents, 4000); assert.equal(saved.state, 'partially_refunded');
+    second.status = 'failed'; await refreshRefund(store, g.api, order, second.id);
+    saved = await store.getOrder(order.id);
+    assert.equal(saved.refunded_cents, 0); assert.equal(saved.state, 'paid');
+    assert.equal(saved.fulfillment_status, 'shipped'); assert.equal(saved.tracking_reference, 'TEST-REFUND');
+    assert.equal(saved.inventory_held, true);
+  } finally { await enabled(true); }
+});
+
+test('concurrent Stripe reads reject the stale snapshot and retry without losing the event', { timeout: 10000 }, async () => {
+  const { order, g, refund } = await paidRefundFixture();
+  let release, entered;
+  const blocked = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  let calls = 0, slow;
+  const first = event('refund.updated'), second = event('refund.failed');
+  g.api.refunds.retrieve = async (id, params, scope) => {
+    assert.equal(scope.stripeAccount, order.stripe_account_id);
+    assert.equal(id, refund.id);
+    const snapshot = { ...refund };
+    if (++calls === 1) { entered(); await blocked; }
+    return snapshot;
+  };
+  try {
+    slow = refreshRefund(store, g.api, order, refund.id, first);
+    await started;
+    refund.status = 'failed';
+    await refreshRefund(store, g.api, order, refund.id, second);
+    release(); await slow;
+    const saved = await store.getOrder(order.id);
+    assert.equal(calls, 3); assert.equal(saved.refund_revision, 2);
+    assert.equal(saved.state, 'paid'); assert.equal(saved.refunded_cents, 0);
+    assert.equal((await db.query('select state from commerce_refunds where order_id=$1', [order.id])).rows[0].state, 'failed');
+    assert.equal((await db.query('select count(*)::int n from commerce_events where order_id=$1', [order.id])).rows[0].n, 2);
+    assert.equal(saved.inventory_held, true); assert.equal(await store.enabled(), false);
+  } finally { release(); if (slow) await slow.catch(() => {}); await enabled(true); }
+});
+
+test('missing/stale refund revisions fail closed and do not consume the webhook event', async () => {
+  const { order, g, refund } = await paidRefundFixture();
+  try {
+    const incoming = event('refund.updated');
+    await assert.rejects(applyRefundSnapshot(store, refund, { ...order, refund_revision: undefined }, incoming), /STALE_REFUND_SNAPSHOT/);
+    await refreshRefund(store, g.api, order, refund.id);
+    await assert.rejects(applyRefundSnapshot(store, refund, order, incoming), /STALE_REFUND_SNAPSHOT/);
+    assert.equal((await db.query('select count(*)::int n from commerce_events where order_id=$1', [order.id])).rows[0].n, 0);
+    refund.status = 'failed';
+    await refreshRefund(store, g.api, order, refund.id, incoming);
+    assert.equal((await store.getOrder(order.id)).state, 'paid');
+    assert.equal((await db.query('select count(*)::int n from commerce_events where order_id=$1', [order.id])).rows[0].n, 1);
+  } finally { await enabled(true); }
+});
+
+test('persistent revision conflicts stop after five retries; other errors are not retried', async () => {
+  const { order, g, refund } = await paidRefundFixture();
+  try {
+    let attempts = 0;
+    const conflicting = { ...store, command: async () => { attempts++; throw Error('STALE_REFUND_SNAPSHOT'); } };
+    await assert.rejects(refreshRefund(conflicting, g.api, order, refund.id), /REVIEW_REQUIRED/);
+    assert.equal(attempts, 5);
+    g.api.refunds.retrieve = async () => { attempts++; throw Error('network unavailable'); };
+    attempts = 0;
+    await assert.rejects(refreshRefund(store, g.api, order, refund.id), /network unavailable/);
+    assert.equal(attempts, 1);
+    assert.equal((await store.getOrder(order.id)).refund_revision, 0);
+    assert.equal((await db.query('select count(*)::int n from commerce_refunds where order_id=$1', [order.id])).rows[0].n, 0);
+  } finally { await enabled(true); }
 });

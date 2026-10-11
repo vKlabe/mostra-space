@@ -2,7 +2,7 @@ import type Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { commerceConfig } from '@/lib/commerce/config';
 import { commerceStore, json, stripeClient } from '@/lib/commerce/server';
-import { objectId, syncRefund, syncSession, syncFailedPayment } from '@/lib/commerce/engine';
+import { objectId, refreshRefund, syncSession, syncFailedPayment } from '@/lib/commerce/engine';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       if (intent.metadata?.type !== 'artwork_purchase' || !intent.metadata.orderId) return json({ received: true, ignored: true });
       let order = await store.getOrder(intent.metadata.orderId);
       if (order.stripe_account_id !== accountId || order.livemode !== event.livemode) throw new Error('Account mismatch');
-      if (!order.stripe_payment_intent_id) {
+      if (!order.stripe_payment_intent_id || !['paid', 'partially_refunded', 'refunded'].includes(order.state)) {
         // A refund event can arrive before the checkout completion event.
         const sessions = await stripe.checkout.sessions.list({ payment_intent: intent.id, limit: 10 }, scope);
         const session = sessions.data.find(s => s.metadata?.orderId === order.id && s.metadata.type === 'artwork_purchase');
@@ -42,10 +42,9 @@ export async function POST(request: Request) {
         order = await store.getOrder(order.id);
       }
       if (event.type === 'charge.refunded') {
-        for await (const refund of stripe.refunds.list({ payment_intent: intent.id, limit: 100 }, scope)) await syncRefund(store, refund, order, event);
+        for await (const refund of stripe.refunds.list({ payment_intent: intent.id, limit: 100 }, scope)) await refreshRefund(store, stripe, order, refund.id, event);
       } else {
-        const refund = await stripe.refunds.retrieve(object.id, {}, scope);
-        await syncRefund(store, refund, order, event);
+        await refreshRefund(store, stripe, order, object.id, event);
       }
     } else if (event.type === 'account.updated' || event.type === 'account.application.deauthorized') {
       const db = createAdminClient();
