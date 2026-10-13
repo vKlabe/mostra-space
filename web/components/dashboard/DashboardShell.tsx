@@ -22,7 +22,9 @@ type DashboardShellProps = {
     | "opere"
     | "richieste"
     | "help"
-    | "account";
+    | "account"
+    | "vendite"
+    | "acquisti";
   navMode?: "community" | "creator";
   actions?: React.ReactNode;
 };
@@ -38,7 +40,10 @@ type NavItem = {
 
 const SIDEBAR_STORAGE_KEY = "mostraspace:dashboard-sidebar-collapsed";
 
+const purchaseNav: NavItem = { labelKey: "commerce.purchases", labelFallback: "I miei acquisti", href: "/account/acquisti", section: "acquisti", descriptionKey: "commerce.purchasesDescription", descriptionFallback: "Ordini e consegne" };
+
 const communityNavItems: NavItem[] = [
+  purchaseNav,
   { labelKey: "premio.navMenu", labelFallback: "Premio Mostra.Space", href: "/dashboard/premiomostraspace", section: "premio", descriptionKey: "premio.navDescription", descriptionFallback: "La tua candidatura" },
   {
     labelKey: "dashboard.shell.communityNav.dashboard.label",
@@ -75,6 +80,8 @@ const communityNavItems: NavItem[] = [
 ];
 
 const navItems: NavItem[] = [
+  { labelKey: "commerce.sales", labelFallback: "Vendita opere", href: "/dashboard/vendite", section: "vendite", descriptionKey: "commerce.salesDescription", descriptionFallback: "Vendite e rimborsi" },
+  purchaseNav,
   { labelKey: "premio.navMenu", labelFallback: "Premio Mostra.Space", href: "/dashboard/premiomostraspace", section: "premio", descriptionKey: "premio.navDescription", descriptionFallback: "La tua candidatura" },
   {
     labelKey: "dashboard.shell.creatorNav.dashboard.label",

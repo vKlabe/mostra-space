@@ -1,3 +1,5 @@
+import { CommerceTitle } from "@/components/commerce/CommerceUI";
+import Link from "next/link";
 ﻿import { notFound, redirect } from "next/navigation";
 import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
 import T from "@/components/i18n/T";
@@ -844,6 +846,7 @@ export default async function DashboardArtworkDetailPage({
               </dl>
             </div>
 
+            {isOwner && <Link href="/dashboard/vendite" className="mb-4 block rounded-2xl border border-neutral-700 p-4"><CommerceTitle mode="sales" /></Link>}
             {isOwner && (
               <DeleteArtworkButton
                 artworkId={artwork.id}
