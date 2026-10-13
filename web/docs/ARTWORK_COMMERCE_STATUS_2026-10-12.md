@@ -55,3 +55,32 @@
 Pagamenti opere OFF fino ad autorizzazione esplicita.
 Nessun merge o deploy commerce autorizzato.
 Nessuna credenziale esposta deve essere riutilizzata.
+
+## Verifiche acquisite il 13 ottobre 2026
+- Commit verificato: 1e05b9bedc3f851a59731726c1cf8c61fd914030.
+- CI: https://github.com/vKlabe/mostra-space/actions/runs/38245714918/job/114798925728
+- Esecuzione 12 ottobre ore 13:56 CEST: PostgreSQL 17.6, Node 24.19.0.
+- Risultato: 7/7 superati, zero falliti e zero saltati.
+- Verificati 20 backend simultanei, prenotazione unica, retry idempotenti,
+  OFF concorrente, duplicati di pagamento e rimborsi concorrenti.
+- La suite PostgreSQL sopra indicata come non eseguita e ora superata.
+- Restano validi i precedenti 23/23 test con Stripe simulato,
+  TypeScript, ESLint e build; non rieseguiti in questa verifica.
+- Vercel sul commit verificato: Canceled by Ignored Build Step.
+- PR #19 ancora in bozza, non unita; main ancora 219767d.
+- Supabase, lettura diretta 13 ottobre ore 00:00 CEST:
+  payments_enabled=false; ordini 0; rimborsi 0; refund_revision assente.
+- Migrazione 20261008220511 gia applicata: NON rieseguire.
+- Migrazione 20261011143230_fix_commerce_refund_sync NON applicata.
+- Stripe TEST, lettura diretta: nessun account Connect collegato.
+- Presente solo il webhook https://mostra.space/api/stripe/webhook
+  per checkout.session.completed e customer.subscription.created/updated/deleted.
+- Nessun webhook TEST /api/stripe/connect-webhook presente.
+- Restano da verificare rotazione chiave TEST, variabili Preview,
+  Client ID/callback OAuth e ambiente isolato per i test Connect.
+- Restano test Stripe Connect end-to-end, browser e regressioni abbonamenti,
+  condizioni commerciali e analisi delle vulnerabilita npm.
+- La descrizione PR restituita da GitHub e ancora obsoleta: aggiornamento pendente.
+- Aggiornamento diretto del documento via integrazione rifiutato con HTTP 403.
+- Nessuna modifica al database, attivazione, merge o deploy commerce eseguita.
+- Pagamenti opere OFF fino ad autorizzazione esplicita.
