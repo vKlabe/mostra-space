@@ -14,6 +14,32 @@ function checkDb(result: { error: { code?: string } | null }) {
   if (result.error) throw new CommerceError('SERVICE_UNAVAILABLE', 503);
 }
 
+async function connectedSeller(current: Awaited<ReturnType<typeof actor>>) {
+  const seller = await current.db.from('commerce_sellers')
+    .select('stripe_account_id,livemode,disconnected').eq('seller_id', current.user.id).maybeSingle();
+  checkDb(seller);
+  if (!seller.data || seller.data.disconnected) throw new CommerceError('SELLER_NOT_READY');
+  if (seller.data.livemode !== commerceConfig().livemode) throw new CommerceError('ACCOUNT_MISMATCH');
+  return seller.data;
+}
+
+async function sellerOnboardingLink(accountId: string) {
+  const config = commerceConfig();
+  const link = await stripeClient().accountLinks.create({
+    account: accountId,
+    type: 'account_onboarding',
+    return_url: `${config.origin}/api/commerce/connect/onboarding-return`,
+    refresh_url: `${config.origin}/api/commerce/connect/onboarding-refresh`,
+  });
+  return link.url;
+}
+
+function onboardingRedirect(url: string) {
+  return new Response(null, { status: 303, headers: {
+    Location: url, 'Cache-Control': 'no-store, max-age=0', Vary: 'Cookie',
+  } });
+}
+
 async function reconcile(order: Order, cancel = false) {
   const config = commerceConfig();
   if (order.livemode !== config.livemode) throw new CommerceError('ACCOUNT_MISMATCH');
@@ -72,6 +98,24 @@ export async function GET(request: Request, context: Context) {
     if (path.join('/') === 'status') return json({ paymentsEnabled: configurationBlockers(config).length === 0 && await commerceStore().enabled() });
     if (path[0] === 'artworks' && path.length === 2) return json(await publicQuote(path[1]));
 
+    if (path.join('/') === 'connect/onboarding-refresh') {
+      const current = await actor('seller'); await requirePayments();
+      const seller = await connectedSeller(current);
+      return onboardingRedirect(await sellerOnboardingLink(seller.stripe_account_id));
+    }
+    if (path.join('/') === 'connect/onboarding-return') {
+      const current = await actor('seller');
+      const seller = await connectedSeller(current);
+      const account = await stripeClient().accounts.retrieve(seller.stripe_account_id);
+      if (account.id !== seller.stripe_account_id || account.type !== 'standard') throw new CommerceError('ACCOUNT_MISMATCH');
+      // Returning from Stripe does not prove onboarding was completed.
+      checkDb(await current.db.from('commerce_sellers').update({
+        charges_enabled: account.charges_enabled, payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted, updated_at: new Date().toISOString(),
+      }).eq('seller_id', current.user.id).eq('stripe_account_id', seller.stripe_account_id)
+        .eq('livemode', config.livemode).eq('disconnected', false));
+      return onboardingRedirect(`${config.origin}/dashboard/vendite`);
+    }
     if (path.join('/') === 'connect/callback') {
       const current = await actor('seller'); await requirePayments();
       const url = new URL(request.url); const state = url.searchParams.get('state'); const code = url.searchParams.get('code');
@@ -152,6 +196,14 @@ export async function POST(request: Request, context: Context) {
     }
     if (path.join('/') === 'seller/connect') {
       const current = await actor('seller'); await requirePayments();
+      const existing = await current.db.from('commerce_sellers')
+        .select('stripe_account_id,livemode,disconnected').eq('seller_id', current.user.id).maybeSingle();
+      checkDb(existing);
+      if (existing.data && existing.data.livemode !== config.livemode) throw new CommerceError('ACCOUNT_MISMATCH');
+      if (existing.data && !existing.data.disconnected) {
+        // Use only the account owned by this signed-in seller, never a client-supplied ID.
+        return json({ url: await sellerOnboardingLink(existing.data.stripe_account_id) });
+      }
       const state = randomBytes(32).toString('hex');
       checkDb(await current.db.from('commerce_oauth_states').insert({ state_hash: createHash('sha256').update(state).digest('hex'), seller_id: current.user.id, expires_at: new Date(Date.now() + 600000).toISOString() }));
       (await cookies()).set(stateCookie, state, { httpOnly: true, secure: config.origin.startsWith('https:'), sameSite: 'lax', path: '/api/commerce', maxAge: 600 });
