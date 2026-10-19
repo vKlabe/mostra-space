@@ -11,6 +11,7 @@ import {
 } from "@/lib/plans";
 import CustomerPortalButton from "@/components/billing/CustomerPortalButton";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { getSubscriptionCancellation } from "@/lib/billing/subscription-cancellation";
 
 type PlanUsageCardProps = {
   plan: PlanName | string | null | undefined;
@@ -21,6 +22,7 @@ type PlanUsageCardProps = {
   stripeSubscriptionStatus?: string | null;
   stripeCurrentPeriodEnd?: string | null;
   stripeCancelAtPeriodEnd?: boolean | null;
+  stripeCancelAt?: string | null;
 };
 
 function UsageRow({
@@ -76,11 +78,20 @@ export default function PlanUsageCard({
   stripeSubscriptionStatus,
   stripeCurrentPeriodEnd,
   stripeCancelAtPeriodEnd,
+  stripeCancelAt,
 }: PlanUsageCardProps) {
   const planName = normalizePlanName(plan);
   const limits = getPlanLimits(planName);
   const storageUsedMb = Number(bytesToMb(storageUsedBytes).toFixed(2));
-  const billingDate = formatBillingDate(stripeCurrentPeriodEnd);
+  const cancellation = getSubscriptionCancellation({
+    status: stripeSubscriptionStatus,
+    cancelAt: stripeCancelAt,
+    cancelAtPeriodEnd: stripeCancelAtPeriodEnd,
+    currentPeriodEnd: stripeCurrentPeriodEnd,
+  });
+  const billingDate = formatBillingDate(
+    cancellation.date || stripeCurrentPeriodEnd
+  );
   const hasPaidPlan = planName !== "free";
   const hasActiveStripeSubscription =
     stripeSubscriptionStatus === "active" ||
@@ -154,7 +165,7 @@ export default function PlanUsageCard({
 
             {billingDate && (
               <p className="text-sm text-[var(--museum-ivory-soft)]">
-                {stripeCancelAtPeriodEnd ? (
+                {cancellation.scheduled ? (
                   <>
                     <T
                       textKey="dashboard.planUsage.subscription.activeUntil"
@@ -175,7 +186,7 @@ export default function PlanUsageCard({
             )}
           </div>
 
-          {stripeCancelAtPeriodEnd && (
+          {cancellation.scheduled && (
             <p className="mt-3 rounded-xl border border-[rgba(201,155,74,0.45)] bg-[rgba(201,155,74,0.08)] px-4 py-3 text-xs leading-5 text-[var(--museum-warning)]">
               <T
                 textKey="dashboard.planUsage.subscription.cancellationScheduled"
