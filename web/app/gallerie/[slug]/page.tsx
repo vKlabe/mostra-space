@@ -1,3 +1,4 @@
+import { BuyArtwork } from "@/components/commerce/CommerceUI";
 import PremioWinnerBadge from "@/components/premio/PremioWinnerBadge";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -1116,6 +1117,7 @@ export default async function PublicGalleryDetailPage({
 
                       <div className="mt-4">
                         <FavoriteArtworkButton artworkId={artwork.id} />
+                        <BuyArtwork artworkId={artwork.id} />
                       </div>
 
                       <p className="mt-3 text-sm text-[var(--museum-stone)]">
