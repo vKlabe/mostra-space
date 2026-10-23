@@ -77,12 +77,13 @@ function OrderCard({ order, refunds, manager, enabled, reload }: { order: OrderV
   const state = (value: string) => c.statuses[value as keyof typeof c.statuses] || value;
   async function act(action: string, data: unknown) { setBusy(true); setError(''); try { const result = await api<{ resolved?: boolean; url?: string }>(`orders/${order.id}/${action}`, data); if (result.url) window.location.assign(result.url); if (result.resolved === false) setError('REVIEW_REQUIRED'); await reload(); return true; } catch (e) { setError((e as Error).message); return false; } finally { setBusy(false); } }
   const paid = ['paid', 'partially_refunded'].includes(order.state);
+  const showFulfillment = paid || (order.state === 'refunded' && ['shipped', 'delivered'].includes(order.fulfillment_status));
   return <article className={card}>
     <div className="flex flex-wrap justify-between gap-3"><h3 className="text-xl">{order.artwork_title}</h3><strong>{state(order.state)}</strong></div>
     <p className="mt-2 text-sm text-neutral-400">{order.seller_name} · {new Date(order.created_at).toLocaleString(locale)} · #{order.id.slice(0, 8)}</p>
     <p className="mt-3">{c.total}: {money(order.total_cents, locale)} · {c.refunded}: {money(order.refunded_cents, locale)}</p>
     <a className="mt-2 inline-block text-sm underline" href={order.terms_url} target="_blank" rel="noopener noreferrer">{c.terms}</a>
-    <p className="my-3">{state(order.fulfillment_status)} {order.tracking_reference && `· ${order.tracking_reference}`}</p>
+    {showFulfillment && <p className="my-3">{state(order.fulfillment_status)} {order.tracking_reference && `· ${order.tracking_reference}`}</p>}
     {manager && order.shipping_details && <address className="my-3 not-italic text-sm"><p>{order.shipping_details.name}</p>{Object.values(order.shipping_details.address || {}).filter(Boolean).map((line, i) => <p key={i}>{line}</p>)}<p>{order.buyer_email}</p></address>}
     {!['expired', 'canceled'].includes(order.state) && <button className={button} disabled={busy} onClick={() => act('sync', {})}>{c.sync}</button>}
     {!manager && ['reserved', 'checkout_open'].includes(order.state) && <button className={`${button} ml-2`} disabled={busy || !enabled} onClick={() => act('resume', {})}>{c.resume}</button>}
