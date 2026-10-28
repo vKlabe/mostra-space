@@ -17,6 +17,7 @@ type Profile = {
   stripe_subscription_status: string | null;
   stripe_current_period_end: string | null;
   stripe_cancel_at_period_end: boolean | null;
+  stripe_cancel_at: string | null;
 };
 
 type GalleryStatus = "draft" | "published" | "archived";
@@ -263,7 +264,7 @@ export default async function DashboardPage() {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id, email, display_name, full_name, role, plan, stripe_subscription_status, stripe_current_period_end, stripe_cancel_at_period_end"
+      "id, email, display_name, full_name, role, plan, stripe_subscription_status, stripe_current_period_end, stripe_cancel_at_period_end, stripe_cancel_at"
     )
     .eq("id", user.id)
     .single<Profile>();
@@ -1700,6 +1701,10 @@ export default async function DashboardPage() {
           artworksCount={safeArtworks.length}
           storageUsedBytes={storageUsedBytes}
           monthlyRequestsCount={monthlyRequestsCount}
+          stripeSubscriptionStatus={profile.stripe_subscription_status}
+          stripeCurrentPeriodEnd={profile.stripe_current_period_end}
+          stripeCancelAtPeriodEnd={profile.stripe_cancel_at_period_end}
+          stripeCancelAt={profile.stripe_cancel_at}
         />
       </div>
 
