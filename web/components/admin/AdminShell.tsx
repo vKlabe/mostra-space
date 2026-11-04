@@ -1,3 +1,4 @@
+import { CommerceTitle } from "@/components/commerce/CommerceUI";
 import LogoutButton from "@/components/auth/LogoutButton";
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -17,12 +18,14 @@ type AdminShellProps = {
     | "events"
     | "storage"
     | "pwa"
-    | "billing";
+    | "billing"
+    | "commerce";
   children: ReactNode;
   actions?: ReactNode;
 };
 
 const navItems = [
+  { label: <CommerceTitle mode="admin" />, href: "/admin/pagamenti-opere", key: "commerce" },
   { label: "Premio Mostra.Space", href: "/admin/premiomostraspace", key: "premio" },
   {
     label: "Overview",

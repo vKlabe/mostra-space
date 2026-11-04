@@ -1,4 +1,8 @@
 {
+  "commerce.sales": "Vendita opere",
+  "commerce.purchases": "I miei acquisti",
+  "commerce.salesDescription": "Vendite e rimborsi",
+  "commerce.purchasesDescription": "Ordini e consegne",
   "account.actions.adminArea": "Area admin",
   "account.actions.goToDashboard": "Vai alla dashboard",
   "account.actions.manageGalleries": "Gestisci gallerie",

@@ -1,3 +1,4 @@
+import { BuyArtwork } from "@/components/commerce/CommerceUI";
 import PremioWinnerBadge from "@/components/premio/PremioWinnerBadge";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -744,6 +745,7 @@ export default async function PublicProfilePage({
                           </span>
                         )}
                       </div>
+                      <BuyArtwork artworkId={artwork.id} />
                     </div>
                   </article>
                 );

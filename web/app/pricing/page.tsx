@@ -16,6 +16,7 @@ import {
 } from "@/lib/plans";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { createPublicMetadata } from "@/lib/seo/site";
+import { getSubscriptionCancellation } from "@/lib/billing/subscription-cancellation";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ type Profile = {
   stripe_subscription_status: string | null;
   stripe_current_period_end: string | null;
   stripe_cancel_at_period_end: boolean | null;
+  stripe_cancel_at: string | null;
 };
 
 type StripeCheckoutPlan = Extract<PlanName, "pro" | "business" | "diamond">;
@@ -301,6 +303,7 @@ export default async function PricingPage() {
           "stripe_subscription_status",
           "stripe_current_period_end",
           "stripe_cancel_at_period_end",
+          "stripe_cancel_at",
         ].join(", ")
       )
       .eq("id", user.id)
@@ -310,7 +313,15 @@ export default async function PricingPage() {
   }
 
   const currentPlan = profile ? normalizePlanName(profile.plan) : null;
-  const billingDate = formatDate(profile?.stripe_current_period_end);
+  const cancellation = getSubscriptionCancellation({
+    status: profile?.stripe_subscription_status,
+    cancelAt: profile?.stripe_cancel_at,
+    cancelAtPeriodEnd: profile?.stripe_cancel_at_period_end,
+    currentPeriodEnd: profile?.stripe_current_period_end,
+  });
+  const billingDate = formatDate(
+    cancellation.date || profile?.stripe_current_period_end
+  );
   const hasStripeCustomer = Boolean(profile?.stripe_customer_id);
   const isPaidCurrentPlan =
     currentPlan !== null &&
@@ -396,7 +407,7 @@ export default async function PricingPage() {
 
                     {billingDate && (
                       <p>
-                        {profile.stripe_cancel_at_period_end ? (
+                        {cancellation.scheduled ? (
                           <T
                             textKey="pricing.account.activeUntil"
                             fallback="Attivo fino al"

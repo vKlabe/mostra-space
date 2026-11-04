@@ -629,6 +629,9 @@ export async function POST(request: Request) {
     );
   }
 
+  // Connected sellers have a separate ledger and webhook. Never grant platform plans here.
+  if (event.account) return NextResponse.json({ received: true, ignored: true });
+
   try {
     const { shouldProcess } = await registerWebhookEvent(event);
 

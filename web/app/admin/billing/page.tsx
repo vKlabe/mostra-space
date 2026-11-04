@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import LocalDateTime from "@/components/time/LocalDateTime";
+import { getSubscriptionCancellation } from "@/lib/billing/subscription-cancellation";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,15 @@ function getDisplayName(profile: BillingProfile) {
     profile.email ||
     `Utente ${profile.id.slice(0, 8)}`
   );
+}
+
+function getProfileCancellation(profile: BillingProfile) {
+  return getSubscriptionCancellation({
+    status: profile.stripe_subscription_status,
+    cancelAt: profile.stripe_cancel_at,
+    cancelAtPeriodEnd: profile.stripe_cancel_at_period_end,
+    currentPeriodEnd: profile.stripe_current_period_end,
+  });
 }
 
 function truncateId(value?: string | null) {
@@ -220,7 +230,7 @@ const webhookEvents = ((webhookEventsResult.data || []) as unknown) as WebhookEv
   ).length;
 
   const scheduledCancellations = billingProfiles.filter(
-    (profile) => profile.stripe_cancel_at_period_end
+    (profile) => getProfileCancellation(profile).scheduled
   ).length;
 
   const failedWebhookEvents = webhookEvents.filter(
@@ -364,12 +374,12 @@ const webhookEvents = ((webhookEventsResult.data || []) as unknown) as WebhookEv
                     </td>
 
                     <td className="px-5 py-4">
-                      {profile.stripe_cancel_at_period_end ? (
+                      {getProfileCancellation(profile).scheduled ? (
                         <div className="rounded-2xl border border-yellow-900 bg-yellow-950/30 px-3 py-2 text-xs leading-5 text-yellow-200">
                           Programmata
                           <br />
                           fino al{" "}
-                          {formatShortDate(profile.stripe_current_period_end)}
+                          {formatShortDate(getProfileCancellation(profile).date)}
                         </div>
                       ) : (
                         <span className="text-neutral-500">—</span>

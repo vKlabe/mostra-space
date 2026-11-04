@@ -1,4 +1,8 @@
 {
+  "commerce.sales": "Venta de obras",
+  "commerce.purchases": "Mis compras",
+  "commerce.salesDescription": "Ventas y reembolsos",
+  "commerce.purchasesDescription": "Pedidos y entregas",
   "account.actions.adminArea": "Área de administración",
   "account.actions.goToDashboard": "Ir al panel",
   "account.actions.manageGalleries": "Gestionar galerías",

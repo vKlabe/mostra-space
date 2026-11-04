@@ -1,4 +1,8 @@
 {
+  "commerce.sales": "Artwork sales",
+  "commerce.purchases": "My purchases",
+  "commerce.salesDescription": "Sales and refunds",
+  "commerce.purchasesDescription": "Orders and delivery",
   "account.actions.adminArea": "Admin area",
   "account.actions.goToDashboard": "Go to dashboard",
   "account.actions.manageGalleries": "Manage galleries",
