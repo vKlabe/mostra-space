@@ -2,6 +2,6 @@
   "name": "mostraspace-commerce-tests",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test integration.mjs" },
+  "scripts": { "test": "node --test integration.mjs preflight.test.mjs" },
   "devDependencies": { "@electric-sql/pglite": "0.5.8" }
 }
