@@ -15,7 +15,12 @@ function loadTs(path, mocks = {}) {
     },
   }).outputText;
   const module = { exports: {} };
-  const scopedRequire = name => Object.hasOwn(mocks, name) ? mocks[name] : require(name);
+  const scopedRequire = name => {
+    if (Object.hasOwn(mocks, name)) return mocks[name];
+    if (name === './commercial-terms') return loadTs('lib/commerce/commercial-terms.ts');
+    if (name === './seller-terms' || name === '@/lib/commerce/seller-terms') return loadTs('lib/commerce/seller-terms.ts', { 'server-only': {}, './config': loadTs('lib/commerce/config.ts') });
+    return require(name);
+  };
   new Function('require', 'module', 'exports', source)(scopedRequire, module, module.exports);
   return module.exports;
 }

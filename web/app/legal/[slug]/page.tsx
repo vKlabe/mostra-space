@@ -157,9 +157,11 @@ export default async function LegalDetailPage({
         </div>
 
         <footer className="mt-10 border-t border-[var(--museum-border)] pt-6 text-sm leading-7 text-[var(--museum-stone-muted)]">
-          Le informazioni contenute in questa pagina sono fornite a fini
-          informativi e potranno essere aggiornate per esigenze tecniche,
-          organizzative o normative.
+          {page.slug === "vendita-opere-2026-11-05" ? (
+            "Questa versione delle condizioni resta consultabile. Le nuove versioni saranno pubblicate separatamente e richiederanno una nuova accettazione per le nuove vendite."
+          ) : (
+            <>Le informazioni contenute in questa pagina sono fornite a fini informativi e potranno essere aggiornate per esigenze tecniche, organizzative o normative.</>
+          )}
         </footer>
       </article>
 
