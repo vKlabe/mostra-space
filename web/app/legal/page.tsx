@@ -101,6 +101,8 @@ export default function LegalIndexPage() {
                 </span>
               </p>
 
+              <p>{LEGAL_OWNER.fiscalAddress}</p>
+
               <p>
                 <T textKey="legal.contacts.support" fallback="Supporto:" />{" "}
                 <a

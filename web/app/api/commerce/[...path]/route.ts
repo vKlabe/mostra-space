@@ -1,3 +1,4 @@
+import { acceptSellerTerms, requireSellerTerms, sellerTermsStatus } from '@/lib/commerce/seller-terms';
 import { shippingCountries } from '@/lib/commerce/countries';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
@@ -146,7 +147,8 @@ export async function GET(request: Request, context: Context) {
         current.db.from('artworks').select('id,title,price,currency,is_for_sale').eq('owner_id', current.user.id).order('created_at', { ascending: false }),
       ]);
       checkDb(seller); checkDb(listings); checkDb(artworks);
-      return json({ seller: seller.data, listings: listings.data || [], artworks: artworks.data || [], paymentsEnabled: configurationBlockers(config).length === 0 && await commerceStore().enabled() });
+      const commercialTerms = await sellerTermsStatus(current.db, current.user.id, config);
+      return json({ commercialTerms, seller: seller.data, listings: listings.data || [], artworks: artworks.data || [], paymentsEnabled: configurationBlockers(config).length === 0 && await commerceStore().enabled() });
     }
     if (path.join('/') === 'orders') {
       const view = new URL(request.url).searchParams.get('view') || 'buyer';
@@ -188,14 +190,24 @@ export async function POST(request: Request, context: Context) {
       if (!current.user.email_confirmed_at || !current.user.email) throw new CommerceError('EMAIL_REQUIRED');
       const artworkId = checkedId(data.artwork_id);
       if (data.terms_accepted !== true || typeof data.shipping_country !== 'string' || !/^[A-Z]{2}$/.test(data.shipping_country) || typeof data.quote_terms !== 'string' || typeof data.quote_version !== 'string' || !Number.isFinite(Number(data.quote_price)) || !Number.isInteger(data.quote_shipping)) throw new CommerceError('INVALID_REQUEST', 400);
+      await requirePayments();
+      const owner = await current.db.from('artworks').select('owner_id').eq('id', artworkId).maybeSingle();
+      checkDb(owner);
+      if (!owner.data) throw new CommerceError('ARTWORK_UNAVAILABLE', 404);
+      await requireSellerTerms(current.db, owner.data.owner_id, config);
       return json(await startCheckout(store, stripeClient(), config, current.user.id, {
         artwork_id: artworkId, buyer_email: current.user.email, terms_accepted: true,
         shipping_country: data.shipping_country, quote_price: data.quote_price, quote_shipping: data.quote_shipping,
         quote_terms: data.quote_terms, quote_version: data.quote_version,
       }));
     }
+    if (path.join('/') === 'seller/terms') {
+      const current = await actor('seller');
+      return json(await acceptSellerTerms(current.db, current.user.id, config, data));
+    }
     if (path.join('/') === 'seller/connect') {
       const current = await actor('seller'); await requirePayments();
+      await requireSellerTerms(current.db, current.user.id, config);
       const existing = await current.db.from('commerce_sellers')
         .select('stripe_account_id,livemode,disconnected').eq('seller_id', current.user.id).maybeSingle();
       checkDb(existing);
@@ -228,6 +240,7 @@ export async function POST(request: Request, context: Context) {
       if (terms.protocol !== 'https:' || terms.username || terms.password || data.terms_url.length > 2000) throw new CommerceError('INVALID_TERMS', 400);
       const countries = typeof data.shipping_countries === 'string' ? [...new Set(data.shipping_countries.toUpperCase().split(/[,\s]+/).filter(Boolean))] : [];
       if (!countries.length || countries.length > 100 || countries.some(c => !shippingCountries.has(c))) throw new CommerceError('INVALID_COUNTRY', 400);
+      if (data.enabled) await requireSellerTerms(current.db, current.user.id, config);
       return json(await store.command('save_listing', current.user.id, { artwork_id: id, enabled: data.enabled,
         shipping_cents: cents(data.shipping_amount), shipping_countries: countries, terms_url: terms.toString() }));
     }
@@ -238,6 +251,8 @@ export async function POST(request: Request, context: Context) {
       if (path[2] === 'resume') {
         if (order.buyer_id !== current.user.id) throw new CommerceError('FORBIDDEN', 403);
         if (!['reserved', 'checkout_open'].includes(order.state)) throw new CommerceError('ARTWORK_UNAVAILABLE');
+        await requirePayments();
+        await requireSellerTerms(current.db, order.seller_id, config);
         return json(await startCheckout(store, stripeClient(), config, current.user.id, {
           artwork_id: order.artwork_id, buyer_email: order.buyer_email,
           terms_accepted: true, shipping_country: order.shipping_country,

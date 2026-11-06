@@ -18,7 +18,7 @@ async function api<T>(path: string, data?: unknown): Promise<T> {
 }
 function money(amount: number, locale: string) { return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(amount / 100); }
 
-type Quote = { paymentsEnabled: boolean; available: boolean; artwork: { id: string; title: string; price: number; currency: string }; listing: { shipping_cents: number; shipping_countries: string[]; terms_url: string; updated_at: string } | null };
+type Quote = { platformTermsUrl: string; paymentsEnabled: boolean; available: boolean; artwork: { id: string; title: string; price: number; currency: string }; listing: { shipping_cents: number; shipping_countries: string[]; terms_url: string; updated_at: string } | null };
 export function BuyArtwork({ artworkId }: { artworkId: string }) {
   const { c, locale } = useCopy(); const explain = useError(); const dialog = useRef<HTMLDialogElement>(null);
   const [quote, setQuote] = useState<Quote | null>(null); const [country, setCountry] = useState(''); const [accepted, setAccepted] = useState(false);
@@ -40,6 +40,7 @@ export function BuyArtwork({ artworkId }: { artworkId: string }) {
         <p className="my-3 font-semibold">{c.total}: {money(Math.round(Number(quote.artwork.price) * 100) + quote.listing.shipping_cents, locale)}</p>
         <label>{c.country}<select className={input} value={country} onChange={e => setCountry(e.target.value)} disabled={busy}><option value="">{c.choose}</option>{quote.listing.shipping_countries.map(code => <option key={code} value={code}>{new Intl.DisplayNames([locale], { type: 'region' }).of(code) || code}</option>)}</select></label>
         <a className="my-4 block underline" href={quote.listing.terms_url} target="_blank" rel="noopener noreferrer">{c.terms}</a>
+        <Link className="my-4 block underline" href={quote.platformTermsUrl} target="_blank" rel="noopener noreferrer">{c.platformTerms}</Link>
         <label className="flex items-start gap-3"><input type="checkbox" className="mt-1" checked={accepted} onChange={e => setAccepted(e.target.checked)} disabled={busy} />{c.accept}</label>
       </>}
       {error && <p role="alert" className="my-3 text-red-300">{explain(error)}{error === 'UNAUTHORIZED' && <Link href="/auth/login" className="ml-2 underline">{c.purchases}</Link>}</p>}
@@ -50,7 +51,7 @@ export function BuyArtwork({ artworkId }: { artworkId: string }) {
 
 type Listing = { artwork_id: string; enabled: boolean; shipping_cents: number; shipping_countries: string[]; terms_url: string };
 type Artwork = { id: string; title: string; price: number | null; currency: string };
-type SellerInfo = { paymentsEnabled: boolean; artworks: Artwork[]; listings: Listing[]; seller: { stripe_account_id: string; charges_enabled: boolean; payouts_enabled: boolean; details_submitted: boolean; disconnected: boolean } | null };
+type SellerInfo = { commercialTerms: { version: string; hash: string; url: string; accepted: boolean; acceptedAt: string | null; available: boolean }; paymentsEnabled: boolean; artworks: Artwork[]; listings: Listing[]; seller: { stripe_account_id: string; charges_enabled: boolean; payouts_enabled: boolean; details_submitted: boolean; disconnected: boolean } | null };
 function ListingForm({ artwork, listing, enabled }: { artwork: Artwork; listing?: Listing; enabled: boolean }) {
   const { c } = useCopy(); const explain = useError(); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   return <form className={card} onSubmit={async e => { e.preventDefault(); const data = new FormData(e.currentTarget); setBusy(true); setMessage('');
@@ -102,7 +103,8 @@ function OrderCard({ order, refunds, manager, enabled, reload }: { order: OrderV
 }
 
 export function CommercePanel({ mode }: { mode: 'buyer' | 'seller' | 'admin' }) {
-  const { c } = useCopy(); const explain = useError(); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const { c, locale } = useCopy(); const explain = useError(); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
   const [seller, setSeller] = useState<SellerInfo | null>(null);
   const [admin, setAdmin] = useState<{ settings: { payments_enabled: boolean }; effectiveEnabled: boolean; blockers: string[]; mode: string } | null>(null);
   const [enabled, setEnabled] = useState(false); const [orders, setOrders] = useState<OrderView[]>([]); const [refunds, setRefunds] = useState<RefundView[]>([]);
@@ -128,12 +130,22 @@ export function CommercePanel({ mode }: { mode: 'buyer' | 'seller' | 'admin' }) 
       {!!admin.blockers.length && <div className="my-4"><p>{c.blockers}</p><ul className="mt-2 list-inside list-disc text-sm text-neutral-400">{admin.blockers.map(b => <li key={b}>{b}</li>)}</ul></div>}
       <button className={button} disabled={busy} onClick={() => action('admin/reconcile', {})}>{c.reconcile}</button>
     </section>}
+    {mode === 'seller' && seller && <section className={card}>
+      <h2 className="text-xl">{c.sellerTermsTitle}</h2>
+      <p className="mt-3 text-sm">{c.sellerFee}</p>
+      <Link className="my-3 block underline" href={seller.commercialTerms.url} target="_blank" rel="noopener noreferrer">{c.platformTerms}</Link>
+      <p className="text-sm text-neutral-400">{c.sellerTermsHint}</p>
+      {seller.commercialTerms.accepted ? <p className="mt-3 text-green-300">{c.sellerAccepted}</p> : seller.commercialTerms.available ? <form className="mt-4 space-y-4" onSubmit={e => { e.preventDefault(); void action('seller/terms', { accepted: termsChecked, version: seller.commercialTerms.version, hash: seller.commercialTerms.hash, locale }); }}>
+        <label className="flex items-start gap-3"><input type="checkbox" required checked={termsChecked} disabled={busy} onChange={e => setTermsChecked(e.target.checked)} className="mt-1" />{c.sellerAccept}</label>
+        <button className={button} disabled={busy || !termsChecked}>{c.sellerAcceptButton}</button>
+      </form> : <p className="mt-3" role="status">{c.sellerTermsUnavailable}</p>}
+    </section>}
     {mode === 'seller' && <section className={card}>
       <h2 className="text-xl">{seller?.seller ? c.connected : c.notConnected}</h2>
       {seller?.seller && <p className="mt-3">{seller.seller.charges_enabled && seller.seller.payouts_enabled && seller.seller.details_submitted && !seller.seller.disconnected ? c.ready : c.notReady}</p>}
-      <div className="mt-4 flex gap-3"><button className={button} disabled={!enabled || busy} onClick={() => action('seller/connect', {})}>{seller?.seller && !seller.seller.disconnected ? c.notReady : c.connect}</button>{seller?.seller && <button className={button} disabled={busy} onClick={() => action('seller/refresh', {})}>{c.refresh}</button>}</div>
+      <div className="mt-4 flex gap-3"><button className={button} disabled={!enabled || busy || !seller?.commercialTerms.accepted} onClick={() => action('seller/connect', {})}>{seller?.seller && !seller.seller.disconnected ? c.notReady : c.connect}</button>{seller?.seller && <button className={button} disabled={busy} onClick={() => action('seller/refresh', {})}>{c.refresh}</button>}</div>
     </section>}
-    {mode === 'seller' && <section><h2 className="mb-3 text-2xl">{c.listings}</h2><p className="mb-4 text-sm text-neutral-400">{c.listingHint}</p><div className="grid gap-4 lg:grid-cols-2">{seller?.artworks.map(a => <ListingForm key={a.id} artwork={a} listing={seller.listings.find(l => l.artwork_id === a.id)} enabled={enabled} />)}</div></section>}
+    {mode === 'seller' && <section><h2 className="mb-3 text-2xl">{c.listings}</h2><p className="mb-4 text-sm text-neutral-400">{c.listingHint}</p><div className="grid gap-4 lg:grid-cols-2">{seller?.artworks.map(a => <ListingForm key={a.id} artwork={a} listing={seller.listings.find(l => l.artwork_id === a.id)} enabled={enabled && seller.commercialTerms.accepted} />)}</div></section>}
     <section><div className="mb-4 flex justify-between"><h2 className="text-2xl">{c.orders}</h2><button className={button} disabled={busy} onClick={() => { setError(''); void reload().catch(e => setError(e.message)); }}>{c.refresh}</button></div>
       {!orders.length && <p>{c.empty}</p>}<div className="space-y-4">{orders.map(o => <OrderCard key={o.id} order={o} refunds={refunds.filter(r => r.order_id === o.id)} manager={mode !== 'buyer'} enabled={enabled} reload={reload} />)}</div>
       <div className="mt-5 flex gap-3"><button className={button} disabled={page === 0} onClick={() => setPage(p => p - 1)}>{c.previous}</button><button className={button} disabled={!hasMore} onClick={() => setPage(p => p + 1)}>{c.next}</button></div>

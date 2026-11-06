@@ -1,3 +1,5 @@
+import { sellerTermsStatus } from './seller-terms';
+import { ARTWORK_TERMS_URL } from './commercial-terms';
 import 'server-only';
 import Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -90,8 +92,9 @@ export async function publicQuote(artworkId: string) {
   ]);
   const config = commerceConfig();
   const active = enabled && configurationBlockers(config).length === 0;
-  const available = active && artwork.is_for_sale && !held?.length && listing?.enabled && listing.seller_id === artwork.owner_id && seller?.charges_enabled && seller.payouts_enabled && seller.details_submitted && !seller.disconnected && seller.livemode === config.livemode && artwork.currency?.toLowerCase() === 'eur' && Number(artwork.price) > 0;
+  const termsAccepted = active ? (await sellerTermsStatus(db, artwork.owner_id, config)).accepted : false;
+  const available = termsAccepted && active && artwork.is_for_sale && !held?.length && listing?.enabled && listing.seller_id === artwork.owner_id && seller?.charges_enabled && seller.payouts_enabled && seller.details_submitted && !seller.disconnected && seller.livemode === config.livemode && artwork.currency?.toLowerCase() === 'eur' && Number(artwork.price) > 0;
   return { artwork: { id: artwork.id, title: artwork.title, price: artwork.price, currency: artwork.currency },
     listing: listing ? { shipping_cents: listing.shipping_cents, shipping_countries: listing.shipping_countries, terms_url: listing.terms_url, updated_at: listing.updated_at } : null,
-    paymentsEnabled: active, available: Boolean(available) };
+    platformTermsUrl: ARTWORK_TERMS_URL, paymentsEnabled: active, available: Boolean(available) };
 }

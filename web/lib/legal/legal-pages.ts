@@ -1,3 +1,5 @@
+import { artworkCommercialTerms } from '@/lib/commerce/commercial-terms';
+
 export type LegalSection = {
   title: string;
   paragraphs?: string[];
@@ -15,12 +17,14 @@ export type LegalPage = {
 export const LEGAL_OWNER = {
   name: "Barattolo XR Lab",
   vatNumber: "14040331002",
+  fiscalAddress: "Via Giacomo Corradi 12, 00151 Roma (RM), Italia",
   supportEmail: "support@mostra.space",
   billingEmail: "billing@mostra.space",
   website: "https://mostra.space",
 };
 
 export const legalPages: LegalPage[] = [
+  { ...artworkCommercialTerms, sections: artworkCommercialTerms.sections.map(section => ({ ...section, paragraphs: [...section.paragraphs] })) },
   {
     slug: "termini",
     title: "Termini e condizioni",
@@ -321,6 +325,7 @@ export const legalPages: LegalPage[] = [
         paragraphs: [
           `${LEGAL_OWNER.name}`,
           `P. IVA ${LEGAL_OWNER.vatNumber}`,
+          `Sede fiscale: ${LEGAL_OWNER.fiscalAddress}`,
           `Sito web: ${LEGAL_OWNER.website}`,
         ],
       },
