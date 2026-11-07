@@ -19,17 +19,24 @@ export default async function PremioPage({ searchParams }: { searchParams: Promi
   const { entries, count } = await getPublicEntries(edition, user?.id || null, Math.floor(page), query.q || "");
   const awards = await getPublicAwards(edition);
   const cta = user ? PREMIO_DASHBOARD : `${PREMIO_PATH}/iscriviti`;
+  const isUpcoming = phase === "upcoming";
+  const ctaText = isUpcoming ? "premio.prepareApplication" : "premio.participate";
+  const heroCtaText = user && !isUpcoming && phase !== "applications" ? "premio.yourEntry" : ctaText;
   return <main className="premio-wrap">
     {edition.published && <JsonLd data={{ "@context": "https://schema.org", "@type": "CollectionPage", name: edition.title, url: absoluteUrl(PREMIO_PATH), description: "Premio gratuito dedicato agli artisti e alle loro gallerie personali su Mostra.Space." }} />}
     {preview && <p className="premio-status mt-6">Anteprima admin · <Link className="premio-text-link" href="/admin/premiomostraspace">Configura e pubblica l’edizione</Link></p>}
     <section className="premio-hero"><div>
       <p className="museum-label">{edition.title}</p>
       <h1 className="mt-6"><T textKey="premio.heroTitle" /></h1>
-      <p className="premio-note mt-6 max-w-xl"><T textKey="premio.heroDescription" /></p>
+      <p className="mt-4 font-editorial text-2xl text-[var(--museum-ivory)]"><T textKey="premio.heroSubtitle" /></p>
+      <p className="premio-note mt-3 max-w-xl"><T textKey="premio.heroDescription" /></p>
       <p className="mt-5 text-sm text-[var(--museum-bronze-light)]"><T textKey="premio.freePromise" /></p>
-      <div className="mt-8 flex flex-wrap gap-3"><Link className="museum-button-primary" href={cta}><T textKey={user ? "premio.yourEntry" : "premio.participate"} /></Link>
+      <div className="mt-8 flex flex-wrap gap-3"><Link className="museum-button-primary" href={cta}><T textKey={heroCtaText} /></Link>
         <a className="museum-button-secondary" href="#candidature"><T textKey="premio.explore" /></a></div>
-      <p className="premio-note mt-5"><T textKey={`premio.phase.${phase}`} /></p>
+      <p className="premio-note mt-5">
+        <T textKey={`premio.phase.${phase}`} />
+        {isUpcoming && <> <PremioDate value={edition.applications_open_at} /> · Europe/Rome</>}
+      </p>
       {edition.published && <p className="premio-note mt-2"><T textKey="premio.deadline" /> <PremioDate value={new Date(Date.parse(edition.applications_close_at) - 60000).toISOString()} /> · Europe/Rome</p>}
     </div><div className="premio-medallion" aria-hidden="true"><span>Premio Mostra.Space</span><strong>{edition.year}</strong><span>Arte · Ricerca · Identità</span></div></section>
     <section className="premio-section"><p className="museum-label"><T textKey="premio.threeArtists" /></p><h2 className="mt-3"><T textKey="premio.prizesTitle" /></h2>
@@ -56,7 +63,7 @@ export default async function PremioPage({ searchParams }: { searchParams: Promi
       <div className="premio-panel"><p className="museum-label"><T textKey="premio.ceremony" /></p><h2 className="mt-4"><PremioDate value={edition.ceremony_at} /></h2><p className="premio-note mt-5"><T textKey="premio.ceremonyDescription" /></p><Link className="museum-button-secondary mt-5" href={`${PREMIO_PATH}/evento`}><T textKey="premio.eventDetails" /></Link></div></section>
     <section className="premio-section"><h2><T textKey="premio.faqTitle" /></h2><div className="mt-6 grid gap-3">{["free", "artists", "changes", "followers", "plans"].map(key => <details className="premio-panel" key={key}><summary className="cursor-pointer font-medium"><T textKey={`premio.faq.${key}.q`} /></summary><p className="premio-note mt-4"><T textKey={`premio.faq.${key}.a`} /></p></details>)}</div>
       {edition.published && <div className="premio-panel mt-6"><p className="museum-label">{edition.organizer}</p><p className="premio-note mt-3 whitespace-pre-wrap">{edition.jury_text}</p></div>}
-      <div className="mt-8 flex flex-wrap gap-4"><Link className="museum-button-primary" href={cta}><T textKey="premio.participate" /></Link><Link className="museum-button-secondary" href={`${PREMIO_PATH}/regolamento`}><T textKey="premio.rules" /></Link><Link className="museum-button-secondary" href={`${PREMIO_PATH}/vincitori`}><T textKey="premio.winners" /></Link></div>
+      <div className="mt-8 flex flex-wrap gap-4"><Link className="museum-button-primary" href={cta}><T textKey={ctaText} /></Link><Link className="museum-button-secondary" href={`${PREMIO_PATH}/regolamento`}><T textKey="premio.rules" /></Link><Link className="museum-button-secondary" href={`${PREMIO_PATH}/vincitori`}><T textKey="premio.winners" /></Link></div>
     </section>
   </main>;
 }
