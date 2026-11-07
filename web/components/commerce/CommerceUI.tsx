@@ -51,7 +51,7 @@ export function BuyArtwork({ artworkId }: { artworkId: string }) {
 
 type Listing = { artwork_id: string; enabled: boolean; shipping_cents: number; shipping_countries: string[]; terms_url: string };
 type Artwork = { id: string; title: string; price: number | null; currency: string };
-type SellerInfo = { commercialTerms: { version: string; hash: string; url: string; accepted: boolean; acceptedAt: string | null; available: boolean }; paymentsEnabled: boolean; artworks: Artwork[]; listings: Listing[]; seller: { stripe_account_id: string; charges_enabled: boolean; payouts_enabled: boolean; details_submitted: boolean; disconnected: boolean } | null };
+type SellerInfo = { connectionEnabled: boolean; commercialTerms: { version: string; hash: string; url: string; accepted: boolean; acceptedAt: string | null; available: boolean }; paymentsEnabled: boolean; artworks: Artwork[]; listings: Listing[]; seller: { stripe_account_id: string; charges_enabled: boolean; payouts_enabled: boolean; details_submitted: boolean; disconnected: boolean } | null };
 function ListingForm({ artwork, listing, enabled }: { artwork: Artwork; listing?: Listing; enabled: boolean }) {
   const { c } = useCopy(); const explain = useError(); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   return <form className={card} onSubmit={async e => { e.preventDefault(); const data = new FormData(e.currentTarget); setBusy(true); setMessage('');
@@ -142,8 +142,9 @@ export function CommercePanel({ mode }: { mode: 'buyer' | 'seller' | 'admin' }) 
     </section>}
     {mode === 'seller' && <section className={card}>
       <h2 className="text-xl">{seller?.seller ? c.connected : c.notConnected}</h2>
+      {!enabled && seller?.connectionEnabled && <p className="mt-3 text-sm text-neutral-400">{c.connectWhileOff}</p>}
       {seller?.seller && <p className="mt-3">{seller.seller.charges_enabled && seller.seller.payouts_enabled && seller.seller.details_submitted && !seller.seller.disconnected ? c.ready : c.notReady}</p>}
-      <div className="mt-4 flex gap-3"><button className={button} disabled={!enabled || busy || !seller?.commercialTerms.accepted} onClick={() => action('seller/connect', {})}>{seller?.seller && !seller.seller.disconnected ? c.notReady : c.connect}</button>{seller?.seller && <button className={button} disabled={busy} onClick={() => action('seller/refresh', {})}>{c.refresh}</button>}</div>
+      <div className="mt-4 flex gap-3"><button className={button} disabled={!seller?.connectionEnabled || busy || !seller?.commercialTerms.accepted} onClick={() => action('seller/connect', {})}>{seller?.seller && !seller.seller.disconnected ? c.notReady : c.connect}</button>{seller?.seller && <button className={button} disabled={busy} onClick={() => action('seller/refresh', {})}>{c.refresh}</button>}</div>
     </section>}
     {mode === 'seller' && <section><h2 className="mb-3 text-2xl">{c.listings}</h2><p className="mb-4 text-sm text-neutral-400">{c.listingHint}</p><div className="grid gap-4 lg:grid-cols-2">{seller?.artworks.map(a => <ListingForm key={a.id} artwork={a} listing={seller.listings.find(l => l.artwork_id === a.id)} enabled={enabled && seller.commercialTerms.accepted} />)}</div></section>}
     <section><div className="mb-4 flex justify-between"><h2 className="text-2xl">{c.orders}</h2><button className={button} disabled={busy} onClick={() => { setError(''); void reload().catch(e => setError(e.message)); }}>{c.refresh}</button></div>

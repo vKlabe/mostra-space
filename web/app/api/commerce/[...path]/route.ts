@@ -2,8 +2,8 @@ import { acceptSellerTerms, requireSellerTerms, sellerTermsStatus } from '@/lib/
 import { shippingCountries } from '@/lib/commerce/countries';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
-import { CommerceError, commerceConfig, configurationBlockers, cents } from '@/lib/commerce/config';
-import { actor, checkedId, commerceStore, failure, json, payload, publicQuote, requirePayments, sameOrigin, stripeClient } from '@/lib/commerce/server';
+import { CommerceError, commerceConfig, configurationBlockers, sellerConnectionBlockers, cents } from '@/lib/commerce/config';
+import { actor, checkedId, commerceStore, failure, json, payload, publicQuote, requirePayments, requireSellerConnection, sameOrigin, stripeClient } from '@/lib/commerce/server';
 import { expireCheckout, objectId, requestRefund, startCheckout, syncSession, refreshRefund, syncFailedPayment } from '@/lib/commerce/engine';
 import type { Order } from '@/lib/commerce/engine';
 
@@ -100,7 +100,8 @@ export async function GET(request: Request, context: Context) {
     if (path[0] === 'artworks' && path.length === 2) return json(await publicQuote(path[1]));
 
     if (path.join('/') === 'connect/onboarding-refresh') {
-      const current = await actor('seller'); await requirePayments();
+      const current = await actor('seller'); requireSellerConnection();
+      await requireSellerTerms(current.db, current.user.id, config);
       const seller = await connectedSeller(current);
       return onboardingRedirect(await sellerOnboardingLink(seller.stripe_account_id));
     }
@@ -118,7 +119,8 @@ export async function GET(request: Request, context: Context) {
       return onboardingRedirect(`${config.origin}/dashboard/vendite`);
     }
     if (path.join('/') === 'connect/callback') {
-      const current = await actor('seller'); await requirePayments();
+      const current = await actor('seller'); requireSellerConnection();
+      await requireSellerTerms(current.db, current.user.id, config);
       const url = new URL(request.url); const state = url.searchParams.get('state'); const code = url.searchParams.get('code');
       const cookieStore = await cookies(); const cookie = cookieStore.get(stateCookie)?.value;
       cookieStore.set(stateCookie, '', { httpOnly: true, sameSite: 'lax', secure: config.origin.startsWith('https:'), path: '/api/commerce', maxAge: 0 });
@@ -148,7 +150,7 @@ export async function GET(request: Request, context: Context) {
       ]);
       checkDb(seller); checkDb(listings); checkDb(artworks);
       const commercialTerms = await sellerTermsStatus(current.db, current.user.id, config);
-      return json({ commercialTerms, seller: seller.data, listings: listings.data || [], artworks: artworks.data || [], paymentsEnabled: configurationBlockers(config).length === 0 && await commerceStore().enabled() });
+      return json({ commercialTerms, connectionEnabled: sellerConnectionBlockers(config).length === 0, seller: seller.data, listings: listings.data || [], artworks: artworks.data || [], paymentsEnabled: configurationBlockers(config).length === 0 && await commerceStore().enabled() });
     }
     if (path.join('/') === 'orders') {
       const view = new URL(request.url).searchParams.get('view') || 'buyer';
@@ -206,7 +208,7 @@ export async function POST(request: Request, context: Context) {
       return json(await acceptSellerTerms(current.db, current.user.id, config, data));
     }
     if (path.join('/') === 'seller/connect') {
-      const current = await actor('seller'); await requirePayments();
+      const current = await actor('seller'); requireSellerConnection();
       await requireSellerTerms(current.db, current.user.id, config);
       const existing = await current.db.from('commerce_sellers')
         .select('stripe_account_id,livemode,disconnected').eq('seller_id', current.user.id).maybeSingle();

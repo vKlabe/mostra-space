@@ -4,7 +4,7 @@ import 'server-only';
 import Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { CommerceError, commerceConfig, configurationBlockers } from './config';
+import { CommerceError, commerceConfig, configurationBlockers, sellerConnectionBlockers } from './config';
 import type { Store, Order } from './engine';
 
 export const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
@@ -62,6 +62,9 @@ export async function payload(request: Request): Promise<Record<string, unknown>
   if (raw.length > 16384) throw new CommerceError('INVALID_REQUEST', 400);
   try { const value = JSON.parse(raw); if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error(); return value; }
   catch { throw new CommerceError('INVALID_REQUEST', 400); }
+}
+export function requireSellerConnection() {
+  if (sellerConnectionBlockers(commerceConfig()).length) throw new CommerceError('NOT_CONFIGURED', 503);
 }
 export async function requirePayments() {
   if (configurationBlockers(commerceConfig()).length) throw new CommerceError('NOT_CONFIGURED', 503);
