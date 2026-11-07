@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { usePwaInstall } from "@/components/pwa/PwaInstallProvider";
 import type { Messages } from "@/lib/i18n/dictionaries";
+import { PREMIO_PATH } from "@/lib/premio/config";
 
 const DISMISSED_STORAGE_KEY = "mostra-space:pwa-global-prompt:dismissed-at";
 const DISMISSED_FOR_MS = 7 * 24 * 60 * 60 * 1000;
@@ -34,6 +36,16 @@ function isInAppBrowser() {
 }
 
 export default function PwaGlobalInstallPrompt() {
+  const pathname = usePathname();
+
+  if (pathname === PREMIO_PATH) {
+    return null;
+  }
+
+  return <PwaInstallPromptDialog />;
+}
+
+function PwaInstallPromptDialog() {
   const { t } = useLanguage();
   const {
     canPromptInstall,
