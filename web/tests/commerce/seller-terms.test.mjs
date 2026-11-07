@@ -74,6 +74,7 @@ test('HTTP seller consent: authorization, CSRF, ownership and checkout/listing/c
     },
     sameOrigin: request => { if (request.headers.get('origin') !== config.origin) throw new CommerceError('FORBIDDEN', 403); },
     payload: request => request.json(), checkedId: id => id,
+    requireSellerConnection: () => {},
     requirePayments: async () => { if (!payments) throw new CommerceError('PAYMENTS_OFF'); },
     commerceStore: () => ({ command: async (...args) => { h.effects.push(args); return {}; }, getOrder: async () => ({ seller_id: 'seller', buyer_id: 'seller', state: 'checkout_open' }) }),
     stripeClient: () => { h.effects.push('stripe'); return {}; },
@@ -103,7 +104,7 @@ test('HTTP seller consent: authorization, CSRF, ownership and checkout/listing/c
   payments = false;
   assert.equal((await post('seller/terms', { ...h.body, seller_id: 'attacker' })).status, 200);
   assert.equal(h.rows[0].actor_id, 'seller');
-  assert.equal((await post('seller/connect')).status, 409);
+  assert.equal((await post('checkout', quote)).status, 409);
   payments = true;
   assert.equal((await post('checkout', quote)).status, 200);
 });

@@ -41,6 +41,13 @@ export function configurationBlockers(config: CommerceConfig): string[] {
   return missing;
 }
 
+// Account setup is preparatory: approval flags gate sales, not seller identity setup.
+// Every technical/configuration blocker still applies.
+export function sellerConnectionBlockers(config: CommerceConfig): string[] {
+  return configurationBlockers(config).filter(blocker =>
+    blocker !== 'COMMERCE_COMMERCIAL_REVIEWED' && blocker !== 'COMMERCE_ACTIVATION_APPROVED');
+}
+
 export class CommerceError extends Error {
   code: string;
   status: number;
