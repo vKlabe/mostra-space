@@ -1,3 +1,5 @@
+import AdminShell from "@/components/admin/AdminShell";
+import WorkspaceText from "@/components/dashboard/WorkspaceText";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -238,39 +240,17 @@ const webhookEvents = ((webhookEventsResult.data || []) as unknown) as WebhookEv
   ).length;
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-4 py-8 text-neutral-100 md:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <div className="flex flex-col gap-4 border-b border-neutral-800 pb-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">
-              Admin
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Billing overview
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400">
-              Controllo rapido di piani, subscription Stripe, cancellazioni
-              programmate e ultimi eventi webhook.
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Link
-              href="/admin"
-              className="rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:border-neutral-500 hover:text-white"
-            >
-              Torna admin
-            </Link>
-
-            <Link
-              href="/pricing"
-              className="rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-            >
-              Vedi pricing
-            </Link>
-          </div>
-        </div>
-
+    <AdminShell
+      activeSection="billing"
+      title={<WorkspaceText label="adminBilling" />}
+      subtitle={<WorkspaceText label="adminBillingDetail" />}
+      actions={
+        <Link href="/admin" className="museum-button-secondary min-h-11 px-4 py-2">
+          <WorkspaceText label="adminOverview" />
+        </Link>
+      }
+    >
+      <div className="space-y-8">
         {(profilesResult.error || webhookEventsResult.error) && (
           <div className="rounded-3xl border border-red-900 bg-red-950/30 p-5 text-sm text-red-200">
             {profilesResult.error && (
@@ -504,6 +484,6 @@ const webhookEvents = ((webhookEventsResult.data || []) as unknown) as WebhookEv
           </div>
         </section>
       </div>
-    </main>
+    </AdminShell>
   );
 }

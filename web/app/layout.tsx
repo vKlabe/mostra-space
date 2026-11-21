@@ -9,6 +9,7 @@ import PwaInstallProvider from "@/components/pwa/PwaInstallProvider";
 import PwaGlobalInstallPrompt from "@/components/pwa/PwaGlobalInstallPrompt";
 import PwaPushActivationPrompt from "@/components/pwa/PwaPushActivationPrompt";
 import PwaBadgeSync from "@/components/pwa/PwaBadgeSync";
+import SkipToContent from "@/components/system/SkipToContent";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 
 const inter = Inter({
@@ -108,6 +109,7 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <PwaBadgeSync />
         <LanguageProvider>
+          <SkipToContent />
           <PwaInstallProvider>
             <PwaGlobalInstallPrompt />
             <PwaPushActivationPrompt />

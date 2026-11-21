@@ -49,7 +49,7 @@ export default function SocialNetworkActions({
       }
 
       router.refresh();
-    } catch (error) {
+    } catch {
       setIsFollowing(previous);
       setErrorKind("follow");
     } finally {
@@ -85,7 +85,7 @@ export default function SocialNetworkActions({
       }
 
       router.refresh();
-    } catch (error) {
+    } catch {
       setIsMuted(previous);
       setErrorKind("mute");
     } finally {
@@ -100,10 +100,11 @@ export default function SocialNetworkActions({
           type="button"
           onClick={toggleFollow}
           disabled={followPending}
+          aria-busy={followPending}
           className={
             isFollowing
-              ? "rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-200 transition hover:border-red-800 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
-              : "rounded-full bg-white px-4 py-2 text-xs font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+              ? "museum-button-secondary min-h-11 px-4 py-2 text-xs hover:border-red-800 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+              : "museum-button-primary min-h-11 px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
           }
         >
           {followPending ? (
@@ -121,10 +122,11 @@ export default function SocialNetworkActions({
             onClick={toggleMute}
             disabled={mutePending}
             aria-pressed={isMuted}
+            aria-busy={mutePending}
             className={
               isMuted
-                ? "rounded-full border border-amber-800 bg-amber-950/20 px-4 py-2 text-xs text-amber-200 transition hover:border-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
-                : "rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-200 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
+                ? "museum-button-secondary min-h-11 border-amber-800 bg-amber-950/20 px-4 py-2 text-xs text-amber-200 hover:border-amber-600 disabled:cursor-not-allowed disabled:opacity-50"
+                : "museum-button-secondary min-h-11 px-4 py-2 text-xs disabled:cursor-not-allowed disabled:opacity-50"
             }
           >
             {mutePending ? (
@@ -139,7 +141,7 @@ export default function SocialNetworkActions({
       </div>
 
       {errorKind && (
-        <p className="text-xs text-red-300">
+        <p role="status" className="text-xs text-red-300">
           {errorKind === "follow" ? (
             <T
               textKey="dashboard.social.network.errors.follow"

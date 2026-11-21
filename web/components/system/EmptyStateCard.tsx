@@ -7,22 +7,22 @@ type EmptyStateCardProps = {
 };
 
 export default function EmptyStateCard({
-  eyebrow = "Nessun dato",
+  eyebrow,
   title,
   message,
   actionHref,
   actionLabel,
 }: EmptyStateCardProps) {
   return (
-    <div className="rounded-3xl border border-neutral-800 bg-neutral-950 p-6 text-neutral-50">
-      <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-        {eyebrow}
+    <section className="museum-card rounded-[var(--museum-radius-lg)] p-5 sm:p-7">
+      <p className="museum-label mb-3">
+        {eyebrow ?? <T textKey="ux.state.empty" fallback="Da qui puoi iniziare" />}
       </p>
 
-      <h2 className="text-2xl font-medium">{title}</h2>
+      <h2 className="font-editorial text-3xl font-medium text-[var(--museum-ivory)]">{title}</h2>
 
       {message && (
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
           {message}
         </p>
       )}
@@ -31,12 +31,13 @@ export default function EmptyStateCard({
         <div className="mt-6">
           <a
             href={actionHref}
-            className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-secondary min-h-11 rounded-xl px-5 py-2"
           >
             {actionLabel}
           </a>
         </div>
       )}
-    </div>
+    </section>
   );
 }
+import T from "@/components/i18n/T";

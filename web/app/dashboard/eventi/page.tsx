@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -207,9 +208,9 @@ export default async function DashboardEventsPage() {
             fallback="Gli eventi sono disponibili per galleristi, artisti e admin."
           />
         }
-        activeSection="gallerie"
+        activeSection="eventi"
       >
-        <a
+        <Link
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -217,7 +218,7 @@ export default async function DashboardEventsPage() {
             textKey="dashboard.events.actions.backToDashboard"
             fallback="Torna alla dashboard"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -354,10 +355,10 @@ export default async function DashboardEventsPage() {
           fallback="Crea eventi collegati alle tue gallerie. Ogni galleria può avere massimo un evento attivo."
         />
       }
-      activeSection="gallerie"
+      activeSection="eventi"
       actions={
         <div className="flex flex-wrap gap-3">
-          <a
+          <Link
             href="/eventi"
             target="_blank"
             rel="noreferrer"
@@ -367,9 +368,9 @@ export default async function DashboardEventsPage() {
               textKey="dashboard.events.actions.publicCalendar"
               fallback="Calendario pubblico"
             />
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/account/calendario"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -377,7 +378,7 @@ export default async function DashboardEventsPage() {
               textKey="dashboard.events.actions.myCalendar"
               fallback="Il mio calendario"
             />
-          </a>
+          </Link>
         </div>
       }
     >

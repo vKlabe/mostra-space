@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -190,7 +191,7 @@ export default async function DashboardInquiriesPage({
   }
   activeSection="richieste"
 >
-        <a
+        <Link
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -198,7 +199,7 @@ export default async function DashboardInquiriesPage({
             textKey="dashboard.inquiries.actions.backToDashboard"
             fallback="Torna alla dashboard"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -285,7 +286,7 @@ export default async function DashboardInquiriesPage({
   activeSection="richieste"
       actions={
         <>
-          <a
+          <Link
             href="/gallerie"
             target="_blank"
             rel="noreferrer"
@@ -295,7 +296,7 @@ export default async function DashboardInquiriesPage({
               textKey="dashboard.inquiries.actions.publicList"
               fallback="Elenco pubblico"
             />
-          </a>
+          </Link>
 
           <a
             href="/api/dashboard/inquiries-export"
@@ -361,7 +362,7 @@ export default async function DashboardInquiriesPage({
 
           {limits.maxRequestsPerMonth !== null &&
             monthlyInquiries.length >= limits.maxRequestsPerMonth && (
-              <a
+              <Link
                 href="/pricing"
                 className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
@@ -369,12 +370,12 @@ export default async function DashboardInquiriesPage({
                   textKey="dashboard.inquiries.actions.upgradePlan"
                   fallback="Passa a un piano superiore"
                 />
-              </a>
+              </Link>
             )}
         </div>
       </div>
 
-      <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <div className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -409,6 +410,7 @@ export default async function DashboardInquiriesPage({
               <a
                 key={item.filter}
                 href={getFilterHref(item.filter)}
+                aria-current={isActive ? "page" : undefined}
                 className={
                   isActive
                     ? "rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950"

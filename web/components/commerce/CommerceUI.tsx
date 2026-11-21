@@ -104,6 +104,7 @@ function OrderCard({ order, refunds, manager, enabled, reload }: { order: OrderV
 
 export function CommercePanel({ mode }: { mode: 'buyer' | 'seller' | 'admin' }) {
   const { c, locale } = useCopy(); const explain = useError(); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [seller, setSeller] = useState<SellerInfo | null>(null);
   const [admin, setAdmin] = useState<{ settings: { payments_enabled: boolean }; effectiveEnabled: boolean; blockers: string[]; mode: string } | null>(null);
@@ -117,7 +118,7 @@ export function CommercePanel({ mode }: { mode: 'buyer' | 'seller' | 'admin' }) 
     if (mode === 'seller') setSeller(await api<SellerInfo>('seller'));
   }, [mode, page]);
   useEffect(() => {
-    const timer = window.setTimeout(() => { void reload().catch(e => setError(e.message)); }, 0);
+    const timer = window.setTimeout(() => { void reload().catch(e => setError(e.message)).finally(() => setLoaded(true)); }, 0);
     return () => window.clearTimeout(timer);
   }, [reload]);
   async function action(path: string, data: unknown) { setBusy(true); setError(''); setNote(''); try { const result = await api<{ url?: string; cleanup?: { remaining: number | null; reviewRequired?: boolean }; remaining?: number }>(path, data); if (result.url) window.location.assign(result.url); if (result.remaining || result.cleanup?.remaining || result.cleanup?.reviewRequired) setNote(c.pending); await reload(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
@@ -140,15 +141,16 @@ export function CommercePanel({ mode }: { mode: 'buyer' | 'seller' | 'admin' }) 
         <button className={button} disabled={busy || !termsChecked}>{c.sellerAcceptButton}</button>
       </form> : <p className="mt-3" role="status">{c.sellerTermsUnavailable}</p>}
     </section>}
-    {mode === 'seller' && <section className={card}>
+    {mode === 'seller' && seller && <section className={card}>
       <h2 className="text-xl">{seller?.seller ? c.connected : c.notConnected}</h2>
       {!enabled && seller?.connectionEnabled && <p className="mt-3 text-sm text-neutral-400">{c.connectWhileOff}</p>}
       {seller?.seller && <p className="mt-3">{seller.seller.charges_enabled && seller.seller.payouts_enabled && seller.seller.details_submitted && !seller.seller.disconnected ? c.ready : c.notReady}</p>}
       <div className="mt-4 flex gap-3"><button className={button} disabled={!seller?.connectionEnabled || busy || !seller?.commercialTerms.accepted} onClick={() => action('seller/connect', {})}>{seller?.seller && !seller.seller.disconnected ? c.notReady : c.connect}</button>{seller?.seller && <button className={button} disabled={busy} onClick={() => action('seller/refresh', {})}>{c.refresh}</button>}</div>
     </section>}
     {mode === 'seller' && <section><h2 className="mb-3 text-2xl">{c.listings}</h2><p className="mb-4 text-sm text-neutral-400">{c.listingHint}</p><div className="grid gap-4 lg:grid-cols-2">{seller?.artworks.map(a => <ListingForm key={a.id} artwork={a} listing={seller.listings.find(l => l.artwork_id === a.id)} enabled={enabled && seller.commercialTerms.accepted} />)}</div></section>}
-    <section><div className="mb-4 flex justify-between"><h2 className="text-2xl">{c.orders}</h2><button className={button} disabled={busy} onClick={() => { setError(''); void reload().catch(e => setError(e.message)); }}>{c.refresh}</button></div>
-      {!orders.length && <p>{c.empty}</p>}<div className="space-y-4">{orders.map(o => <OrderCard key={o.id} order={o} refunds={refunds.filter(r => r.order_id === o.id)} manager={mode !== 'buyer'} enabled={enabled} reload={reload} />)}</div>
+    <section aria-busy={!loaded}><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-2xl">{c.orders}</h2><button className={button} disabled={busy} onClick={() => { setError(''); void reload().catch(e => setError(e.message)); }}>{c.refresh}</button></div>
+      {!loaded && <p role="status">{c.loading}</p>}
+      {loaded && !error && !orders.length && <p>{c.empty}</p>}<div className="space-y-4">{orders.map(o => <OrderCard key={o.id} order={o} refunds={refunds.filter(r => r.order_id === o.id)} manager={mode !== 'buyer'} enabled={enabled} reload={reload} />)}</div>
       <div className="mt-5 flex gap-3"><button className={button} disabled={page === 0} onClick={() => setPage(p => p - 1)}>{c.previous}</button><button className={button} disabled={!hasMore} onClick={() => setPage(p => p + 1)}>{c.next}</button></div>
     </section>
   </div>;

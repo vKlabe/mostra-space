@@ -1,7 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import T from "@/components/i18n/T";
 import { getSafePostAuthPath } from "@/lib/auth/safeNavigation";
 
 export default function UpgradeGalleristPage() {
@@ -84,71 +86,71 @@ export default function UpgradeGalleristPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
+    <main className="museum-page min-h-screen px-4 py-8 text-[var(--museum-ivory)] sm:px-6 sm:py-12">
       <section className="mx-auto max-w-3xl">
-        <p className="mb-4 text-sm uppercase tracking-[0.35em] text-neutral-500">
-          Upgrade account
-        </p>
-
-        <h1 className="text-4xl font-semibold">
-          Passa ad account Gallerista / Artista
+        <h1 className="museum-title max-w-xl text-[clamp(2.5rem,7vw,4.25rem)]">
+          <T textKey="ux.auth.upgradeTitle" fallback="Passa ad account Gallerista / Artista" />
         </h1>
 
-        <p className="mt-4 text-neutral-300">
-          Mantieni lo stesso account e attiva gli strumenti creator: creazione
-          gallerie, upload opere, editor 3D, pubblicazione e gestione richieste.
+        <p className="mt-4 max-w-xl leading-7 text-[var(--museum-stone)]">
+          <T textKey="ux.auth.upgradeIntro" fallback="Con lo stesso account puoi creare gallerie, caricare opere, usare l’editor 3D e gestire le richieste." />
         </p>
 
         <form
           onSubmit={handleUpgrade}
-          className="mt-10 space-y-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
+          className="museum-card mt-6 space-y-5 rounded-[1.5rem] p-5 sm:p-7"
         >
           <div>
-            <label className="block text-sm text-neutral-300">
-              Nome galleria / artista / studio
+            <label htmlFor="upgrade-businessName" className="block text-sm text-[var(--museum-ivory-soft)]">
+              <T textKey="auth.register.form.businessName" fallback="Nome galleria / artista / studio" />
             </label>
             <input
+              id="upgrade-businessName"
+              name="businessName"
+              autoComplete="organization"
               type="text"
               required
               value={businessName}
               onChange={(event) => setBusinessName(event.target.value)}
               disabled={loading}
-              className="mt-2 w-full rounded-2xl bg-neutral-950 px-4 py-3 text-neutral-50"
-              placeholder="Galleria Rossi"
+              className="museum-input mt-2 w-full rounded-2xl px-4 py-3"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300">
-              Telefono
+            <label htmlFor="upgrade-phone" className="block text-sm text-[var(--museum-ivory-soft)]">
+              <T textKey="auth.register.form.phone" fallback="Telefono" />
             </label>
             <input
+              id="upgrade-phone"
+              name="phone"
+              autoComplete="tel"
               type="tel"
               required
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
               disabled={loading}
-              className="mt-2 w-full rounded-2xl bg-neutral-950 px-4 py-3 text-neutral-50"
-              placeholder="+39 ..."
+              className="museum-input mt-2 w-full rounded-2xl px-4 py-3"
             />
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300">
-              Sito o profilo social
+            <label htmlFor="upgrade-professionalUrl" className="block text-sm text-[var(--museum-ivory-soft)]">
+              <T textKey="auth.register.form.professionalUrl" fallback="Sito o profilo social" />
             </label>
             <input
+              id="upgrade-professionalUrl"
+              name="professionalUrl"
               type="text"
               required
               value={professionalUrl}
               onChange={(event) => setProfessionalUrl(event.target.value)}
               disabled={loading}
-              className="mt-2 w-full rounded-2xl bg-neutral-950 px-4 py-3 text-neutral-50"
-              placeholder="https://... oppure @profilo"
+              className="museum-input mt-2 w-full rounded-2xl px-4 py-3"
             />
           </div>
 
-          <label className="flex gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm text-neutral-300">
+          <label className="flex gap-3 rounded-2xl border border-[var(--museum-border)] bg-[var(--museum-charcoal)] p-4 text-sm leading-6 text-[var(--museum-stone)]">
             <input
               type="checkbox"
               checked={termsAccepted}
@@ -156,20 +158,18 @@ export default function UpgradeGalleristPage() {
               disabled={loading}
             />
             <span>
-              Confermo di voler attivare un account Gallerista / Artista e
-              accetto termini, responsabilità sui contenuti caricati e trattamento
-              dei dati necessari alla gestione dell’account.
+              <T textKey="ux.auth.upgradeTerms" fallback="Confermo di voler attivare un account Gallerista / Artista e accetto termini, responsabilità sui contenuti caricati e trattamento dei dati necessari alla gestione dell’account." />
             </span>
           </label>
 
           {errorMessage && (
-            <div className="rounded-2xl border border-red-800 bg-red-950/30 p-4 text-sm text-red-100">
+            <div role="alert" className="rounded-2xl border border-red-800 bg-red-950/30 p-4 text-sm text-red-100">
               {errorMessage}
             </div>
           )}
 
           {message && (
-            <div className="rounded-2xl border border-emerald-800 bg-emerald-950/30 p-4 text-sm text-emerald-100">
+            <div role="status" className="rounded-2xl border border-emerald-800 bg-emerald-950/30 p-4 text-sm text-emerald-100">
               {message}
             </div>
           )}
@@ -177,17 +177,14 @@ export default function UpgradeGalleristPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-neutral-950"
+            className="museum-button-primary w-full px-6 py-3 text-sm disabled:opacity-50"
           >
-            {loading ? "Upgrade in corso..." : "Attiva strumenti creator"}
+            {loading ? <T textKey="ux.auth.upgrading" fallback="Attivazione in corso…" /> : <T textKey="ux.auth.upgradeAction" fallback="Attiva gli strumenti creator" />}
           </button>
 
-          <p className="text-center text-sm text-neutral-400">
-            Vuoi restare Visitor?{" "}
-            <a href="/dashboard" className="text-neutral-100 underline">
-              Torna alla dashboard
-            </a>
-          </p>
+          <Link href="/dashboard" className="museum-link block text-center text-sm underline underline-offset-4">
+            <T textKey="ux.state.dashboard" fallback="Torna alla dashboard" />
+          </Link>
         </form>
       </section>
     </main>

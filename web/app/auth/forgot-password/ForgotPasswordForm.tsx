@@ -72,13 +72,13 @@ export default function ForgotPasswordForm() {
       </div>
 
       {statusMessage && (
-        <div className="rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-success)]">
+        <div role="status" className="rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-success)]">
           {statusMessage}
         </div>
       )}
 
       {errorMessage && (
-        <div className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-danger)]">
+        <div role="alert" className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] px-4 py-3 text-sm leading-6 text-[var(--museum-danger)]">
           {errorMessage}
         </div>
       )}

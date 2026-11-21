@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import T from "@/components/i18n/T";
 import JsonLd from "@/components/seo/JsonLd";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
@@ -110,7 +111,7 @@ export default async function LegalDetailPage({
         <header className="mt-8 border-b border-[var(--museum-border)] pb-10">
           <p className="museum-label">Aggiornato il {page.updatedAt}</p>
 
-          <h1 className="museum-title mt-5 text-6xl text-[var(--museum-ivory)] md:text-7xl">
+          <h1 className="museum-title mt-4 break-words text-[clamp(2.4rem,7vw,4.5rem)] text-[var(--museum-ivory)]">
             {page.title}
           </h1>
 
@@ -119,11 +120,27 @@ export default async function LegalDetailPage({
           </p>
         </header>
 
-        <div className="mt-10 space-y-6">
-          {page.sections.map((section) => (
+        <nav aria-labelledby="legal-contents" className="museum-card mt-8 rounded-[1.5rem] p-5 md:p-6">
+          <h2 id="legal-contents" className="font-editorial text-2xl text-[var(--museum-ivory)]">
+            <T textKey="ux.legal.contents" fallback="In questo documento" />
+          </h2>
+          <ol className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+            {page.sections.map((section, index) => (
+              <li key={section.title}>
+                <a className="museum-link inline-block py-1.5 text-sm underline underline-offset-4" href={`#section-${index + 1}`}>
+                  {section.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        <div className="mt-8 space-y-6">
+          {page.sections.map((section, index) => (
             <section
               key={section.title}
-              className="museum-card rounded-[1.75rem] p-6 md:p-8"
+              id={`section-${index + 1}`}
+              className="museum-card scroll-mt-24 rounded-[1.75rem] p-5 md:p-8"
             >
               <h2 className="font-editorial text-3xl font-medium text-[var(--museum-ivory)]">
                 {section.title}

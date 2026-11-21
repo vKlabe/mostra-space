@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -173,29 +174,30 @@ export default async function DashboardSocialNetworkPage({
         <div className="flex flex-wrap gap-3">
           <a
             href="/dashboard/social"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
           >
             <T textKey="dashboard.social.network.actions.back" fallback="Torna a Social" />
           </a>
-          <a
+          <Link
             href="/profili"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-primary min-h-11 px-4 py-2 text-sm"
           >
             <T textKey="dashboard.social.network.actions.explore" fallback="Esplora profili" />
-          </a>
+          </Link>
         </div>
       }
     >
       <div className="space-y-6">
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 md:p-6">
+        <section className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div className="flex flex-wrap gap-2">
               <a
                 href="/dashboard/social/rete?tab=following"
+                aria-current={activeTab === "following" ? "page" : undefined}
                 className={
                   activeTab === "following"
-                    ? "rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950"
-                    : "rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-200 transition hover:border-neutral-400"
+                    ? "museum-button-primary min-h-11 px-4 py-2 text-sm"
+                    : "museum-button-secondary min-h-11 px-4 py-2 text-sm"
                 }
               >
                 <T textKey="dashboard.social.network.tabs.following" fallback="Seguiti" />{" "}
@@ -204,10 +206,11 @@ export default async function DashboardSocialNetworkPage({
 
               <a
                 href="/dashboard/social/rete?tab=followers"
+                aria-current={activeTab === "followers" ? "page" : undefined}
                 className={
                   activeTab === "followers"
-                    ? "rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950"
-                    : "rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-200 transition hover:border-neutral-400"
+                    ? "museum-button-primary min-h-11 px-4 py-2 text-sm"
+                    : "museum-button-secondary min-h-11 px-4 py-2 text-sm"
                 }
               >
                 <T textKey="dashboard.social.network.tabs.followers" fallback="Ti seguono" />{" "}
@@ -228,11 +231,11 @@ export default async function DashboardSocialNetworkPage({
                 type="search"
                 name="q"
                 defaultValue={getSingleParam(params.q)}
-                className="min-w-0 flex-1 rounded-full border border-neutral-700 bg-neutral-950 px-4 py-2.5 text-sm text-neutral-100 outline-none transition focus:border-neutral-400"
+                className="min-h-11 min-w-0 flex-1 rounded-full border border-[var(--museum-border)] bg-neutral-950 px-4 py-2.5 text-base text-neutral-100 outline-none transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] sm:text-sm"
               />
               <button
                 type="submit"
-                className="rounded-full border border-neutral-700 px-4 py-2.5 text-xs uppercase tracking-[0.14em] text-neutral-200 transition hover:border-neutral-400"
+                className="museum-button-secondary min-h-11 shrink-0 px-4 py-2 text-sm"
               >
                 <T textKey="dashboard.social.network.search.action" fallback="Cerca" />
               </button>
@@ -240,7 +243,7 @@ export default async function DashboardSocialNetworkPage({
           </div>
         </section>
 
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 md:p-6">
+        <section className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -359,7 +362,7 @@ export default async function DashboardSocialNetworkPage({
                       {profileHref && (
                         <a
                           href={profileHref}
-                          className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-200 transition hover:border-neutral-400"
+                          className="museum-button-secondary min-h-11 px-4 py-2 text-xs"
                         >
                           <T textKey="dashboard.social.network.actions.openProfile" fallback="Apri profilo" />
                         </a>

@@ -340,11 +340,10 @@ export default async function PricingPage() {
   return (
     <main className="museum-page overflow-hidden">
       <MuseumHeader />
-      <BlackWeekBanner plansHref="#piani" />
 
       <section className="border-b border-[var(--museum-border)]">
-        <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
-          <div className="grid gap-10 lg:grid-cols-[1fr_0.7fr] lg:items-end">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:py-12 md:px-8 md:py-16">
+          <div className="grid gap-6 lg:grid-cols-[1fr_0.7fr] lg:items-end">
             <div>
               <p className="museum-label">
                 <T
@@ -353,22 +352,25 @@ export default async function PricingPage() {
                 />
               </p>
 
-              <h1 className="museum-title mt-6 max-w-5xl text-6xl text-[var(--museum-ivory)] md:text-7xl">
+              <h1 className="museum-title mt-3 max-w-5xl text-[clamp(2.5rem,7vw,4.5rem)] text-[var(--museum-ivory)]">
                 <T
                   textKey="pricing.title"
                   fallback="Scegli il piano per il tuo spazio espositivo virtuale"
                 />
               </h1>
 
-              <p className="museum-subtitle mt-7 max-w-3xl text-base text-[var(--museum-stone)] md:text-lg">
+              <p className="museum-subtitle mt-4 max-w-3xl text-base text-[var(--museum-stone)] md:text-lg">
                 <T
                   textKey="pricing.subtitle"
                   fallback="Parti gratis, poi passa a un piano superiore quando hai bisogno di più gallerie, opere e storage."
                 />
               </p>
+              <a href="#piani" className="museum-button-primary mt-5 inline-flex px-5 py-2.5">
+                <T textKey="ux.pricing.compare" fallback="Confronta i piani" />
+              </a>
             </div>
 
-            <div className="museum-card rounded-[1.75rem] p-6">
+            <div className="museum-card rounded-[1.75rem] p-5 sm:p-6">
               {profile ? (
                 <>
                   <p className="museum-label">
@@ -503,6 +505,8 @@ export default async function PricingPage() {
           </div>
         </div>
       </section>
+
+      <BlackWeekBanner plansHref="#piani" />
 
       <section id="piani" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">

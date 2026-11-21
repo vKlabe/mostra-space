@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import T from "@/components/i18n/T";
 import {
   formatLimitValue,
@@ -169,6 +169,7 @@ export default function CreateGalleryForm({
   canCreate,
   limitMessage,
 }: CreateGalleryFormProps) {
+  const formId = useId();
   const router = useRouter();
 
   const firstTemplateId = templates[0]?.id || "";
@@ -255,7 +256,8 @@ export default function CreateGalleryForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
+      aria-busy={isLoading}
+      className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6"
     >
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
         <T
@@ -312,7 +314,7 @@ export default function CreateGalleryForm({
 
       <div className="mt-6 space-y-4">
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-title"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createGalleryForm.fields.title"
               fallback="Titolo"
@@ -320,6 +322,8 @@ export default function CreateGalleryForm({
           </label>
 
           <input
+            id={formId + "-title"}
+            name="title"
             value={title}
             onChange={(event) => handleTitleChange(event.target.value)}
             disabled={!canCreate || isLoading}
@@ -330,7 +334,7 @@ export default function CreateGalleryForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-publicSlug"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createGalleryForm.fields.publicSlug"
               fallback="Slug pubblico"
@@ -338,6 +342,8 @@ export default function CreateGalleryForm({
           </label>
 
           <input
+            id={formId + "-publicSlug"}
+            name="publicSlug"
             value={slug}
             onChange={(event) => setSlug(slugify(event.target.value))}
             disabled={!canCreate || isLoading}
@@ -356,7 +362,7 @@ export default function CreateGalleryForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-description"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createGalleryForm.fields.description"
               fallback="Descrizione"
@@ -364,6 +370,8 @@ export default function CreateGalleryForm({
           </label>
 
           <textarea
+            id={formId + "-description"}
+            name="description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             disabled={!canCreate || isLoading}
@@ -375,12 +383,12 @@ export default function CreateGalleryForm({
         <div>
           <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
-              <label className="block text-sm text-neutral-300">
+              <p className="block text-sm text-neutral-300">
                 <T
                   textKey="dashboard.createGalleryForm.templates.label"
                   fallback="Template stanza"
                 />
-              </label>
+              </p>
 
               <p className="mt-1 text-xs leading-5 text-neutral-500">
                 <T
@@ -429,6 +437,7 @@ export default function CreateGalleryForm({
                   <button
                     key={template.id}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => setTemplateId(template.id)}
                     disabled={!canCreate || isLoading}
                     className={
@@ -660,7 +669,7 @@ export default function CreateGalleryForm({
           )}
         </button>
 
-        {message && <p className="text-sm text-neutral-300">{message}</p>}
+        <p role="status" className={message ? "text-sm text-[var(--museum-ivory)]" : "sr-only"}>{message}</p>
       </div>
     </form>
   );

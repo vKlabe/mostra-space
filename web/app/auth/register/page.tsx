@@ -192,9 +192,9 @@ export default function RegisterPage() {
   const formDisabled = loading || checkingSession;
 
   return (
-    <main className="museum-page px-5 py-12">
+    <main id="main-content" tabIndex={-1} className="museum-page px-4 py-7 sm:px-5 sm:py-12">
       <section className="mx-auto max-w-6xl">
-        <div className="mb-10 flex items-center justify-between gap-5">
+        <div className="mb-6 flex sm:mb-10 items-center justify-between gap-5">
           <Link
             href="/"
             className="museum-logo text-3xl leading-none text-[var(--museum-ivory)]"
@@ -212,7 +212,7 @@ export default function RegisterPage() {
           </Link>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+        <div className="grid gap-6 lg:gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
           <div className="lg:sticky lg:top-10">
             <p className="museum-label">
               <T
@@ -221,7 +221,7 @@ export default function RegisterPage() {
               />
             </p>
 
-            <h1 className="museum-title mt-5 text-6xl text-[var(--museum-ivory)] md:text-7xl">
+            <h1 className="museum-title mt-3 text-5xl sm:mt-5 sm:text-6xl text-[var(--museum-ivory)] md:text-7xl">
               <T
                 textKey="auth.register.hero.title"
                 fallback="Crea il tuo spazio."
@@ -235,7 +235,7 @@ export default function RegisterPage() {
               />
             </p>
 
-            <div className="museum-card mt-8 rounded-[1.75rem] p-5">
+            <div className="museum-card mt-8 hidden rounded-[1.75rem] p-5 lg:block">
               <p className="museum-label">
                 <T
                   textKey="auth.register.modes.label"
@@ -274,15 +274,20 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <fieldset>
+              <legend className="mb-3 text-sm font-medium text-[var(--museum-ivory-soft)]">
+                <T textKey="ux.auth.choose" fallback="Scegli il tipo di account" />
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setAccountType("visitor")}
+                aria-pressed={accountType === "visitor"}
                 disabled={formDisabled}
                 className={
                   accountType === "visitor"
-                    ? "rounded-[1.5rem] border border-[var(--museum-bronze-light)] bg-[rgba(168,121,69,0.16)] p-6 text-left shadow-[var(--museum-shadow-bronze)] transition disabled:cursor-not-allowed disabled:opacity-50"
-                    : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-6 text-left transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
+                    ? "rounded-[1.25rem] border border-[var(--museum-bronze-light)] bg-[rgba(168,121,69,0.16)] p-4 text-left sm:p-6 shadow-[var(--museum-shadow-bronze)] transition disabled:cursor-not-allowed disabled:opacity-50"
+                    : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-4 text-left sm:p-6 transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
                 }
               >
                 <p className="museum-label">
@@ -310,11 +315,12 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setAccountType("gallerist")}
+                aria-pressed={accountType === "gallerist"}
                 disabled={formDisabled}
                 className={
                   accountType === "gallerist"
-                    ? "rounded-[1.5rem] border border-[var(--museum-bronze-light)] bg-[rgba(168,121,69,0.16)] p-6 text-left shadow-[var(--museum-shadow-bronze)] transition disabled:cursor-not-allowed disabled:opacity-50"
-                    : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-6 text-left transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
+                    ? "rounded-[1.5rem] border border-[var(--museum-bronze-light)] bg-[rgba(168,121,69,0.16)] p-4 text-left sm:p-6 shadow-[var(--museum-shadow-bronze)] transition disabled:cursor-not-allowed disabled:opacity-50"
+                    : "rounded-[1.5rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.74)] p-4 text-left sm:p-6 transition hover:border-[var(--museum-bronze)] disabled:cursor-not-allowed disabled:opacity-50"
                 }
               >
                 <p className="museum-label">
@@ -338,7 +344,8 @@ export default function RegisterPage() {
                   />
                 </p>
               </button>
-            </div>
+              </div>
+            </fieldset>
 
             <form
               onSubmit={handleRegister}
@@ -375,7 +382,7 @@ export default function RegisterPage() {
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                  <label htmlFor="register-first-name" className="block text-sm text-[var(--museum-ivory-soft)]">
                     <T
                       textKey="auth.register.form.firstName"
                       fallback="Nome"
@@ -383,6 +390,9 @@ export default function RegisterPage() {
                   </label>
 
                   <input
+                    id="register-first-name"
+                    name="firstName"
+                    autoComplete="given-name"
                     type="text"
                     required
                     value={firstName}
@@ -394,7 +404,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                  <label htmlFor="register-last-name" className="block text-sm text-[var(--museum-ivory-soft)]">
                     <T
                       textKey="auth.register.form.lastName"
                       fallback="Cognome"
@@ -402,6 +412,9 @@ export default function RegisterPage() {
                   </label>
 
                   <input
+                    id="register-last-name"
+                    name="lastName"
+                    autoComplete="family-name"
                     type="text"
                     required
                     value={lastName}
@@ -414,8 +427,11 @@ export default function RegisterPage() {
 
                 {isGallerist && (
                   <>
+                    <p className="text-sm leading-6 text-[var(--museum-stone)] md:col-span-2">
+                      <T textKey="ux.auth.creatorRequirements" fallback="Per il profilo professionale servono un numero di telefono e un sito o profilo social." />
+                    </p>
                     <div>
-                      <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                      <label htmlFor="register-business-name" className="block text-sm text-[var(--museum-ivory-soft)]">
                         <T
                           textKey="auth.register.form.businessName"
                           fallback="Nome galleria / artista / studio"
@@ -423,6 +439,9 @@ export default function RegisterPage() {
                       </label>
 
                       <input
+                        id="register-business-name"
+                        name="businessName"
+                        autoComplete="organization"
                         type="text"
                         value={businessName}
                         onChange={(event) =>
@@ -435,7 +454,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                      <label htmlFor="register-phone" className="block text-sm text-[var(--museum-ivory-soft)]">
                         <T
                           textKey="auth.register.form.phone"
                           fallback="Telefono"
@@ -443,6 +462,9 @@ export default function RegisterPage() {
                       </label>
 
                       <input
+                        id="register-phone"
+                        name="phone"
+                        autoComplete="tel"
                         type="tel"
                         required={isGallerist}
                         value={phone}
@@ -454,7 +476,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                      <label htmlFor="register-professional-url" className="block text-sm text-[var(--museum-ivory-soft)]">
                         <T
                           textKey="auth.register.form.professionalUrl"
                           fallback="Sito o profilo social"
@@ -462,6 +484,8 @@ export default function RegisterPage() {
                       </label>
 
                       <input
+                        id="register-professional-url"
+                        name="professionalUrl"
                         type="text"
                         required={isGallerist}
                         value={professionalUrl}
@@ -477,11 +501,13 @@ export default function RegisterPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                  <label htmlFor="register-email" className="block text-sm text-[var(--museum-ivory-soft)]">
                     <T textKey="auth.register.form.email" fallback="Email" />
                   </label>
 
                   <input
+                    id="register-email"
+                    name="email"
                     type="email"
                     required
                     autoComplete="email"
@@ -494,7 +520,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm text-[var(--museum-ivory-soft)]">
+                  <label htmlFor="register-password" className="block text-sm text-[var(--museum-ivory-soft)]">
                     <T
                       textKey="auth.register.form.password"
                       fallback="Password"
@@ -502,6 +528,8 @@ export default function RegisterPage() {
                   </label>
 
                   <input
+                    id="register-password"
+                    name="password"
                     type="password"
                     required
                     minLength={6}
@@ -510,8 +538,11 @@ export default function RegisterPage() {
                     onChange={(event) => setPassword(event.target.value)}
                     disabled={formDisabled}
                     className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Minimo 6 caratteri"
+                    aria-describedby="register-password-hint"
                   />
+                  <p id="register-password-hint" className="mt-2 text-sm text-[var(--museum-stone)]">
+                    <T textKey="ux.auth.passwordHint" fallback="Almeno 6 caratteri." />
+                  </p>
                 </div>
               </div>
 
@@ -533,13 +564,13 @@ export default function RegisterPage() {
               </label>
 
               {errorMessage && (
-                <div className="mt-5 rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
+                <div role="alert" className="mt-5 rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
                   {errorMessage}
                 </div>
               )}
 
               {message && (
-                <div className="mt-5 rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] p-4 text-sm text-[var(--museum-success)]">
+                <div role="status" className="mt-5 rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] p-4 text-sm text-[var(--museum-success)]">
                   {message}
                 </div>
               )}

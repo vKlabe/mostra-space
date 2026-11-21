@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import T from "@/components/i18n/T";
+import FavoriteActionView, { type FavoriteFeedback } from "./FavoriteActionView";
 
 type FavoriteGalleryButtonProps = {
   galleryId: string;
@@ -12,7 +12,7 @@ export default function FavoriteGalleryButton({
 }: FavoriteGalleryButtonProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [feedback, setFeedback] = useState<FavoriteFeedback | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -30,22 +30,22 @@ export default function FavoriteGalleryButton({
         }
 
         if (response.status === 401) {
-          setMessage("Accedi per salvare questa galleria.");
+          setFeedback("signIn");
           setLoading(false);
           return;
         }
 
         if (!response.ok) {
-          setMessage("");
+          setFeedback("saveError");
           setLoading(false);
           return;
         }
 
         setIsFavorite(Boolean(data.isFavorite));
-        setMessage("");
+        setFeedback(null);
       } catch {
         if (active) {
-          setMessage("");
+          setFeedback("networkError");
         }
       } finally {
         if (active) {
@@ -63,7 +63,7 @@ export default function FavoriteGalleryButton({
 
   async function toggleFavorite() {
     setLoading(true);
-    setMessage("");
+    setFeedback(null);
 
     try {
       const response = await fetch("/api/favorites/galleries", {
@@ -79,63 +79,33 @@ export default function FavoriteGalleryButton({
       const data = await response.json();
 
       if (response.status === 401) {
-        setMessage("Accedi per salvare questa galleria.");
+        setFeedback("signIn");
         setLoading(false);
         return;
       }
 
       if (!response.ok) {
-        setMessage(data.details || data.error || "Errore durante il salvataggio.");
+        setFeedback("saveError");
         setLoading(false);
         return;
       }
 
       setIsFavorite(Boolean(data.isFavorite));
-      setMessage(
-        data.isFavorite
-          ? "Galleria salvata nei preferiti."
-          : "Galleria rimossa dai preferiti."
-      );
+      setFeedback(data.isFavorite ? "saved" : "removed");
     } catch {
-      setMessage("Errore di rete. Riprova.");
+      setFeedback("networkError");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex flex-col items-start gap-2">
-      <button
-        type="button"
-        onClick={toggleFavorite}
-        disabled={loading}
-        className={
-          isFavorite
-            ? "inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
-            : "inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-50"
-        }
-      >
-        {loading ? (
-          <T
-            textKey="gallery.favorites.actions.checking"
-            fallback="Controllo..."
-          />
-        ) : isFavorite ? (
-          <T
-            textKey="gallery.favorites.actions.saved"
-            fallback="Galleria salvata"
-          />
-        ) : (
-          <T
-            textKey="gallery.favorites.actions.save"
-            fallback="Salva galleria"
-          />
-        )}
-      </button>
-
-      {message && (
-        <p className="text-xs leading-5 text-neutral-500">{message}</p>
-      )}
-    </div>
+    <FavoriteActionView
+      kind="gallery"
+      isFavorite={isFavorite}
+      loading={loading}
+      feedback={feedback}
+      onToggle={toggleFavorite}
+    />
   );
 }

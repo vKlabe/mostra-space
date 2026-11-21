@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 
@@ -429,7 +430,7 @@ export default function DashboardHelpPage() {
           fallback="Tutorial, risposte rapide e strumenti per usare al meglio mostra.space."
         />
       }
-      activeSection={"help" as any}
+      activeSection="help"
       actions={
         <div className="flex flex-wrap gap-3">
           <a
@@ -456,7 +457,7 @@ export default function DashboardHelpPage() {
       }
     >
       <div className="space-y-8">
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
             <T textKey="dashboard.help.start.label" fallback="Inizia da qui" />
           </p>
@@ -505,7 +506,7 @@ export default function DashboardHelpPage() {
           </div>
         </section>
 
-        <section id="tutorial" className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section id="tutorial" className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -539,7 +540,7 @@ export default function DashboardHelpPage() {
           </div>
         </section>
 
-        <section id="faq" className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section id="faq" className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T textKey="dashboard.help.faq.label" fallback="Domande frequenti" />
           </p>
@@ -582,7 +583,7 @@ export default function DashboardHelpPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T textKey="dashboard.help.problems.label" fallback="Problemi comuni" />
           </p>
@@ -656,12 +657,12 @@ export default function DashboardHelpPage() {
                 support@mostra.space
               </a>
 
-              <a
+              <Link
                 href="/dashboard"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
                 <T textKey="dashboard.help.support.backToDashboard" fallback="Torna alla dashboard" />
-              </a>
+              </Link>
             </div>
           </div>
         </section>

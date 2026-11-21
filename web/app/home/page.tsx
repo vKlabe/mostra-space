@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import HomeProfileAvatar from "@/components/home/HomeProfileAvatar";
 import LegalFooter from "@/components/legal/LegalFooter";
 import T from "@/components/i18n/T";
+import { SocialText } from "@/components/social/SocialCopy";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import { BlackWeekBanner } from "@/components/billing/BlackWeek";
 import LocalDateTime from "@/components/time/LocalDateTime";
@@ -472,62 +473,198 @@ export default async function AuthenticatedHomePage() {
       <BlackWeekBanner />
 
       <section className="border-b border-[var(--museum-border)]">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:px-8 md:py-14 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
-          <div className="museum-card-soft relative overflow-hidden rounded-[2rem] p-6 sm:p-8 md:p-10">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:px-8 md:py-9 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
+          <div className="museum-card-soft relative overflow-hidden rounded-[2rem] p-5 sm:p-7 md:p-8">
             <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[rgba(168,121,69,0.14)] blur-3xl" />
             <div className="relative">
               <p className="museum-label">
                 <T textKey="authHome.hero.eyebrow" fallback="Il tuo spazio" />
               </p>
-              <h1 className="museum-title mt-5 max-w-3xl text-5xl text-[var(--museum-ivory)] sm:text-6xl md:text-7xl">
+              <h1 className="museum-title mt-3 max-w-3xl break-words text-[clamp(2.4rem,6vw,4.5rem)] text-[var(--museum-ivory)]">
                 <T textKey="authHome.hero.welcome" fallback="Bentornato," />{" "}
                 {displayName}.
               </h1>
-              <p className="museum-subtitle mt-6 max-w-2xl text-sm text-[var(--museum-stone)] sm:text-base">
-                <T
-                  textKey="authHome.hero.description"
-                  fallback="Scopri cosa c’è di nuovo nella tua rete, entra nelle gallerie e continua il tuo percorso su Mostra.Space."
-                />
+              <p className="museum-subtitle mt-3 max-w-2xl text-sm text-[var(--museum-stone)] sm:text-base">
+                <SocialText text="exploreNetwork" />
               </p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <Link href="/dashboard" className="museum-button-primary px-6 py-3.5">
+              <div className="mt-5 flex flex-wrap gap-2.5">
+                <Link href="#seguiti" className="museum-button-primary min-h-11 px-4 py-2.5 text-sm">
+                  <SocialText text="followedUpdates" />
+                </Link>
+                <Link href="/dashboard" className="museum-button-secondary min-h-11 px-4 py-2.5 text-sm">
                   <T textKey="authHome.hero.dashboard" fallback="Entra nella dashboard" />
                 </Link>
-                <Link
-                  href="/dashboard/social"
-                  className="museum-button-secondary px-6 py-3.5"
-                >
-                  <T textKey="authHome.hero.social" fallback="Apri il tuo spazio social" />
-                </Link>
-                <Link href="/account" className="museum-button-secondary px-6 py-3.5">
+                <Link href="/account" className="museum-button-secondary min-h-11 px-4 py-2.5 text-sm">
                   <T textKey="authHome.hero.account" fallback="Gestisci account" />
                 </Link>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
-            {[
-              ["/gallerie", "authHome.quick.galleries", "Gallerie"],
-              ["/eventi", "authHome.quick.events", "Eventi"],
-              ["/profili", "authHome.quick.profiles", "Profili"],
-              ["/account/opere-preferite", "authHome.quick.favorites", "Preferiti"],
-            ].map(([href, textKey, fallback]) => (
-              <Link
-                key={href}
-                href={href}
-                className="group flex min-h-28 flex-col justify-between rounded-[1.5rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 transition hover:border-[var(--museum-bronze)] sm:min-h-32 sm:p-5"
-              >
-                <span className="text-xs uppercase tracking-[0.18em] text-[var(--museum-stone-muted)]">
+          <nav aria-labelledby="home-activity-label" className="museum-card min-w-0 rounded-[2rem] p-4 sm:p-6">
+            <h2 id="home-activity-label" className="mb-3 text-lg font-semibold text-[var(--museum-ivory)]">
+              <SocialText text="yourActivity" />
+            </h2>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
+              {[
+                ["/gallerie", "authHome.quick.galleries", "Gallerie"],
+                ["/eventi", "authHome.quick.events", "Eventi"],
+                ["/profili", "authHome.quick.profiles", "Profili"],
+              ].map(([href, textKey, fallback]) => (
+                <Link key={href} href={href} className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
                   <T textKey={textKey} fallback={fallback} />
-                </span>
-                <span className="text-right text-2xl text-[var(--museum-bronze-light)] transition group-hover:translate-x-1">
-                  →
-                </span>
+                </Link>
+              ))}
+              <Link href="/account/opere-preferite" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
+                <SocialText text="savedArtworks" />
               </Link>
-            ))}
-          </div>
+              <Link href="/dashboard/social#salvati" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
+                <SocialText text="savedGalleries" />
+              </Link>
+              <Link href="/dashboard/social#visite-recenti" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
+                <SocialText text="recentGalleries" />
+              </Link>
+            </div>
+            <Link href="/dashboard/social" className="mt-3 inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-[var(--museum-bronze-light)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)]">
+              <T textKey="authHome.hero.social" fallback="Apri il tuo spazio social" />
+            </Link>
+          </nav>
+        </div>
+      </section>
+
+      <section id="seguiti" className="mx-auto grid max-w-7xl scroll-mt-24 gap-7 px-4 py-7 md:px-8 md:py-10 xl:grid-cols-[1.15fr_0.85fr]">
+        <div>
+          <SectionHeading
+            eyebrowKey="authHome.network.eyebrow"
+            eyebrowFallback="La tua rete"
+            titleKey="authHome.network.title"
+            titleFallback="Stati recenti"
+            descriptionKey="authHome.network.description"
+            descriptionFallback="Gli aggiornamenti correnti pubblicati dai profili che segui."
+            href="/dashboard/social/rete?tab=following"
+            actionKey="authHome.network.manage"
+            actionFallback="Gestisci la rete"
+          />
+
+          {statuses.length > 0 ? (
+            <div className="space-y-4">
+              {statuses.map((status) => {
+                const profile = followedProfilesById.get(status.profile_id);
+
+                if (!profile) {
+                  return null;
+                }
+
+                const name = getName(profile) || "Mostra.Space";
+
+                return (
+                  <Link
+                    key={status.id}
+                    href={`/profili/${profile.profile_slug}#stato`}
+                    className="group block rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-5 transition hover:border-[var(--museum-bronze)] sm:p-6"
+                  >
+                    <div className="flex items-center gap-3">
+                      <HomeProfileAvatar src={profile.avatar_url} name={name} />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-[var(--museum-ivory)]">
+                          {name}
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
+                          <LocalDateTime value={status.created_at} format="date" />
+                        </p>
+                      </div>
+                    </div>
+                    <blockquote className="mt-5 line-clamp-4 font-editorial text-2xl leading-relaxed text-[var(--museum-ivory-soft)] sm:text-3xl">
+                      “{status.content}”
+                    </blockquote>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="museum-card rounded-[1.75rem] p-6">
+              <h3 className="font-editorial text-3xl text-[var(--museum-ivory)]">
+                {followingIds.length > 0 ? (
+                  <SocialText text="quietTitle" />
+                ) : (
+                  <T textKey="authHome.network.emptyTitle" fallback="La tua rete è pronta a crescere" />
+                )}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
+                {followingIds.length > 0 ? (
+                  <SocialText text="quietDescription" />
+                ) : (
+                  <T
+                    textKey="authHome.network.emptyBody"
+                    fallback="Segui artisti, galleristi e istituzioni per vedere qui i loro aggiornamenti."
+                  />
+                )}
+              </p>
+              <Link href="/profili" className="museum-button-primary mt-6 px-5 py-3">
+                <T textKey="authHome.profiles.explore" fallback="Esplora i profili" />
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <SectionHeading
+            eyebrowKey="authHome.profiles.eyebrow"
+            eyebrowFallback="Community"
+            titleKey="authHome.profiles.title"
+            titleFallback="Profili da scoprire"
+            descriptionKey="authHome.profiles.description"
+            descriptionFallback="Nuove voci e progetti pubblici presenti su Mostra.Space."
+            href="/profili"
+            actionKey="authHome.profiles.explore"
+            actionFallback="Esplora i profili"
+          />
+
+          {suggestions.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              {suggestions.map((profile) => {
+                const name = getName(profile) || "Mostra.Space";
+
+                return (
+                  <Link
+                    key={profile.id}
+                    href={`/profili/${profile.profile_slug}`}
+                    className="group flex items-start gap-4 rounded-[1.5rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 transition hover:border-[var(--museum-bronze)]"
+                  >
+                    <HomeProfileAvatar src={profile.avatar_url} name={name} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-[var(--museum-ivory)]">
+                        {name}
+                      </p>
+                      {profile.bio ? (
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--museum-stone)]">
+                          {profile.bio}
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
+                          <T
+                            textKey="authHome.profiles.publicProfile"
+                            fallback="Profilo pubblico Mostra.Space"
+                          />
+                        </p>
+                      )}
+                    </div>
+                    <span aria-hidden="true" className="mt-3 text-[var(--museum-bronze-light)] transition group-hover:translate-x-1">
+                      →
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="museum-card rounded-[1.75rem] p-6 text-sm leading-6 text-[var(--museum-stone)]">
+              <T
+                textKey="authHome.profiles.empty"
+                fallback="Hai già scoperto tutti i profili pubblici disponibili."
+              />
+            </div>
+          )}
         </div>
       </section>
 
@@ -730,135 +867,6 @@ export default async function AuthenticatedHomePage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:px-8 md:py-16 xl:grid-cols-[1.15fr_0.85fr]">
-        <div>
-          <SectionHeading
-            eyebrowKey="authHome.network.eyebrow"
-            eyebrowFallback="La tua rete"
-            titleKey="authHome.network.title"
-            titleFallback="Stati recenti"
-            descriptionKey="authHome.network.description"
-            descriptionFallback="Gli aggiornamenti correnti pubblicati dai profili che segui."
-            href="/dashboard/social/rete?tab=following"
-            actionKey="authHome.network.manage"
-            actionFallback="Gestisci la rete"
-          />
-
-          {statuses.length > 0 ? (
-            <div className="space-y-4">
-              {statuses.map((status) => {
-                const profile = followedProfilesById.get(status.profile_id);
-
-                if (!profile) {
-                  return null;
-                }
-
-                const name = getName(profile) || "Mostra.Space";
-
-                return (
-                  <Link
-                    key={status.id}
-                    href={`/profili/${profile.profile_slug}#stato`}
-                    className="group block rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-5 transition hover:border-[var(--museum-bronze)] sm:p-6"
-                  >
-                    <div className="flex items-center gap-3">
-                      <HomeProfileAvatar src={profile.avatar_url} name={name} />
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-[var(--museum-ivory)]">
-                          {name}
-                        </p>
-                        <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
-                          <LocalDateTime value={status.created_at} format="date" />
-                        </p>
-                      </div>
-                    </div>
-                    <blockquote className="mt-5 line-clamp-4 font-editorial text-2xl leading-relaxed text-[var(--museum-ivory-soft)] sm:text-3xl">
-                      “{status.content}”
-                    </blockquote>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="museum-card rounded-[1.75rem] p-6">
-              <h3 className="font-editorial text-3xl text-[var(--museum-ivory)]">
-                <T
-                  textKey="authHome.network.emptyTitle"
-                  fallback="La tua rete è pronta a crescere"
-                />
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-                <T
-                  textKey="authHome.network.emptyBody"
-                  fallback="Segui artisti, galleristi e istituzioni per vedere qui i loro aggiornamenti."
-                />
-              </p>
-              <Link href="/profili" className="museum-button-primary mt-6 px-5 py-3">
-                <T textKey="authHome.profiles.explore" fallback="Esplora i profili" />
-              </Link>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <SectionHeading
-            eyebrowKey="authHome.profiles.eyebrow"
-            eyebrowFallback="Community"
-            titleKey="authHome.profiles.title"
-            titleFallback="Profili da scoprire"
-            descriptionKey="authHome.profiles.description"
-            descriptionFallback="Nuove voci e progetti pubblici presenti su Mostra.Space."
-            href="/profili"
-            actionKey="authHome.profiles.explore"
-            actionFallback="Esplora i profili"
-          />
-
-          {suggestions.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              {suggestions.map((profile) => {
-                const name = getName(profile) || "Mostra.Space";
-
-                return (
-                  <Link
-                    key={profile.id}
-                    href={`/profili/${profile.profile_slug}`}
-                    className="group flex items-start gap-4 rounded-[1.5rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 transition hover:border-[var(--museum-bronze)]"
-                  >
-                    <HomeProfileAvatar src={profile.avatar_url} name={name} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-[var(--museum-ivory)]">
-                        {name}
-                      </p>
-                      {profile.bio ? (
-                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--museum-stone)]">
-                          {profile.bio}
-                        </p>
-                      ) : (
-                        <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                          <T
-                            textKey="authHome.profiles.publicProfile"
-                            fallback="Profilo pubblico Mostra.Space"
-                          />
-                        </p>
-                      )}
-                    </div>
-                    <span className="mt-3 text-[var(--museum-bronze-light)] transition group-hover:translate-x-1">
-                      →
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="museum-card rounded-[1.75rem] p-6 text-sm leading-6 text-[var(--museum-stone)]">
-              <T
-                textKey="authHome.profiles.empty"
-                fallback="Hai già scoperto tutti i profili pubblici disponibili."
-              />
-            </div>
-          )}
-        </div>
-      </section>
 
       {featuredGalleries.length > 1 && (
         <section className="border-t border-[var(--museum-border)]">

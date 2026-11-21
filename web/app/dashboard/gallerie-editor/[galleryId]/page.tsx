@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -133,7 +134,7 @@ export default async function DashboardGalleryUnityEditorPage({
           </p>
         </div>
 
-        <a
+        <Link
           href="/dashboard/gallerie"
           className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -141,7 +142,7 @@ export default async function DashboardGalleryUnityEditorPage({
             textKey="dashboard.galleryEditor.actions.backToGalleries"
             fallback="Torna alle gallerie"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -175,7 +176,7 @@ export default async function DashboardGalleryUnityEditorPage({
           </p>
         </div>
 
-        <a
+        <Link
           href="/dashboard/gallerie"
           className="mt-6 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -183,7 +184,7 @@ export default async function DashboardGalleryUnityEditorPage({
             textKey="dashboard.galleryEditor.actions.backToGalleries"
             fallback="Torna alle gallerie"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -245,7 +246,7 @@ export default async function DashboardGalleryUnityEditorPage({
             </a>
           )}
 
-          <a
+          <Link
             href="/dashboard/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -253,12 +254,12 @@ export default async function DashboardGalleryUnityEditorPage({
               textKey="dashboard.galleryEditor.actions.exit"
               fallback="Esci"
             />
-          </a>
+          </Link>
         </>
       }
     >
-      <section className="mb-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <section className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <article className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -323,7 +324,7 @@ export default async function DashboardGalleryUnityEditorPage({
           </div>
         </article>
 
-        <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <article className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T
               textKey="dashboard.galleryEditor.workStatus.label"

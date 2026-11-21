@@ -37,7 +37,8 @@ export default function NotificationOpenLink({
       type="button"
       onClick={openNotification}
       disabled={isPending}
-      className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-wait disabled:opacity-60"
+      aria-busy={isPending}
+      className="museum-button-primary min-h-11 px-4 py-2 text-sm disabled:cursor-wait disabled:opacity-60"
     >
       {isPending ? (
         <T textKey="account.notifications.actions.opening" fallback="Apro..." />

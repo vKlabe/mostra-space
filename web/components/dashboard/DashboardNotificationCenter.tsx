@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import T from "@/components/i18n/T";
 import {
@@ -108,6 +109,7 @@ function formatNotificationDate(value: string) {
 }
 
 export default function DashboardNotificationCenter() {
+  const panelId = useId();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -115,6 +117,7 @@ export default function DashboardNotificationCenter() {
   const [toast, setToast] = useState<ToastState>(null);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const toastTimerRef = useRef<number | null>(null);
 
@@ -305,7 +308,10 @@ export default function DashboardNotificationCenter() {
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (isOpen && event.key === "Escape") {
+        if (containerRef.current?.contains(document.activeElement)) {
+          triggerRef.current?.focus();
+        }
         setIsOpen(false);
       }
     }
@@ -390,10 +396,12 @@ export default function DashboardNotificationCenter() {
     <>
       <div ref={containerRef} className="relative">
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setIsOpen((current) => !current)}
           aria-expanded={isOpen}
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--museum-border)] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-ivory)]"
+          aria-controls={isOpen ? panelId : undefined}
+          className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--museum-border)] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-ivory)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)]"
         >
           <BellIcon />
           <span className="sr-only">
@@ -408,15 +416,20 @@ export default function DashboardNotificationCenter() {
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 top-full z-[70] mt-3 w-[min(92vw,420px)] overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-950 shadow-2xl shadow-black/50">
-            <div className="flex items-center justify-between gap-4 border-b border-neutral-800 px-5 py-4">
+          <div
+            id={panelId}
+            role="region"
+            aria-labelledby={`${panelId}-label`}
+            className="fixed inset-x-3 top-16 z-[70] overflow-hidden rounded-3xl border border-[var(--museum-border)] bg-neutral-950 shadow-2xl shadow-black/50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-[min(92vw,420px)]"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--museum-border)] px-4 py-3 sm:px-5">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-neutral-500">
+                <h2 id={`${panelId}-label`} className="text-base font-semibold text-[var(--museum-ivory)]">
                   <T
                     textKey="dashboard.notifications.label"
                     fallback="Attività"
                   />
-                </p>
+                </h2>
                 <p className="mt-1 text-sm font-medium text-neutral-100">
                   {unreadCount > 0 ? (
                     <>
@@ -440,7 +453,7 @@ export default function DashboardNotificationCenter() {
                   type="button"
                   onClick={markAllAsRead}
                   disabled={isMarkingAll}
-                  className="text-xs text-neutral-400 transition hover:text-white disabled:opacity-50"
+                  className="museum-button-secondary min-h-11 px-3 py-2 text-xs disabled:opacity-50"
                 >
                   <T
                     textKey="dashboard.notifications.markAll"
@@ -450,21 +463,26 @@ export default function DashboardNotificationCenter() {
               )}
             </div>
 
-            <div className="max-h-[62vh] overflow-y-auto p-2">
+            <div className="max-h-[clamp(6rem,calc(100dvh-15rem),28rem)] overflow-y-auto overscroll-contain p-2">
               {isLoading ? (
-                <p className="p-5 text-sm text-neutral-500">
+                <p role="status" className="p-5 text-sm text-[var(--museum-stone)]">
                   <T
                     textKey="dashboard.notifications.loading"
                     fallback="Carico notifiche..."
                   />
                 </p>
               ) : notifications.length === 0 ? (
-                <p className="p-5 text-sm leading-6 text-neutral-500">
-                  <T
-                    textKey="dashboard.notifications.empty"
-                    fallback="Non ci sono ancora notifiche. Le attività dei profili che segui appariranno qui."
-                  />
-                </p>
+                <div className="p-4 text-sm leading-6 text-[var(--museum-stone)] sm:p-5">
+                  <p>
+                    <T
+                      textKey="dashboard.notifications.empty"
+                      fallback="Non ci sono ancora notifiche. Le attività dei profili che segui appariranno qui."
+                    />
+                  </p>
+                  <Link href="/profili" className="museum-button-secondary mt-3 min-h-11 px-4 py-2 text-sm">
+                    <T textKey="dashboard.social.actions.exploreProfiles" fallback="Esplora profili" />
+                  </Link>
+                </div>
               ) : (
                 notifications.slice(0, 20).map((item) => (
                   <button
@@ -503,7 +521,9 @@ export default function DashboardNotificationCenter() {
                           {item.title}
                         </p>
                         {!item.readAt && (
-                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500">
+                            <span className="sr-only"><T textKey="dashboard.notifications.unread" fallback="da leggere" /></span>
+                          </span>
                         )}
                       </div>
 
@@ -524,7 +544,7 @@ export default function DashboardNotificationCenter() {
               <a
                 href="/account/notifiche"
                 onClick={() => setIsOpen(false)}
-                className="block rounded-2xl border border-neutral-800 px-4 py-3 text-center text-xs font-medium text-neutral-300 transition hover:border-neutral-600 hover:text-white"
+                className="museum-button-secondary flex min-h-11 w-full justify-center px-4 py-2 text-sm"
               >
                 <T
                   textKey="dashboard.notifications.viewAll"

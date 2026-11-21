@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { usePwaInstall } from "@/components/pwa/PwaInstallProvider";
+import { useDialogFocus } from "@/components/system/useDialogFocus";
 import type { Messages } from "@/lib/i18n/dictionaries";
 import { PREMIO_PATH } from "@/lib/premio/config";
 
 const DISMISSED_STORAGE_KEY = "mostra-space:pwa-global-prompt:dismissed-at";
 const DISMISSED_FOR_MS = 7 * 24 * 60 * 60 * 1000;
 const SHOW_DELAY_MS = 800;
+const QUIET_ROUTES = ["/unity-frame", "/auth", "/admin", "/dashboard", "/pricing", "/gallerie/", "/account/upgrade-gallerist"];
 
 function getDismissedAt() {
   try {
@@ -38,14 +40,18 @@ function isInAppBrowser() {
 export default function PwaGlobalInstallPrompt() {
   const pathname = usePathname();
 
-  if (pathname === PREMIO_PATH) {
+  if (pathname === PREMIO_PATH || QUIET_ROUTES.some((prefix) =>
+    prefix.endsWith("/") ? pathname.startsWith(prefix) :
+      pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )) {
     return null;
   }
 
-  return <PwaInstallPromptDialog />;
+  const personalArea = pathname === "/home" || pathname === "/account" || pathname.startsWith("/account/");
+  return <PwaInstallPromptDialog key={pathname} waitForScroll={!personalArea} />;
 }
 
-function PwaInstallPromptDialog() {
+function PwaInstallPromptDialog({ waitForScroll }: { waitForScroll: boolean }) {
   const { t } = useLanguage();
   const {
     canPromptInstall,
@@ -57,6 +63,7 @@ function PwaInstallPromptDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [hasInstallError, setHasInstallError] = useState(false);
+  const dialogRef = useDialogFocus(isOpen && isReady && !isInstalled);
 
   const translate = (key: keyof Messages, fallback: string) =>
     t(key, fallback);
@@ -69,7 +76,7 @@ function PwaInstallPromptDialog() {
   }, []);
 
   useEffect(() => {
-    if (!isReady || isInstalled) {
+    if (!isReady || isInstalled || window.self !== window.top) {
       return;
     }
 
@@ -79,14 +86,24 @@ function PwaInstallPromptDialog() {
       return;
     }
 
-    const timer = window.setTimeout(() => {
-      setIsOpen(true);
-    }, SHOW_DELAY_MS);
+    let timer: number | undefined;
+    function offerInstallation() {
+      if (timer !== undefined || (waitForScroll && window.scrollY < Math.max(400, window.innerHeight * 0.7))) {
+        return;
+      }
+      timer = window.setTimeout(() => {
+        if (!document.querySelector('[role="dialog"][aria-modal="true"]')) setIsOpen(true);
+      }, SHOW_DELAY_MS);
+      window.removeEventListener("scroll", offerInstallation);
+    }
+    if (waitForScroll) window.addEventListener("scroll", offerInstallation, { passive: true });
+    offerInstallation();
 
     return () => {
       window.clearTimeout(timer);
+      window.removeEventListener("scroll", offerInstallation);
     };
-  }, [isInstalled, isReady]);
+  }, [isInstalled, isReady, waitForScroll]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -148,11 +165,13 @@ function PwaInstallPromptDialog() {
       }}
     >
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pwa-global-install-title"
         aria-describedby="pwa-global-install-description"
-        className="relative w-full max-w-xl overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-5 shadow-[0_28px_100px_rgba(0,0,0,0.65)] sm:p-7"
+        className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-5 shadow-[0_28px_100px_rgba(0,0,0,0.65)] sm:max-h-[calc(100dvh-3rem)] sm:p-7"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top_left,rgba(197,151,94,0.18),transparent_70%)]" />
 

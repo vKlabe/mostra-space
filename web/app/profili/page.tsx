@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
+import MuseumHeader from "@/components/site/MuseumHeader";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicMetadata } from "@/lib/seo/site";
@@ -231,8 +232,9 @@ export default async function ProfilesIndexPage({
   );
 
   return (
-    <main className="museum-page min-h-screen px-4 py-10 text-[var(--museum-ivory)] md:px-8">
-      <section className="mx-auto max-w-7xl">
+    <main className="museum-page min-h-screen text-[var(--museum-ivory)]">
+      <MuseumHeader />
+      <section className="mx-auto min-w-0 max-w-7xl px-4 py-8 md:px-8 md:py-10">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/gallerie"
@@ -255,7 +257,7 @@ export default async function ProfilesIndexPage({
           </Link>
         </div>
 
-        <section className="rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-6 shadow-2xl shadow-black/20 md:p-8">
+        <section className="min-w-0 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-4 shadow-2xl shadow-black/20 sm:p-6 md:p-8">
           <p className="museum-label">
             <T
               textKey="profiles.hero.label"
@@ -263,9 +265,9 @@ export default async function ProfilesIndexPage({
             />
           </p>
 
-          <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
-            <div>
-              <h1 className="font-serif text-5xl text-[var(--museum-ivory)] md:text-7xl">
+          <div className="mt-5 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22.5rem)] lg:items-end">
+            <div className="min-w-0">
+              <h1 className="font-editorial text-4xl text-[var(--museum-ivory)] sm:text-5xl md:text-7xl">
                 <T
                   textKey="profiles.hero.title"
                   fallback="Profili pubblici"
@@ -282,7 +284,8 @@ export default async function ProfilesIndexPage({
 
             <form
               action="/profili"
-              className="rounded-3xl border border-[var(--museum-border-soft)] bg-black/35 p-4"
+              role="search"
+              className="min-w-0 rounded-3xl border border-[var(--museum-border-soft)] bg-black/35 p-3 sm:p-4"
             >
               <label
                 htmlFor="profile-search"
@@ -294,18 +297,18 @@ export default async function ProfilesIndexPage({
                 />
               </label>
 
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 grid gap-2 min-[360px]:grid-cols-[minmax(0,1fr)_auto]">
                 <input
                   id="profile-search"
                   name="q"
+                  type="search"
                   defaultValue={searchQuery}
-                  placeholder="Nome, bio, ruolo..."
-                  className="min-w-0 flex-1 rounded-2xl border border-[var(--museum-border-soft)] bg-black/60 px-4 py-3 text-sm text-[var(--museum-ivory)] outline-none transition placeholder:text-[var(--museum-stone-muted)] focus:border-[var(--museum-bronze)]"
+                  className="min-w-0 w-full rounded-2xl border border-[var(--museum-border-soft)] bg-black/60 px-3 py-3 text-base text-[var(--museum-ivory)] focus:border-[var(--museum-bronze)]"
                 />
 
                 <button
                   type="submit"
-                  className="rounded-2xl bg-[var(--museum-bronze)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:brightness-110"
+                  className="museum-button-primary min-h-11 px-4 py-3"
                 >
                   <T
                     textKey="profiles.search.submit"
@@ -372,14 +375,14 @@ export default async function ProfilesIndexPage({
         {!profilesError && safeProfiles.length > 0 && (
           <section className="mt-8 space-y-8">
             {orderedGroups.map(([letter, groupProfiles]) => (
-              <div key={letter} className="grid gap-5 lg:grid-cols-[72px_1fr]">
+              <div key={letter} className="grid min-w-0 gap-5 lg:grid-cols-[72px_minmax(0,1fr)]">
                 <div>
                   <div className="sticky top-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] font-serif text-3xl text-[var(--museum-bronze)]">
                     {letter}
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {groupProfiles.map((profile) => {
                     const displayName = getDisplayName(profile);
                     const followerCount =
@@ -392,17 +395,19 @@ export default async function ProfilesIndexPage({
                     return (
                       <article
                         key={profile.id}
-                        className="rounded-[1.75rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-5 transition hover:border-[var(--museum-bronze)]"
+                        className="min-w-0 rounded-[1.75rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-4 transition hover:border-[var(--museum-bronze)] sm:p-5"
                       >
                         <div className="flex items-start gap-4">
                           <Link
                             href={`/profili/${profile.profile_slug}`}
                             className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[var(--museum-border-soft)] bg-black/60"
+                            aria-label={displayName}
                           >
                             {profile.avatar_url ? (
                               <img
                                 src={profile.avatar_url}
-                                alt={displayName}
+                                alt=""
+                                loading="lazy"
                                 className="h-full w-full object-cover"
                               />
                             ) : (
@@ -415,7 +420,7 @@ export default async function ProfilesIndexPage({
                           <div className="min-w-0 flex-1">
                             <Link
                               href={`/profili/${profile.profile_slug}`}
-                              className="block truncate text-lg font-semibold text-[var(--museum-ivory)] transition hover:text-[var(--museum-bronze)]"
+                              className="block text-lg font-semibold text-[var(--museum-ivory)] [overflow-wrap:anywhere] transition hover:text-[var(--museum-bronze)]"
                             >
                               {displayName}
                             </Link>
@@ -426,7 +431,7 @@ export default async function ProfilesIndexPage({
                           </div>
                         </div>
 
-                        <p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-[var(--museum-stone-muted)]">
+                        <p className="mt-4 line-clamp-3 text-sm leading-6 text-[var(--museum-stone)] [overflow-wrap:anywhere]">
                           {profile.bio ? (
                             profile.bio
                           ) : (
@@ -437,8 +442,8 @@ export default async function ProfilesIndexPage({
                           )}
                         </p>
 
-                        <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs">
-                          <div className="rounded-2xl border border-[var(--museum-border-soft)] px-3 py-2">
+                        <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs [overflow-wrap:anywhere]">
+                          <div className="min-w-0 rounded-2xl border border-[var(--museum-border-soft)] px-2 py-2">
                             <p className="text-base text-[var(--museum-ivory)]">
                               {followerCount}
                             </p>
@@ -451,7 +456,7 @@ export default async function ProfilesIndexPage({
                             </p>
                           </div>
 
-                          <div className="rounded-2xl border border-[var(--museum-border-soft)] px-3 py-2">
+                          <div className="min-w-0 rounded-2xl border border-[var(--museum-border-soft)] px-2 py-2">
                             <p className="text-base text-[var(--museum-ivory)]">
                               {galleryCount}
                             </p>
@@ -464,7 +469,7 @@ export default async function ProfilesIndexPage({
                             </p>
                           </div>
 
-                          <div className="rounded-2xl border border-[var(--museum-border-soft)] px-3 py-2">
+                          <div className="min-w-0 rounded-2xl border border-[var(--museum-border-soft)] px-2 py-2">
                             <p className="text-base text-[var(--museum-ivory)]">
                               {artworkCount}
                             </p>
@@ -481,7 +486,7 @@ export default async function ProfilesIndexPage({
                         <div className="mt-5 flex flex-wrap gap-2">
                           <Link
                             href={`/profili/${profile.profile_slug}`}
-                            className="rounded-full border border-[var(--museum-border-soft)] px-4 py-2 text-xs uppercase tracking-[0.16em] text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
+                            className="museum-button-secondary min-h-11 px-4 py-2"
                           >
                             <T
                               textKey="profiles.card.viewProfile"

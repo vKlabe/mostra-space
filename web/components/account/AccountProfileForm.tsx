@@ -372,7 +372,7 @@ export default function AccountProfileForm({
   }
 
   return (
-    <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+    <article className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
           <h2 className="text-2xl font-medium text-neutral-100">
@@ -661,7 +661,7 @@ export default function AccountProfileForm({
               value={formState.fullName}
               onChange={(event) => updateField("fullName", event.target.value)}
               maxLength={120}
-              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
+              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-base text-neutral-100 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] sm:text-sm"
               placeholder="Nome e cognome"
             />
           </div>
@@ -684,7 +684,7 @@ export default function AccountProfileForm({
                 updateField("displayName", event.target.value)
               }
               maxLength={80}
-              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
+              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-base text-neutral-100 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] sm:text-sm"
               placeholder="Nome che gli altri vedranno in piattaforma"
             />
           </div>
@@ -704,7 +704,7 @@ export default function AccountProfileForm({
                 updateField("websiteUrl", event.target.value)
               }
               maxLength={200}
-              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
+              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-base text-neutral-100 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] sm:text-sm"
               placeholder="https://..."
             />
           </div>
@@ -727,7 +727,7 @@ export default function AccountProfileForm({
                 updateField("instagramUrl", event.target.value)
               }
               maxLength={200}
-              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-neutral-500"
+              className="mt-2 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-base text-neutral-100 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] sm:text-sm"
               placeholder="@profilo oppure URL"
             />
           </div>
@@ -746,7 +746,7 @@ export default function AccountProfileForm({
               onChange={(event) => updateField("bio", event.target.value)}
               maxLength={800}
               rows={5}
-              className="mt-2 w-full resize-none rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-6 text-neutral-100 outline-none transition focus:border-neutral-500"
+              className="mt-2 w-full resize-y rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-base leading-6 text-neutral-100 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] sm:text-sm"
               placeholder="Una breve descrizione del tuo profilo, progetto o spazio."
             />
 
@@ -778,7 +778,7 @@ export default function AccountProfileForm({
               onChange={(event) =>
                 updateField("currentPassword", event.target.value)
               }
-              className="mt-2 w-full rounded-2xl border border-amber-900/70 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition focus:border-amber-500"
+              className="mt-2 w-full rounded-2xl border border-amber-900/70 bg-neutral-950 px-4 py-3 text-base text-neutral-100 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 sm:text-sm"
               placeholder="Inserisci la password per confermare"
             />
 

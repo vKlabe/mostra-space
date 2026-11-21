@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import GalleryLivePanel from "@/components/gallery/GalleryLivePanel";
 import T from "@/components/i18n/T";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { usePublicUxCopy } from "@/components/public/PublicUxText";
 
 type UnityMode = "visitor" | "editor";
 
@@ -163,6 +165,8 @@ export default function UnityGalleryViewer({
   galleryId,
   mode,
 }: UnityGalleryViewerProps) {
+  const { t } = useLanguage();
+  const copy = usePublicUxCopy();
   const [iframeVersion, setIframeVersion] = useState(0);
   const [isMobileViewer, setIsMobileViewer] = useState(false);
   const [isFullscreenActive, setIsFullscreenActive] = useState(false);
@@ -466,10 +470,16 @@ export default function UnityGalleryViewer({
     label: string,
     className = ""
   ) {
+    const directions: Record<MovementKey, string> = {
+      KeyW: copy.moveForward,
+      KeyA: copy.moveLeft,
+      KeyS: copy.moveBack,
+      KeyD: copy.moveRight,
+    };
     return (
       <button
         type="button"
-        aria-label={label}
+        aria-label={directions[movementKey]}
         onPointerDown={(event) => {
           preventTouchDefaults(event);
 
@@ -537,7 +547,7 @@ export default function UnityGalleryViewer({
             <button
               type="button"
               onClick={openFullscreen}
-              className="museum-button-primary px-5 py-2.5"
+              className="museum-button-primary min-h-11 px-5 py-2.5"
             >
               <T
                 textKey="gallery.unityViewer.actions.openFullscreen"
@@ -545,7 +555,7 @@ export default function UnityGalleryViewer({
               />
             </button>
 
-            <a href="#catalogo" className="museum-button-secondary px-5 py-2.5">
+            <a href="#catalogo" className="museum-button-secondary min-h-11 px-5 py-2.5">
               <T
                 textKey="gallery.unityViewer.actions.goToCatalog"
                 fallback="Vai al catalogo"
@@ -581,7 +591,7 @@ export default function UnityGalleryViewer({
               )}
             </div>
 
-            <p className="mt-2 max-w-3xl text-xs leading-5 text-[var(--museum-stone-muted)]">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--museum-stone)]">
               {getViewerDescription(mode)}
             </p>
           </div>
@@ -590,7 +600,7 @@ export default function UnityGalleryViewer({
             <button
               type="button"
               onClick={reloadIframe}
-              className="museum-button-secondary h-9 px-4 text-xs"
+              className="museum-button-secondary min-h-11 px-4 text-xs"
             >
               <T
                 textKey="gallery.unityViewer.actions.reload"
@@ -601,7 +611,7 @@ export default function UnityGalleryViewer({
             <button
               type="button"
               onClick={openFullscreen}
-              className="museum-button-primary h-9 px-4 text-xs"
+              className="museum-button-primary min-h-11 px-4 text-xs"
             >
               <T
                 textKey="gallery.unityViewer.actions.fullscreen"
@@ -625,7 +635,7 @@ export default function UnityGalleryViewer({
             ref={iframeRef}
             key={iframeVersion}
             src={iframeSrc}
-            title={`3D gallery viewer ${galleryId}`}
+            title={mode === "visitor" ? copy.visit3D : t("gallery.unityViewer.header.editorTitle", "Editor spazio 3D")}
             className={`block w-full bg-black ${
               isFullscreenActive ? "h-screen" : "h-[72vh]"
             }`}

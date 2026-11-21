@@ -16,6 +16,7 @@ import FavoriteGalleryButton from "@/components/galleries/FavoriteGalleryButton"
 import FavoriteArtworkButton from "@/components/galleries/FavoriteArtworkButton";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
+import PublicUxText from "@/components/public/PublicUxText";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import JsonLd from "@/components/seo/JsonLd";
 import {
@@ -517,7 +518,7 @@ export default async function PublicGalleryDetailPage({
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(168,121,69,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(216,205,187,0.08),transparent_28%)]" />
         )}
 
-        <div className="relative mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
+        <div className="relative mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-20">
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.8fr] lg:items-end">
             <div>
               <div className="flex flex-wrap items-center gap-3">
@@ -546,7 +547,7 @@ export default async function PublicGalleryDetailPage({
                 )}
               </div>
 
-              <h1 className="museum-title mt-7 max-w-5xl text-6xl text-[var(--museum-ivory)] md:text-8xl">
+              <h1 className="museum-title mt-7 max-w-5xl text-5xl text-[var(--museum-ivory)] [overflow-wrap:anywhere] sm:text-6xl md:text-8xl">
                 {gallery.title}
               </h1>
 
@@ -585,28 +586,25 @@ export default async function PublicGalleryDetailPage({
                 </div>
               )}
 
-              <div className="mt-9 flex flex-wrap gap-3">
-                <a href="#viewer" className="museum-button-primary px-6 py-3">
-                  <T
-                    textKey="galleries.detail.hero.enterImmersiveSpace"
-                    fallback="Entra nello spazio immersivo"
-                  />
+              <nav aria-labelledby="gallery-visit-actions" className="mt-8 flex flex-wrap gap-3">
+                <h2 id="gallery-visit-actions" className="sr-only"><PublicUxText id="galleryViews" /></h2>
+                <a href="#viewer" className="museum-button-primary min-h-11 px-5 py-3">
+                  <PublicUxText id="visit3D" />
                 </a>
 
-                <a href="#catalogo" className="museum-button-secondary px-6 py-3">
-                  <T
-                    textKey="galleries.detail.hero.browseArtworks"
-                    fallback="Sfoglia le opere"
-                  />
+                <a href="#catalogo" className="museum-button-secondary min-h-11 px-5 py-3">
+                  <PublicUxText id="browse2D" />
                 </a>
 
-                <a href="#richiesta" className="museum-button-secondary px-6 py-3">
+                <a href="#richiesta" className="museum-button-secondary min-h-11 px-5 py-3">
                   <T
                     textKey="galleries.detail.actions.requestInformation"
                     fallback="Richiedi informazioni"
                   />
                 </a>
+              </nav>
 
+              <div className="mt-5 flex flex-wrap items-start gap-3">
                 <FavoriteGalleryButton galleryId={gallery.id} />
                 <PremioWinnerBadge artistId={gallery.owner_id} galleryId={gallery.id} />
 
@@ -760,7 +758,7 @@ export default async function PublicGalleryDetailPage({
         </div>
       </section>
 
-      <section id="viewer" className="mx-auto max-w-7xl px-4 py-12 md:px-8">
+      <section id="viewer" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8">
         <div className="mb-7 grid gap-5 lg:grid-cols-[0.8fr_0.2fr] lg:items-end">
           <div>
             <p className="museum-label">
@@ -770,7 +768,7 @@ export default async function PublicGalleryDetailPage({
               />
             </p>
 
-            <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
+            <h2 className="museum-title mt-4 text-4xl text-[var(--museum-ivory)] sm:text-5xl md:text-6xl">
               <T
                 textKey="galleries.detail.viewer.title"
                 fallback="Entra nello spazio virtuale."
@@ -785,13 +783,19 @@ export default async function PublicGalleryDetailPage({
             </p>
           </div>
 
-          <a href="#richiesta" className="museum-button-secondary px-5 py-2.5">
-            <T
-              textKey="galleries.detail.viewer.contact"
-              fallback="Contatta"
-            />
-          </a>
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            <a href="#catalogo" className="museum-button-primary min-h-11 px-5 py-2.5">
+              <PublicUxText id="browse2D" />
+            </a>
+            <a href="#richiesta" className="museum-button-secondary min-h-11 px-5 py-2.5">
+              <T textKey="galleries.detail.viewer.contact" fallback="Contatta" />
+            </a>
+          </div>
         </div>
+
+        <p className="mb-4 text-sm leading-6 text-[var(--museum-stone)]">
+          <PublicUxText id="viewerHint" />
+        </p>
 
         <div className="overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)]">
           <UnityGalleryViewer galleryId={gallery.id} mode="visitor" />
@@ -1002,7 +1006,7 @@ export default async function PublicGalleryDetailPage({
         </div>
       </section>
 
-      <section id="catalogo" className="mx-auto max-w-7xl px-4 py-12 md:px-8">
+      <section id="catalogo" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <p className="museum-label">
@@ -1080,14 +1084,14 @@ export default async function PublicGalleryDetailPage({
                   key={galleryArtworkId}
                   className="group overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)] transition hover:border-[var(--museum-bronze)]"
                 >
-                  <div className="grid gap-0 md:grid-cols-[260px_1fr]">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-[var(--museum-black)] md:aspect-auto">
+                  <div className="grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-[var(--museum-black)] md:aspect-[4/5]">
                       <img
                         src={getArtworkCardUrl(artwork)}
                         alt={artwork.title}
                         loading="lazy"
                         decoding="async"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        className="h-full w-full object-contain"
                       />
 
                       <div className="absolute left-4 top-4 flex flex-wrap gap-2">
@@ -1102,23 +1106,10 @@ export default async function PublicGalleryDetailPage({
                       </div>
                     </div>
 
-                    <div className="p-6">
-                      <p className="museum-label">
-                        <T
-                          textKey="galleries.detail.catalog.artworkLabel"
-                          fallback="Opera"
-                        />{" "}
-                        #{String(galleryArtworkId).slice(0, 8)}
-                      </p>
-
-                      <h3 className="mt-3 font-editorial text-3xl font-medium leading-tight text-[var(--museum-ivory)]">
+                    <div className="min-w-0 p-5 sm:p-6">
+                      <h3 className="font-editorial text-3xl font-medium leading-tight text-[var(--museum-ivory)] [overflow-wrap:anywhere]">
                         {artwork.title}
                       </h3>
-
-                      <div className="mt-4">
-                        <FavoriteArtworkButton artworkId={artwork.id} />
-                        <BuyArtwork artworkId={artwork.id} />
-                      </div>
 
                       <p className="mt-3 text-sm text-[var(--museum-stone)]">
                         {getArtworkAuthorLine(artwork)}
@@ -1179,7 +1170,7 @@ export default async function PublicGalleryDetailPage({
                       <div className="mt-6 flex flex-wrap gap-3">
                         <a
                           href={inquiryHref}
-                          className="museum-button-primary px-5 py-2.5"
+                          className="museum-button-primary min-h-11 px-5 py-2.5"
                         >
                           <T
                             textKey="galleries.detail.actions.requestInformation"
@@ -1189,13 +1180,18 @@ export default async function PublicGalleryDetailPage({
 
                         <a
                           href="#viewer"
-                          className="museum-button-secondary px-5 py-2.5"
+                          className="museum-button-secondary min-h-11 px-5 py-2.5"
                         >
                           <T
                             textKey="galleries.detail.catalog.viewInSpace"
                             fallback="Vedi nello spazio"
                           />
                         </a>
+                      </div>
+
+                      <div className="mt-5 grid gap-3 border-t border-[var(--museum-border)] pt-4">
+                        <FavoriteArtworkButton artworkId={artwork.id} />
+                        <BuyArtwork artworkId={artwork.id} />
                       </div>
 
                       <details className="mt-6 rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
@@ -1225,7 +1221,7 @@ export default async function PublicGalleryDetailPage({
         )}
       </section>
 
-      <section id="richiesta" className="mx-auto max-w-7xl px-4 py-12 md:px-8">
+      <section id="richiesta" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="museum-card rounded-[2rem] p-8">
             <p className="museum-label">

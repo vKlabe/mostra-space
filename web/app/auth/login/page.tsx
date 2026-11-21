@@ -100,7 +100,7 @@ export default function LoginPage() {
   const formDisabled = loading || checkingSession;
 
   return (
-    <main className="museum-page flex min-h-screen items-center justify-center px-5 py-12">
+    <main id="main-content" tabIndex={-1} className="museum-page flex min-h-screen items-center justify-center px-5 py-12">
       <section className="grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[rgba(23,21,17,0.82)] shadow-[var(--museum-shadow-soft)] lg:grid-cols-[0.9fr_1.1fr]">
         <div className="relative hidden min-h-[680px] overflow-hidden border-r border-[var(--museum-border)] bg-[var(--museum-charcoal)] lg:block">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(197,151,94,0.22),transparent_20rem),linear-gradient(180deg,rgba(243,237,226,0.05),rgba(0,0,0,0.75))]" />
@@ -176,11 +176,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="mt-10 space-y-5">
             <div>
-              <label className="block text-sm text-[var(--museum-ivory-soft)]">
+              <label htmlFor="login-email" className="block text-sm text-[var(--museum-ivory-soft)]">
                 <T textKey="auth.login.form.email" fallback="Email" />
               </label>
 
               <input
+                id="login-email"
+                name="email"
                 type="email"
                 required
                 autoComplete="email"
@@ -193,11 +195,13 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-[var(--museum-ivory-soft)]">
+              <label htmlFor="login-password" className="block text-sm text-[var(--museum-ivory-soft)]">
                 <T textKey="auth.login.form.password" fallback="Password" />
               </label>
 
               <input
+                id="login-password"
+                name="password"
                 type="password"
                 required
                 autoComplete="current-password"
@@ -205,7 +209,7 @@ export default function LoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={formDisabled}
                 className="museum-input mt-2 w-full rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="La tua password"
+
               />
             </div>
 
@@ -222,7 +226,7 @@ export default function LoginPage() {
             </div>
 
             {errorMessage && (
-              <div className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
+              <div role="alert" className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
                 {errorMessage}
               </div>
             )}

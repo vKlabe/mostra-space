@@ -1,3 +1,6 @@
+import WorkspaceText from "@/components/dashboard/WorkspaceText";
+import Link from "next/link";
+import T from "@/components/i18n/T";
 import AdminShell from "@/components/admin/AdminShell";
 import AdminUserControls from "@/components/admin/AdminUserControls";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
@@ -139,10 +142,16 @@ export default async function AdminUsersPage() {
 
   return (
     <AdminShell
-      title="Utenti"
-      subtitle="Gestisci manualmente ruoli e piani account. Questa schermata sostituisce temporaneamente Stripe/admin billing nella fase MVP."
-      activeSection="users"
+      title={<WorkspaceText label="adminOverview" />}
+      subtitle={<WorkspaceText label="adminOverviewDetail" />}
+      activeSection="overview"
     >
+      <nav className="museum-dashboard-card mb-6 flex flex-wrap gap-2 rounded-2xl p-4">
+        <Link href="/admin/gallerie" className="museum-button-secondary min-h-11 px-4 py-2"><T textKey="common.galleries" /></Link>
+        <Link href="/admin/richieste" className="museum-button-secondary min-h-11 px-4 py-2"><WorkspaceText label="adminRequests" /></Link>
+        <Link href="/admin/billing" className="museum-button-secondary min-h-11 px-4 py-2"><WorkspaceText label="adminBilling" /></Link>
+      </nav>
+
       {(profilesResult.error || galleriesResult.error || artworksResult.error) && (
         <div className="mb-6 rounded-3xl border border-red-800 bg-red-950/30 p-6">
           <p className="text-lg font-medium">Errore caricamento utenti</p>

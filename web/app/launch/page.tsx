@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import T from "@/components/i18n/T";
+import PublicUxText from "@/components/public/PublicUxText";
 import { createPublicMetadata } from "@/lib/seo/site";
 
 export const metadata: Metadata = createPublicMetadata({
-  title: "Presentazione ufficiale di Mostra.Space",
+  title: "Archivio del lancio di Mostra.Space",
   description:
-    "Registrati gratuitamente e partecipa alla presentazione ufficiale di Mostra.Space: il 15 settembre scopri dal vivo la piattaforma e le gallerie d’arte digitali immersive.",
+    "Scheda e programma della presentazione ufficiale di Mostra.Space del 15 settembre 2026.",
   path: "/launch",
 });
 
@@ -23,23 +25,23 @@ const googleCalendarUrl = `https://calendar.google.com/calendar/render?${new URL
 }).toString()}`;
 
 const joinUrl = process.env.NEXT_PUBLIC_LAUNCH_JOIN_URL || "";
-const registerUrl = "https://mostra.space/auth/register";
+const registerUrl = "/auth/register";
 
 export default function LaunchPage() {
   return (
     <>
       <MuseumHeader />
 
-      <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
+      <main className="museum-page min-h-screen px-4 py-8 text-[var(--museum-ivory)] sm:px-6 md:py-12">
         <section className="mx-auto max-w-6xl">
           <div className="rounded-[2rem] border border-amber-900/45 bg-[radial-gradient(circle_at_top_left,rgba(197,151,94,0.22),transparent_36%),linear-gradient(135deg,rgba(23,23,23,0.98),rgba(0,0,0,0.96))] p-6 shadow-2xl md:p-10">
-            <p className="text-xs uppercase tracking-[0.35em] text-amber-400">
-              <T textKey="launchPage.hero.kicker" fallback="Lancio MostraSpace" />
+            <p className="museum-label">
+              <PublicUxText id="launchArchive" />
             </p>
 
             <div className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
               <div>
-                <h1 className="font-serif text-5xl leading-tight text-neutral-50 md:text-7xl">
+                <h1 className="font-editorial text-4xl leading-tight text-neutral-50 sm:text-5xl md:text-7xl">
                   <T
                     textKey="launchPage.hero.title"
                     fallback="La presentazione ufficiale di mostra.space"
@@ -47,40 +49,21 @@ export default function LaunchPage() {
                 </h1>
 
                 <p className="mt-6 max-w-3xl text-base leading-8 text-neutral-300 md:text-lg">
-                  <T
-                    textKey="launchPage.hero.description"
-                    fallback="Il 15 settembre alle 18:00 presenteremo mostra.space live dall’interno di una galleria digitale: cos’è, come funziona e come artisti, gallerie, curatori, giornalisti e visitatori possono usarlo."
-                  />
+                  <PublicUxText id="launchArchiveIntro" />
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <a
-                    href={registerUrl}
-                    className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
-                  >
-                    <T
-                      textKey="launchPage.hero.register"
-                      fallback="Iscriviti gratis per partecipare"
-                    />
-                  </a>
+                  <Link href="/eventi" className="museum-button-primary min-h-11 px-6 py-3">
+                    <PublicUxText id="launchEventsLink" />
+                  </Link>
 
-                  {joinUrl ? (
+                  {joinUrl && (
                     <a
                       href={joinUrl}
                       className="rounded-full border border-amber-700 bg-amber-950/25 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-500"
                     >
-                      <T
-                        textKey="launchPage.hero.joinEvent"
-                        fallback="Partecipa all’evento live"
-                      />
+                      <PublicUxText id="launchOriginalLink" />
                     </a>
-                  ) : (
-                    <span className="rounded-full border border-amber-900 bg-amber-950/25 px-6 py-3 text-sm font-semibold text-amber-100">
-                      <T
-                        textKey="launchPage.hero.joinLinkSoon"
-                        fallback="Il link per partecipare sarà disponibile qui prima dell’evento"
-                      />
-                    </span>
                   )}
 
                   <a
@@ -155,22 +138,12 @@ export default function LaunchPage() {
 
           <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_0.85fr]">
             <article className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-6">
-              <p className="text-xs uppercase tracking-[0.28em] text-amber-500">
-                <T textKey="launchPage.register.label" fallback="Prima dell’evento" />
-              </p>
-
               <h2 className="mt-3 font-serif text-3xl text-neutral-50">
-                <T
-                  textKey="launchPage.register.title"
-                  fallback="Entra in mostra.space prima del lancio"
-                />
+                <PublicUxText id="launchExplore" />
               </h2>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-400">
-                <T
-                  textKey="launchPage.register.description"
-                  fallback="La partecipazione è gratuita. Crea ora il tuo account mostra.space: domani potrai arrivare già dentro la piattaforma, seguire la presentazione e iniziare subito a esplorarla."
-                />
+                <PublicUxText id="launchExploreIntro" />
               </p>
 
               <div className="mt-6 grid gap-3">
@@ -182,10 +155,6 @@ export default function LaunchPage() {
                   {
                     key: "launchPage.register.benefit2",
                     fallback: "Accesso immediato alla piattaforma",
-                  },
-                  {
-                    key: "launchPage.register.benefit3",
-                    fallback: "Pronto a partecipare al lancio del 15 settembre",
                   },
                 ].map((item) => (
                   <div
@@ -200,9 +169,13 @@ export default function LaunchPage() {
                     </p>
                   </div>
                 ))}
+                <div className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                  <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-800 bg-amber-950/30 text-sm text-amber-300">✓</span>
+                  <p className="text-sm text-neutral-200"><PublicUxText id="launchRegisterBenefit" /></p>
+                </div>
               </div>
 
-              <a
+              <Link
                 href={registerUrl}
                 className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
               >
@@ -210,7 +183,7 @@ export default function LaunchPage() {
                   textKey="launchPage.register.cta"
                   fallback="Iscriviti gratuitamente"
                 />
-              </a>
+              </Link>
             </article>
 
             <article className="rounded-[2rem] border border-neutral-800 bg-neutral-900 p-6">
@@ -219,10 +192,7 @@ export default function LaunchPage() {
               </p>
 
               <h2 className="mt-3 font-serif text-3xl text-neutral-50">
-                <T
-                  textKey="launchPage.program.title"
-                  fallback="Cosa succederà dalle 18:00 alle 19:00"
-                />
+                <PublicUxText id="launchProgram" />
               </h2>
 
               <div className="mt-6 grid gap-3">
@@ -300,43 +270,25 @@ export default function LaunchPage() {
           <section className="mt-10 rounded-[2rem] border border-neutral-800 bg-neutral-900 p-6 md:p-8">
             <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
               <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-amber-500">
-                  <T textKey="launchPage.finalCta.label" fallback="Preparati al lancio" />
-                </p>
                 <h2 className="mt-3 font-serif text-3xl text-neutral-50">
-                  <T
-                    textKey="launchPage.finalCta.title"
-                    fallback="Crea il tuo account oggi. Domani entra direttamente nell’evento."
-                  />
+                  <PublicUxText id="comingEvents" />
                 </h2>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
-                  <T
-                    textKey="launchPage.finalCta.description"
-                    fallback="Registrati gratuitamente e salva questa pagina: il 15 settembre troverai qui l’accesso alla presentazione live e tutte le informazioni per partecipare."
-                  />
-                </p>
               </div>
 
               <div className="flex flex-wrap gap-3 md:justify-end">
-                <a
-                  href={registerUrl}
+                <Link
+                  href="/eventi"
                   className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-200"
                 >
-                  <T
-                    textKey="launchPage.finalCta.register"
-                    fallback="Iscriviti gratis"
-                  />
-                </a>
+                  <PublicUxText id="launchEventsLink" />
+                </Link>
 
                 {joinUrl ? (
                   <a
                     href={joinUrl}
                     className="rounded-full border border-amber-700 bg-amber-950/25 px-6 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-500"
                   >
-                    <T
-                      textKey="launchPage.finalCta.join"
-                      fallback="Entra nell’evento"
-                    />
+                      <PublicUxText id="launchOriginalLink" />
                   </a>
                 ) : null}
 

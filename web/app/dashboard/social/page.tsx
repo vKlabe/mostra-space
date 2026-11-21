@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
+import { SocialText } from "@/components/social/SocialCopy";
 import ProfileStatusComposer from "@/components/social/ProfileStatusComposer";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
@@ -570,30 +572,36 @@ export default async function DashboardSocialPage() {
 
   return (
     <DashboardShell
-  title={<T textKey="dashboard.social.shell.title" fallback="Social" />}
-  subtitle={
-    <T
-      textKey="dashboard.social.shell.subtitle"
-      fallback="Community, profili seguiti, calendario, preferiti e attività recente."
-    />
-  }
-  activeSection="social"
-  navMode={isCreator ? "creator" : "community"}
+      title={<T textKey="dashboard.social.shell.title" fallback="Social" />}
+      subtitle={
+        <T
+          textKey="dashboard.social.shell.subtitle"
+          fallback="Community, profili seguiti, calendario, preferiti e attività recente."
+        />
+      }
+      activeSection="social"
+      navMode={isCreator ? "creator" : "community"}
       actions={
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2.5">
           <a
+            href="/home"
+            className="museum-button-primary min-h-11 px-4 py-2 text-sm"
+          >
+            <SocialText text="followedUpdates" />
+          </a>
+          <Link
             href="/profili"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
           >
             <T
               textKey="dashboard.social.actions.exploreProfiles"
               fallback="Esplora profili"
             />
-          </a>
+          </Link>
 
           <a
             href="/eventi"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
           >
             <T
               textKey="dashboard.social.actions.publicEvents"
@@ -604,8 +612,223 @@ export default async function DashboardSocialPage() {
       }
     >
       <div className="space-y-8">
+        <section id="rete" className="grid scroll-mt-24 gap-5 xl:grid-cols-[1fr_0.8fr]">
+          <article className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+                  <T
+                    textKey="dashboard.social.community.label"
+                    fallback="Community"
+                  />
+                </p>
+
+                <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
+                  <T
+                    textKey="dashboard.social.community.title"
+                    fallback="Profili che segui"
+                  />
+                </h2>
+              </div>
+
+              <a
+                href="/dashboard/social/rete?tab=following"
+                className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
+              >
+                <T
+                  textKey="dashboard.social.community.manageNetwork"
+                  fallback="Gestisci rete"
+                />
+              </a>
+            </div>
+
+            {followedProfiles.length === 0 ? (
+              <div className="mt-5 rounded-2xl border border-[var(--museum-border)] bg-neutral-950 p-4 text-sm leading-6 text-[var(--museum-stone)]">
+                <p><SocialText text="visibleNetworkEmpty" /></p>
+                <Link href="/profili" className="museum-button-secondary mt-3 min-h-11 px-4 py-2 text-sm">
+                  <T textKey="dashboard.social.actions.exploreProfiles" fallback="Esplora profili" />
+                </Link>
+              </div>
+            ) : (
+  <div className="mt-5 grid gap-4 md:grid-cols-2">
+    {followedProfiles.slice(0, 6).map((followed) => {
+      const followedName = getProfileName(followed);
+
+      return (
+        <a
+          key={followed.id}
+          href={`/profili/${followed.profile_slug}`}
+          className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-800 bg-black">
+              {followed.avatar_url ? (
+                <img
+                  src={followed.avatar_url}
+                  alt={followedName || "mostra.space"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-sm font-medium text-neutral-300">
+                  {getInitial(followedName)}
+                </span>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <p className="truncate font-medium text-neutral-100">
+                {followedName || (
+                  <T
+                    textKey="dashboard.social.community.unknownProfile"
+                    fallback="Profilo mostra.space"
+                  />
+                )}
+              </p>
+
+              <p className="mt-1 text-xs text-neutral-500">
+                <T
+                  textKey="dashboard.social.community.publicProfile"
+                  fallback="Profilo pubblico"
+                />
+              </p>
+            </div>
+          </div>
+
+          {followed.bio && (
+            <p className="mt-4 line-clamp-2 text-sm leading-6 text-neutral-500">
+              {followed.bio}
+            </p>
+          )}
+        </a>
+      );
+    })}
+  </div>
+)}
+
+          </article>
+
+          <article className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+                  <T
+                    textKey="dashboard.social.calendar.label"
+                    fallback="Eventi"
+                  />
+                </p>
+
+                <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
+                  <T
+                    textKey="dashboard.social.calendar.title"
+                    fallback="Il tuo calendario"
+                  />
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="/account/calendario"
+                  className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
+                >
+                  <T
+                    textKey="dashboard.social.calendar.open"
+                    fallback="Apri calendario"
+                  />
+                </a>
+
+                <a
+                  href="/account/notifiche"
+                  className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
+                >
+                  <T
+                    textKey="dashboard.social.calendar.notifications"
+                    fallback="Notifiche"
+                  />
+                </a>
+              </div>
+            </div>
+
+            {calendarEvents.length === 0 ? (
+              <div className="mt-5 rounded-2xl border border-[var(--museum-border)] bg-neutral-950 p-4 text-sm leading-6 text-[var(--museum-stone)]">
+                <p>
+                  <T
+                    textKey="dashboard.social.calendar.empty"
+                    fallback="Nessun evento nel tuo calendario personale. Segui profili o salva gallerie per vedere qui i loro eventi."
+                  />
+                </p>
+                <a href="/eventi" className="museum-button-secondary mt-3 min-h-11 px-4 py-2 text-sm">
+                  <T textKey="dashboard.social.actions.publicEvents" fallback="Eventi pubblici" />
+                </a>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-3">
+                {calendarEvents.map((event) => {
+                  const gallery = eventGalleryById.get(event.gallery_id);
+                  const owner = eventOwnerById.get(event.owner_id);
+
+                  return (
+                    <a
+                      key={event.id}
+                      href={
+                        gallery?.status === "published"
+                          ? `/gallerie/${gallery.slug}`
+                          : "/account/calendario"
+                      }
+                      className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
+                    >
+                      <p className="text-xs text-amber-300">
+                        {formatDateTime(event.starts_at, event.timezone)}
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-neutral-100">
+                          {event.title}
+                        </p>
+                        {event.access_mode !== "public" && (
+                          <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-neutral-400">
+                            {event.access_mode === "password" ? (
+                              <T textKey="dashboard.social.calendar.password" fallback="Password" />
+                            ) : event.access_mode === "invite_only" ? (
+                              <T textKey="dashboard.social.calendar.inviteOnly" fallback="Solo invito" />
+                            ) : (
+                              <T textKey="dashboard.social.calendar.privateLink" fallback="Link privato" />
+                            )}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-1 text-xs text-neutral-500">
+                        {gallery?.title || (
+                          <T
+                            textKey="dashboard.social.calendar.removedGallery"
+                            fallback="Galleria rimossa"
+                          />
+                        )}{" "}
+                        ·{" "}
+                        {owner ? (
+  getProfileName(owner) || (
+    <T
+      textKey="dashboard.social.calendar.unknownProfile"
+      fallback="Profilo mostra.space"
+    />
+  )
+) : (
+  <T
+    textKey="dashboard.social.calendar.profile"
+    fallback="Profilo"
+  />
+)}
+                      </p>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </article>
+        </section>
+
         <section className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <article className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
             <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
               <T
                 textKey="dashboard.social.publicProfile.label"
@@ -684,7 +907,7 @@ export default async function DashboardSocialPage() {
             </div>
           </article>
 
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+          <article className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
             <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
               <T
                 textKey="dashboard.social.summary.label"
@@ -723,7 +946,7 @@ export default async function DashboardSocialPage() {
                 </p>
               </a>
 
-              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <a href="#salvati" className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-[var(--museum-bronze)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)]">
                 <p className="text-2xl font-semibold text-neutral-100">
                   {favoriteGalleries.length}
                 </p>
@@ -733,9 +956,9 @@ export default async function DashboardSocialPage() {
                     fallback="gallerie salvate"
                   />
                 </p>
-              </div>
+              </a>
 
-              <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <a href="/account/opere-preferite" className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-[var(--museum-bronze)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)]">
                 <p className="text-2xl font-semibold text-neutral-100">
                   {favoriteArtworks.length}
                 </p>
@@ -745,19 +968,16 @@ export default async function DashboardSocialPage() {
                     fallback="opere salvate"
                   />
                 </p>
-              </div>
+              </a>
 
-              <div className="col-span-2 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+              <a href="/account/notifiche" className="col-span-2 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-[var(--museum-bronze)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)]">
                 <p className="text-2xl font-semibold text-neutral-100">
                   {unreadNotificationCount}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">
-                  <T
-                    textKey="dashboard.social.summary.newNotifications"
-                    fallback="notifiche nuove"
-                  />
+                  <SocialText text="notificationsScope" />
                 </p>
-              </div>
+              </a>
             </div>
           </article>
         </section>
@@ -775,219 +995,9 @@ export default async function DashboardSocialPage() {
           publicProfileEnabled={profile.public_profile_enabled}
         />
 
-        <section className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-                  <T
-                    textKey="dashboard.social.community.label"
-                    fallback="Community"
-                  />
-                </p>
-
-                <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
-                  <T
-                    textKey="dashboard.social.community.title"
-                    fallback="Profili che segui"
-                  />
-                </h2>
-              </div>
-
-              <a
-                href="/dashboard/social/rete?tab=following"
-                className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
-              >
-                <T
-                  textKey="dashboard.social.community.manageNetwork"
-                  fallback="Gestisci rete"
-                />
-              </a>
-            </div>
-
-            {followedProfiles.length === 0 ? (
-              <p className="mt-5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm leading-6 text-neutral-500">
-                <T
-                  textKey="dashboard.social.community.empty"
-                  fallback="Non segui ancora nessun profilo. Quando seguirai artisti, galleristi o istituzioni, li ritroverai qui."
-                />
-              </p>
-            ) : (
-  <div className="mt-5 grid gap-4 md:grid-cols-2">
-    {followedProfiles.slice(0, 6).map((followed) => {
-      const followedName = getProfileName(followed);
-
-      return (
-        <a
-          key={followed.id}
-          href={`/profili/${followed.profile_slug}`}
-          className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-800 bg-black">
-              {followed.avatar_url ? (
-                <img
-                  src={followed.avatar_url}
-                  alt={followedName || "mostra.space"}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-sm font-medium text-neutral-300">
-                  {getInitial(followedName)}
-                </span>
-              )}
-            </div>
-
-            <div className="min-w-0">
-              <p className="truncate font-medium text-neutral-100">
-                {followedName || (
-                  <T
-                    textKey="dashboard.social.community.unknownProfile"
-                    fallback="Profilo mostra.space"
-                  />
-                )}
-              </p>
-
-              <p className="mt-1 text-xs text-neutral-500">
-                <T
-                  textKey="dashboard.social.community.publicProfile"
-                  fallback="Profilo pubblico"
-                />
-              </p>
-            </div>
-          </div>
-
-          {followed.bio && (
-            <p className="mt-4 line-clamp-2 text-sm leading-6 text-neutral-500">
-              {followed.bio}
-            </p>
-          )}
-        </a>
-      );
-    })}
-  </div>
-)}
-
-          </article>
-
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-                  <T
-                    textKey="dashboard.social.calendar.label"
-                    fallback="Eventi"
-                  />
-                </p>
-
-                <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
-                  <T
-                    textKey="dashboard.social.calendar.title"
-                    fallback="Il tuo calendario"
-                  />
-                </h2>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href="/account/calendario"
-                  className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
-                >
-                  <T
-                    textKey="dashboard.social.calendar.open"
-                    fallback="Apri calendario"
-                  />
-                </a>
-
-                <a
-                  href="/account/notifiche"
-                  className="rounded-full border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-200 transition hover:border-neutral-400"
-                >
-                  <T
-                    textKey="dashboard.social.calendar.notifications"
-                    fallback="Notifiche"
-                  />
-                </a>
-              </div>
-            </div>
-
-            {calendarEvents.length === 0 ? (
-              <p className="mt-5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm leading-6 text-neutral-500">
-                <T
-                  textKey="dashboard.social.calendar.empty"
-                  fallback="Nessun evento nel tuo calendario personale. Segui profili o salva gallerie per ricevere eventi qui."
-                />
-              </p>
-            ) : (
-              <div className="mt-5 space-y-3">
-                {calendarEvents.map((event) => {
-                  const gallery = eventGalleryById.get(event.gallery_id);
-                  const owner = eventOwnerById.get(event.owner_id);
-
-                  return (
-                    <a
-                      key={event.id}
-                      href={
-                        gallery?.status === "published"
-                          ? `/gallerie/${gallery.slug}`
-                          : "/account/calendario"
-                      }
-                      className="block rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
-                    >
-                      <p className="text-xs text-amber-300">
-                        {formatDateTime(event.starts_at, event.timezone)}
-                      </p>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-neutral-100">
-                          {event.title}
-                        </p>
-                        {event.access_mode !== "public" && (
-                          <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-neutral-400">
-                            {event.access_mode === "password" ? (
-                              <T textKey="dashboard.social.calendar.password" fallback="Password" />
-                            ) : event.access_mode === "invite_only" ? (
-                              <T textKey="dashboard.social.calendar.inviteOnly" fallback="Solo invito" />
-                            ) : (
-                              <T textKey="dashboard.social.calendar.privateLink" fallback="Link privato" />
-                            )}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="mt-1 text-xs text-neutral-500">
-                        {gallery?.title || (
-                          <T
-                            textKey="dashboard.social.calendar.removedGallery"
-                            fallback="Galleria rimossa"
-                          />
-                        )}{" "}
-                        ·{" "}
-                        {owner ? (
-  getProfileName(owner) || (
-    <T
-      textKey="dashboard.social.calendar.unknownProfile"
-      fallback="Profilo mostra.space"
-    />
-  )
-) : (
-  <T
-    textKey="dashboard.social.calendar.profile"
-    fallback="Profilo"
-  />
-)}
-                      </p>
-                    </a>
-                  );
-                })}
-              </div>
-            )}
-          </article>
-        </section>
-
         <section className="grid gap-5 xl:grid-cols-3">
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <div className="flex items-start justify-between gap-4">
+          <article id="salvati" className="scroll-mt-24 rounded-3xl border border-neutral-800 bg-neutral-900 p-4 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
                   <T
@@ -1003,7 +1013,7 @@ export default async function DashboardSocialPage() {
                 </h2>
               </div>
 
-              <a
+              <Link
                 href="/gallerie"
                 className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
               >
@@ -1011,7 +1021,7 @@ export default async function DashboardSocialPage() {
                   textKey="dashboard.social.favoriteGalleries.explore"
                   fallback="Esplora"
                 />
-              </a>
+              </Link>
             </div>
 
             {favoriteGalleries.length === 0 ? (
@@ -1055,8 +1065,8 @@ export default async function DashboardSocialPage() {
             )}
           </article>
 
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <div className="flex items-start justify-between gap-4">
+          <article className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
                   <T
@@ -1149,8 +1159,8 @@ export default async function DashboardSocialPage() {
             )}
           </article>
 
-          <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-            <div className="flex items-start justify-between gap-4">
+          <article id="visite-recenti" className="scroll-mt-24 rounded-3xl border border-neutral-800 bg-neutral-900 p-4 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
                   <T
@@ -1166,7 +1176,7 @@ export default async function DashboardSocialPage() {
                 </h2>
               </div>
 
-              <a
+              <Link
                 href="/gallerie"
                 className="rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
               >
@@ -1174,7 +1184,7 @@ export default async function DashboardSocialPage() {
                   textKey="dashboard.social.recentGalleries.galleries"
                   fallback="Gallerie"
                 />
-              </a>
+              </Link>
             </div>
 
             {recentGalleries.length === 0 ? (

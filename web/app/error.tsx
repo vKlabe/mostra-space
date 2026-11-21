@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import T from "@/components/i18n/T";
 
@@ -16,23 +17,23 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-12 text-neutral-50">
+    <main className="museum-page min-h-screen px-5 py-10 text-[var(--museum-ivory)]">
       <section className="mx-auto flex min-h-[70vh] max-w-4xl flex-col justify-center">
-        <p className="mb-4 text-xs uppercase tracking-[0.35em] text-red-400">
+        <p className="mb-4 text-xs uppercase tracking-[0.35em] text-[var(--museum-danger)]">
           <T
             textKey="errorPage.header.label"
             fallback="Errore applicazione"
           />
         </p>
 
-        <h1 className="text-4xl font-semibold leading-tight md:text-6xl">
+        <h1 className="museum-title text-[clamp(2.4rem,7vw,4rem)]">
           <T
             textKey="errorPage.header.title"
             fallback="Qualcosa non ha risposto come previsto."
           />
         </h1>
 
-        <p className="mt-6 max-w-2xl text-sm leading-7 text-neutral-400">
+        <p className="mt-6 max-w-2xl text-sm leading-7 text-[var(--museum-stone)]">
           <T
             textKey="errorPage.header.description"
             fallback="La piattaforma ha incontrato un errore temporaneo. Puoi riprovare oppure tornare alla dashboard."
@@ -40,7 +41,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </p>
 
         {error.digest && (
-          <p className="mt-4 break-all rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-xs text-neutral-500">
+          <p className="mt-4 break-all rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-xs text-[var(--museum-stone-muted)]">
             <T
               textKey="errorPage.details.codeLabel"
               fallback="Codice errore:"
@@ -53,22 +54,22 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           <button
             type="button"
             onClick={reset}
-            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+            className="museum-button-primary px-5 py-2.5 text-sm"
           >
             <T textKey="errorPage.actions.retry" fallback="Riprova" />
           </button>
 
-          <a
+          <Link
             href="/dashboard"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-secondary px-5 py-2.5 text-sm"
           >
             <T
               textKey="errorPage.actions.dashboard"
               fallback="Vai alla dashboard"
             />
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/"
             className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-400 transition hover:border-neutral-600 hover:text-neutral-100"
           >
@@ -76,7 +77,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
               textKey="errorPage.actions.home"
               fallback="Torna alla home"
             />
-          </a>
+          </Link>
         </div>
       </section>
     </main>

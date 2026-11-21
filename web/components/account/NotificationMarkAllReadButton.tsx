@@ -44,7 +44,8 @@ export default function NotificationMarkAllReadButton({
         type="button"
         onClick={markAllAsRead}
         disabled={disabled || isPending}
-        className="rounded-full border border-neutral-700 px-4 py-2 text-xs font-medium text-neutral-200 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-45"
+        aria-busy={isPending}
+        className="museum-button-secondary min-h-11 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-45"
       >
         {isPending ? (
           <T
@@ -60,7 +61,7 @@ export default function NotificationMarkAllReadButton({
       </button>
 
       {error && (
-        <p className="mt-2 text-xs text-red-300">
+        <p role="status" className="mt-2 text-xs text-red-300">
           <T
             textKey="account.notifications.errors.markAll"
             fallback="Non riesco ad aggiornare tutte le notifiche."

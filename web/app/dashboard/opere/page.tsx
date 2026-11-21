@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -194,7 +195,7 @@ export default async function DashboardArtworksPage({
   }
   activeSection="opere"
 >
-        <a
+        <Link
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -202,7 +203,7 @@ export default async function DashboardArtworksPage({
             textKey="dashboard.artworks.actions.backToDashboard"
             fallback="Torna alla dashboard"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -299,7 +300,7 @@ export default async function DashboardArtworksPage({
   activeSection="opere"
       actions={
         <div className="flex flex-wrap gap-3">
-          <a
+          <Link
             href="/dashboard/opere/inventario"
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
@@ -307,9 +308,9 @@ export default async function DashboardArtworksPage({
               textKey="dashboard.artworks.actions.quickManagement"
               fallback="Gestione rapida opere"
             />
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/dashboard/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -317,7 +318,7 @@ export default async function DashboardArtworksPage({
               textKey="dashboard.artworks.actions.galleries"
               fallback="Gallerie"
             />
-          </a>
+          </Link>
         </div>
       }
     >
@@ -396,7 +397,7 @@ export default async function DashboardArtworksPage({
           </div>
 
           {!uploadAvailability.allowed && (
-            <a
+            <Link
               href="/pricing"
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
@@ -404,12 +405,12 @@ export default async function DashboardArtworksPage({
                 textKey="dashboard.artworks.actions.upgradePlan"
                 fallback="Passa a un piano superiore"
               />
-            </a>
+            </Link>
           )}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(18rem,25rem)_minmax(0,1fr)]">
         <CreateArtworkForm
           plan={plan}
           currentArtworkCount={safeArtworks.length}
@@ -459,6 +460,7 @@ export default async function DashboardArtworksPage({
                 <a
                   key={item.filter}
                   href={getFilterHref(item.filter)}
+                  aria-current={isActive ? "page" : undefined}
                   className={
                     isActive
                       ? "rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950"

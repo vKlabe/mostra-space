@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 import PlanUsageCard from "@/components/dashboard/PlanUsageCard";
 import { normalizePlanName } from "@/lib/plans";
+import WorkspaceText from "@/components/dashboard/WorkspaceText";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LocalDateTime from "@/components/time/LocalDateTime";
 
@@ -248,6 +250,25 @@ function formatStorage(bytes: number) {
   }
 
   return `${(mb / 1024).toFixed(2)} GB`;
+}
+
+function CommunityConnections() {
+  return (
+    <section className="museum-dashboard-card mb-6 rounded-3xl p-5 sm:p-6">
+      <h2 className="font-editorial text-2xl text-[var(--museum-ivory)]"><WorkspaceText label="connections" /></h2>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link href="/dashboard/social" className="museum-button-secondary min-h-11 px-4 py-2">
+          <T textKey="dashboard.shell.communityNav.social.label" fallback="Social" />
+        </Link>
+        <Link href="/account/notifiche" className="museum-button-secondary min-h-11 px-4 py-2">
+          <T textKey="dashboard.community.comingSoon.notifications" fallback="Notifiche" />
+        </Link>
+        <Link href="/eventi" className="museum-button-secondary min-h-11 px-4 py-2">
+          <T textKey="dashboard.shell.public.events" fallback="Eventi" />
+        </Link>
+      </div>
+    </section>
+  );
 }
 
 export default async function DashboardPage() {
@@ -538,7 +559,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <a
+      <Link
         href="/gallerie"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
@@ -546,7 +567,7 @@ export default async function DashboardPage() {
           textKey="dashboard.community.actions.exploreGalleries"
           fallback="Esplora gallerie"
         />
-      </a>
+      </Link>
     </article>
   );
 
@@ -635,7 +656,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <a
+      <Link
         href="/gallerie"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
@@ -643,7 +664,7 @@ export default async function DashboardPage() {
           textKey="dashboard.community.actions.exploreGalleries"
           fallback="Esplora gallerie"
         />
-      </a>
+      </Link>
     </article>
   );
 
@@ -707,7 +728,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <a
+      <Link
         href="/account/opere-preferite"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
@@ -715,7 +736,7 @@ export default async function DashboardPage() {
           textKey="dashboard.community.actions.viewFavoriteArtworks"
           fallback="Vedi opere preferite"
         />
-      </a>
+      </Link>
     </article>
   );
 
@@ -759,7 +780,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <a
+      <Link
         href="/gallerie"
         className="mt-5 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-xs text-neutral-300 transition hover:border-neutral-500 hover:text-white"
       >
@@ -767,7 +788,7 @@ export default async function DashboardPage() {
           textKey="dashboard.community.actions.exploreGalleries"
           fallback="Esplora gallerie"
         />
-      </a>
+      </Link>
     </article>
   );
 
@@ -792,7 +813,7 @@ export default async function DashboardPage() {
   activeSection="dashboard"
   navMode="community"
         actions={
-          <a
+          <Link
             href="/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -800,7 +821,7 @@ export default async function DashboardPage() {
               textKey="dashboard.community.actions.explorePublicGalleries"
               fallback="Esplora gallerie pubbliche"
             />
-          </a>
+          </Link>
         }
       >
         <div className="space-y-8">
@@ -836,7 +857,7 @@ export default async function DashboardPage() {
 
             {recentGalleriesCard}
 
-            <a
+            <Link
               href="/account"
               className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
             >
@@ -853,7 +874,7 @@ export default async function DashboardPage() {
                   fallback="Gestisci sicurezza, preferenze e dati del tuo account."
                 />
               </p>
-            </a>
+            </Link>
           </section>
 
           <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -881,7 +902,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <a
+              <Link
                 href="/account/upgrade-gallerist"
                 className="inline-flex rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
@@ -889,62 +910,11 @@ export default async function DashboardPage() {
                   textKey="dashboard.community.creatorTools.upgrade"
                   fallback="Passa a Gallerista / Artista"
                 />
-              </a>
+              </Link>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-dashed border-neutral-800 p-6">
-            <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-              <T
-                textKey="dashboard.community.comingSoon.label"
-                fallback="Prossimamente"
-              />
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-400">
-              <span className="rounded-full border border-neutral-800 px-4 py-2">
-                <T
-                  textKey="dashboard.community.comingSoon.chat"
-                  fallback="Chat"
-                />
-              </span>
-
-              <span className="rounded-full border border-neutral-800 px-4 py-2">
-                <T
-                  textKey="dashboard.community.comingSoon.follow"
-                  fallback="Follow"
-                />
-              </span>
-
-              <span className="rounded-full border border-neutral-800 px-4 py-2">
-                <T
-                  textKey="dashboard.community.comingSoon.notifications"
-                  fallback="Notifiche"
-                />
-              </span>
-
-              <span className="rounded-full border border-neutral-800 px-4 py-2">
-                <T
-                  textKey="dashboard.community.comingSoon.events"
-                  fallback="Eventi"
-                />
-              </span>
-
-              <span className="rounded-full border border-neutral-800 px-4 py-2">
-                <T
-                  textKey="dashboard.community.comingSoon.personalLists"
-                  fallback="Liste personali"
-                />
-              </span>
-
-              <span className="rounded-full border border-neutral-800 px-4 py-2">
-                <T
-                  textKey="dashboard.community.comingSoon.feed"
-                  fallback="Feed"
-                />
-              </span>
-            </div>
-          </section>
+          <CommunityConnections />
         </div>
       </DashboardShell>
     );
@@ -1039,44 +1009,44 @@ export default async function DashboardPage() {
   const hasPublishedGallery = publishedGalleries > 0;
   const hasNewInquiries = newInquiries > 0;
 
-  let onboardingTitle = "Crea la tua prima galleria virtuale";
+  let onboardingTitle = <WorkspaceText label="startGallery" />;
   let onboardingDescription =
-    "Parti creando uno spazio, poi carica le opere, apri l’editor 3D e pubblica la pagina visitatore.";
+    <WorkspaceText label="startGalleryDetail" />;
   let onboardingPrimaryHref = "/dashboard/gallerie";
-  let onboardingPrimaryLabel = "Crea galleria";
+  let onboardingPrimaryLabel = <T textKey="dashboard.onboarding.steps.createGallery.title" fallback="Crea una galleria" />;
   let onboardingSecondaryHref = "/dashboard/opere";
-  let onboardingSecondaryLabel = "Carica opere";
+  let onboardingSecondaryLabel = <T textKey="dashboard.onboarding.steps.uploadArtworks.title" fallback="Carica opere" />;
 
   if (hasGalleries && !hasArtworks) {
-    onboardingTitle = "Carica le prime opere";
+    onboardingTitle = <WorkspaceText label="firstWorks" />;
     onboardingDescription =
-      "Hai già creato una galleria. Ora carica le opere da inserire nello spazio 3D.";
+      <WorkspaceText label="firstWorksDetail" />;
     onboardingPrimaryHref = "/dashboard/opere";
-    onboardingPrimaryLabel = "Carica opere";
-    onboardingSecondaryHref = `/dashboard/gallerie/${primaryGallery?.id}`;
-    onboardingSecondaryLabel = "Apri galleria";
+    onboardingPrimaryLabel = <T textKey="dashboard.onboarding.steps.uploadArtworks.title" fallback="Carica opere" />;
+    onboardingSecondaryHref = primaryGallery ? `/dashboard/gallerie/${primaryGallery.id}` : "/dashboard/gallerie";
+    onboardingSecondaryLabel = <T textKey="dashboard.shell.creatorNav.galleries.label" fallback="Gallerie" />;
   }
 
   if (hasGalleries && hasArtworks && firstDraftGallery) {
-    onboardingTitle = "Continua la configurazione della bozza";
+    onboardingTitle = <WorkspaceText label="resumeDraft" />;
     onboardingDescription =
-      "Completa cover, opere e allestimento 3D. Quando la checklist è pronta, potrai pubblicare.";
+      <WorkspaceText label="resumeDraftDetail" />;
     onboardingPrimaryHref = `/dashboard/gallerie/${firstDraftGallery.id}`;
-    onboardingPrimaryLabel = "Continua configurazione";
+    onboardingPrimaryLabel = <WorkspaceText label="resumeDraft" />;
     onboardingSecondaryHref = `/dashboard/gallerie-editor/${firstDraftGallery.id}`;
-    onboardingSecondaryLabel = "Apri editor 3D";
+    onboardingSecondaryLabel = <T textKey="dashboard.galleryDetail.actions.open3dEditor" fallback="Apri editor 3D" />;
   }
 
   if (hasPublishedGallery && !firstDraftGallery) {
-    onboardingTitle = "La tua galleria è online";
+    onboardingTitle = <WorkspaceText label="galleryLive" />;
     onboardingDescription =
-      "Controlla le richieste ricevute, aggiorna le opere o crea un nuovo spazio espositivo.";
+      <WorkspaceText label="galleryLiveDetail" />;
     onboardingPrimaryHref = latestPublishedGallery
       ? `/gallerie/${latestPublishedGallery.slug}`
       : "/gallerie";
-    onboardingPrimaryLabel = "Apri pagina pubblica";
+    onboardingPrimaryLabel = <T textKey="dashboard.galleryDetail.actions.publicPage" fallback="Pagina pubblica" />;
     onboardingSecondaryHref = "/dashboard/richieste";
-    onboardingSecondaryLabel = "Vedi richieste";
+    onboardingSecondaryLabel = <T textKey="dashboard.onboarding.steps.manageInquiries.title" fallback="Gestisci richieste" />;
   }
 
   return (
@@ -1096,17 +1066,17 @@ export default async function DashboardPage() {
   activeSection="dashboard"
       actions={
         <>
-          <a
+          <Link
             href="/dashboard/gallerie"
-            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+            className="museum-button-secondary min-h-11 px-5 py-2 text-sm"
           >
             <T
               textKey="dashboard.actions.manageGalleries"
               fallback="Crea / gestisci gallerie"
             />
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/gallerie"
             target="_blank"
             rel="noreferrer"
@@ -1116,139 +1086,18 @@ export default async function DashboardPage() {
               textKey="dashboard.actions.publicList"
               fallback="Elenco pubblico"
             />
-          </a>
+          </Link>
         </>
       }
     >
-      <section className="mb-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-          <T textKey="dashboard.community.header.label" fallback="Community" />
-        </p>
-
-        <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
-          <T
-            textKey="dashboard.community.header.title"
-            fallback="Il tuo spazio personale"
-          />
-        </h2>
-
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-          <T
-            textKey="dashboard.community.header.creatorDescription"
-            fallback="Anche come Gallerista o Artista mantieni tutti gli strumenti community: profilo, preferiti, richieste inviate, cronologia visite e impostazioni account. La community e unica, cambiano solo gli strumenti creator disponibili in base al ruolo."
-          />
-        </p>
-      </section>
-
-      <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <a
-          href="/account"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-        >
-          <h3 className="text-lg font-semibold text-neutral-100">
-            <T
-              textKey="dashboard.community.profile.title"
-              fallback="Profilo"
-            />
-          </h3>
-
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
-            <T
-              textKey="dashboard.community.profile.description"
-              fallback="Gestisci nome, dati account e informazioni personali."
-            />
-          </p>
-        </a>
-
-        {favoriteGalleriesCard}
-
-        {favoriteArtworksCard}
-
-        {sentInquiriesCard}
-
-        {recentGalleriesCard}
-
-        <a
-          href="/account"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
-        >
-          <h3 className="text-lg font-semibold text-neutral-100">
-            <T
-              textKey="dashboard.community.accountSettings.title"
-              fallback="Impostazioni account"
-            />
-          </h3>
-
-          <p className="mt-3 text-sm leading-6 text-neutral-400">
-            <T
-              textKey="dashboard.community.accountSettings.description"
-              fallback="Gestisci sicurezza, preferenze e dati del tuo account."
-            />
-          </p>
-        </a>
-      </section>
-
-      <section className="mb-8 rounded-3xl border border-dashed border-neutral-800 p-6">
-        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
-          <T
-            textKey="dashboard.community.comingSoon.label"
-            fallback="Prossimamente"
-          />
-        </p>
-
-        <div className="mt-4 flex flex-wrap gap-2 text-sm text-neutral-400">
-          <span className="rounded-full border border-neutral-800 px-4 py-2">
-            <T
-              textKey="dashboard.community.comingSoon.chat"
-              fallback="Chat"
-            />
-          </span>
-
-          <span className="rounded-full border border-neutral-800 px-4 py-2">
-            <T
-              textKey="dashboard.community.comingSoon.follow"
-              fallback="Follow"
-            />
-          </span>
-
-          <span className="rounded-full border border-neutral-800 px-4 py-2">
-            <T
-              textKey="dashboard.community.comingSoon.notifications"
-              fallback="Notifiche"
-            />
-          </span>
-
-          <span className="rounded-full border border-neutral-800 px-4 py-2">
-            <T
-              textKey="dashboard.community.comingSoon.events"
-              fallback="Eventi"
-            />
-          </span>
-
-          <span className="rounded-full border border-neutral-800 px-4 py-2">
-            <T
-              textKey="dashboard.community.comingSoon.personalLists"
-              fallback="Liste personali"
-            />
-          </span>
-
-          <span className="rounded-full border border-neutral-800 px-4 py-2">
-            <T
-              textKey="dashboard.community.comingSoon.feed"
-              fallback="Feed"
-            />
-          </span>
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <section aria-labelledby="workspace-next-action" className="museum-dashboard-card mb-6 rounded-3xl p-5 sm:p-7">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-              <T textKey="dashboard.onboarding.label" fallback="Onboarding" />
+              <WorkspaceText label="nextAction" />
             </p>
 
-            <h2 className="text-3xl font-semibold">{onboardingTitle}</h2>
+            <h2 id="workspace-next-action" className="font-editorial text-3xl text-[var(--museum-ivory)] md:text-4xl">{onboardingTitle}</h2>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-neutral-400">
               {onboardingDescription}
@@ -1267,7 +1116,7 @@ export default async function DashboardPage() {
                     ? "noreferrer"
                     : undefined
                 }
-                className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                className="museum-button-primary min-h-11 px-5 py-2 text-sm"
               >
                 {onboardingPrimaryLabel}
               </a>
@@ -1468,6 +1317,78 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      <section className="mb-8 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">
+          <T textKey="dashboard.community.header.label" fallback="Community" />
+        </p>
+
+        <h2 className="mt-3 text-2xl font-semibold text-neutral-100">
+          <T
+            textKey="dashboard.community.header.title"
+            fallback="Il tuo spazio personale"
+          />
+        </h2>
+
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
+          <T
+            textKey="dashboard.community.header.creatorDescription"
+            fallback="Anche come Gallerista o Artista mantieni tutti gli strumenti community: profilo, preferiti, richieste inviate, cronologia visite e impostazioni account. La community e unica, cambiano solo gli strumenti creator disponibili in base al ruolo."
+          />
+        </p>
+      </section>
+
+      <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Link
+          href="/account"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            <T
+              textKey="dashboard.community.profile.title"
+              fallback="Profilo"
+            />
+          </h3>
+
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            <T
+              textKey="dashboard.community.profile.description"
+              fallback="Gestisci nome, dati account e informazioni personali."
+            />
+          </p>
+        </Link>
+
+        {favoriteGalleriesCard}
+
+        {favoriteArtworksCard}
+
+        {sentInquiriesCard}
+
+        {recentGalleriesCard}
+
+        <Link
+          href="/account"
+          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
+        >
+          <h3 className="text-lg font-semibold text-neutral-100">
+            <T
+              textKey="dashboard.community.accountSettings.title"
+              fallback="Impostazioni account"
+            />
+          </h3>
+
+          <p className="mt-3 text-sm leading-6 text-neutral-400">
+            <T
+              textKey="dashboard.community.accountSettings.description"
+              fallback="Gestisci sicurezza, preferenze e dati del tuo account."
+            />
+          </p>
+        </Link>
+      </section>
+
+      <CommunityConnections />
+
+
+
       <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -1494,7 +1415,7 @@ export default async function DashboardPage() {
             />
           </p>
 
-          <a
+          <Link
             href="/dashboard/gallerie"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -1502,7 +1423,7 @@ export default async function DashboardPage() {
               textKey="dashboard.stats.galleries.manage"
               fallback="Gestisci gallerie"
             />
-          </a>
+          </Link>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -1525,7 +1446,7 @@ export default async function DashboardPage() {
             />
           </p>
 
-          <a
+          <Link
             href="/dashboard/opere"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -1533,7 +1454,7 @@ export default async function DashboardPage() {
               textKey="dashboard.stats.artworks.manage"
               fallback="Gestisci opere"
             />
-          </a>
+          </Link>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -1553,7 +1474,7 @@ export default async function DashboardPage() {
             />
           </p>
 
-          <a
+          <Link
             href="/dashboard/richieste"
             className="mt-6 inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -1561,7 +1482,7 @@ export default async function DashboardPage() {
               textKey="dashboard.stats.inquiries.open"
               fallback="Apri richieste"
             />
-          </a>
+          </Link>
         </article>
 
         <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
@@ -1579,25 +1500,25 @@ export default async function DashboardPage() {
           </p>
 
           <div className="mt-6 flex flex-wrap gap-2">
-            <a
+            <Link
               href="/account"
               className="inline-flex rounded-full border border-neutral-800 px-4 py-2 text-sm text-neutral-500 transition hover:border-neutral-600 hover:text-neutral-300"
             >
               <T textKey="dashboard.stats.plan.account" fallback="Account" />
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/pricing"
               className="inline-flex rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
             >
               <T textKey="dashboard.stats.plan.plans" fallback="Piani" />
-            </a>
+            </Link>
           </div>
         </article>
       </div>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-4">
-        <a
+        <Link
           href="/dashboard/gallerie"
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
@@ -1618,9 +1539,9 @@ export default async function DashboardPage() {
               fallback="Apri la sezione gallerie e crea o modifica uno spazio virtuale."
             />
           </p>
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="/dashboard/opere"
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
@@ -1641,7 +1562,7 @@ export default async function DashboardPage() {
               fallback="Aggiungi immagini, dati, dimensioni, prezzo e visibilità."
             />
           </p>
-        </a>
+        </Link>
 
         <a
           href={
@@ -1670,7 +1591,7 @@ export default async function DashboardPage() {
           </p>
         </a>
 
-        <a
+        <Link
           href="/dashboard/richieste"
           className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5 transition hover:border-neutral-600"
         >
@@ -1691,7 +1612,7 @@ export default async function DashboardPage() {
               fallback="Leggi e gestisci i contatti arrivati dalle gallerie pubbliche."
             />
           </p>
-        </a>
+        </Link>
       </section>
 
       <div className="mt-6">
@@ -1727,12 +1648,12 @@ export default async function DashboardPage() {
               </h2>
             </div>
 
-            <a
+            <Link
               href="/dashboard/gallerie"
               className="text-sm text-neutral-400 underline-offset-4 hover:text-white hover:underline"
             >
               <T textKey="dashboard.common.viewAll" fallback="Vedi tutte" />
-            </a>
+            </Link>
           </div>
 
           {latestGalleries.length === 0 && (
@@ -1751,7 +1672,7 @@ export default async function DashboardPage() {
                 />
               </p>
 
-              <a
+              <Link
                 href="/dashboard/gallerie"
                 className="mt-4 inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
@@ -1759,7 +1680,7 @@ export default async function DashboardPage() {
                   textKey="dashboard.latestGalleries.createFirst"
                   fallback="Crea la prima galleria"
                 />
-              </a>
+              </Link>
             </div>
           )}
 
@@ -1859,12 +1780,12 @@ export default async function DashboardPage() {
               </h2>
             </div>
 
-            <a
+            <Link
               href="/dashboard/richieste"
               className="text-sm text-neutral-400 underline-offset-4 hover:text-white hover:underline"
             >
               <T textKey="dashboard.common.viewAll" fallback="Vedi tutte" />
-            </a>
+            </Link>
           </div>
 
           {latestInquiries.length === 0 && (
@@ -1947,7 +1868,7 @@ export default async function DashboardPage() {
                         </p>
                       </div>
 
-                      <a
+                      <Link
                         href="/dashboard/richieste"
                         className="shrink-0 rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
                       >
@@ -1955,7 +1876,7 @@ export default async function DashboardPage() {
                           textKey="dashboard.latestInquiries.open"
                           fallback="Apri"
                         />
-                      </a>
+                      </Link>
                     </div>
                   </article>
                 );

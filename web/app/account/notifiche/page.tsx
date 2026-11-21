@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -168,7 +169,7 @@ export default async function AccountNotificationsPage() {
         </div>
       }
     >
-      <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <section className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
         <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
           <T
             textKey="account.notifications.header.label"
@@ -198,12 +199,17 @@ export default async function AccountNotificationsPage() {
         </div>
 
         {safeNotifications.length === 0 ? (
-          <p className="mt-4 text-sm text-neutral-400">
-            <T
-              textKey="account.notifications.empty.message"
-              fallback="Non hai ancora notifiche. Quando i profili che segui pubblicheranno nuovi contenuti, li troverai qui."
-            />
-          </p>
+          <div className="mt-4">
+            <p className="text-sm leading-6 text-[var(--museum-stone)]">
+              <T
+                textKey="account.notifications.empty.message"
+                fallback="Non hai ancora notifiche. Quando i profili che segui pubblicheranno nuovi contenuti, li troverai qui."
+              />
+            </p>
+            <Link href="/profili" className="museum-button-secondary mt-3 min-h-11 px-4 py-2 text-sm">
+              <T textKey="dashboard.social.actions.exploreProfiles" fallback="Esplora profili" />
+            </Link>
+          </div>
         ) : (
           <div className="mt-6 grid gap-4">
             {safeNotifications.map((notification) => {
