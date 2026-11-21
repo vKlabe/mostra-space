@@ -120,6 +120,7 @@ export default async function DashboardGalleryUnityEditorPage({
     />
   }
   activeSection="gallerie"
+  navMode={profile.role === "user" ? "community" : "creator"}
 >
         <div className="rounded-3xl border border-red-900 bg-red-950/30 p-6">
           <p className="text-sm text-red-100">
@@ -166,6 +167,7 @@ export default async function DashboardGalleryUnityEditorPage({
     />
   }
   activeSection="gallerie"
+  navMode={profile.role === "user" ? "community" : "creator"}
 >
         <div className="rounded-3xl border border-yellow-900 bg-yellow-950/30 p-6">
           <p className="text-sm text-yellow-100">

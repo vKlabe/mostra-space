@@ -871,8 +871,8 @@ export default async function DashboardSocialPage() {
                 </p>
 
                 <div className="mt-5 flex flex-wrap gap-3">
-                  {publicProfileHref ? (
-                    <a
+                  {publicProfileHref && (
+                    <Link
                       href={publicProfileHref}
                       className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
                     >
@@ -880,28 +880,25 @@ export default async function DashboardSocialPage() {
                         textKey="dashboard.social.publicProfile.view"
                         fallback="Vedi profilo pubblico"
                       />
-                    </a>
-                  ) : (
-                    <a
-                      href="/account"
-                      className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-                    >
+                    </Link>
+                  )}
+
+                  <Link
+                    href="/account"
+                    className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                  >
+                    {publicProfileHref ? (
+                      <T
+                        textKey="dashboard.social.publicProfile.editAccount"
+                        fallback="Modifica dati account"
+                      />
+                    ) : (
                       <T
                         textKey="dashboard.social.publicProfile.activate"
                         fallback="Attiva profilo da account"
                       />
-                    </a>
-                  )}
-
-                  <a
-                    href="/account"
-                    className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-                  >
-                    <T
-                      textKey="dashboard.social.publicProfile.editAccount"
-                      fallback="Modifica dati account"
-                    />
-                  </a>
+                    )}
+                  </Link>
                 </div>
               </div>
             </div>

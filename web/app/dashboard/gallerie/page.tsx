@@ -223,6 +223,7 @@ export default async function DashboardGalleriesPage({
     </>
   }
   activeSection="gallerie"
+  navMode="community"
 >
         <Link
           href="/dashboard"

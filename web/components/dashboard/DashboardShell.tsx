@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import LogoutButton from "@/components/auth/LogoutButton";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import T from "@/components/i18n/T";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import DashboardNotificationCenter from "@/components/dashboard/DashboardNotificationCenter";
 import DashboardMessagesDock from "@/components/dashboard/DashboardMessagesDock";
 import WorkspaceText from "@/components/dashboard/WorkspaceText";
@@ -31,142 +32,36 @@ type DashboardShellProps = {
   actions?: React.ReactNode;
 };
 
-type NavItem = {
-  labelKey: string;
-  labelFallback: string;
-  href: string;
-  section: DashboardShellProps["activeSection"];
-  descriptionKey: string;
-  descriptionFallback: string;
-};
+type Section = NonNullable<DashboardShellProps["activeSection"]>;
+
+type NavItem = { href: string; label: ReactNode };
 
 const SIDEBAR_STORAGE_KEY = "mostraspace:dashboard-sidebar-collapsed";
 
-const purchaseNav: NavItem = { labelKey: "commerce.purchases", labelFallback: "I miei acquisti", href: "/account/acquisti", section: "acquisti", descriptionKey: "commerce.purchasesDescription", descriptionFallback: "Ordini e consegne" };
+const navItems: Record<Section, NavItem> = {
+  dashboard: { href: "/dashboard", label: <T textKey="dashboard.shell.creatorNav.dashboard.label" fallback="Dashboard" /> },
+  gallerie: { href: "/dashboard/gallerie", label: <T textKey="dashboard.shell.creatorNav.galleries.label" fallback="Gallerie" /> },
+  opere: { href: "/dashboard/opere", label: <T textKey="dashboard.shell.creatorNav.artworks.label" fallback="Opere" /> },
+  eventi: { href: "/dashboard/eventi", label: <T textKey="dashboard.events.shell.title" fallback="Eventi" /> },
+  richieste: { href: "/dashboard/richieste", label: <T textKey="dashboard.shell.creatorNav.inquiries.label" fallback="Richieste" /> },
+  analytics: { href: "/dashboard/analytics", label: <T textKey="dashboard.shell.creatorNav.analytics.label" fallback="Analytics" /> },
+  vendite: { href: "/dashboard/vendite", label: <T textKey="commerce.sales" fallback="Vendita opere" /> },
+  social: { href: "/dashboard/social", label: <T textKey="dashboard.shell.creatorNav.social.label" fallback="Social" /> },
+  premio: { href: "/dashboard/premiomostraspace", label: <T textKey="premio.navMenu" fallback="Premio Mostra.Space" /> },
+  account: { href: "/account", label: <T textKey="dashboard.shell.communityNav.account.description" fallback="Profilo e impostazioni" /> },
+  acquisti: { href: "/account/acquisti", label: <T textKey="commerce.purchases" fallback="I miei acquisti" /> },
+  help: { href: "/dashboard/help", label: <T textKey="dashboard.shell.creatorNav.help.label" fallback="Guida & FAQ" /> },
+};
 
-const communityNavItems: NavItem[] = [
-  purchaseNav,
-  { labelKey: "premio.navMenu", labelFallback: "Premio Mostra.Space", href: "/dashboard/premiomostraspace", section: "premio", descriptionKey: "premio.navDescription", descriptionFallback: "La tua candidatura" },
-  {
-    labelKey: "dashboard.shell.communityNav.dashboard.label",
-    labelFallback: "Dashboard",
-    href: "/dashboard",
-    section: "dashboard",
-    descriptionKey: "dashboard.shell.communityNav.dashboard.description",
-    descriptionFallback: "Spazio community",
-  },
-  {
-    labelKey: "dashboard.shell.communityNav.social.label",
-    labelFallback: "Social",
-    href: "/dashboard/social",
-    section: "social",
-    descriptionKey: "dashboard.shell.communityNav.social.description",
-    descriptionFallback: "Follow, preferiti, eventi",
-  },
-  {
-    labelKey: "dashboard.shell.communityNav.help.label",
-    labelFallback: "Guida & FAQ",
-    href: "/dashboard/help",
-    section: "help",
-    descriptionKey: "dashboard.shell.communityNav.help.description",
-    descriptionFallback: "Tutorial e risposte rapide",
-  },
-  {
-    labelKey: "dashboard.shell.communityNav.account.label",
-    labelFallback: "Account",
-    href: "/account",
-    section: "account",
-    descriptionKey: "dashboard.shell.communityNav.account.description",
-    descriptionFallback: "Profilo e impostazioni",
-  },
-];
-
-const navItems: NavItem[] = [
-  { labelKey: "commerce.sales", labelFallback: "Vendita opere", href: "/dashboard/vendite", section: "vendite", descriptionKey: "commerce.salesDescription", descriptionFallback: "Vendite e rimborsi" },
-  purchaseNav,
-  { labelKey: "premio.navMenu", labelFallback: "Premio Mostra.Space", href: "/dashboard/premiomostraspace", section: "premio", descriptionKey: "premio.navDescription", descriptionFallback: "La tua candidatura" },
-  {
-    labelKey: "dashboard.shell.creatorNav.dashboard.label",
-    labelFallback: "Dashboard",
-    href: "/dashboard",
-    section: "dashboard",
-    descriptionKey: "dashboard.shell.creatorNav.dashboard.description",
-    descriptionFallback: "Panoramica generale",
-  },
-  {
-    labelKey: "dashboard.shell.creatorNav.social.label",
-    labelFallback: "Social",
-    href: "/dashboard/social",
-    section: "social",
-    descriptionKey: "dashboard.shell.creatorNav.social.description",
-    descriptionFallback: "Community e attività",
-  },
-  {
-    labelKey: "dashboard.shell.creatorNav.galleries.label",
-    labelFallback: "Gallerie",
-    href: "/dashboard/gallerie",
-    section: "gallerie",
-    descriptionKey: "dashboard.shell.creatorNav.galleries.description",
-    descriptionFallback: "Spazi espositivi",
-  },
-  {
-    labelKey: "dashboard.shell.creatorNav.artworks.label",
-    labelFallback: "Opere",
-    href: "/dashboard/opere",
-    section: "opere",
-    descriptionKey: "dashboard.shell.creatorNav.artworks.description",
-    descriptionFallback: "Archivio opere",
-  },
-  {
-    labelKey: "dashboard.events.shell.title",
-    labelFallback: "Eventi",
-    href: "/dashboard/eventi",
-    section: "eventi",
-    descriptionKey: "dashboard.events.active.title",
-    descriptionFallback: "Prossimi eventi",
-  },
-  {
-    labelKey: "dashboard.shell.creatorNav.analytics.label",
-    labelFallback: "Analytics",
-    href: "/dashboard/analytics",
-    section: "analytics",
-    descriptionKey: "dashboard.shell.creatorNav.analytics.description",
-    descriptionFallback: "Visite, salvataggi, richieste",
-  },
-  {
-    labelKey: "dashboard.shell.creatorNav.inquiries.label",
-    labelFallback: "Richieste",
-    href: "/dashboard/richieste",
-    section: "richieste",
-    descriptionKey: "dashboard.shell.creatorNav.inquiries.description",
-    descriptionFallback: "Richieste e contatti",
-  },
-  {
-    labelKey: "dashboard.shell.creatorNav.help.label",
-    labelFallback: "Guida & FAQ",
-    href: "/dashboard/help",
-    section: "help",
-    descriptionKey: "dashboard.shell.creatorNav.help.description",
-    descriptionFallback: "Tutorial e risposte rapide",
-  },
-  {
-    labelKey: "dashboard.shell.creatorNav.account.label",
-    labelFallback: "Account",
-    href: "/account",
-    section: "account",
-    descriptionKey: "dashboard.shell.creatorNav.account.description",
-    descriptionFallback: "Profilo e piano",
-  },
-];
-
-const navGroups = [
-  { label: "workspace", sections: ["dashboard", "gallerie", "opere", "eventi", "richieste", "analytics"] },
-  { label: "connections", sections: ["social", "premio", "vendite", "acquisti"] },
-  { label: "account", sections: ["account", "help"] },
-] as const satisfies ReadonlyArray<{
+const navGroups: ReadonlyArray<{
   label: ComponentProps<typeof WorkspaceText>["label"];
-  sections: ReadonlyArray<NonNullable<NavItem["section"]>>;
-}>;
+  sections: readonly Section[];
+  creatorOnly?: boolean;
+}> = [
+  { label: "workspace", sections: ["gallerie", "opere", "eventi", "richieste", "analytics", "vendite"], creatorOnly: true },
+  { label: "connections", sections: ["social", "premio"] },
+  { label: "account", sections: ["account", "acquisti", "help"] },
+];
 
 function MenuIcon() {
   return (
@@ -235,8 +130,9 @@ export default function DashboardShell({
   navMode = "creator",
   actions,
 }: DashboardShellProps) {
-  const visibleNavItems =
-    navMode === "community" ? communityNavItems : navItems;
+  const pathname = usePathname();
+  const visibleGroups = navGroups.filter((group) => !group.creatorOnly || navMode === "creator");
+  const openGroup = visibleGroups.find((group) => group.sections.includes(activeSection)) ?? visibleGroups[0];
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] =
@@ -304,9 +200,12 @@ export default function DashboardShell({
 
       const controls = Array.from(
         sidebar.current?.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          'a[href], button:not([disabled]), summary, select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
         ) ?? []
-      ).filter((element) => element.getClientRects().length > 0);
+      ).filter((element) => {
+        const closedGroup = element.closest("details:not([open])");
+        return element.getClientRects().length > 0 && (!closedGroup || closedGroup.firstElementChild === element);
+      });
       const first = controls[0];
       const last = controls.at(-1);
 
@@ -340,6 +239,23 @@ export default function DashboardShell({
     window.requestAnimationFrame(() => {
       (collapsed ? desktopMenuButton : desktopCollapseButton).current?.focus();
     });
+  }
+
+  function renderNavLink(section: Section) {
+    const { href, label } = navItems[section];
+    const isActive = section === activeSection;
+
+    return (
+      <Link
+        href={href}
+        prefetch={section === "eventi" ? false : undefined}
+        onClick={closeMobileSidebar}
+        aria-current={isActive ? (pathname === href ? "page" : "location") : undefined}
+        className={`museum-sidebar-link min-h-11 rounded-xl px-3 py-2 text-sm font-medium ${isActive ? "museum-sidebar-link-active" : ""}`}
+      >
+        {label}
+      </Link>
+    );
   }
 
   return (
@@ -403,7 +319,7 @@ export default function DashboardShell({
         role={isMobileSidebarOpen ? "dialog" : undefined}
         aria-modal={isMobileSidebarOpen ? true : undefined}
         aria-labelledby="dashboard-sidebar-title"
-        className={`museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 max-w-[calc(100vw-3rem)] shrink-0 flex-col overflow-y-auto overscroll-contain px-5 py-6 shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none lg:shadow-none ${
+        className={`museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 max-w-[calc(100vw-3rem)] shrink-0 flex-col overflow-y-auto overscroll-contain px-4 py-6 shadow-2xl transition-transform duration-300 ease-out [scrollbar-color:var(--museum-border)_transparent] [scrollbar-width:thin] motion-reduce:transition-none lg:shadow-none ${
           isMobileSidebarOpen ? "visible translate-x-0" : "invisible -translate-x-full"
         } ${
           isDesktopSidebarCollapsed
@@ -445,9 +361,9 @@ export default function DashboardShell({
 
         <div className="pr-11">
           <Link
-            href="/dashboard"
+            href="/home"
             onClick={closeMobileSidebar}
-            className="museum-logo text-3xl leading-none text-[var(--museum-ivory)] transition hover:text-[var(--museum-bronze-light)]"
+            className="museum-logo inline-flex min-h-11 items-center rounded text-3xl leading-none text-[var(--museum-ivory)] transition hover:text-[var(--museum-bronze-light)]"
           >
             mostra
             <span className="text-[var(--museum-bronze-light)]">.</span>
@@ -455,88 +371,42 @@ export default function DashboardShell({
           </Link>
 
           <p id="dashboard-sidebar-title" className="sr-only">
-            <T textKey="dashboard.shell.sidebar.account" fallback="Account" />
-          </p>
-
-          <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-            <T
-              textKey="dashboard.shell.sidebar.description"
-              fallback="Gestisci community, profilo, strumenti creator e contenuti del tuo spazio."
-            />
+            <T textKey="dashboard.shell.creatorNav.dashboard.label" fallback="Dashboard" />
           </p>
         </div>
 
-        <nav aria-labelledby="dashboard-sidebar-title" className="mt-7 space-y-5">
-          {navGroups.map((group) => (
-            <div key={group.label} className="space-y-1">
-              <p className="px-3 pb-1 text-xs font-medium text-[var(--museum-stone)]">
+        <nav aria-labelledby="dashboard-sidebar-title" className="mt-5 space-y-2">
+          {renderNavLink("dashboard")}
+          {visibleGroups.map((group) => (
+            <details
+              key={`${activeSection}-${group.label}`}
+              open={group === openGroup}
+              className="group/dashboard-section rounded-xl border border-[var(--museum-border)] bg-[var(--museum-charcoal)]"
+            >
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[var(--museum-ivory-soft)] hover:bg-[var(--museum-surface)] hover:text-[var(--museum-ivory)] [&::-webkit-details-marker]:hidden">
                 <WorkspaceText label={group.label} />
-              </p>
-              {group.sections.map((section) => {
-                const item = visibleNavItems.find((link) => link.section === section);
-                if (!item) return null;
-                const isActive = activeSection === item.section;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={closeMobileSidebar}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`museum-sidebar-link min-h-11 rounded-xl px-3 py-2.5 text-sm ${isActive ? "museum-sidebar-link-active" : ""}`}
-                  >
-                    <span className="block text-sm font-medium">
-                      <T textKey={item.labelKey} fallback={item.labelFallback} />
-                    </span>
-                    <span className={`mt-1 block text-xs ${isActive ? "text-[var(--museum-bronze-light)]" : "text-[var(--museum-stone)]"}`}>
-                      <T textKey={item.descriptionKey} fallback={item.descriptionFallback} />
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="size-4 shrink-0 text-[var(--museum-bronze-light)] transition-transform group-open/dashboard-section:rotate-180 motion-reduce:transition-none">
+                  <path d="m5 8 5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </summary>
+              <ul className="space-y-0.5 border-t border-[var(--museum-border)] p-1.5">
+                {group.sections.map((section) => <li key={section}>{renderNavLink(section)}</li>)}
+              </ul>
+            </details>
           ))}
         </nav>
 
-        <div className="mt-8 flex justify-center">
-          <LanguageSwitcher />
-        </div>
-
-        <div className="museum-dashboard-card mt-4 rounded-[1.5rem] p-5">
-          <p className="museum-label">
-            <T textKey="dashboard.shell.public.label" fallback="Pubblico" />
-          </p>
-
-          <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-            <T
-              textKey="dashboard.shell.public.description"
-              fallback="Controlla come appaiono gallerie, profili ed eventi ai visitatori."
-            />
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/gallerie"
-              target="_blank"
-              rel="noreferrer"
-              onClick={closeMobileSidebar}
-              className="museum-button-secondary px-4 py-2"
-            >
-              <T
-                textKey="dashboard.shell.public.galleries"
-                fallback="Gallerie"
-              />
+        <div className="mt-5 space-y-3 border-t border-[var(--museum-border)] pt-3">
+          <div className="space-y-0.5">
+            <Link href="/gallerie" onClick={closeMobileSidebar} className="museum-sidebar-link min-h-11 rounded-xl px-3 py-2 text-sm">
+              <T textKey="galleries.experience.publicGalleries" fallback="Gallerie pubbliche" />
             </Link>
-
-            <Link
-              href="/eventi"
-              target="_blank"
-              rel="noreferrer"
-              onClick={closeMobileSidebar}
-              className="museum-button-secondary px-4 py-2"
-            >
-              <T textKey="dashboard.shell.public.events" fallback="Eventi" />
+            <Link href="/eventi" prefetch={false} onClick={closeMobileSidebar} className="museum-sidebar-link min-h-11 rounded-xl px-3 py-2 text-sm">
+              <T textKey="account.notifications.actions.publicEvents" fallback="Eventi pubblici" />
             </Link>
+          </div>
+          <div className="flex justify-center [&_button]:min-h-11 [&_button]:min-w-11">
+            <LanguageSwitcher />
           </div>
         </div>
       </aside>

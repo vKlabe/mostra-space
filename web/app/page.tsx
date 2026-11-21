@@ -270,7 +270,7 @@ export default async function HomePage() {
   return (
     <main className="museum-page overflow-hidden">
       <JsonLd data={homeStructuredData} />
-      <MuseumHeader />
+      <MuseumHeader initialAccountName={null} />
       <BlackWeekBanner />
 
       <section className="border-b border-[var(--museum-border)]">

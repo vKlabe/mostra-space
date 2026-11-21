@@ -1,6 +1,9 @@
 import Link from "next/link";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
+import LegalFooter from "@/components/legal/LegalFooter";
+import MuseumHeader from "@/components/site/MuseumHeader";
+import { createClient } from "@/lib/supabase/server";
 
 type TutorialStatus = "available" | "coming_soon";
 type TutorialLevel = "base" | "intermedio" | "avanzato";
@@ -303,35 +306,22 @@ function getLevelLabel(level: TutorialLevel) {
   return <T textKey="dashboard.help.level.basic" fallback="Base" />;
 }
 
-function VideoPlaceholder() {
-  return (
-    <div className="flex aspect-video items-center justify-center rounded-[1.5rem] border border-neutral-800 bg-[radial-gradient(circle_at_35%_20%,rgba(197,151,94,0.18),transparent_12rem),linear-gradient(135deg,rgba(23,23,23,1),rgba(5,5,5,1))] p-6 text-center">
-      <div>
-        <p className="text-4xl text-amber-300">▶</p>
-        <p className="mt-3 text-xs uppercase tracking-[0.22em] text-neutral-500">
-          <T textKey="dashboard.help.video.comingSoon" fallback="Video tutorial in arrivo" />
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function TutorialCard({ tutorial }: { tutorial: TutorialItem }) {
+function TutorialCard({ tutorial, canUseFeature }: { tutorial: TutorialItem; canUseFeature: boolean }) {
+  const videoUrl = tutorial.status === "available" ? tutorial.videoUrl : null;
   return (
     <article className="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
-      {tutorial.videoUrl ? (
+      {videoUrl && (
         <iframe
-          src={tutorial.videoUrl}
+          src={videoUrl}
           title={tutorial.titleFallback}
           className="aspect-video w-full rounded-[1.5rem] border border-neutral-800 bg-black"
+          loading="lazy"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
-      ) : (
-        <VideoPlaceholder />
       )}
 
-      <div className="mt-5 flex flex-wrap items-center gap-2">
+      <div className={`flex flex-wrap items-center gap-2 ${videoUrl ? "mt-5" : ""}`}>
         <span className="rounded-full border border-amber-800 bg-amber-950/25 px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-amber-200">
           <T textKey={tutorial.categoryKey} fallback={tutorial.categoryFallback} />
         </span>
@@ -340,8 +330,10 @@ function TutorialCard({ tutorial }: { tutorial: TutorialItem }) {
           {getLevelLabel(tutorial.level)}
         </span>
 
-        <span className="text-xs text-neutral-500">
-          {tutorial.durationFallback}
+        <span className="text-xs text-[var(--museum-stone-muted)]">
+          {videoUrl ? tutorial.durationFallback : (
+            <T textKey="dashboard.help.video.notAvailable" fallback="Video in arrivo" />
+          )}
         </span>
       </div>
 
@@ -356,34 +348,25 @@ function TutorialCard({ tutorial }: { tutorial: TutorialItem }) {
         />
       </p>
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        {tutorial.videoUrl ? (
-          <a
-            href={tutorial.videoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-          >
-            <T textKey="dashboard.help.video.watch" fallback="Guarda video" />
-          </a>
-        ) : (
-          <span className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-500">
-            <T textKey="dashboard.help.video.notAvailable" fallback="Video in arrivo" />
-          </span>
-        )}
-
-        <a
+      {canUseFeature && (
+        <Link
           href={tutorial.href}
-          className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+          className="museum-button-secondary mt-5 min-h-11 px-5 py-2 text-sm"
         >
           <T textKey="dashboard.help.video.goToFeature" fallback="Vai alla funzione" />
-        </a>
-      </div>
+        </Link>
+      )}
     </article>
   );
 }
 
-export default function DashboardHelpPage() {
+export default async function DashboardHelpPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const profile = user
+    ? (await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()).data
+    : null;
+  const isCreator = profile?.role === "gallerist" || profile?.role === "admin";
   const quickSteps = [
     {
       number: "01",
@@ -419,43 +402,27 @@ export default function DashboardHelpPage() {
     },
   ];
 
-  return (
-    <DashboardShell
-      title={
-        <T textKey="dashboard.help.header.title" fallback="Guida & FAQ" />
-      }
-      subtitle={
-        <T
-          textKey="dashboard.help.header.subtitle"
-          fallback="Tutorial, risposte rapide e strumenti per usare al meglio mostra.space."
-        />
-      }
-      activeSection="help"
-      actions={
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="#tutorial"
-            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
-          >
-            <T textKey="dashboard.help.actions.watchTutorials" fallback="Guarda tutorial" />
-          </a>
-
-          <a
-            href="#faq"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-          >
-            <T textKey="dashboard.help.actions.readFaq" fallback="Leggi FAQ" />
-          </a>
-
-          <a
-            href="mailto:support@mostra.space"
-            className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
-          >
-            <T textKey="dashboard.help.actions.contactSupport" fallback="Contatta supporto" />
-          </a>
-        </div>
-      }
-    >
+  const title = <T textKey="dashboard.help.header.title" fallback="Guida & FAQ" />;
+  const subtitle = (
+    <T
+      textKey="dashboard.help.header.subtitle"
+      fallback="Tutorial, risposte rapide e strumenti per usare al meglio mostra.space."
+    />
+  );
+  const actions = (
+    <div className="flex flex-wrap gap-2">
+      <a href="#tutorial" className="museum-button-secondary min-h-11 px-4 py-2 text-sm">
+        <T textKey="dashboard.help.actions.watchTutorials" fallback="Sfoglia i tutorial" />
+      </a>
+      <a href="#faq" className="museum-button-primary min-h-11 px-4 py-2 text-sm">
+        <T textKey="dashboard.help.actions.readFaq" fallback="Leggi FAQ" />
+      </a>
+      <a href="mailto:support@mostra.space" className="museum-button-secondary min-h-11 px-4 py-2 text-sm">
+        <T textKey="dashboard.help.actions.contactSupport" fallback="Contatta supporto" />
+      </a>
+    </div>
+  );
+  const content = (
       <div className="space-y-8">
         <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
@@ -480,33 +447,34 @@ export default function DashboardHelpPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              {quickSteps.map((step) => (
-                <a
-                  key={step.number}
-                  href={step.href}
-                  className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 transition hover:border-neutral-500"
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-neutral-600">
-                    {step.number}
-                  </p>
-
-                  <h3 className="mt-3 font-medium text-neutral-100">
-                    <T textKey={step.titleKey} fallback={step.titleFallback} />
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    <T
-                      textKey={step.descriptionKey}
-                      fallback={step.descriptionFallback}
-                    />
-                  </p>
-                </a>
-              ))}
+              {quickSteps.map((step) => {
+                const className = "rounded-2xl border border-neutral-800 bg-neutral-950 p-4";
+                const stepContent = (
+                  <>
+                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--museum-stone-muted)]">
+                      {step.number}
+                    </p>
+                    <h3 className="mt-3 font-medium text-neutral-100">
+                      <T textKey={step.titleKey} fallback={step.titleFallback} />
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
+                      <T textKey={step.descriptionKey} fallback={step.descriptionFallback} />
+                    </p>
+                  </>
+                );
+                return isCreator || step.href === "/gallerie" ? (
+                  <Link key={step.number} href={step.href} className={`${className} transition hover:border-neutral-500`}>
+                    {stepContent}
+                  </Link>
+                ) : (
+                  <article key={step.number} className={className}>{stepContent}</article>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        <section id="tutorial" className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
+        <section id="tutorial" className="museum-dashboard-card min-w-0 scroll-mt-40 rounded-3xl p-5 sm:p-6">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -523,24 +491,21 @@ export default function DashboardHelpPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
                 <T
                   textKey="dashboard.help.tutorials.description"
-                  fallback="Qui puoi raccogliere i video tutorial ufficiali di mostra.space: creazione galleria, opere, editor 3D, pubblicazione, catalogo, audio e visite live."
+                  fallback="Consulta le schede su gallerie, opere, editor 3D, pubblicazione, catalogo e visite live."
                 />
               </p>
             </div>
 
-            <span className="rounded-full border border-neutral-800 px-4 py-2 text-xs uppercase tracking-[0.16em] text-neutral-500">
-              {tutorials.length} <T textKey="dashboard.help.tutorials.count" fallback="tutorial" />
-            </span>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
             {tutorials.map((tutorial) => (
-              <TutorialCard key={tutorial.id} tutorial={tutorial} />
+              <TutorialCard key={tutorial.id} tutorial={tutorial} canUseFeature={isCreator} />
             ))}
           </div>
         </section>
 
-        <section id="faq" className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
+        <section id="faq" className="museum-dashboard-card min-w-0 scroll-mt-40 rounded-3xl p-5 sm:p-6">
           <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T textKey="dashboard.help.faq.label" fallback="Domande frequenti" />
           </p>
@@ -616,12 +581,11 @@ export default function DashboardHelpPage() {
                   />
                 </p>
 
-                <a
-                  href={problem.href}
-                  className="mt-5 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-                >
-                  <T textKey="dashboard.help.problems.goToArea" fallback="Vai alla sezione" />
-                </a>
+                {(isCreator || problem.href === "/marketplace") && (
+                  <Link href={problem.href} className="museum-button-secondary mt-5 min-h-11 px-5 py-2 text-sm">
+                    <T textKey="dashboard.help.problems.goToArea" fallback="Vai alla sezione" />
+                  </Link>
+                )}
               </article>
             ))}
           </div>
@@ -657,16 +621,38 @@ export default function DashboardHelpPage() {
                 support@mostra.space
               </a>
 
-              <Link
+              {user && <Link
                 href="/dashboard"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
                 <T textKey="dashboard.help.support.backToDashboard" fallback="Torna alla dashboard" />
-              </Link>
+              </Link>}
             </div>
           </div>
         </section>
       </div>
+  );
+
+  if (!user) {
+    return (
+      <main className="museum-page min-h-screen">
+        <MuseumHeader initialAccountName={null} />
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <header className="mb-8 space-y-4">
+            <h1 className="museum-title text-5xl text-[var(--museum-ivory)]">{title}</h1>
+            <p className="text-[var(--museum-stone)]">{subtitle}</p>
+            {actions}
+          </header>
+          {content}
+        </div>
+        <LegalFooter />
+      </main>
+    );
+  }
+
+  return (
+    <DashboardShell title={title} subtitle={subtitle} activeSection="help" navMode={isCreator ? "creator" : "community"} actions={actions}>
+      {content}
     </DashboardShell>
   );
 }

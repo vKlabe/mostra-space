@@ -168,7 +168,7 @@ export default async function AdminEventsPage() {
           fallback="Controlla calendario pubblico, evento in evidenza e slider degli eventi selezionati."
         />
       }
-      activeSection="overview"
+      activeSection="events"
     >
       <div className="space-y-8">
         {eventsResult.error && (

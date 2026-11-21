@@ -75,6 +75,7 @@ function AdminNavLink({ item, activeSection }: { item: AdminLink; activeSection:
   return (
     <Link
       href={item.href}
+      prefetch={item.key === "events" ? false : undefined}
       aria-current={isActive ? "page" : undefined}
       className={`museum-sidebar-link flex min-h-11 items-center rounded-xl px-3 py-2 text-sm ${isActive ? "museum-sidebar-link-active" : ""}`}
     >
@@ -83,25 +84,71 @@ function AdminNavLink({ item, activeSection }: { item: AdminLink; activeSection:
   );
 }
 
-function AdminNavigation({ activeSection, mobile = false }: { activeSection: Section; mobile?: boolean }) {
+function DisclosureChevron({ className }: { className: string }) {
   return (
-    <nav className={mobile ? "mt-4 space-y-3" : "mt-7 space-y-5"}>
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      className={`size-4 shrink-0 text-[var(--museum-bronze-light)] transition-transform motion-reduce:transition-none ${className}`}
+    >
+      <path d="m5 8 5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function AdminNavigation({ activeSection, mobile = false }: { activeSection: Section; mobile?: boolean }) {
+  const navigationId = mobile ? "admin-mobile-navigation" : "admin-desktop-navigation";
+  const openGroup = navGroups.find((group) => group.items.some((item) => item.key === activeSection)) ?? navGroups[0];
+
+  return (
+    <nav aria-labelledby={navigationId} className={mobile ? "mt-2 space-y-2" : "mt-6 space-y-2"}>
+      <span id={navigationId} className="sr-only"><WorkspaceText label="adminNavigation" /></span>
       <AdminNavLink item={overview} activeSection={activeSection} />
       {navGroups.map((group) => (
-        <div key={group.label} className="space-y-1">
-          <p className="px-3 pb-1 text-xs font-medium text-[var(--museum-stone)]">
+        <details
+          key={`${activeSection}-${group.label}`}
+          open={group === openGroup}
+          className="group/admin-section rounded-xl border border-[var(--museum-border)] bg-[var(--museum-charcoal)]"
+        >
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[var(--museum-ivory-soft)] hover:bg-[var(--museum-surface)] hover:text-[var(--museum-ivory)] [&::-webkit-details-marker]:hidden">
             <WorkspaceText label={group.label} />
-          </p>
-          <ul className={mobile ? "grid gap-1 sm:grid-cols-2" : "space-y-1"}>
+            <DisclosureChevron className="group-open/admin-section:rotate-180" />
+          </summary>
+          <ul className="space-y-0.5 border-t border-[var(--museum-border)] px-1.5 py-1.5">
             {group.items.map((item) => (
               <li key={item.key}>
                 <AdminNavLink item={item} activeSection={activeSection} />
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       ))}
     </nav>
+  );
+}
+
+function AdminHomeLink() {
+  return (
+    <Link href="/home" className="museum-logo inline-block rounded text-3xl text-[var(--museum-ivory)]">
+      mostra<span className="text-[var(--museum-bronze-light)]">.</span>space
+    </Link>
+  );
+}
+
+function AdminUtilityLinks() {
+  return (
+    <div className="mt-4 space-y-1 border-t border-[var(--museum-border)] pt-3">
+      <Link href="/dashboard" className="museum-sidebar-link min-h-11 rounded-xl px-3 py-2 text-sm">
+        <T textKey="common.dashboard" />
+      </Link>
+      <Link href="/gallerie" target="_blank" rel="noreferrer" className="museum-sidebar-link min-h-11 rounded-xl px-3 py-2 text-sm">
+        <T textKey="galleries.experience.publicGalleries" fallback="Gallerie pubbliche" />
+      </Link>
+      <div className="px-3 pt-2">
+        <LogoutButton />
+      </div>
+    </div>
   );
 }
 
@@ -114,28 +161,20 @@ export default function AdminShell({
 }: AdminShellProps) {
   return (
     <main className="museum-app-layout min-h-screen">
-      <aside className="museum-sidebar fixed inset-y-0 left-0 hidden w-72 overflow-y-auto px-5 py-6 lg:block">
-        <Link href="/admin" className="museum-logo text-3xl text-[var(--museum-ivory)]">
-          mostra<span className="text-[var(--museum-bronze-light)]">.</span>space
-        </Link>
+      <aside className="museum-sidebar fixed inset-y-0 left-0 hidden w-72 overflow-y-auto overscroll-contain px-5 py-6 [scrollbar-color:var(--museum-control-border)_transparent] [scrollbar-width:thin] lg:block">
+        <AdminHomeLink />
         <p className="museum-label mt-3"><WorkspaceText label="adminArea" /></p>
 
         <AdminNavigation activeSection={activeSection} />
-
-        <div className="museum-dashboard-card mt-8 space-y-2 rounded-2xl p-4">
-          <Link href="/dashboard" className="museum-sidebar-link flex min-h-11 items-center rounded-xl px-3 py-2 text-sm">
-            <T textKey="common.dashboard" />
-          </Link>
-          <Link href="/gallerie" target="_blank" rel="noreferrer" className="museum-sidebar-link flex min-h-11 items-center rounded-xl px-3 py-2 text-sm">
-            <WorkspaceText label="publicSite" />
-          </Link>
-          <LogoutButton />
-        </div>
+        <AdminUtilityLinks />
       </aside>
 
       <div className="min-h-screen min-w-0 lg:pl-72">
         <header className="museum-topbar px-5 py-6 sm:py-8 lg:sticky lg:top-0 lg:z-30 lg:px-8">
           <div className="mx-auto max-w-7xl">
+            <div className="mb-4 lg:hidden">
+              <AdminHomeLink />
+            </div>
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div>
                 <p className="museum-label mb-2"><WorkspaceText label="adminArea" /></p>
@@ -150,21 +189,13 @@ export default function AdminShell({
               </div>
             </div>
 
-            <details className="museum-dashboard-card mt-5 rounded-2xl p-3 lg:hidden">
-              <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-2 text-sm font-medium text-[var(--museum-ivory)]">
+            <details key={activeSection} className="group/admin-menu museum-dashboard-card mt-5 rounded-2xl p-2 lg:hidden">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 text-sm font-medium text-[var(--museum-ivory)] hover:bg-[var(--museum-surface)] [&::-webkit-details-marker]:hidden">
                 <WorkspaceText label="adminNavigation" />
-                <span aria-hidden="true" className="text-[var(--museum-bronze-light)]">⌄</span>
+                <DisclosureChevron className="group-open/admin-menu:rotate-180" />
               </summary>
               <AdminNavigation activeSection={activeSection} mobile />
-              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--museum-border)] pt-4">
-                <Link href="/dashboard" className="museum-button-secondary min-h-11 px-4 py-2">
-                  <T textKey="common.dashboard" />
-                </Link>
-                <Link href="/gallerie" target="_blank" rel="noreferrer" className="museum-button-secondary min-h-11 px-4 py-2">
-                  <WorkspaceText label="publicSite" />
-                </Link>
-                <LogoutButton />
-              </div>
+              <AdminUtilityLinks />
             </details>
           </div>
         </header>

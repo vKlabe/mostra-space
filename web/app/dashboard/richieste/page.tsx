@@ -190,6 +190,7 @@ export default async function DashboardInquiriesPage({
     />
   }
   activeSection="richieste"
+  navMode="community"
 >
         <Link
           href="/dashboard"
