@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import ArtworkInventoryTable from "@/components/dashboard/ArtworkInventoryTable";
@@ -99,8 +100,9 @@ export default async function DashboardArtworkInventoryPage() {
     </>
   }
   activeSection="opere"
+  navMode="community"
 >
-        <a
+        <Link
           href="/dashboard"
           className="inline-flex rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
         >
@@ -108,7 +110,7 @@ export default async function DashboardArtworkInventoryPage() {
             textKey="dashboard.artworkInventory.actions.backToDashboard"
             fallback="Torna alla dashboard"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -140,7 +142,7 @@ export default async function DashboardArtworkInventoryPage() {
   activeSection="opere"
       actions={
         <div className="flex flex-wrap gap-3">
-          <a
+          <Link
             href="/dashboard/opere"
             className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
           >
@@ -148,9 +150,9 @@ export default async function DashboardArtworkInventoryPage() {
               textKey="dashboard.artworkInventory.actions.artworkArchive"
               fallback="Archivio opere"
             />
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/dashboard/gallerie"
             className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
           >
@@ -158,7 +160,7 @@ export default async function DashboardArtworkInventoryPage() {
               textKey="dashboard.artworkInventory.actions.galleries"
               fallback="Gallerie"
             />
-          </a>
+          </Link>
         </div>
       }
     >

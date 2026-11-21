@@ -447,12 +447,12 @@ export default async function AuthenticatedHomePage() {
   const displayName =
     (viewerProfile && getName(viewerProfile)) ||
     (typeof user.user_metadata?.display_name === "string"
-      ? user.user_metadata.display_name
+      ? user.user_metadata.display_name.trim()
       : null) ||
     (typeof user.user_metadata?.full_name === "string"
-      ? user.user_metadata.full_name
+      ? user.user_metadata.full_name.trim()
       : null) ||
-    "Mostra.Space";
+    null;
 
   const featuredEventGalleryCandidate = featuredEvent
     ? eventGalleriesById.get(featuredEvent.gallery_id) ||
@@ -469,7 +469,7 @@ export default async function AuthenticatedHomePage() {
 
   return (
     <main className="museum-page min-h-screen overflow-hidden">
-      <MuseumHeader />
+      <MuseumHeader initialAccountName={displayName || "Dashboard"} />
       <BlackWeekBanner />
 
       <section className="border-b border-[var(--museum-border)]">
@@ -482,7 +482,7 @@ export default async function AuthenticatedHomePage() {
               </p>
               <h1 className="museum-title mt-3 max-w-3xl break-words text-[clamp(2.4rem,6vw,4.5rem)] text-[var(--museum-ivory)]">
                 <T textKey="authHome.hero.welcome" fallback="Bentornato," />{" "}
-                {displayName}.
+                {displayName || "Mostra.Space"}.
               </h1>
               <p className="museum-subtitle mt-3 max-w-2xl text-sm text-[var(--museum-stone)] sm:text-base">
                 <SocialText text="exploreNetwork" />
@@ -491,9 +491,6 @@ export default async function AuthenticatedHomePage() {
               <div className="mt-5 flex flex-wrap gap-2.5">
                 <Link href="#seguiti" className="museum-button-primary min-h-11 px-4 py-2.5 text-sm">
                   <SocialText text="followedUpdates" />
-                </Link>
-                <Link href="/dashboard" className="museum-button-secondary min-h-11 px-4 py-2.5 text-sm">
-                  <T textKey="authHome.hero.dashboard" fallback="Entra nella dashboard" />
                 </Link>
                 <Link href="/account" className="museum-button-secondary min-h-11 px-4 py-2.5 text-sm">
                   <T textKey="authHome.hero.account" fallback="Gestisci account" />
@@ -506,16 +503,7 @@ export default async function AuthenticatedHomePage() {
             <h2 id="home-activity-label" className="mb-3 text-lg font-semibold text-[var(--museum-ivory)]">
               <SocialText text="yourActivity" />
             </h2>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
-              {[
-                ["/gallerie", "authHome.quick.galleries", "Gallerie"],
-                ["/eventi", "authHome.quick.events", "Eventi"],
-                ["/profili", "authHome.quick.profiles", "Profili"],
-              ].map(([href, textKey, fallback]) => (
-                <Link key={href} href={href} className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
-                  <T textKey={textKey} fallback={fallback} />
-                </Link>
-              ))}
+            <div className="grid grid-cols-2 gap-2">
               <Link href="/account/opere-preferite" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
                 <SocialText text="savedArtworks" />
               </Link>
@@ -525,10 +513,10 @@ export default async function AuthenticatedHomePage() {
               <Link href="/dashboard/social#visite-recenti" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
                 <SocialText text="recentGalleries" />
               </Link>
+              <Link href="/dashboard/social" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
+                <T textKey="authHome.hero.social" fallback="Apri il tuo spazio social" />
+              </Link>
             </div>
-            <Link href="/dashboard/social" className="mt-3 inline-flex min-h-11 items-center rounded-sm px-2 text-sm font-medium text-[var(--museum-bronze-light)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)]">
-              <T textKey="authHome.hero.social" fallback="Apri il tuo spazio social" />
-            </Link>
           </nav>
         </div>
       </section>
@@ -601,9 +589,6 @@ export default async function AuthenticatedHomePage() {
                   />
                 )}
               </p>
-              <Link href="/profili" className="museum-button-primary mt-6 px-5 py-3">
-                <T textKey="authHome.profiles.explore" fallback="Esplora i profili" />
-              </Link>
             </div>
           )}
         </div>

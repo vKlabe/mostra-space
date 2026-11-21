@@ -2,6 +2,7 @@ import { CommerceTitle } from "@/components/commerce/CommerceUI";
 import Link from "next/link";
 ﻿import { notFound, redirect } from "next/navigation";
 import DeleteArtworkButton from "@/components/dashboard/DeleteArtworkButton";
+import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -297,65 +298,38 @@ export default async function DashboardArtworkDetailPage({
   }>;
 
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-10 text-neutral-50">
-      <section className="mx-auto max-w-7xl">
-        <div className="flex flex-col justify-between gap-5 border-b border-neutral-800 pb-8 md:flex-row md:items-end">
-          <div>
-            <p className="mb-3 text-xs uppercase tracking-[0.35em] text-neutral-500">
-              <T
-                textKey="dashboard.artworkDetail.header.label"
-                fallback="Dettaglio opera"
-              />
-            </p>
-
-            <h1 className="text-4xl font-semibold leading-tight">
-              {artwork.title}
-            </h1>
-
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
-              <T
-                textKey="dashboard.artworkDetail.header.description"
-                fallback="Scheda tecnica, immagine, stato pubblico, dati commerciali, storage e gallerie in cui l’opera è stata allestita."
-              />
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <a
-              href="/dashboard/opere"
-              className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
-            >
-              <T
-                textKey="dashboard.artworkDetail.actions.backToArtworks"
-                fallback="Torna alle opere"
-              />
-            </a>
-
-            <a
-              href="/dashboard"
-              className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-400 transition hover:border-neutral-600 hover:text-neutral-100"
-            >
-              <T
-                textKey="dashboard.artworkDetail.actions.dashboard"
-                fallback="Dashboard"
-              />
-            </a>
-
-            {isAdmin && (
-              <a
-                href="/admin/storage"
-                className="rounded-full border border-red-800 px-5 py-2 text-sm text-red-200 transition hover:border-red-500"
-              >
-                <T
-                  textKey="dashboard.artworkDetail.actions.adminStorage"
-                  fallback="Admin storage"
-                />
-              </a>
+    <DashboardShell
+      eyebrow={<T textKey="dashboard.artworkDetail.header.label" fallback="Dettaglio opera" />}
+      title={artwork.title}
+      subtitle={
+        <T
+          textKey="dashboard.artworkDetail.header.description"
+          fallback="Scheda tecnica, immagine, stato pubblico, dati commerciali, storage e gallerie in cui l’opera è stata allestita."
+        />
+      }
+      activeSection="opere"
+      navMode={profile.role === "user" ? "community" : "creator"}
+      actions={
+        <>
+          <Link
+            href={profile.role === "user" ? "/dashboard" : "/dashboard/opere"}
+            className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
+          >
+            {profile.role === "user" ? (
+              <T textKey="dashboard.artworkDetail.actions.dashboard" fallback="Dashboard" />
+            ) : (
+              <T textKey="dashboard.artworkDetail.actions.backToArtworks" fallback="Torna alle opere" />
             )}
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          </Link>
+          {isAdmin && (
+            <Link href="/admin/storage" className="museum-button-secondary min-h-11 px-4 py-2 text-sm">
+              <T textKey="dashboard.artworkDetail.actions.adminStorage" fallback="Admin storage" />
+            </Link>
+          )}
+        </>
+      }
+    >
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <section className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900">
             <div className="bg-neutral-950">
               <img
@@ -855,7 +829,6 @@ export default async function DashboardArtworkDetailPage({
             )}
           </section>
         </div>
-      </section>
-    </main>
+    </DashboardShell>
   );
 }

@@ -194,6 +194,7 @@ export default async function DashboardArtworksPage({
     </>
   }
   activeSection="opere"
+  navMode="community"
 >
         <Link
           href="/dashboard"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 import T from "@/components/i18n/T";
 import { usePublicUxCopy } from "@/components/public/PublicUxText";
 import { createClient } from "@/lib/supabase/client";
@@ -42,17 +43,27 @@ const navLinks = [
   },
 ];
 
-export default function MuseumHeader() {
+export default function MuseumHeader({
+  initialAccountName,
+}: {
+  initialAccountName?: string | null;
+}) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const { menu, navigation, profiles } = usePublicUxCopy();
   const menuId = useId();
   const menuButton = useRef<HTMLButtonElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [accountName, setAccountName] = useState<string | null | undefined>(
-    undefined,
-  );
+  const [resolvedAccountName, setResolvedAccountName] = useState<string | null>();
+  const accountName = initialAccountName === undefined ? resolvedAccountName : initialAccountName;
+  const homeHref = accountName ? "/home" : "/";
+  const dashboardLabel = t("common.dashboard", "Dashboard");
+  const accountLinkLabel = accountName && accountName !== dashboardLabel
+    ? `${accountName} · ${dashboardLabel}`
+    : dashboardLabel;
 
   useEffect(() => {
+    if (initialAccountName !== undefined) return;
     const supabase = createClient();
     let active = true;
 
@@ -66,17 +77,7 @@ export default function MuseumHeader() {
       }
 
       if (!user) {
-        setAccountName(null);
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, full_name")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!active) {
+        setResolvedAccountName(null);
         return;
       }
 
@@ -89,13 +90,19 @@ export default function MuseumHeader() {
           ? user.user_metadata.full_name.trim()
           : "";
 
-      setAccountName(
-        profile?.display_name?.trim() ||
-          profile?.full_name?.trim() ||
-          metadataDisplayName ||
-          metadataFullName ||
-          "Dashboard",
-      );
+      const fallbackName = metadataDisplayName || metadataFullName || "Dashboard";
+      setResolvedAccountName(fallbackName);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (active) {
+        const profileName = profile?.display_name?.trim() || profile?.full_name?.trim();
+        if (profileName) setResolvedAccountName(profileName);
+      }
     }
 
     void loadAccountName();
@@ -103,7 +110,7 @@ export default function MuseumHeader() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialAccountName]);
 
   function renderNavigation(mobile: boolean) {
     return navLinks.map((item) => {
@@ -112,8 +119,15 @@ export default function MuseumHeader() {
         <Link
           key={item.href}
           href={item.href}
+          prefetch={item.href === "/eventi" ? false : undefined}
           aria-current={isCurrent ? (pathname === item.href ? "page" : "location") : undefined}
-          onClick={mobile ? () => setMobileMenuOpen(false) : undefined}
+          onNavigate={mobile ? (event) => {
+            setMobileMenuOpen(false);
+            if (pathname === item.href && !window.location.search && !window.location.hash) {
+              event.preventDefault();
+              menuButton.current?.focus();
+            }
+          } : undefined}
           className={
             (mobile
               ? "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium "
@@ -143,9 +157,10 @@ export default function MuseumHeader() {
     >
       <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 py-2 xl:min-h-20 xl:gap-4">
         <Link
-          href="/"
+          href={homeHref}
           className="museum-logo shrink-0 text-2xl leading-none text-[var(--museum-ivory)] transition hover:text-[var(--museum-bronze-light)] sm:text-3xl"
-          aria-current={pathname === "/" ? "page" : undefined}
+          aria-current={pathname === homeHref ? "page" : undefined}
+          onClick={() => setMobileMenuOpen(false)}
         >
           mostra<span className="text-[var(--museum-bronze-light)]">.</span>
           <span className="text-[var(--museum-ivory-soft)]">space</span>
@@ -165,7 +180,8 @@ export default function MuseumHeader() {
           ) : accountName ? (
             <Link
               href="/dashboard"
-              title={accountName}
+              title={accountLinkLabel}
+              aria-label={accountLinkLabel}
               className="museum-button-secondary inline-flex min-h-11 min-w-0 max-w-36 items-center px-3 py-2 sm:max-w-48"
             >
               <span className="truncate">{accountName}</span>

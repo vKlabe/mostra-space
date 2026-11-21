@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import T from "@/components/i18n/T";
 
+const marketplaceLoginHref = `/auth/login?next=${encodeURIComponent("/marketplace")}`;
+
 type TemplateCheckoutButtonProps = {
   templateId: string;
   isLoggedIn: boolean;
@@ -20,7 +22,7 @@ export default function TemplateCheckoutButton({
 
   async function handleCheckout() {
     if (!isLoggedIn) {
-      window.location.href = `/login?next=/marketplace`;
+      window.location.href = marketplaceLoginHref;
       return;
     }
 
@@ -69,7 +71,7 @@ export default function TemplateCheckoutButton({
     return (
       <div>
         <Link
-          href="/login?next=/marketplace"
+          href={marketplaceLoginHref}
           className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
         >
           <T

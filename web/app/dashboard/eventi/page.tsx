@@ -209,6 +209,7 @@ export default async function DashboardEventsPage() {
           />
         }
         activeSection="eventi"
+        navMode="community"
       >
         <Link
           href="/dashboard"

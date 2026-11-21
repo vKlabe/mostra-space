@@ -688,6 +688,7 @@ export default async function DashboardGalleryDetailPage({
     />
   }
   activeSection="gallerie"
+  navMode={profile.role === "user" ? "community" : "creator"}
 >
         <div className="rounded-3xl border border-red-800 bg-red-950/30 p-6">
           {galleryError?.message ? (
@@ -731,6 +732,7 @@ export default async function DashboardGalleryDetailPage({
     />
   }
   activeSection="gallerie"
+  navMode={profile.role === "user" ? "community" : "creator"}
 >
         <Link
           href="/dashboard/gallerie"
