@@ -19,7 +19,7 @@ const dates = loadTs("lib/black-week.ts");
 const { createBlackWeekCheckout, isBlackWeekCheckoutProtected } = loadTs(
   "lib/billing/black-week-checkout.ts", { "@/lib/black-week": dates },
 );
-const { getBlackWeekPhase, BLACK_WEEK_ANNOUNCE_AT, BLACK_WEEK_START_AT, BLACK_WEEK_END_AT } = dates;
+const { getBlackWeekPhase, BLACK_WEEK_START_AT, BLACK_WEEK_END_AT } = dates;
 
 const params = {
   mode: "subscription",
@@ -68,17 +68,16 @@ function checkout(stripe, plan = "pro") {
   });
 }
 
-test("the Italian announcement, offer, and end start at midnight", () => {
-  assert.equal(new Date(BLACK_WEEK_ANNOUNCE_AT).toISOString(), "2026-11-20T23:00:00.000Z");
-  assert.equal(new Date(BLACK_WEEK_START_AT).toISOString(), "2026-11-22T23:00:00.000Z");
+test("the offer opens on November 21 and closes at the end of November in Italy", () => {
+  assert.equal(new Date(BLACK_WEEK_START_AT).toISOString(), "2026-11-20T23:00:00.000Z");
   assert.equal(new Date(BLACK_WEEK_END_AT).toISOString(), "2026-11-30T23:00:00.000Z");
-  assert.equal(getBlackWeekPhase(BLACK_WEEK_ANNOUNCE_AT - 1), "inactive");
-  assert.equal(getBlackWeekPhase(BLACK_WEEK_ANNOUNCE_AT), "announcing");
-  assert.equal(getBlackWeekPhase(BLACK_WEEK_START_AT - 1), "announcing");
+  assert.equal(getBlackWeekPhase(BLACK_WEEK_START_AT - 1), "inactive");
   assert.equal(getBlackWeekPhase(BLACK_WEEK_START_AT), "active");
+  assert.equal(getBlackWeekPhase(Date.parse("2026-11-21T12:00:00+01:00")), "active");
   assert.equal(getBlackWeekPhase(BLACK_WEEK_END_AT - 1), "active");
   assert.equal(getBlackWeekPhase(BLACK_WEEK_END_AT), "inactive");
   assert.equal(isBlackWeekCheckoutProtected(BLACK_WEEK_START_AT - 1), false);
+  assert.equal(isBlackWeekCheckoutProtected(BLACK_WEEK_START_AT), true);
   assert.equal(isBlackWeekCheckoutProtected(BLACK_WEEK_END_AT + 60 * 60 * 1000), false);
 });
 
