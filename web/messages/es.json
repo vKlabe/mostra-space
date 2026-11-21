@@ -2767,5 +2767,11 @@
   "launchPage.register.benefit2": "Acceso inmediato a la plataforma",
   "launchPage.register.benefit3": "Todo listo para participar en el lanzamiento del 15 de septiembre",
   "launchPage.register.cta": "Regístrate gratis",
-  "launchPage.finalCta.register": "Regístrate gratis"
+  "launchPage.finalCta.register": "Regístrate gratis",
+  "blackWeek.announcement": "Suscríbete del 23 al 30 de noviembre de 2026, hora de Italia. Hasta el 23 de noviembre se aplican los precios habituales.",
+  "blackWeek.active": "Suscríbete hasta las 23:59 del 30 de noviembre de 2026, hora de Italia.",
+  "blackWeek.monthlyFor": "al mes durante los primeros {months} meses",
+  "blackWeek.thenRegular": "Después, renovación al precio habitual de {price} al mes",
+  "blackWeek.eligibility": "Oferta para nuevos suscriptores y titulares de una cuenta Free. El descuento se aplica automáticamente. Las suscripciones vigentes conservan sus condiciones.",
+  "blackWeek.cta": "Ver planes y condiciones"
 }

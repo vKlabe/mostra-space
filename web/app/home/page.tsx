@@ -5,6 +5,7 @@ import HomeProfileAvatar from "@/components/home/HomeProfileAvatar";
 import LegalFooter from "@/components/legal/LegalFooter";
 import T from "@/components/i18n/T";
 import MuseumHeader from "@/components/site/MuseumHeader";
+import { BlackWeekBanner } from "@/components/billing/BlackWeek";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { getArtworkCardUrl } from "@/lib/artworks/imageUrls";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -468,6 +469,7 @@ export default async function AuthenticatedHomePage() {
   return (
     <main className="museum-page min-h-screen overflow-hidden">
       <MuseumHeader />
+      <BlackWeekBanner />
 
       <section className="border-b border-[var(--museum-border)]">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:px-8 md:py-14 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">

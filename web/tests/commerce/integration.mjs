@@ -196,11 +196,11 @@ test('expired Stripe idempotency window never recreates an uncertain checkout', 
   const q = await artwork(); const o = await reserve(q); await db.query('update commerce_orders set created_at=now()-interval \'25 hours\' where id=$1', [o.id]);
   const g = gateway(); await assert.rejects(startCheckout(store, g.api, config, ids.buyer, q), /REVIEW_REQUIRED/); assert.equal(g.calls.length, 0); assert.equal((await store.getOrder(o.id)).inventory_held, true);
 });
-test('four-language key parity and existing subscription routes are preserved', () => {
+test('four-language key parity and unrelated billing routes are preserved', () => {
   const { commerceTranslations: copies } = require('./.compiled/translations.js');
   const keys = o => Object.entries(o).flatMap(([k, v]) => typeof v === 'string' ? [k] : keys(v).map(sub => `${k}.${sub}`)).sort();
   for (const lang of ['en', 'fr', 'es']) assert.deepEqual(keys(copies[lang]), keys(copies.it));
-  for (const path of ['lib/stripe/server.ts', 'app/api/billing/create-checkout-session/route.ts', 'app/api/billing/create-portal-session/route.ts', 'app/api/marketplace/templates/[templateId]/checkout/route.ts']) {
+  for (const path of ['lib/stripe/server.ts', 'app/api/billing/create-portal-session/route.ts', 'app/api/marketplace/templates/[templateId]/checkout/route.ts']) {
     const base = execFileSync('git', ['show', `219767d:web/${path}`], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     assert.equal(readFileSync(`${root}/${path}`, 'utf8').replaceAll('\r\n', '\n'), base.replaceAll('\r\n', '\n'));
   }

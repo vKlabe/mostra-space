@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -8,6 +9,11 @@ import {
   type PlanName,
 } from "@/lib/plans";
 import { getStripe } from "@/lib/stripe/server";
+import {
+  BlackWeekCheckoutError,
+  createBlackWeekCheckout,
+  isBlackWeekCheckoutProtected,
+} from "@/lib/billing/black-week-checkout";
 
 export const dynamic = "force-dynamic";
 
@@ -191,6 +197,7 @@ export async function POST(request: Request) {
     }
 
     const stripe = getStripe();
+    const protectCheckout = currentPlan === "free" && isBlackWeekCheckoutProtected();
 
     let stripeCustomerId = profile.stripe_customer_id;
 
@@ -200,7 +207,7 @@ export async function POST(request: Request) {
         metadata: {
           user_id: user.id,
         },
-      });
+      }, protectCheckout ? { idempotencyKey: `black-week-2026-customer:${user.id}` } : undefined);
 
       stripeCustomerId = customer.id;
 
@@ -224,7 +231,7 @@ export async function POST(request: Request) {
 
     const appUrl = getAppUrl();
 
-    const session = await stripe.checkout.sessions.create({
+    const checkout: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       customer: stripeCustomerId,
       line_items: [
@@ -247,7 +254,10 @@ export async function POST(request: Request) {
           plan: targetPlan,
         },
       },
-    });
+    };
+    const session = protectCheckout
+      ? await createBlackWeekCheckout(stripe, stripeCustomerId, targetPlan, priceId, checkout)
+      : await stripe.checkout.sessions.create(checkout);
 
     if (!session.url) {
       return NextResponse.json(
@@ -262,6 +272,9 @@ export async function POST(request: Request) {
       planLabel: PLAN_LIMITS[targetPlan].label,
     });
   } catch (error) {
+    if (error instanceof BlackWeekCheckoutError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Create checkout session failed:", error);
 
     return NextResponse.json(

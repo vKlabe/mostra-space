@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CheckoutButton from "@/components/billing/CheckoutButton";
+import { BlackWeekBanner, BlackWeekPlanPrice } from "@/components/billing/BlackWeek";
 import CustomerPortalButton from "@/components/billing/CustomerPortalButton";
 import LegalFooter from "@/components/legal/LegalFooter";
 import MuseumHeader from "@/components/site/MuseumHeader";
@@ -313,6 +314,11 @@ export default async function PricingPage() {
   }
 
   const currentPlan = profile ? normalizePlanName(profile.plan) : null;
+  const showPromotionalPrices =
+    !user ||
+    (currentPlan === "free" &&
+      (!profile?.stripe_subscription_status ||
+        ["canceled", "incomplete_expired"].includes(profile.stripe_subscription_status)));
   const cancellation = getSubscriptionCancellation({
     status: profile?.stripe_subscription_status,
     cancelAt: profile?.stripe_cancel_at,
@@ -334,6 +340,7 @@ export default async function PricingPage() {
   return (
     <main className="museum-page overflow-hidden">
       <MuseumHeader />
+      <BlackWeekBanner plansHref="#piani" />
 
       <section className="border-b border-[var(--museum-border)]">
         <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20">
@@ -497,7 +504,7 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-12 md:px-8">
+      <section id="piani" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {STANDARD_PLAN_NAMES.map((planName) => {
             const plan = PLAN_LIMITS[planName];
@@ -554,7 +561,13 @@ export default async function PricingPage() {
                 </span>
 
                 <h2 className="mt-6 font-editorial text-5xl font-medium leading-none text-[var(--museum-ivory)]">
-                  {plan.monthlyPriceLabel}
+                  {showPromotionalPrices && (plan.name === "pro" || plan.name === "business") ? (
+                    <BlackWeekPlanPrice plan={plan.name}>
+                      {plan.monthlyPriceLabel}
+                    </BlackWeekPlanPrice>
+                  ) : (
+                    plan.monthlyPriceLabel
+                  )}
                 </h2>
 
                 <p className="mt-5 min-h-28 text-sm leading-7 text-[var(--museum-stone)]">

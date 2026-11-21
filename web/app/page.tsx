@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
+import { BlackWeekBanner, BlackWeekPlanPrice } from "@/components/billing/BlackWeek";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import LegalFooter from "@/components/legal/LegalFooter";
 import T from "@/components/i18n/T";
@@ -145,6 +146,7 @@ const plans = [
   },
   {
     name: "Pro",
+    blackWeekPlan: "pro" as const,
     nameKey: "home.plans.pro.name",
     nameFallback: "Pro",
     price: "14,90€",
@@ -160,6 +162,7 @@ const plans = [
   },
   {
     name: "Business",
+    blackWeekPlan: "business" as const,
     nameKey: "home.plans.business.name",
     nameFallback: "Business",
     price: "24,90€",
@@ -271,6 +274,7 @@ export default async function HomePage() {
     <main className="museum-page overflow-hidden">
       <JsonLd data={homeStructuredData} />
       <MuseumHeader />
+      <BlackWeekBanner />
 
       <section className="border-b border-[var(--museum-border)]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-[0.95fr_1.25fr] md:px-8 md:py-20">
@@ -519,15 +523,17 @@ export default async function HomePage() {
                   </p>
 
                   <p className="mt-4 font-editorial text-3xl text-[var(--museum-ivory)]">
-                    {plan.price}
-                    {plan.suffixKey && (
-                      <span className="ml-1 font-ui text-xs text-[var(--museum-stone-muted)]">
-                        <T
-                          textKey={plan.suffixKey}
-                          fallback={plan.suffixFallback}
-                        />
-                      </span>
-                    )}
+                    <BlackWeekPlanPrice plan={plan.blackWeekPlan}>
+                      {plan.price}
+                      {plan.suffixKey && (
+                        <span className="ml-1 font-ui text-xs text-[var(--museum-stone-muted)]">
+                          <T
+                            textKey={plan.suffixKey}
+                            fallback={plan.suffixFallback}
+                          />
+                        </span>
+                      )}
+                    </BlackWeekPlanPrice>
                   </p>
 
                   <p className="mt-4 min-h-20 text-xs leading-5 text-[var(--museum-stone)]">
