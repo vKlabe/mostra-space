@@ -13,6 +13,7 @@ import { DIRECT_MESSAGES_TERMS_VERSION } from "@/lib/messages/directMessages";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { getArtworkCardUrl } from "@/lib/artworks/imageUrls";
 import JsonLd from "@/components/seo/JsonLd";
+import { BlackWeekBanner } from "@/components/billing/BlackWeek";
 import {
   absoluteUrl,
   createPublicMetadata,
@@ -455,6 +456,7 @@ export default async function PublicProfilePage({
     <main className="min-h-screen bg-[var(--museum-black)] px-6 py-10 text-[var(--museum-ivory)]">
       <JsonLd data={profileStructuredData} />
       <section className="mx-auto max-w-7xl">
+        <BlackWeekBanner className="mb-6" />
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/gallerie"
