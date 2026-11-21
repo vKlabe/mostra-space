@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
 import LocalDateTime from "@/components/time/LocalDateTime";
@@ -238,7 +239,7 @@ export default async function AccountCalendarPage() {
         <div className="flex flex-wrap gap-3">
           <a
             href="/eventi"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
           >
             <T
               textKey="account.calendar.actions.publicCalendar"
@@ -248,7 +249,7 @@ export default async function AccountCalendarPage() {
 
           <a
             href="/account/notifiche"
-            className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+            className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
           >
             <T
               textKey="account.calendar.actions.notifications"
@@ -258,7 +259,7 @@ export default async function AccountCalendarPage() {
         </div>
       }
     >
-      <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <section className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
         <p className="mb-3 text-xs uppercase tracking-[0.25em] text-amber-500">
           <T
             textKey="account.calendar.header.label"
@@ -289,25 +290,25 @@ export default async function AccountCalendarPage() {
               />
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
-              <a
+              <Link
                 href="/profili"
-                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
               >
                 <T
                   textKey="account.calendar.empty.followProfiles"
                   fallback="Segui profili"
                 />
-              </a>
+              </Link>
 
-              <a
+              <Link
                 href="/gallerie"
-                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                className="museum-button-secondary min-h-11 px-4 py-2 text-sm"
               >
                 <T
                   textKey="account.calendar.empty.exploreGalleries"
                   fallback="Esplora gallerie"
                 />
-              </a>
+              </Link>
             </div>
           </div>
         ) : (

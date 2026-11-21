@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useId, useState } from "react";
 import T from "@/components/i18n/T";
+import { usePublicUxCopy } from "@/components/public/PublicUxText";
 
 type PublicGalleryInquiryFormProps = {
   galleryId: string;
@@ -11,14 +12,6 @@ type PublicGalleryInquiryFormProps = {
   artworkTitle?: string | null;
 };
 
-function buildInitialMessage(galleryTitle: string, artworkTitle?: string | null) {
-  if (artworkTitle) {
-    return `Vorrei ricevere informazioni sull'opera "${artworkTitle}" esposta nella galleria "${galleryTitle}".`;
-  }
-
-  return `Vorrei ricevere informazioni sulla galleria "${galleryTitle}".`;
-}
-
 export default function PublicGalleryInquiryForm({
   galleryId,
   galleryTitle,
@@ -26,14 +19,17 @@ export default function PublicGalleryInquiryForm({
   galleryArtworkId = null,
   artworkTitle = null,
 }: PublicGalleryInquiryFormProps) {
-  const initialMessage = useMemo(
-    () => buildInitialMessage(galleryTitle, artworkTitle),
-    [galleryTitle, artworkTitle]
+  const formId = useId();
+  const copy = usePublicUxCopy();
+  const messageTemplate = artworkTitle ? copy.inquiryArtwork : copy.inquiryGallery;
+  const initialMessage = messageTemplate.replace(/\{(gallery|artwork)\}/g, (_, field) =>
+    field === "gallery" ? galleryTitle : artworkTitle || ""
   );
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState(initialMessage);
+  const [editedMessage, setEditedMessage] = useState<string | null>(null);
+  const message = editedMessage ?? initialMessage;
   const [website, setWebsite] = useState("");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
@@ -44,11 +40,14 @@ export default function PublicGalleryInquiryForm({
     ""
   );
 
-  useEffect(() => {
-    setMessage(initialMessage);
+  const requestContext = JSON.stringify([galleryId, artworkId, galleryTitle, artworkTitle]);
+  const [lastRequestContext, setLastRequestContext] = useState(requestContext);
+  if (requestContext !== lastRequestContext) {
+    setLastRequestContext(requestContext);
+    setEditedMessage(null);
     setFeedback("");
     setFeedbackType("");
-  }, [initialMessage]);
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,7 +55,7 @@ export default function PublicGalleryInquiryForm({
     if (!privacyAccepted) {
       setFeedbackType("error");
       setFeedback(
-        "Devi dichiarare di aver letto l'informativa privacy per inviare la richiesta."
+        copy.inquiryPrivacyError
       );
       return;
     }
@@ -88,24 +87,22 @@ export default function PublicGalleryInquiryForm({
 
       if (!response.ok) {
         setFeedbackType("error");
-        setFeedback(data.error || "Errore invio richiesta.");
+        setFeedback(data.error || copy.inquirySendError);
         return;
       }
 
       setFeedbackType("success");
-      setFeedback(
-        "Richiesta inviata correttamente. Il gallerista potrà ricontattarti."
-      );
+      setFeedback(copy.inquirySuccess);
 
       setName("");
       setEmail("");
       setWebsite("");
       setPrivacyAccepted(false);
       setMarketingConsent(false);
-      setMessage(initialMessage);
+      setEditedMessage(null);
     } catch {
       setFeedbackType("error");
-      setFeedback("Errore di rete durante invio richiesta.");
+      setFeedback(copy.inquiryNetworkError);
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +111,9 @@ export default function PublicGalleryInquiryForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative z-20 overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-900 p-6 shadow-2xl"
+      aria-labelledby={`${formId}-title`}
+      aria-busy={isLoading}
+      className="museum-card relative z-20 min-w-0 overflow-hidden rounded-[2rem] p-4 sm:p-6"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
@@ -127,7 +126,7 @@ export default function PublicGalleryInquiryForm({
             />
           </p>
 
-          <h2 className="text-2xl font-medium">
+          <h2 id={`${formId}-title`} className="font-editorial text-3xl font-medium text-[var(--museum-ivory)]">
             {artworkTitle ? (
               <T
                 textKey="gallery.inquiry.artworkTitle"
@@ -206,47 +205,52 @@ export default function PublicGalleryInquiryForm({
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={`${formId}-name`} className="mb-2 block text-sm text-neutral-300">
             <T textKey="gallery.inquiry.form.name" fallback="Nome" />
           </label>
 
           <input
+            id={`${formId}-name`}
+            autoComplete="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
             disabled={isLoading}
-            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="Nome e cognome"
+            className="w-full rounded-2xl border border-[var(--museum-border)] bg-neutral-950 px-4 py-3 text-base text-neutral-100 transition placeholder:text-neutral-400 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder={copy.inquiryNamePlaceholder}
             required
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={`${formId}-email`} className="mb-2 block text-sm text-neutral-300">
             <T textKey="gallery.inquiry.form.email" fallback="Email" />
           </label>
 
           <input
+            id={`${formId}-email`}
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             disabled={isLoading}
-            className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-2xl border border-[var(--museum-border)] bg-neutral-950 px-4 py-3 text-base text-neutral-100 transition placeholder:text-neutral-400 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="email@example.com"
             required
           />
         </div>
 
         <div className="md:col-span-2">
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={`${formId}-message`} className="mb-2 block text-sm text-neutral-300">
             <T textKey="gallery.inquiry.form.message" fallback="Messaggio" />
           </label>
 
           <textarea
+            id={`${formId}-message`}
             value={message}
-            onChange={(event) => setMessage(event.target.value)}
+            onChange={(event) => setEditedMessage(event.target.value)}
             disabled={isLoading}
-            className="min-h-36 w-full rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-6 text-neutral-100 outline-none transition placeholder:text-neutral-700 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="Scrivi la tua richiesta"
+            className="min-h-36 w-full rounded-2xl border border-[var(--museum-border)] bg-neutral-950 px-4 py-3 text-base leading-6 text-neutral-100 transition placeholder:text-neutral-400 focus:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder={copy.inquiryMessagePlaceholder}
           />
         </div>
       </div>
@@ -267,7 +271,7 @@ export default function PublicGalleryInquiryForm({
               textKey="gallery.inquiry.privacy.prefix"
               fallback="Dichiaro di aver letto l"
             />
-            {"'"}
+            {copy.inquiryPrivacyJoiner}
             <a
               href="/privacy"
               target="_blank"
@@ -308,7 +312,7 @@ export default function PublicGalleryInquiryForm({
         <button
           type="submit"
           disabled={isLoading || !privacyAccepted}
-          className="inline-flex h-11 items-center justify-center rounded-full bg-white px-6 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="museum-button-primary min-h-11 px-6 py-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? (
             <T
@@ -333,6 +337,7 @@ export default function PublicGalleryInquiryForm({
 
       {feedback && (
         <div
+          role={feedbackType === "success" ? "status" : "alert"}
           className={
             feedbackType === "success"
               ? "mt-5 rounded-2xl border border-green-900 bg-green-950/30 p-4 text-sm leading-6 text-green-200"

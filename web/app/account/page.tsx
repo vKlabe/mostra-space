@@ -6,6 +6,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import AccountProfileForm from "@/components/account/AccountProfileForm";
 import DeleteAccountPanel from "@/components/account/DeleteAccountPanel";
 import T from "@/components/i18n/T";
+import { SocialText } from "@/components/social/SocialCopy";
 import {
   PLAN_LIMITS,
   formatLimitValue,
@@ -230,12 +231,21 @@ export default async function AccountPage() {
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
                   href="/dashboard/social"
-                  className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                  className="museum-button-primary min-h-11 px-4 py-2 text-sm"
                 >
                   <T
                     textKey="account.profile.goToSocial"
                     fallback="Vai alla sezione Social"
                   />
+                </Link>
+                <Link href="/account/opere-preferite" className="museum-button-secondary min-h-11 px-4 py-2 text-sm">
+                  <SocialText text="savedArtworks" />
+                </Link>
+                <Link href="/account/calendario" className="museum-button-secondary min-h-11 px-4 py-2 text-sm">
+                  <T textKey="dashboard.social.calendar.open" fallback="Apri calendario" />
+                </Link>
+                <Link href="/account/notifiche" className="museum-button-secondary min-h-11 px-4 py-2 text-sm">
+                  <T textKey="dashboard.social.calendar.notifications" fallback="Notifiche" />
                 </Link>
               </div>
             </div>

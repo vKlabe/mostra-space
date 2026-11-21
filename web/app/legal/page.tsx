@@ -20,13 +20,13 @@ export default function LegalIndexPage() {
     <main className="museum-page min-h-screen">
       <MuseumHeader />
 
-      <section className="border-b border-[var(--museum-border)] px-4 py-14 md:px-8 md:py-20">
+      <section className="border-b border-[var(--museum-border)] px-4 py-9 md:px-8 md:py-16">
         <div className="mx-auto max-w-7xl">
           <p className="museum-label">
             <T textKey="legal.hero.label" fallback="Mostra.space" />
           </p>
 
-          <h1 className="museum-title mt-6 max-w-4xl text-6xl text-[var(--museum-ivory)] md:text-7xl">
+          <h1 className="museum-title mt-4 max-w-4xl text-[clamp(2.5rem,7vw,4.5rem)] text-[var(--museum-ivory)]">
             <T textKey="legal.hero.title" fallback="Area legale." />
           </h1>
 

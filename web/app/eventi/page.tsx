@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import FollowProfileButton from "@/components/profiles/FollowProfileButton";
 import T from "@/components/i18n/T";
-import LocalDateTime from "@/components/time/LocalDateTime";
+import PublicUxText, { PublicEventDateRange } from "@/components/public/PublicUxText";
 import {
   createPublicMetadata,
   NO_INDEX_METADATA,
@@ -100,10 +101,6 @@ function getProfileName(profile: Profile | undefined) {
     profile?.email?.split("@")[0] ||
     null
   );
-}
-
-function formatDate(value: string, timeZone?: string | null) {
-  return <LocalDateTime value={value} format="datetime-weekday" timeZone={timeZone} />;
 }
 
 function getAccessBadge(mode: EventAccessMode) {
@@ -351,6 +348,7 @@ export default async function PublicEventsPage({
     const canOpenGallery = gallery?.status === "published";
     const accessBadge = getAccessBadge(event.access_mode || "public");
     const hasLiveGuidedVisit = liveEventIds.has(event.id);
+    const ended = event.status === "completed" || Date.parse(event.ends_at) <= Date.parse(nowIso);
 
     return (
       <article
@@ -359,31 +357,34 @@ export default async function PublicEventsPage({
           variant === "featured"
             ? "grid overflow-hidden rounded-[2.4rem] border border-amber-900/60 bg-[radial-gradient(circle_at_top_left,rgba(217,119,6,0.18),transparent_32%),#0a0a0a] shadow-2xl md:grid-cols-[0.95fr_1.05fr]"
             : variant === "slider"
-              ? "min-w-[320px] max-w-[360px] overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-950"
+              ? "min-w-0 overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-950"
               : "grid overflow-hidden rounded-[2rem] border border-neutral-800 bg-neutral-950 md:grid-cols-[280px_1fr]"
         }
       >
-        <div className={variant === "featured" ? "min-h-[360px] bg-neutral-900" : "min-h-[220px] bg-neutral-900"}>
+        <div className={variant === "featured" ? "aspect-[16/10] bg-neutral-900 md:aspect-auto md:min-h-[22.5rem]" : "aspect-[16/10] bg-neutral-900 md:aspect-auto md:min-h-[13.75rem]"}>
           {gallery?.cover_image_url ? (
             <img
               src={gallery.cover_image_url}
               alt={gallery.title}
+              loading={variant === "featured" ? "eager" : "lazy"}
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full min-h-[220px] items-center justify-center text-xs uppercase tracking-[0.25em] text-neutral-600">
+            <div className="flex h-full items-center justify-center text-xs uppercase tracking-[0.2em] text-neutral-400">
               <T textKey="events.card.noCover" fallback="No cover" />
             </div>
           )}
         </div>
 
-        <div className={variant === "featured" ? "p-8 md:p-10" : "p-6"}>
+        <div className={variant === "featured" ? "min-w-0 p-5 sm:p-8 md:p-10" : "min-w-0 p-5 sm:p-6"}>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-amber-900 bg-amber-950/30 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-200">
-              {event.status === "live" ? (
+              {ended ? (
+                <PublicUxText id="eventEnded" />
+              ) : event.status === "live" ? (
                 <T textKey="events.card.statusLive" fallback="Live" />
               ) : (
-                <T textKey="events.card.statusEvent" fallback="Evento" />
+                <PublicUxText id="eventScheduled" />
               )}
             </span>
 
@@ -391,9 +392,9 @@ export default async function PublicEventsPage({
               <T textKey={accessBadge.textKey} fallback={accessBadge.fallback} />
             </span>
 
-            {hasLiveGuidedVisit && (
+            {hasLiveGuidedVisit && !ended && (
               <span className="rounded-full border border-sky-900 bg-sky-950/30 px-3 py-1 text-xs uppercase tracking-[0.14em] text-sky-200">
-                Live guided visit
+                <PublicUxText id="eventLiveVisit" />
               </span>
             )}
 
@@ -404,12 +405,12 @@ export default async function PublicEventsPage({
             )}
           </div>
 
-          <h2 className={variant === "featured" ? "font-serif text-5xl text-neutral-50 md:text-6xl" : "font-serif text-3xl text-neutral-50"}>
+          <h3 className={variant === "featured" ? "font-editorial text-4xl text-neutral-50 [overflow-wrap:anywhere] sm:text-5xl md:text-6xl" : "font-editorial text-3xl text-neutral-50 [overflow-wrap:anywhere]"}>
             {event.title}
-          </h2>
+          </h3>
 
           <p className="mt-3 text-sm font-medium text-amber-200">
-            {formatDate(event.starts_at, event.timezone)}
+            <PublicEventDateRange startsAt={event.starts_at} endsAt={event.ends_at} timeZone={event.timezone} />
           </p>
 
           <p className="mt-2 text-sm text-neutral-500">
@@ -491,7 +492,7 @@ export default async function PublicEventsPage({
 
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <h1 className="font-serif text-5xl md:text-6xl">
+              <h1 className="font-editorial text-4xl sm:text-5xl md:text-6xl">
                 <T textKey="events.header.title" fallback="Eventi su mostra.space" />
               </h1>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-neutral-400">
@@ -503,31 +504,42 @@ export default async function PublicEventsPage({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <a
+              <Link
                 href="/profili"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
                 <T textKey="events.header.exploreProfiles" fallback="Esplora profili" />
-              </a>
+              </Link>
 
-              <a
+              <Link
                 href="/account/calendario"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
                 <T textKey="events.header.myCalendar" fallback="Il mio calendario" />
-              </a>
+              </Link>
             </div>
           </div>
 
+          <div className="mt-6 flex flex-wrap gap-2">
+            <a href="#eventi-in-programma" className="museum-button-secondary min-h-11 px-4 py-2">
+              <PublicUxText id="comingEvents" />
+            </a>
+            {pastEvents.length > 0 && (
+              <a href="#eventi-conclusi" className="museum-button-secondary min-h-11 px-4 py-2">
+                <PublicUxText id="pastEvents" />
+              </a>
+            )}
+          </div>
+
           {featuredEvent ? (
-            <section className="mt-10">
-              <p className="mb-4 text-xs uppercase tracking-[0.25em] text-neutral-500">
+            <section id="eventi-in-programma" className="mt-10 scroll-mt-24">
+              <h2 className="museum-label mb-4">
                 <T textKey="events.featured.label" fallback="Evento in evidenza" />
-              </p>
+              </h2>
               {renderEventCard(featuredEvent, "featured")}
             </section>
           ) : (
-            <section className="mt-10 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-400">
+            <section id="eventi-in-programma" className="museum-card mt-10 scroll-mt-24 rounded-3xl p-6 text-sm text-neutral-300">
               <T
                 textKey="events.upcoming.empty"
                 fallback="Nessun evento programmato al momento."
@@ -547,33 +559,26 @@ export default async function PublicEventsPage({
                   </h2>
                 </div>
               </div>
-              <div className="flex gap-5 overflow-x-auto pb-4">
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {highlightEvents.map((event) => renderEventCard(event, "slider"))}
               </div>
             </section>
           )}
 
-          <section className="mt-12">
-            <h2 className="font-serif text-3xl">
-              <T textKey="events.upcoming.title" fallback="Tutti gli eventi" />
-            </h2>
+          {regularEvents.length > 0 && (
+            <section className="mt-12">
+              <h2 className="font-serif text-3xl">
+                <PublicUxText id="comingEvents" />
+              </h2>
 
-            {regularEvents.length === 0 ? (
-              <div className="mt-5 rounded-3xl border border-neutral-800 bg-neutral-900 p-6 text-sm text-neutral-400">
-                <T
-                  textKey="events.upcoming.emptyOtherEvents"
-                  fallback="Non ci sono altri eventi programmati."
-                />
-              </div>
-            ) : (
               <div className="mt-6 space-y-5">
                 {regularEvents.map((event) => renderEventCard(event, "list"))}
               </div>
-            )}
-          </section>
+            </section>
+          )}
 
           {pastEvents.length > 0 && (
-            <section className="mt-12">
+            <section id="eventi-conclusi" className="mt-12 scroll-mt-24">
               <h2 className="font-serif text-3xl">
                 <T textKey="events.past.title" fallback="Eventi passati" />
               </h2>

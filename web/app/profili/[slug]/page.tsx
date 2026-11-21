@@ -8,6 +8,8 @@ import ProfileMessageButton from "@/components/profiles/ProfileMessageButton";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import T from "@/components/i18n/T";
+import MuseumHeader from "@/components/site/MuseumHeader";
+import PublicUxText from "@/components/public/PublicUxText";
 import ProfileStatusLikeButton from "@/components/social/ProfileStatusLikeButton";
 import { DIRECT_MESSAGES_TERMS_VERSION } from "@/lib/messages/directMessages";
 import LocalDateTime from "@/components/time/LocalDateTime";
@@ -453,31 +455,35 @@ export default async function PublicProfilePage({
   };
 
   return (
-    <main className="min-h-screen bg-[var(--museum-black)] px-6 py-10 text-[var(--museum-ivory)]">
+    <main className="museum-page min-h-screen text-[var(--museum-ivory)]">
+      <MuseumHeader />
       <JsonLd data={profileStructuredData} />
-      <section className="mx-auto max-w-7xl">
+      <section className="mx-auto min-w-0 max-w-7xl px-4 py-8 md:px-8 md:py-10">
         <BlackWeekBanner className="mb-6" />
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <Link href="/profili" className="museum-button-secondary min-h-11 px-4 py-2">
+            <PublicUxText id="profileIndex" />
+          </Link>
           <Link
             href="/gallerie"
-            className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
+            className="museum-button-secondary min-h-11 px-4 py-2"
           >
-            Elenco pubblico
+            <PublicUxText id="galleryIndex" />
           </Link>
 
           <a
             href="/account"
-            className="rounded-full border border-[var(--museum-border-soft)] px-5 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
+            className="museum-button-secondary min-h-11 px-4 py-2"
           >
-            Account
+            <T textKey="profiles.actions.account" fallback="Account" />
           </a>
         </div>
 
-        <section className="rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-6 shadow-2xl shadow-black/20 md:p-8">
-          <p className="museum-label">Profilo pubblico</p>
+        <section className="min-w-0 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-4 shadow-2xl shadow-black/20 sm:p-6 md:p-8">
+          <p className="museum-label"><PublicUxText id="publicProfile" /></p>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
-            <div>
+          <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+            <div className="min-w-0">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl border border-[var(--museum-border-soft)] bg-black/60">
                   {profile.avatar_url ? (
@@ -493,8 +499,8 @@ export default async function PublicProfilePage({
                   )}
                 </div>
 
-                <div>
-                  <h1 className="font-serif text-5xl text-[var(--museum-ivory)] md:text-6xl">
+                <div className="min-w-0">
+                  <h1 className="font-editorial text-4xl text-[var(--museum-ivory)] [overflow-wrap:anywhere] sm:text-5xl md:text-6xl">
                     {displayName}
                   </h1>
                   <PremioWinnerBadge artistId={profile.id} />
@@ -509,22 +515,21 @@ export default async function PublicProfilePage({
                   </div>
 
                   {profile.bio && (
-                    <p className="mt-6 max-w-3xl whitespace-pre-line text-base leading-8 text-[var(--museum-stone)]">
+                    <p className="mt-6 max-w-3xl whitespace-pre-line text-base leading-8 text-[var(--museum-stone)] [overflow-wrap:anywhere]">
                       {profile.bio}
                     </p>
                   )}
 
                   {!profile.bio && (
-                    <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--museum-stone-muted)]">
-                      Questo profilo non ha ancora inserito una biografia
-                      pubblica.
+                    <p className="mt-6 max-w-3xl text-base leading-8 text-[var(--museum-stone)]">
+                      <T textKey="profiles.card.bioMissing" fallback="Profilo pubblico mostra.space. Bio non ancora inserita." />
                     </p>
                   )}
                 </div>
               </div>
             </div>
 
-            <aside className="rounded-3xl border border-[var(--museum-border-soft)] bg-black/35 p-5">
+            <aside className="min-w-0 rounded-3xl border border-[var(--museum-border-soft)] bg-black/35 p-4 sm:p-5">
               <FollowProfileButton
                 profileId={profile.id}
                 initialIsFollowing={isFollowing}
@@ -538,13 +543,13 @@ export default async function PublicProfilePage({
                 canMessage={canMessageProfile}
               />
 
-              <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+              <div className="mt-5 grid grid-cols-2 gap-3 text-sm [overflow-wrap:anywhere]">
                 <div className="rounded-2xl border border-[var(--museum-border-soft)] p-4">
                   <p className="text-2xl text-[var(--museum-ivory)]">
                     {followerCount}
                   </p>
                   <p className="mt-1 text-[var(--museum-stone-muted)]">
-                    follower
+                    <T textKey="profiles.card.followers" fallback="follower" />
                   </p>
                 </div>
 
@@ -553,7 +558,7 @@ export default async function PublicProfilePage({
                     {followingCount}
                   </p>
                   <p className="mt-1 text-[var(--museum-stone-muted)]">
-                    seguiti
+                    <PublicUxText id="profileFollowing" />
                   </p>
                 </div>
               </div>
@@ -566,7 +571,7 @@ export default async function PublicProfilePage({
                     rel="noreferrer"
                     className="block rounded-2xl border border-[var(--museum-border-soft)] px-4 py-3 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
                   >
-                    Sito / portfolio
+                    <PublicUxText id="profilePortfolio" />
                   </a>
                 )}
 
@@ -577,7 +582,7 @@ export default async function PublicProfilePage({
                     rel="noreferrer"
                     className="block rounded-2xl border border-[var(--museum-border-soft)] px-4 py-3 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)]"
                   >
-                    Instagram / social
+                    <PublicUxText id="profileSocial" />
                   </a>
                 )}
 
@@ -586,13 +591,22 @@ export default async function PublicProfilePage({
                     href={`mailto:${profile.email}`}
                     className="block rounded-2xl border border-[var(--museum-bronze)] px-4 py-3 text-sm font-medium text-[var(--museum-ivory)] transition hover:bg-[var(--museum-bronze)] hover:text-black"
                   >
-                    Contatta
+                    <T textKey="galleries.detail.viewer.contact" fallback="Contatta" />
                   </a>
                 )}
               </div>
             </aside>
           </div>
         </section>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          <a href="#profilo-gallerie" className="museum-button-secondary min-h-11 px-4 py-2">
+            <PublicUxText id="profileGalleries" />
+          </a>
+          <a href="#profilo-opere" className="museum-button-secondary min-h-11 px-4 py-2">
+            <PublicUxText id="profileArtworks" />
+          </a>
+        </div>
 
         {currentStatusData && (
           <section
@@ -624,23 +638,23 @@ export default async function PublicProfilePage({
           </section>
         )}
 
-        <section className="mt-8 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-6 md:p-8">
+        <section id="profilo-gallerie" className="mt-8 scroll-mt-24 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-4 sm:p-6 md:p-8">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <div>
               <p className="museum-label">Gallerie pubbliche</p>
               <h2 className="mt-3 font-serif text-3xl text-[var(--museum-ivory)]">
-                Spazi espositivi
+                <PublicUxText id="profileGalleries" />
               </h2>
             </div>
 
             <p className="text-sm text-[var(--museum-stone-muted)]">
-              {safeGalleries.length} gallerie pubblicate
+              {safeGalleries.length} <T textKey="profiles.card.galleries" fallback="gallerie" />
             </p>
           </div>
 
           {safeGalleries.length === 0 ? (
             <p className="mt-6 rounded-2xl border border-[var(--museum-border-soft)] bg-black/30 p-5 text-sm text-[var(--museum-stone-muted)]">
-              Nessuna galleria pubblica disponibile.
+              <PublicUxText id="profileNoGalleries" />
             </p>
           ) : (
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -678,23 +692,23 @@ export default async function PublicProfilePage({
           )}
         </section>
 
-        <section className="mt-8 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-6 md:p-8">
+        <section id="profilo-opere" className="mt-8 scroll-mt-24 rounded-[2rem] border border-[var(--museum-border-soft)] bg-[var(--museum-panel)] p-4 sm:p-6 md:p-8">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <div>
               <p className="museum-label">Opere pubbliche</p>
               <h2 className="mt-3 font-serif text-3xl text-[var(--museum-ivory)]">
-                Archivio visibile
+                <PublicUxText id="profileArtworks" />
               </h2>
             </div>
 
             <p className="text-sm text-[var(--museum-stone-muted)]">
-              {safeArtworks.length} opere pubbliche
+              {safeArtworks.length} <T textKey="profiles.card.artworks" fallback="opere" />
             </p>
           </div>
 
           {safeArtworks.length === 0 ? (
             <p className="mt-6 rounded-2xl border border-[var(--museum-border-soft)] bg-black/30 p-5 text-sm text-[var(--museum-stone-muted)]">
-              Nessuna opera pubblica disponibile.
+              <PublicUxText id="profileNoArtworks" />
             </p>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

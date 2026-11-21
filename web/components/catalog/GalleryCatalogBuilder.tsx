@@ -1,5 +1,6 @@
 "use client";
 
+import WorkspaceText from "@/components/dashboard/WorkspaceText";
 import { useEffect, useMemo, useState } from "react";
 import * as QRCode from "qrcode";
 import T from "@/components/i18n/T";
@@ -996,13 +997,13 @@ export default function GalleryCatalogBuilder({
       `}</style>
 
       <div className="catalog-no-print mx-auto mb-8 max-w-7xl">
-        <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+        <div className="museum-dashboard-card mb-6 flex flex-col justify-between gap-5 rounded-3xl p-5 sm:p-7 lg:flex-row lg:items-start">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
               <T textKey="catalog.header.label" fallback="Catalogo PDF" />
             </p>
 
-            <h1 className="text-3xl font-semibold">
+            <h1 className="font-editorial text-3xl text-[var(--museum-ivory)] sm:text-4xl">
               <T
                 textKey="catalog.header.createFor"
                 fallback="Crea catalogo per"
@@ -1018,7 +1019,8 @@ export default function GalleryCatalogBuilder({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
+            <a href="#catalogo-anteprima" className="museum-button-secondary min-h-11 px-4 py-2"><WorkspaceText label="catalogPreview" /></a>
             <a
               href={`/dashboard/gallerie/${gallery.id}`}
               className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -1122,6 +1124,7 @@ export default function GalleryCatalogBuilder({
 
         {settingsMessage && (
           <div
+            role={settingsMessageType === "success" ? "status" : "alert"}
             className={
               settingsMessageType === "success"
                 ? "mb-6 rounded-2xl border border-green-900 bg-green-950/30 p-4 text-sm text-green-200"
@@ -1525,7 +1528,10 @@ export default function GalleryCatalogBuilder({
         </div>
       </div>
 
-      <div className={`catalog-print-root catalog-theme-${allowedCatalogTheme}`}>
+      <h2 id="catalogo-anteprima" className="catalog-no-print mx-auto mb-5 max-w-7xl scroll-mt-12 font-editorial text-2xl text-[var(--museum-ivory)]">
+        <WorkspaceText label="catalogPreview" />
+      </h2>
+      <div aria-labelledby="catalogo-anteprima" className={`catalog-print-root catalog-theme-${allowedCatalogTheme}`}>
         <section className="catalog-page catalog-page-dark flex flex-col justify-between">
           <div>
             <p className="catalog-small-caps text-[#b9905b]">

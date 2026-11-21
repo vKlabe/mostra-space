@@ -380,7 +380,7 @@ export default async function MarketplacePage() {
 
       <main className="min-h-screen bg-neutral-950 text-neutral-50">
         <section className="border-b border-neutral-900 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.10),_transparent_28%),linear-gradient(180deg,_#111111,_#050505)]">
-          <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 py-9 sm:px-6 sm:py-14 lg:px-8">
             <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
               <div>
                 <p className="mb-4 text-xs uppercase tracking-[0.28em] text-neutral-500">
@@ -390,7 +390,7 @@ export default async function MarketplacePage() {
                   />
                 </p>
 
-                <h1 className="max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">
+                <h1 className="museum-title max-w-4xl text-[clamp(2.45rem,7vw,4rem)]">
                   <T
                     textKey="marketplace.hero.title"
                     fallback="Template gallerie acquistabili per sempre."
@@ -403,6 +403,9 @@ export default async function MarketplacePage() {
                     fallback="Acquista ambienti 3D extra per le tue mostre digitali. Una volta comprato, il template resta collegato al tuo account e potrai usarlo indipendentemente dal piano attivo."
                   />
                 </p>
+                <a href="#template-catalogue" className="museum-button-primary mt-5 inline-flex px-5 py-2.5">
+                  <T textKey="ux.marketplace.browse" fallback="Esplora i template" />
+                </a>
               </div>
 
               <div className="rounded-3xl border border-neutral-800 bg-neutral-950/80 p-5">
@@ -421,7 +424,7 @@ export default async function MarketplacePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+        <section id="template-catalogue" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-9 sm:px-6 lg:px-8">
           {templatesResult.error && (
             <div className="rounded-3xl border border-red-900 bg-red-950/30 p-6">
               <p className="font-medium text-red-100">

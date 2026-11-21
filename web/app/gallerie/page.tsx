@@ -8,6 +8,7 @@ import DataErrorCard from "@/components/system/DataErrorCard";
 import EmptyStateCard from "@/components/system/EmptyStateCard";
 import { getErrorMessage } from "@/lib/system/getErrorMessage";
 import T from "@/components/i18n/T";
+import PublicUxText from "@/components/public/PublicUxText";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { createPublicMetadata } from "@/lib/seo/site";
 
@@ -192,6 +193,22 @@ function PublicGalleryCover({
   );
 }
 
+function GalleryCardActions({ slug, title }: Pick<PublicGallery, "slug" | "title">) {
+  const href = `/gallerie/${slug}`;
+  return (
+    <div className="flex flex-wrap gap-2 px-6 pb-6">
+      <Link href={href} className="museum-button-primary min-h-11 px-4 py-2">
+        <T textKey="galleries.actions.openGallery" fallback="Apri galleria" />
+        <span className="sr-only"> — {title}</span>
+      </Link>
+      <Link href={`${href}#catalogo`} className="museum-button-secondary min-h-11 px-4 py-2">
+        <T textKey="galleries.actions.catalog" fallback="Catalogo" />
+        <span className="sr-only"> — {title}</span>
+      </Link>
+    </div>
+  );
+}
+
 function SmallEditorialGalleryCard({ gallery }: { gallery: EditorialGallery }) {
   return (
     <article className="group overflow-hidden rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)] transition hover:border-[var(--museum-bronze)]">
@@ -254,23 +271,9 @@ function SmallEditorialGalleryCard({ gallery }: { gallery: EditorialGallery }) {
             )}
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-2">
-            <span className="museum-button-primary px-4 py-2">
-              <T
-                textKey="galleries.actions.openGallery"
-                fallback="Apri galleria"
-              />
-            </span>
-
-            <span className="museum-button-secondary px-4 py-2">
-              <T
-                textKey="galleries.actions.catalog"
-                fallback="Catalogo"
-              />
-            </span>
-          </div>
         </div>
       </Link>
+      <GalleryCardActions slug={gallery.slug} title={gallery.title} />
     </article>
   );
 }
@@ -565,14 +568,14 @@ export default async function PublicGalleriesIndexPage({
 
           <article className="group overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)]">
             <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="min-h-[420px] overflow-hidden bg-[var(--museum-charcoal)]">
+              <div className="aspect-[16/10] overflow-hidden bg-[var(--museum-charcoal)] lg:aspect-auto lg:min-h-[420px]">
                 <PublicGalleryCover
                   src={selectedGallery.cover_image_url}
                   title={selectedGallery.title}
                 />
               </div>
 
-              <div className="flex flex-col justify-between p-8">
+              <div className="flex min-w-0 flex-col justify-between p-5 sm:p-8">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-[rgba(197,151,94,0.45)] bg-[rgba(168,121,69,0.1)] px-3 py-1 text-xs uppercase tracking-[0.15em] text-[var(--museum-bronze-light)]">
@@ -620,9 +623,6 @@ export default async function PublicGalleriesIndexPage({
                     )}
                   </p>
 
-                  <p className="mt-5 break-all text-xs text-[var(--museum-stone-muted)]">
-                    /gallerie/{selectedGallery.slug}
-                  </p>
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
@@ -675,10 +675,7 @@ export default async function PublicGalleriesIndexPage({
                 </p>
 
                 <h2 className="museum-title mt-4 text-5xl text-[var(--museum-ivory)] md:text-6xl">
-                  <T
-                    textKey="galleries.featured.title"
-                    fallback="Tre spazi da visitare."
-                  />
+                  <PublicUxText id="featuredGalleries" />
                 </h2>
 
                 <p className="museum-subtitle mt-5 max-w-3xl text-sm text-[var(--museum-stone)]">
@@ -715,7 +712,7 @@ export default async function PublicGalleriesIndexPage({
       {!error && safeGalleries.length > 0 && (
         <section
           id="gallerie"
-          className="mx-auto max-w-7xl px-4 py-12 md:px-8"
+          className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12 md:px-8"
         >
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
@@ -762,6 +759,7 @@ export default async function PublicGalleriesIndexPage({
                     <Link
                       key={option.value}
                       href={getArchiveSortHref(option.value)}
+                      aria-current={isActive ? "true" : undefined}
                       className={
                         isActive
                           ? "rounded-full border border-[var(--museum-bronze)] bg-[rgba(168,121,69,0.18)] px-4 py-2 text-xs uppercase tracking-[0.14em] text-[var(--museum-bronze-light)]"
@@ -829,27 +827,9 @@ export default async function PublicGalleriesIndexPage({
                       )}
                     </p>
 
-                    <p className="mt-4 break-all text-xs text-[var(--museum-stone-muted)]">
-                      /gallerie/{gallery.slug}
-                    </p>
-
-                    <div className="mt-6 flex flex-wrap gap-2">
-                      <span className="museum-button-primary px-4 py-2">
-                        <T
-                          textKey="galleries.actions.openGallery"
-                          fallback="Apri galleria"
-                        />
-                      </span>
-
-                      <span className="museum-button-secondary px-4 py-2">
-                        <T
-                          textKey="galleries.actions.catalog"
-                          fallback="Catalogo"
-                        />
-                      </span>
-                    </div>
                   </div>
                 </Link>
+                <GalleryCardActions slug={gallery.slug} title={gallery.title} />
               </article>
             ))}
           </div>

@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import T from "@/components/i18n/T";
+import { SocialText } from "@/components/social/SocialCopy";
 import LocalDateTime from "@/components/time/LocalDateTime";
 import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 
@@ -187,6 +189,9 @@ export default async function AccountFavoriteArtworksPage() {
       navMode={isCreator ? "creator" : "community"}
       actions={
         <div className="flex flex-wrap gap-3">
+          <a href="/dashboard/social#salvati" className="museum-button-secondary min-h-11 px-4 py-2 text-sm">
+            <SocialText text="savedGalleries" />
+          </a>
           <a
             href="/dashboard"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -197,7 +202,7 @@ export default async function AccountFavoriteArtworksPage() {
             />
           </a>
 
-          <a
+          <Link
             href="/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -205,11 +210,11 @@ export default async function AccountFavoriteArtworksPage() {
               textKey="account.favoriteArtworks.actions.exploreGalleries"
               fallback="Esplora gallerie"
             />
-          </a>
+          </Link>
         </div>
       }
     >
-      <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+      <section className="rounded-3xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-6">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-amber-500">
@@ -259,7 +264,7 @@ export default async function AccountFavoriteArtworksPage() {
               />
             </p>
 
-            <a
+            <Link
               href="/gallerie"
               className="mt-5 inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
@@ -267,7 +272,7 @@ export default async function AccountFavoriteArtworksPage() {
                 textKey="account.favoriteArtworks.empty.exploreGalleries"
                 fallback="Esplora gallerie"
               />
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">

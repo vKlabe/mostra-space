@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -223,7 +224,7 @@ export default async function DashboardGalleriesPage({
   }
   activeSection="gallerie"
 >
-        <a
+        <Link
           href="/dashboard"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -231,7 +232,7 @@ export default async function DashboardGalleriesPage({
             textKey="dashboard.galleries.actions.backToDashboard"
             fallback="Torna alla dashboard"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -367,7 +368,7 @@ export default async function DashboardGalleriesPage({
   activeSection="gallerie"
       actions={
         <div className="flex flex-wrap gap-3">
-          <a
+          <Link
             href="/marketplace"
             className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
           >
@@ -375,9 +376,9 @@ export default async function DashboardGalleriesPage({
               textKey="dashboard.galleries.actions.marketplace"
               fallback="Marketplace"
             />
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/dashboard/eventi"
             className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
           >
@@ -385,9 +386,9 @@ export default async function DashboardGalleriesPage({
               textKey="dashboard.galleries.actions.events"
               fallback="Eventi"
             />
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/gallerie"
             target="_blank"
             rel="noreferrer"
@@ -397,7 +398,7 @@ export default async function DashboardGalleriesPage({
               textKey="dashboard.galleries.actions.publicList"
               fallback="Elenco pubblico"
             />
-          </a>
+          </Link>
         </div>
       }
     >
@@ -498,7 +499,7 @@ export default async function DashboardGalleriesPage({
           </div>
 
           {!galleryCreateCheck.allowed && (
-            <a
+            <Link
               href="/pricing"
               className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
@@ -506,13 +507,17 @@ export default async function DashboardGalleriesPage({
                 textKey="dashboard.galleries.actions.upgradePlan"
                 fallback="Passa a un piano superiore"
               />
-            </a>
+            </Link>
           )}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        <CreateGalleryForm
+      <div className="grid gap-6 xl:grid-cols-[minmax(17rem,24rem)_minmax(0,1fr)]">
+        <details open={safeGalleries.length === 0} className="museum-dashboard-card min-w-0 self-start rounded-3xl p-2">
+          <summary className="min-h-11 cursor-pointer rounded-2xl px-4 py-3 font-medium text-[var(--museum-ivory)]">
+            <T textKey="dashboard.onboarding.steps.createGallery.title" fallback="Crea una galleria" />
+          </summary>
+          <CreateGalleryForm
           templates={availableTemplates}
           plan={plan}
           currentGalleryCount={safeGalleries.length}
@@ -522,9 +527,10 @@ export default async function DashboardGalleriesPage({
             galleryCreateCheck.reason ||
             `Hai raggiunto il limite di gallerie del piano ${limits.label}.`
           }
-        />
+          />
+        </details>
 
-        <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <div className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -559,6 +565,7 @@ export default async function DashboardGalleriesPage({
                 <a
                   key={filter.status}
                   href={getFilterHref(filter.status)}
+                    aria-current={isActive ? "page" : undefined}
                   className={
                     isActive
                       ? "rounded-full bg-white px-4 py-2 text-sm font-medium text-neutral-950"
@@ -854,7 +861,7 @@ export default async function DashboardGalleriesPage({
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <a
+            <Link
               href="/pricing"
               className="inline-flex rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
             >
@@ -862,9 +869,9 @@ export default async function DashboardGalleriesPage({
                 textKey="dashboard.galleries.lockedTemplates.viewPlans"
                 fallback="Vedi piani e upgrade"
               />
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/marketplace"
               className="inline-flex rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
             >
@@ -872,7 +879,7 @@ export default async function DashboardGalleriesPage({
                 textKey="dashboard.galleries.lockedTemplates.goToMarketplace"
                 fallback="Vai al marketplace"
               />
-            </a>
+            </Link>
           </div>
         </section>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import T from "@/components/i18n/T";
 import { createClient } from "@/lib/supabase/client";
@@ -93,6 +93,7 @@ export default function CreateArtworkForm({
   canUpload,
   limitMessage,
 }: CreateArtworkFormProps) {
+  const formId = useId();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -359,7 +360,8 @@ export default function CreateArtworkForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
+      aria-busy={isLoading}
+      className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6"
     >
       <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
         <T
@@ -451,7 +453,7 @@ export default function CreateArtworkForm({
 
       <div className="mt-6 space-y-4">
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-image"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createArtworkForm.fields.image"
               fallback="Immagine opera"
@@ -459,6 +461,8 @@ export default function CreateArtworkForm({
           </label>
 
           <input
+            id={formId + "-image"}
+            name="image"
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -487,7 +491,7 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-title"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createArtworkForm.fields.title"
               fallback="Titolo"
@@ -495,6 +499,8 @@ export default function CreateArtworkForm({
           </label>
 
           <input
+            id={formId + "-title"}
+            name="title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             disabled={!canUpload || isLoading}
@@ -505,7 +511,7 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-artist"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createArtworkForm.fields.artist"
               fallback="Artista"
@@ -513,6 +519,8 @@ export default function CreateArtworkForm({
           </label>
 
           <input
+            id={formId + "-artist"}
+            name="artist"
             value={artistName}
             onChange={(event) => setArtistName(event.target.value)}
             disabled={!canUpload || isLoading}
@@ -523,7 +531,7 @@ export default function CreateArtworkForm({
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">
+            <label htmlFor={formId + "-year"} className="mb-2 block text-sm text-neutral-300">
               <T
                 textKey="dashboard.createArtworkForm.fields.year"
                 fallback="Anno"
@@ -531,6 +539,8 @@ export default function CreateArtworkForm({
             </label>
 
             <input
+              id={formId + "-year"}
+              name="year"
               value={year}
               onChange={(event) => setYear(event.target.value)}
               disabled={!canUpload || isLoading}
@@ -540,7 +550,7 @@ export default function CreateArtworkForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">
+            <label htmlFor={formId + "-textDimensions"} className="mb-2 block text-sm text-neutral-300">
               <T
                 textKey="dashboard.createArtworkForm.fields.textDimensions"
                 fallback="Dimensioni testuali"
@@ -548,6 +558,8 @@ export default function CreateArtworkForm({
             </label>
 
             <input
+              id={formId + "-textDimensions"}
+              name="textDimensions"
               value={dimensions}
               onChange={(event) => setDimensions(event.target.value)}
               disabled={!canUpload || isLoading}
@@ -574,7 +586,7 @@ export default function CreateArtworkForm({
 
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <label className="mb-2 block text-sm text-neutral-300">
+              <label htmlFor={formId + "-widthCm"} className="mb-2 block text-sm text-neutral-300">
                 <T
                   textKey="dashboard.createArtworkForm.fields.widthCm"
                   fallback="Larghezza cm"
@@ -582,6 +594,8 @@ export default function CreateArtworkForm({
               </label>
 
               <input
+                id={formId + "-widthCm"}
+                name="widthCm"
                 type="number"
                 min="0"
                 step="0.01"
@@ -594,7 +608,7 @@ export default function CreateArtworkForm({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-neutral-300">
+              <label htmlFor={formId + "-heightCm"} className="mb-2 block text-sm text-neutral-300">
                 <T
                   textKey="dashboard.createArtworkForm.fields.heightCm"
                   fallback="Altezza cm"
@@ -602,6 +616,8 @@ export default function CreateArtworkForm({
               </label>
 
               <input
+                id={formId + "-heightCm"}
+                name="heightCm"
                 type="number"
                 min="0"
                 step="0.01"
@@ -614,7 +630,7 @@ export default function CreateArtworkForm({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-neutral-300">
+              <label htmlFor={formId + "-depthCm"} className="mb-2 block text-sm text-neutral-300">
                 <T
                   textKey="dashboard.createArtworkForm.fields.depthCm"
                   fallback="Profondità cm"
@@ -622,6 +638,8 @@ export default function CreateArtworkForm({
               </label>
 
               <input
+                id={formId + "-depthCm"}
+                name="depthCm"
                 type="number"
                 min="0"
                 step="0.01"
@@ -636,7 +654,7 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-technique"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createArtworkForm.fields.technique"
               fallback="Tecnica"
@@ -644,6 +662,8 @@ export default function CreateArtworkForm({
           </label>
 
           <input
+            id={formId + "-technique"}
+            name="technique"
             value={technique}
             onChange={(event) => setTechnique(event.target.value)}
             disabled={!canUpload || isLoading}
@@ -654,7 +674,7 @@ export default function CreateArtworkForm({
 
         <div className="grid gap-4 md:grid-cols-[1fr_120px]">
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">
+            <label htmlFor={formId + "-price"} className="mb-2 block text-sm text-neutral-300">
               <T
                 textKey="dashboard.createArtworkForm.fields.price"
                 fallback="Prezzo"
@@ -662,6 +682,8 @@ export default function CreateArtworkForm({
             </label>
 
             <input
+              id={formId + "-price"}
+              name="price"
               value={price}
               onChange={(event) => setPrice(event.target.value)}
               disabled={!canUpload || isLoading}
@@ -671,7 +693,7 @@ export default function CreateArtworkForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm text-neutral-300">
+            <label htmlFor={formId + "-currency"} className="mb-2 block text-sm text-neutral-300">
               <T
                 textKey="dashboard.createArtworkForm.fields.currency"
                 fallback="Valuta"
@@ -679,6 +701,8 @@ export default function CreateArtworkForm({
             </label>
 
             <input
+              id={formId + "-currency"}
+              name="currency"
               value={currency}
               onChange={(event) => setCurrency(event.target.value.toUpperCase())}
               disabled={!canUpload || isLoading}
@@ -689,7 +713,7 @@ export default function CreateArtworkForm({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-neutral-300">
+          <label htmlFor={formId + "-description"} className="mb-2 block text-sm text-neutral-300">
             <T
               textKey="dashboard.createArtworkForm.fields.description"
               fallback="Descrizione"
@@ -697,6 +721,8 @@ export default function CreateArtworkForm({
           </label>
 
           <textarea
+            id={formId + "-description"}
+            name="description"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             disabled={!canUpload || isLoading}
@@ -761,7 +787,7 @@ export default function CreateArtworkForm({
           )}
         </button>
 
-        {message && <p className="text-sm text-neutral-300">{message}</p>}
+        <p role="status" className={message ? "text-sm text-[var(--museum-ivory)]" : "sr-only"}>{message}</p>
       </div>
     </form>
   );

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import LogoutButton from "@/components/auth/LogoutButton";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import T from "@/components/i18n/T";
 import Link from "next/link";
 import DashboardNotificationCenter from "@/components/dashboard/DashboardNotificationCenter";
 import DashboardMessagesDock from "@/components/dashboard/DashboardMessagesDock";
+import WorkspaceText from "@/components/dashboard/WorkspaceText";
 
 type DashboardShellProps = {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ type DashboardShellProps = {
     | "social"
     | "analytics"
     | "gallerie"
+    | "eventi"
     | "opere"
     | "richieste"
     | "help"
@@ -116,6 +118,14 @@ const navItems: NavItem[] = [
     descriptionFallback: "Archivio opere",
   },
   {
+    labelKey: "dashboard.events.shell.title",
+    labelFallback: "Eventi",
+    href: "/dashboard/eventi",
+    section: "eventi",
+    descriptionKey: "dashboard.events.active.title",
+    descriptionFallback: "Prossimi eventi",
+  },
+  {
     labelKey: "dashboard.shell.creatorNav.analytics.label",
     labelFallback: "Analytics",
     href: "/dashboard/analytics",
@@ -148,6 +158,15 @@ const navItems: NavItem[] = [
     descriptionFallback: "Profilo e piano",
   },
 ];
+
+const navGroups = [
+  { label: "workspace", sections: ["dashboard", "gallerie", "opere", "eventi", "richieste", "analytics"] },
+  { label: "connections", sections: ["social", "premio", "vendite", "acquisti"] },
+  { label: "account", sections: ["account", "help"] },
+] as const satisfies ReadonlyArray<{
+  label: ComponentProps<typeof WorkspaceText>["label"];
+  sections: ReadonlyArray<NonNullable<NavItem["section"]>>;
+}>;
 
 function MenuIcon() {
   return (
@@ -224,6 +243,11 @@ export default function DashboardShell({
     useState(false);
   const [hasLoadedSidebarPreference, setHasLoadedSidebarPreference] =
     useState(false);
+  const mobileMenuButton = useRef<HTMLButtonElement>(null);
+  const mobileCloseButton = useRef<HTMLButtonElement>(null);
+  const desktopMenuButton = useRef<HTMLButtonElement>(null);
+  const desktopCollapseButton = useRef<HTMLButtonElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
@@ -255,21 +279,67 @@ export default function DashboardShell({
   }, [hasLoadedSidebarPreference, isDesktopSidebarCollapsed]);
 
   useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+    if (!isMobileSidebarOpen) return;
+
+    const desktop = window.matchMedia("(min-width: 64rem)");
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    mobileCloseButton.current?.focus();
+
+    function handleViewportChange(event: MediaQueryListEvent) {
+      if (!event.matches) return;
+      setIsMobileSidebarOpen(false);
+      window.requestAnimationFrame(() => {
+        (desktopMenuButton.current ?? desktopCollapseButton.current)?.focus();
+      });
+    }
+
+    function handleMenuKeyboard(event: KeyboardEvent) {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        event.preventDefault();
         setIsMobileSidebarOpen(false);
+        window.requestAnimationFrame(() => mobileMenuButton.current?.focus());
+      }
+      if (event.key !== "Tab" || event.defaultPrevented) return;
+
+      const controls = Array.from(
+        sidebar.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter((element) => element.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls.at(-1);
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
       }
     }
 
-    window.addEventListener("keydown", handleEscape);
+    desktop.addEventListener("change", handleViewportChange);
+    window.addEventListener("keydown", handleMenuKeyboard);
 
     return () => {
-      window.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = originalOverflow;
+      desktop.removeEventListener("change", handleViewportChange);
+      window.removeEventListener("keydown", handleMenuKeyboard);
     };
-  }, []);
+  }, [isMobileSidebarOpen]);
 
   function closeMobileSidebar() {
+    if (!isMobileSidebarOpen) return;
     setIsMobileSidebarOpen(false);
+    window.requestAnimationFrame(() => mobileMenuButton.current?.focus());
+  }
+
+  function changeDesktopSidebar(collapsed: boolean) {
+    setIsDesktopSidebarCollapsed(collapsed);
+    window.requestAnimationFrame(() => {
+      (collapsed ? desktopMenuButton : desktopCollapseButton).current?.focus();
+    });
   }
 
   return (
@@ -278,6 +348,8 @@ export default function DashboardShell({
         <button
           type="button"
           onClick={closeMobileSidebar}
+          tabIndex={-1}
+          aria-hidden="true"
           className="fixed inset-0 z-30 bg-black/65 backdrop-blur-[1px] lg:hidden"
         >
           <span className="sr-only">
@@ -289,28 +361,28 @@ export default function DashboardShell({
         </button>
       )}
 
-      {!isMobileSidebarOpen && (
-        <button
-          type="button"
-          onClick={() => setIsMobileSidebarOpen(true)}
-          aria-controls="dashboard-sidebar"
-          aria-expanded="false"
-          className="fixed left-4 top-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--museum-border)] bg-[var(--museum-black)] text-[var(--museum-ivory)] shadow-lg transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-bronze-light)] lg:hidden"
-        >
-          <MenuIcon />
-          <span className="sr-only">
-            <T
-              textKey="dashboard.shell.sidebar.openMobile"
-              fallback="Apri menu dashboard"
-            />
-          </span>
-        </button>
-      )}
+      <button
+        ref={mobileMenuButton}
+        type="button"
+        onClick={() => setIsMobileSidebarOpen(true)}
+        aria-controls="dashboard-sidebar"
+        aria-expanded={isMobileSidebarOpen}
+        className={`fixed left-4 top-4 z-50 h-11 w-11 items-center justify-center rounded-full border border-[var(--museum-border)] bg-[var(--museum-black)] text-[var(--museum-ivory)] shadow-lg transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-bronze-light)] lg:hidden ${isMobileSidebarOpen ? "hidden" : "inline-flex"}`}
+      >
+        <MenuIcon />
+        <span className="sr-only">
+          <T
+            textKey="dashboard.shell.sidebar.openMobile"
+            fallback="Apri menu dashboard"
+          />
+        </span>
+      </button>
 
       {isDesktopSidebarCollapsed && (
         <button
+          ref={desktopMenuButton}
           type="button"
-          onClick={() => setIsDesktopSidebarCollapsed(false)}
+          onClick={() => changeDesktopSidebar(false)}
           aria-controls="dashboard-sidebar"
           aria-expanded="false"
           className="fixed left-4 top-4 z-50 hidden h-11 w-11 items-center justify-center rounded-full border border-[var(--museum-border)] bg-[var(--museum-black)] text-[var(--museum-ivory)] shadow-lg transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-bronze-light)] lg:inline-flex"
@@ -326,19 +398,24 @@ export default function DashboardShell({
       )}
 
       <aside
+        ref={sidebar}
         id="dashboard-sidebar"
-        className={`museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 shrink-0 flex-col overflow-y-auto px-5 py-6 shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none lg:shadow-none ${
-          isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        role={isMobileSidebarOpen ? "dialog" : undefined}
+        aria-modal={isMobileSidebarOpen ? true : undefined}
+        aria-labelledby="dashboard-sidebar-title"
+        className={`museum-sidebar fixed inset-y-0 left-0 z-40 flex w-72 max-w-[calc(100vw-3rem)] shrink-0 flex-col overflow-y-auto overscroll-contain px-5 py-6 shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none lg:shadow-none ${
+          isMobileSidebarOpen ? "visible translate-x-0" : "invisible -translate-x-full"
         } ${
           isDesktopSidebarCollapsed
-            ? "lg:-translate-x-full"
-            : "lg:translate-x-0"
+            ? "lg:invisible lg:-translate-x-full"
+            : "lg:visible lg:translate-x-0"
         }`}
       >
         <button
+          ref={mobileCloseButton}
           type="button"
           onClick={closeMobileSidebar}
-          className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--museum-border)] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-ivory)] lg:hidden"
+          className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--museum-border)] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-ivory)] lg:hidden"
         >
           <CloseIcon />
           <span className="sr-only">
@@ -350,8 +427,11 @@ export default function DashboardShell({
         </button>
 
         <button
+          ref={desktopCollapseButton}
           type="button"
-          onClick={() => setIsDesktopSidebarCollapsed(true)}
+          onClick={() => changeDesktopSidebar(true)}
+          aria-controls="dashboard-sidebar"
+          aria-expanded={true}
           className="absolute right-4 top-4 hidden h-9 w-9 items-center justify-center rounded-full border border-[var(--museum-border)] text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze-light)] hover:text-[var(--museum-ivory)] lg:inline-flex"
         >
           <CollapseIcon />
@@ -374,7 +454,7 @@ export default function DashboardShell({
             <span className="text-[var(--museum-ivory-soft)]">space</span>
           </Link>
 
-          <p className="mt-3 text-xs uppercase tracking-[0.25em] text-[var(--museum-bronze-light)]">
+          <p id="dashboard-sidebar-title" className="sr-only">
             <T textKey="dashboard.shell.sidebar.account" fallback="Account" />
           </p>
 
@@ -386,40 +466,36 @@ export default function DashboardShell({
           </p>
         </div>
 
-        <nav className="mt-8 space-y-2">
-          {visibleNavItems.map((item) => {
-            const isActive = activeSection === item.section;
+        <nav aria-labelledby="dashboard-sidebar-title" className="mt-7 space-y-5">
+          {navGroups.map((group) => (
+            <div key={group.label} className="space-y-1">
+              <p className="px-3 pb-1 text-xs font-medium text-[var(--museum-stone)]">
+                <WorkspaceText label={group.label} />
+              </p>
+              {group.sections.map((section) => {
+                const item = visibleNavItems.find((link) => link.section === section);
+                if (!item) return null;
+                const isActive = activeSection === item.section;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMobileSidebar}
-                className={
-                  isActive
-                    ? "museum-sidebar-link museum-sidebar-link-active rounded-2xl px-4 py-3 text-sm"
-                    : "museum-sidebar-link rounded-2xl px-4 py-3 text-sm"
-                }
-              >
-                <span className="block text-sm font-medium">
-                  <T textKey={item.labelKey} fallback={item.labelFallback} />
-                </span>
-
-                <span
-                  className={
-                    isActive
-                      ? "mt-1 block text-xs text-[var(--museum-bronze-light)]/75"
-                      : "mt-1 block text-xs text-[var(--museum-stone-muted)]"
-                  }
-                >
-                  <T
-                    textKey={item.descriptionKey}
-                    fallback={item.descriptionFallback}
-                  />
-                </span>
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobileSidebar}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`museum-sidebar-link min-h-11 rounded-xl px-3 py-2.5 text-sm ${isActive ? "museum-sidebar-link-active" : ""}`}
+                  >
+                    <span className="block text-sm font-medium">
+                      <T textKey={item.labelKey} fallback={item.labelFallback} />
+                    </span>
+                    <span className={`mt-1 block text-xs ${isActive ? "text-[var(--museum-bronze-light)]" : "text-[var(--museum-stone)]"}`}>
+                      <T textKey={item.descriptionKey} fallback={item.descriptionFallback} />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="mt-8 flex justify-center">
@@ -466,6 +542,7 @@ export default function DashboardShell({
       </aside>
 
       <div
+        inert={isMobileSidebarOpen || undefined}
         className={`min-h-screen min-w-0 transition-[padding] duration-300 ease-out motion-reduce:transition-none ${
           isDesktopSidebarCollapsed ? "lg:pl-0" : "lg:pl-72"
         }`}
@@ -500,7 +577,7 @@ export default function DashboardShell({
           </div>
         </header>
 
-        <section className="flex-1 px-5 py-8 lg:px-8">
+        <section id="main-content" tabIndex={-1} className="flex-1 scroll-mt-36 px-5 py-8 lg:px-8">
           <div className="mx-auto max-w-7xl">{children}</div>
         </section>
       </div>

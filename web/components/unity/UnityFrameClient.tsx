@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import T from "@/components/i18n/T";
+import PublicUxText from "@/components/public/PublicUxText";
 import GallerySoundtrackPlayer, {
   type GalleryCuratorialAudio,
   type GallerySoundtrack,
@@ -318,12 +320,12 @@ export default function UnityFrameClient({
 
       {!isReady && !errorMessage && (
         <div className="pointer-events-none fixed inset-0 z-30 flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-3xl border border-neutral-800 bg-neutral-950/95 p-7 shadow-2xl">
-            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-neutral-500">
+          <div className="w-full max-w-xl rounded-3xl border border-neutral-800 bg-neutral-950/95 p-5 shadow-2xl sm:p-7">
+            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-neutral-400">
               {getModeLabel(mode)}
             </p>
 
-            <h1 className="text-2xl font-semibold">
+            <h1 id="unity-loading-title" className="text-2xl font-semibold">
               <T
                 textKey="gallery.unityFrame.loading.title"
                 fallback="Caricamento esperienza immersiva"
@@ -335,7 +337,7 @@ export default function UnityFrameClient({
             </p>
 
             <div className="mt-6">
-              <div className="mb-2 flex items-center justify-between text-xs text-neutral-500">
+              <div className="mb-2 flex items-center justify-between gap-2 text-xs text-neutral-400">
                 <span>
                   {hasStartedLoading ? (
                     <T
@@ -352,7 +354,14 @@ export default function UnityFrameClient({
                 <span>{progressPercent}%</span>
               </div>
 
-              <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
+              <div
+                role="progressbar"
+                aria-labelledby="unity-loading-title"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPercent}
+                className="h-2 overflow-hidden rounded-full bg-neutral-800"
+              >
                 <div
                   className="h-full rounded-full bg-white transition-all duration-300"
                   style={{ width: `${progressPercent}%` }}
@@ -360,7 +369,7 @@ export default function UnityFrameClient({
               </div>
             </div>
 
-            <p className="mt-4 text-xs leading-5 text-neutral-500">
+            <p className="mt-4 text-xs leading-5 text-neutral-400">
               {getModeControls(mode)}
             </p>
 
@@ -373,16 +382,13 @@ export default function UnityFrameClient({
               </div>
             )}
 
-            <p className="mt-5 break-all text-[11px] leading-5 text-neutral-600">
-              GalleryId: {galleryId} · Mode: {mode}
-            </p>
           </div>
         </div>
       )}
 
       {errorMessage && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/90 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-3xl border border-red-900 bg-red-950/30 p-7 shadow-2xl">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm sm:p-6">
+          <div className="max-h-full w-full max-w-xl overflow-y-auto rounded-3xl border border-red-900 bg-red-950/30 p-5 shadow-2xl sm:p-7">
             <p className="mb-3 text-xs uppercase tracking-[0.28em] text-red-300/70">
               <T
                 textKey="gallery.unityFrame.error.label"
@@ -397,10 +403,6 @@ export default function UnityFrameClient({
               />
             </h1>
 
-            <p className="mt-3 text-sm leading-6 text-red-100/80">
-              {errorMessage}
-            </p>
-
             <div className="mt-5 rounded-2xl border border-neutral-800 bg-black/30 p-4 text-sm leading-6 text-neutral-300">
               <T
                 textKey="gallery.unityFrame.error.instructions"
@@ -412,7 +414,7 @@ export default function UnityFrameClient({
               <button
                 type="button"
                 onClick={reloadFrame}
-                className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+                className="inline-flex min-h-11 items-center rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
               >
                 <T
                   textKey="gallery.unityFrame.actions.reload"
@@ -420,20 +422,26 @@ export default function UnityFrameClient({
                 />
               </button>
 
-              <a
+              <Link
                 href="/gallerie"
-                className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
+                target="_top"
+                prefetch={false}
+                className="inline-flex min-h-11 items-center rounded-full border border-neutral-600 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
               >
                 <T
                   textKey="gallery.unityFrame.actions.backToGalleries"
                   fallback="Torna alle gallerie"
                 />
-              </a>
+              </Link>
             </div>
 
-            <p className="mt-5 break-all text-[11px] leading-5 text-neutral-500">
-              GalleryId: {galleryId} · Mode: {mode}
-            </p>
+            <details className="mt-4 text-xs leading-5 text-neutral-400">
+              <summary className="cursor-pointer py-2">
+                <PublicUxText id="viewerDetails" />
+              </summary>
+              <p className="[overflow-wrap:anywhere]">{errorMessage}</p>
+              <p className="mt-1 [overflow-wrap:anywhere]">GalleryId: {galleryId} · Mode: {mode}</p>
+            </details>
           </div>
         </div>
       )}

@@ -35,16 +35,17 @@ body {
     --museum-surface: #171511;
     --museum-surface-elevated: #1f1c17;
     --museum-border: #3a352d;
+    --museum-control-border: #817463;
     --museum-border-soft: rgba(216, 205, 187, 0.12);
     --museum-ivory: #f3ede2;
     --museum-ivory-soft: #d8cdbb;
     --museum-stone: #a59d90;
-    --museum-stone-muted: #6f675b;
+    --museum-stone-muted: #9b8f7e;
     --museum-bronze: #a87945;
     --museum-bronze-light: #c5975e;
     --museum-bronze-dark: #5f4227;
     --museum-success: #7faf7b;
-    --museum-danger: #b65b4e;
+    --museum-danger: #ed9a8b;
     --museum-warning: #c99b4a;
     --museum-radius-sm: 12px;
     --museum-radius-md: 18px;
@@ -66,6 +67,36 @@ body {
 ::selection {
     background: rgba(168, 121, 69, 0.45);
     color: var(--museum-ivory);
+}
+
+:where(a, button, input, select, textarea, summary, [role="button"]):focus-visible {
+    outline: 2px solid var(--museum-bronze-light);
+    outline-offset: 3px;
+}
+
+.museum-skip-link {
+    position: fixed;
+    z-index: 200;
+    top: 0.75rem;
+    left: 0.75rem;
+    max-width: calc(100% - 1.5rem);
+    padding: 0.75rem 1rem;
+    border-radius: var(--museum-radius-sm);
+    background: var(--museum-ivory);
+    color: var(--museum-black);
+    font-weight: 600;
+    transform: translateY(calc(-100% - 1rem));
+}
+
+.museum-skip-link:focus {
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .museum-link, .museum-button-primary, .museum-button-secondary,
+    .museum-sidebar-link, .museum-input { transition: none; }
+    .museum-button-primary:hover, .museum-button-secondary:hover { transform: none; }
 }
 
 .museum-page {
@@ -147,7 +178,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--museum-bronze-dark);
+    border: 1px solid var(--museum-control-border);
     background: transparent;
     color: var(--museum-ivory-soft);
     font-size: 0.75rem;
@@ -273,7 +304,7 @@ body {
 }
 
 .museum-input {
-    border: 1px solid var(--museum-border);
+    border: 1px solid var(--museum-control-border);
     background: rgba(8, 7, 5, 0.68);
     color: var(--museum-ivory);
     outline: none;
@@ -287,6 +318,11 @@ body {
     .museum-input:focus {
         border-color: var(--museum-bronze);
         box-shadow: 0 0 0 3px rgba(168, 121, 69, 0.14);
+    }
+
+    .museum-input:focus-visible {
+        outline: 2px solid var(--museum-bronze-light);
+        outline-offset: 2px;
     }
 
 .museum-table {

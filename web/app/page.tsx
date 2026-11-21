@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
 import { BlackWeekBanner, BlackWeekPlanPrice } from "@/components/billing/BlackWeek";
 import MuseumHeader from "@/components/site/MuseumHeader";
+import PublicUxText from "@/components/public/PublicUxText";
 import LegalFooter from "@/components/legal/LegalFooter";
 import T from "@/components/i18n/T";
 import {
@@ -54,7 +55,7 @@ const heroGallery = {
   subtitleKey: "home.hero.gallery.subtitle",
   subtitleFallback: "Template immersivo in evidenza",
   imageUrl: "/home/hero-gallery.jpg",
-  href: "/gallerie",
+  href: "/marketplace",
 };
 
 const featuredGalleries = [
@@ -64,10 +65,9 @@ const featuredGalleries = [
     titleFallback: "Galleria Barattolo",
     locationKey: "home.featured.galleryBarattolo.location",
     locationFallback: "Roma, Italia",
-    worksKey: "home.featured.galleryBarattolo.works",
-    worksFallback: "2 opere",
     imageUrl: "/home/featured-1.jpg",
-    href: "/gallerie",
+    href: "/gallerie/galleria-barattolo",
+    publishedGallery: true,
   },
   {
     initials: "DL",
@@ -75,10 +75,9 @@ const featuredGalleries = [
     titleFallback: "Dark Little Gallery",
     locationKey: "home.featured.darkLittleGallery.location",
     locationFallback: "Spazio virtuale",
-    worksKey: "home.featured.darkLittleGallery.works",
-    worksFallback: "18 opere",
     imageUrl: "/home/featured-2.jpg",
-    href: "/gallerie",
+    href: "/marketplace",
+    publishedGallery: false,
   },
   {
     initials: "LG",
@@ -86,10 +85,9 @@ const featuredGalleries = [
     titleFallback: "Light Gallery",
     locationKey: "home.featured.lightGallery.location",
     locationFallback: "White cube digitale",
-    worksKey: "home.featured.lightGallery.works",
-    worksFallback: "12 opere",
     imageUrl: "/home/featured-3.jpg",
-    href: "/gallerie",
+    href: "/marketplace",
+    publishedGallery: false,
   },
   {
     initials: "MR",
@@ -97,10 +95,9 @@ const featuredGalleries = [
     titleFallback: "Museum Room",
     locationKey: "home.featured.museumRoom.location",
     locationFallback: "Ambiente curatoriale",
-    worksKey: "home.featured.museumRoom.works",
-    worksFallback: "24 opere",
     imageUrl: "/home/featured-4.jpg",
-    href: "/gallerie",
+    href: "/marketplace",
+    publishedGallery: false,
   },
 ];
 
@@ -283,7 +280,7 @@ export default async function HomePage() {
               <T textKey="home.hero.label" fallback="L’arte senza confini" />
             </p>
 
-            <h1 className="museum-title mt-6 max-w-2xl text-6xl text-[var(--museum-ivory)] md:text-7xl lg:text-8xl">
+            <h1 className="museum-title mt-6 max-w-2xl text-5xl text-[var(--museum-ivory)] sm:text-6xl md:text-7xl lg:text-8xl">
               <T
                 textKey="home.hero.title"
                 fallback="L’arte merita uno spazio senza confini."
@@ -317,6 +314,10 @@ export default async function HomePage() {
                   fallback="Crea la tua galleria"
                 />
               </Link>
+
+              <Link href="/profili" className="museum-button-secondary px-7 py-3.5">
+                <T textKey="events.header.exploreProfiles" fallback="Esplora profili" />
+              </Link>
             </div>
 
             <div className="mt-11 grid grid-cols-2 gap-6 border-t border-[var(--museum-border)] pt-7 md:grid-cols-4">
@@ -341,7 +342,7 @@ export default async function HomePage() {
 
           <Link
             href={heroGallery.href}
-            className="group relative min-h-[520px] overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-charcoal)] shadow-[var(--museum-shadow-soft)]"
+            className="group relative min-h-[18rem] overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-charcoal)] shadow-[var(--museum-shadow-soft)] sm:min-h-[25rem] lg:min-h-[32rem]"
           >
             {heroGallery.imageUrl ? (
               <>
@@ -362,27 +363,7 @@ export default async function HomePage() {
               </>
             )}
 
-            <div className="absolute right-10 top-10 max-w-[12rem]">
-              <p className="museum-label leading-7">
-                <T
-                  textKey="home.hero.experience.immersiveSpaces"
-                  fallback="Spazi immersivi"
-                />
-                <br />
-                <T
-                  textKey="home.hero.experience.realExperiences"
-                  fallback="Esperienze reali"
-                />
-                <br />
-                <T
-                  textKey="home.hero.experience.globalConnections"
-                  fallback="Connessioni globali"
-                />
-              </p>
-              <div className="mt-5 h-px w-12 bg-[var(--museum-bronze)]" />
-            </div>
-
-            <div className="absolute bottom-8 left-8 right-8 rounded-3xl border border-[rgba(216,205,187,0.16)] bg-[rgba(8,7,5,0.68)] p-5 backdrop-blur-md">
+            <div className="absolute inset-x-4 bottom-4 rounded-3xl border border-[rgba(216,205,187,0.16)] bg-[rgba(8,7,5,0.78)] p-5 backdrop-blur-md sm:inset-x-8 sm:bottom-8">
               <p className="museum-label">
                 <T
                   textKey={heroGallery.subtitleKey}
@@ -398,10 +379,7 @@ export default async function HomePage() {
               </h2>
 
               <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--museum-bronze-light)]">
-                <T
-                  textKey="home.hero.gallery.visit"
-                  fallback="Visita la galleria →"
-                />
+                <PublicUxText id="exploreTemplates" /> <span aria-hidden="true">→</span>
               </p>
             </div>
           </Link>
@@ -411,12 +389,9 @@ export default async function HomePage() {
       <section className="border-b border-[var(--museum-border)]">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.45fr_0.9fr] md:px-8">
           <div>
-            <div className="mb-5 flex items-center justify-between">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <h2 className="museum-label">
-                <T
-                  textKey="home.featured.title"
-                  fallback="Gallerie in evidenza"
-                />
+                <PublicUxText id="featured" />
               </h2>
 
               <Link
@@ -450,18 +425,20 @@ export default async function HomePage() {
                       />
                     </h3>
 
-                    <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                      <T
-                        textKey={gallery.locationKey}
-                        fallback={gallery.locationFallback}
-                      />
+                    <p className="mt-2 text-xs text-[var(--museum-stone)]">
+                      {gallery.publishedGallery ? (
+                        <T textKey={gallery.locationKey} fallback={gallery.locationFallback} />
+                      ) : (
+                        <PublicUxText id="templatePreview" />
+                      )}
                     </p>
 
-                    <p className="mt-4 text-right text-xs text-[var(--museum-stone-muted)]">
-                      <T
-                        textKey={gallery.worksKey}
-                        fallback={gallery.worksFallback}
-                      />
+                    <p className="mt-4 text-xs font-medium text-[var(--museum-bronze-light)]">
+                      {gallery.publishedGallery ? (
+                        <T textKey="galleries.actions.openGallery" fallback="Apri galleria" />
+                      ) : (
+                        <PublicUxText id="exploreTemplates" />
+                      )} <span aria-hidden="true">→</span>
                     </p>
                   </div>
                 </Link>

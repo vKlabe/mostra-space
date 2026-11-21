@@ -3,6 +3,8 @@
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import T from "@/components/i18n/T";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { useDialogFocus } from "@/components/system/useDialogFocus";
 
 const DISMISS_SESSION_KEY = "mostraspace_google_password_prompt_dismissed";
 const CREATOR_UPGRADE_PATH = "/account/upgrade-gallerist";
@@ -17,6 +19,7 @@ type AccountAuthStatus = {
 
 export default function GoogleAccountCompletionGate() {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const [checking, setChecking] = useState(true);
   const [needsLocalPassword, setNeedsLocalPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -26,6 +29,7 @@ export default function GoogleAccountCompletionGate() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | null>(null);
   const [successMessage, setSuccessMessage] = useState<ReactNode | null>(null);
+  const dialogRef = useDialogFocus<HTMLDivElement>(!checking && needsLocalPassword && open);
 
   const isMandatory = pathname === CREATOR_UPGRADE_PATH;
   const shouldIgnorePath = useMemo(() => {
@@ -222,7 +226,7 @@ export default function GoogleAccountCompletionGate() {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-6 shadow-2xl md:p-8">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="google-completion-title" aria-describedby="google-completion-description" className="max-h-[calc(100dvh-4rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-6 shadow-2xl md:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="museum-label">
@@ -232,7 +236,7 @@ export default function GoogleAccountCompletionGate() {
               />
             </p>
 
-            <h2 className="mt-4 font-editorial text-4xl font-medium text-[var(--museum-ivory)] md:text-5xl">
+            <h2 id="google-completion-title" className="mt-4 font-editorial text-4xl font-medium text-[var(--museum-ivory)] md:text-5xl">
               {isMandatory ? (
                 <T
                   textKey="auth.googleCompletion.mandatoryTitle"
@@ -252,14 +256,14 @@ export default function GoogleAccountCompletionGate() {
               type="button"
               onClick={dismissForNow}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--museum-border)] text-xl text-[var(--museum-stone)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-ivory)]"
-              aria-label="×"
+              aria-label={t("ux.dialog.close", "Chiudi finestra")}
             >
               ×
             </button>
           )}
         </div>
 
-        <p className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
+        <p id="google-completion-description" className="mt-5 text-sm leading-7 text-[var(--museum-stone)]">
           {isMandatory ? (
             <T
               textKey="auth.googleCompletion.mandatoryDescription"
@@ -286,7 +290,7 @@ export default function GoogleAccountCompletionGate() {
 
         <form onSubmit={handleSetPassword} className="mt-6 space-y-4">
           <div>
-            <label className="block text-sm text-[var(--museum-ivory-soft)]">
+            <label htmlFor="complete-account-password" className="block text-sm text-[var(--museum-ivory-soft)]">
               <T
                 textKey="auth.googleCompletion.password"
                 fallback="Password mostra.space"
@@ -294,6 +298,8 @@ export default function GoogleAccountCompletionGate() {
             </label>
 
             <input
+              id="complete-account-password"
+              name="password"
               type="password"
               minLength={6}
               required
@@ -307,7 +313,7 @@ export default function GoogleAccountCompletionGate() {
           </div>
 
           <div>
-            <label className="block text-sm text-[var(--museum-ivory-soft)]">
+            <label htmlFor="complete-account-confirm" className="block text-sm text-[var(--museum-ivory-soft)]">
               <T
                 textKey="auth.googleCompletion.confirmPassword"
                 fallback="Conferma password"
@@ -315,6 +321,8 @@ export default function GoogleAccountCompletionGate() {
             </label>
 
             <input
+              id="complete-account-confirm"
+              name="confirmPassword"
               type="password"
               minLength={6}
               required
@@ -328,13 +336,13 @@ export default function GoogleAccountCompletionGate() {
           </div>
 
           {errorMessage && (
-            <div className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
+            <div role="alert" className="rounded-2xl border border-[rgba(182,91,78,0.45)] bg-[rgba(182,91,78,0.08)] p-4 text-sm text-[var(--museum-danger)]">
               {errorMessage}
             </div>
           )}
 
           {successMessage && (
-            <div className="rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] p-4 text-sm text-[var(--museum-success)]">
+            <div role="status" className="rounded-2xl border border-[rgba(127,175,123,0.45)] bg-[rgba(127,175,123,0.08)] p-4 text-sm text-[var(--museum-success)]">
               {successMessage}
             </div>
           )}

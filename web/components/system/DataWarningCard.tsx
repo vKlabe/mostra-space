@@ -5,27 +5,28 @@ type DataWarningCardProps = {
 };
 
 export default function DataWarningCard({
-  title = "Dati incompleti",
+  title,
   message,
   details,
 }: DataWarningCardProps) {
   return (
-    <div className="rounded-3xl border border-yellow-900 bg-yellow-950/20 p-6 text-neutral-50">
-      <p className="mb-3 text-xs uppercase tracking-[0.25em] text-yellow-300">
-        Attenzione
+    <section role="status" className="museum-card rounded-[var(--museum-radius-lg)] border-l-2 border-l-[var(--museum-warning)] p-5 sm:p-7">
+      <p className="museum-label mb-3 text-[var(--museum-warning)]">
+        <T textKey="ux.state.warning" fallback="Attenzione" />
       </p>
 
-      <h2 className="text-xl font-medium text-yellow-50">{title}</h2>
+      <h2 className="font-editorial text-2xl font-medium">{title ?? <T textKey="ux.state.warningTitle" fallback="Alcuni dati sono incompleti" />}</h2>
 
-      <p className="mt-3 max-w-3xl text-sm leading-7 text-yellow-100/80">
+      <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
         {message}
       </p>
 
       {details && (
-        <p className="mt-4 break-all rounded-2xl border border-yellow-900/70 bg-black/20 p-4 text-xs leading-6 text-yellow-100/60">
+        <p className="mt-4 break-all rounded-xl border border-[var(--museum-border)] bg-black/20 p-4 text-xs leading-6 text-[var(--museum-stone)]">
           {details}
         </p>
       )}
-    </div>
+    </section>
   );
 }
+import T from "@/components/i18n/T";

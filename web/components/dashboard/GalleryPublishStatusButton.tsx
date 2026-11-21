@@ -327,7 +327,7 @@ export default function GalleryPublishStatusButton({
       )}
 
       {message && (
-        <p className={`mt-4 ${getMessageClass(messageType)}`}>{message}</p>
+        <p role={messageType === "error" ? "alert" : "status"} className={`mt-4 ${getMessageClass(messageType)}`}>{message}</p>
       )}
 
       {validation && (

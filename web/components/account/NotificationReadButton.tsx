@@ -53,7 +53,7 @@ export default function NotificationReadButton({
 
   if (isRead) {
     return (
-      <span className="rounded-full border border-neutral-800 px-4 py-2 text-xs text-neutral-500">
+      <span className="rounded-full border border-[var(--museum-border)] px-4 py-2 text-xs text-[var(--museum-stone)]">
         <T
           textKey="account.notifications.status.read"
           fallback="Letta"
@@ -68,7 +68,8 @@ export default function NotificationReadButton({
         type="button"
         disabled={isPending}
         onClick={markAsRead}
-        className="rounded-full border border-neutral-700 px-4 py-2 text-xs font-medium text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60"
+        aria-busy={isPending}
+        className="museum-button-secondary min-h-11 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? (
           <T
@@ -83,7 +84,7 @@ export default function NotificationReadButton({
         )}
       </button>
 
-      {error && <p className="text-xs text-red-300">{error}</p>}
+      {error && <p role="status" className="text-xs text-red-300">{error}</p>}
     </div>
   );
 }

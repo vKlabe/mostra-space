@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { usePwaInstall } from "@/components/pwa/PwaInstallProvider";
+import { useDialogFocus } from "@/components/system/useDialogFocus";
 import type { Messages } from "@/lib/i18n/dictionaries";
 import type { PushPreferences } from "@/lib/pwa/pushValidation";
 import {
@@ -262,6 +263,11 @@ function BellIcon() {
 
 export default function PwaPushActivationPrompt() {
   const pathname = usePathname();
+  if (pathname === "/unity-frame") return null;
+  return <PwaPushPrompt pathname={pathname} />;
+}
+
+function PwaPushPrompt({ pathname }: { pathname: string }) {
   const { locale, t } = useLanguage();
   const { isIos, isReady, isStandalone } = usePwaInstall();
   const currentUserRef = useRef<string | null>(null);
@@ -272,6 +278,7 @@ export default function PwaPushActivationPrompt() {
   const [isActivating, setIsActivating] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>("idle");
   const promptUserId = activationContext?.userId || userId;
+  const dialogRef = useDialogFocus(isOpen && activationContext !== null && activationContext.userId === userId);
 
   const translate = (key: keyof Messages, fallback: string) =>
     t(key, fallback);
@@ -540,6 +547,8 @@ export default function PwaPushActivationPrompt() {
       }}
     >
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pwa-push-prompt-title"

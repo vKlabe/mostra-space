@@ -1,3 +1,5 @@
+import Link from "next/link";
+import WorkspaceText from "@/components/dashboard/WorkspaceText";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -698,7 +700,7 @@ export default async function DashboardGalleryDetailPage({
           )}
         </div>
 
-        <a
+        <Link
           href="/dashboard/gallerie"
           className="mt-8 inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -706,7 +708,7 @@ export default async function DashboardGalleryDetailPage({
             textKey="dashboard.galleryDetail.actions.backToGalleries"
             fallback="Torna alle gallerie"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -730,7 +732,7 @@ export default async function DashboardGalleryDetailPage({
   }
   activeSection="gallerie"
 >
-        <a
+        <Link
           href="/dashboard/gallerie"
           className="inline-flex rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
         >
@@ -738,7 +740,7 @@ export default async function DashboardGalleryDetailPage({
             textKey="dashboard.galleryDetail.actions.backToGalleries"
             fallback="Torna alle gallerie"
           />
-        </a>
+        </Link>
       </DashboardShell>
     );
   }
@@ -952,6 +954,23 @@ export default async function DashboardGalleryDetailPage({
       actions={
         <>
           <a
+            href={gallery.status === "published" ? "#condividi-galleria" : publishValidation.canPublish ? "#pubblicazione" : "#prepara-galleria"}
+            className="museum-button-primary min-h-11 px-5 py-2"
+          >
+            {gallery.status === "published" ? (
+              <WorkspaceText label="shareGallery" />
+            ) : publishValidation.canPublish ? (
+              <T textKey="dashboard.galleryDetail.actions.publication" fallback="Pubblicazione" />
+            ) : (
+              <T textKey="dashboard.galleryDetail.onboarding.title" fallback="Preparazione pubblicazione" />
+            )}
+          </a>
+          <details className="relative w-full sm:w-auto">
+            <summary className="museum-button-secondary min-h-11 cursor-pointer px-5 py-2">
+              <WorkspaceText label="galleryTools" />
+            </summary>
+            <div className="museum-dashboard-card mt-2 flex max-w-md flex-wrap gap-2 rounded-2xl p-3 sm:absolute sm:right-0 sm:z-20 sm:w-80">
+          <Link
             href="/dashboard/gallerie"
             className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
           >
@@ -959,7 +978,7 @@ export default async function DashboardGalleryDetailPage({
               textKey="dashboard.galleryDetail.actions.allGalleries"
               fallback="Tutte le gallerie"
             />
-          </a>
+          </Link>
 
           <a
             href={`/dashboard/gallerie/${gallery.id}/catalogo`}
@@ -971,7 +990,7 @@ export default async function DashboardGalleryDetailPage({
             />
           </a>
 
-          <a
+          <Link
             href="/marketplace"
             className="rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500"
           >
@@ -979,7 +998,7 @@ export default async function DashboardGalleryDetailPage({
               textKey="dashboard.galleryDetail.actions.marketplace"
               fallback="Marketplace"
             />
-          </a>
+          </Link>
 
           <a
             href={`/dashboard/gallerie-editor/${gallery.id}`}
@@ -1016,11 +1035,13 @@ export default async function DashboardGalleryDetailPage({
               />
             </a>
           )}
+            </div>
+          </details>
         </>
       }
     >
-      <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+      <section id="prepara-galleria" className="museum-dashboard-card scroll-mt-48 rounded-3xl p-5 sm:p-7">
+        <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
               <T
@@ -1129,7 +1150,10 @@ export default async function DashboardGalleryDetailPage({
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <p className="mt-4 text-sm leading-6 text-[var(--museum-stone)]">
+              <WorkspaceText label="placementGuide" />
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
               <a
                 href="#opere-galleria"
                 className="rounded-full border border-neutral-700 px-5 py-2 text-sm text-neutral-100 transition hover:border-neutral-400"
@@ -1216,10 +1240,23 @@ export default async function DashboardGalleryDetailPage({
         </div>
       </section>
 
+      <div id="pubblicazione" className="mt-6 scroll-mt-48">
+        <GalleryPublishStatusButton
+          galleryId={gallery.id}
+          gallerySlug={gallery.slug}
+          currentStatus={gallery.status}
+        />
+      </div>
+
+      <GalleryShareEmbedSection
+        publicUrl={absoluteUrl(`/gallerie/${encodeURIComponent(gallery.slug)}`)}
+        published={gallery.status === "published"}
+      />
+
       <div className="mt-6 grid gap-5 md:grid-cols-2">
         <article
           id="dati-galleria"
-          className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
+          className="scroll-mt-48 rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
         >
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-2xl font-medium">
@@ -1516,13 +1553,7 @@ export default async function DashboardGalleryDetailPage({
         />
       </div>
 
-      <div id="pubblicazione" className="mt-6">
-        <GalleryPublishStatusButton
-          galleryId={gallery.id}
-          gallerySlug={gallery.slug}
-          currentStatus={gallery.status}
-        />
-      </div>
+
 
       <div className="mt-6">
         <EditGalleryDetailsForm
@@ -1553,7 +1584,7 @@ export default async function DashboardGalleryDetailPage({
         />
       </div>
 
-      <div id="cover-galleria" className="mt-6">
+      <div id="cover-galleria" className="mt-6 scroll-mt-48">
         <GalleryCoverUploadForm
           galleryId={gallery.id}
           ownerId={gallery.owner_id}
@@ -1565,7 +1596,7 @@ export default async function DashboardGalleryDetailPage({
 
       <div
         id="opere-galleria"
-        className="mt-6 grid gap-6 lg:grid-cols-[420px_1fr]"
+        className="mt-6 grid scroll-mt-48 gap-6 xl:grid-cols-[minmax(17rem,24rem)_minmax(0,1fr)]"
       >
         <AddArtworkToGalleryForm
           galleryId={gallery.id}
@@ -1854,10 +1885,7 @@ export default async function DashboardGalleryDetailPage({
         </div>
       </div>
 
-      <GalleryShareEmbedSection
-        publicUrl={absoluteUrl(`/gallerie/${encodeURIComponent(gallery.slug)}`)}
-        published={gallery.status === "published"}
-      />
+
 
       {isAdmin && (
         <div className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">

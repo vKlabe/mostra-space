@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useWorkspaceCopy } from "@/components/dashboard/WorkspaceText";
 
 type GalleryShareEmbedSectionProps = {
   publicUrl: string;
@@ -11,6 +12,7 @@ export default function GalleryShareEmbedSection({
   publicUrl,
   published,
 }: GalleryShareEmbedSectionProps) {
+  const text = useWorkspaceCopy();
   const [copied, setCopied] = useState<string | null>(null);
   const [copyError, setCopyError] = useState(false);
 
@@ -35,41 +37,36 @@ export default function GalleryShareEmbedSection({
   const items = [
     {
       id: "public",
-      label: "Link pubblico della galleria",
-      explanation: "Per condividere la pagina completa della galleria.",
+      label: text("sharePublicLink"),
+      explanation: text("sharePublicDetail"),
       value: publicUrl,
       multiline: false,
     },
     {
       id: "viewer",
-      label: "Link alla sezione 3D",
-      explanation: "Apre la pagina pubblica direttamente all'altezza del viewer.",
+      label: text("shareViewerLink"),
+      explanation: text("shareViewerDetail"),
       value: viewerUrl,
       multiline: false,
     },
     {
       id: "iframe",
-      label: "Codice HTML iframe",
-      explanation:
-        "Da incollare in un blocco HTML del tuo sito. Incorpora la pagina pubblica, posizionandola sulla sezione 3D.",
+      label: text("shareEmbed"),
+      explanation: text("shareEmbedDetail"),
       value: iframeCode,
       multiline: true,
     },
   ] as const;
 
   return (
-    <section className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
-      <p className="mb-3 text-xs uppercase tracking-[0.25em] text-neutral-500">
-        Condivisione e incorporamento
-      </p>
-      <h2 className="text-2xl font-medium">Porta la tua galleria sul tuo sito web</h2>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-400">
-        Copia il link per condividerla oppure il codice HTML per inserirla nel tuo sito.
-      </p>
+    <section id="condividi-galleria" aria-labelledby="gallery-sharing-title" className="museum-dashboard-card mt-6 scroll-mt-48 rounded-3xl p-5 sm:p-6">
+      <h2 id="gallery-sharing-title" className="font-editorial text-3xl text-[var(--museum-ivory)]">
+        {text("shareGallery")}
+      </h2>
 
       {!published ? (
         <p className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-sm text-neutral-400">
-          Pubblica la galleria per ottenere i link e il codice di incorporamento.
+          {text("shareUnavailable")}
         </p>
       ) : (
         <div className="mt-6 grid gap-4">
@@ -84,7 +81,7 @@ export default function GalleryShareEmbedSection({
               >
                 {item.label}
               </label>
-              <p className="mt-1 text-xs leading-5 text-neutral-400">
+              <p id={`gallery-share-detail-${item.id}`} className="mt-1 text-xs leading-5 text-neutral-400">
                 {item.explanation}
               </p>
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -96,7 +93,6 @@ export default function GalleryShareEmbedSection({
                     value={item.value}
                     onClick={() => void copyValue(item.id, item.value)}
                     className="min-w-0 w-full flex-1 resize-y rounded-xl border border-neutral-700 bg-neutral-900 p-3 font-mono text-xs leading-5 text-neutral-200 outline-none focus:border-amber-700"
-                    aria-label={`${item.label}: clicca per copiare`}
                   />
                 ) : (
                   <input
@@ -105,29 +101,25 @@ export default function GalleryShareEmbedSection({
                     value={item.value}
                     onClick={() => void copyValue(item.id, item.value)}
                     className="min-w-0 w-full flex-1 rounded-xl border border-neutral-700 bg-neutral-900 p-3 text-sm text-neutral-200 outline-none focus:border-amber-700"
-                    aria-label={`${item.label}: clicca per copiare`}
                   />
                 )}
                 <button
                   type="button"
                   disabled={!item.value}
                   onClick={() => void copyValue(item.id, item.value)}
-                  className="shrink-0 rounded-full border border-amber-800 px-5 py-2 text-sm text-amber-200 transition hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-describedby={`gallery-share-detail-${item.id}`}
+                  className={`min-h-11 shrink-0 px-5 py-2 text-sm ${item.id === "public" ? "museum-button-primary" : "museum-button-secondary"}`}
                 >
-                  {copied === item.id ? "Copiato!" : item.multiline ? "Copia codice" : "Copia link"}
+                  <span aria-live="polite">{copied === item.id ? text("shareCopied") : text(item.multiline ? "shareCopyCode" : "shareCopyLink")}</span>
                 </button>
               </div>
             </div>
           ))}
           {copyError && (
             <p role="alert" className="text-sm text-amber-200">
-              Copia automatica non disponibile: seleziona il testo e copialo manualmente.
+              {text("shareCopyError")}
             </p>
           )}
-          <p className="text-xs leading-5 text-neutral-500">
-            L&apos;iframe mostra la pagina pubblica esistente, non un viewer separato.
-            L&apos;incorporamento in siti esterni dipende anche dalle impostazioni di sicurezza del sito.
-          </p>
         </div>
       )}
     </section>

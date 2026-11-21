@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import T from "@/components/i18n/T";
+import WorkspaceText from "@/components/dashboard/WorkspaceText";
 import { getArtworkThumbnailUrl } from "@/lib/artworks/imageUrls";
 
 type ArtworkInventoryItem = {
@@ -266,6 +267,7 @@ export default function ArtworkInventoryTable({
 
       {message && (
         <div
+          role={message.type === "success" ? "status" : "alert"}
           className={
             message.type === "success"
               ? "mb-5 rounded-2xl border border-emerald-900 bg-emerald-950/35 px-4 py-3 text-sm text-emerald-200"
@@ -276,73 +278,10 @@ export default function ArtworkInventoryTable({
         </div>
       )}
 
-      <div className="rounded-[1.5rem] border border-[var(--museum-border-soft)]">
-        <div className="border-b border-[var(--museum-border-soft)] bg-black/25 px-4 py-3 text-xs text-[var(--museum-stone-muted)]">
-          <T
-            textKey="dashboard.artworkInventory.table.scrollDescription"
-            fallback="Ogni riga ha il suo scorrimento orizzontale: così puoi lavorare su una singola opera senza perdere il riferimento visivo."
-          />
-        </div>
-
-        <div className="overflow-x-auto border-b border-[var(--museum-border-soft)] bg-black/30">
-          <div className="grid min-w-[1180px] grid-cols-[72px_220px_180px_100px_250px_150px_110px_120px_170px] items-center gap-4 px-4 py-4 text-[0.68rem] uppercase tracking-[0.22em] text-[var(--museum-bronze)]">
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.artwork"
-                fallback="Opera"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.title"
-                fallback="Titolo"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.artist"
-                fallback="Artista"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.year"
-                fallback="Anno"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.technique"
-                fallback="Tecnica"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.price"
-                fallback="Prezzo"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.currency"
-                fallback="Valuta"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.forSale"
-                fallback="Vendita"
-              />
-            </div>
-            <div className="font-semibold">
-              <T
-                textKey="dashboard.artworkInventory.table.actions"
-                fallback="Azioni"
-              />
-            </div>
-          </div>
-        </div>
-
+      <div className="rounded-2xl border border-[var(--museum-border-soft)]">
+        <p className="border-b border-[var(--museum-border-soft)] bg-black/25 px-4 py-3 text-sm text-[var(--museum-stone)]">
+          <WorkspaceText label="inventoryLayout" />
+        </p>
         <div>
           {artworks.map((artwork) => {
             const draft = drafts[artwork.id] || toDraft(artwork);
@@ -353,18 +292,13 @@ export default function ArtworkInventoryTable({
               isPending;
 
             return (
-              <div
-                key={artwork.id}
-                className="border-t border-[var(--museum-border-soft)] first:border-t-0"
-              >
-                <div className="overflow-x-auto [scrollbar-gutter:stable]">
-                  <div className="grid min-w-[1180px] grid-cols-[72px_220px_180px_100px_250px_150px_110px_120px_170px] items-start gap-4 px-4 py-5">
-                    <div>
-                      <div className="h-16 w-16 overflow-hidden rounded-2xl border border-[var(--museum-border-soft)] bg-black">
+              <details key={artwork.id} className="group border-t border-[var(--museum-border-soft)] first:border-t-0" aria-busy={isBusy || undefined}>
+                <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 rounded-xl px-4 py-3 focus-visible:outline-2 [&::-webkit-details-marker]:hidden">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-[var(--museum-border-soft)] bg-black">
                         {imageUrl ? (
                           <img
                             src={imageUrl}
-                            alt={artwork.title}
+                            alt=""
                             loading="lazy"
                             decoding="async"
                             className="h-full w-full object-cover"
@@ -378,22 +312,26 @@ export default function ArtworkInventoryTable({
                           </div>
                         )}
                       </div>
-                    </div>
+                  <span className="min-w-0 flex-1 break-words font-medium text-[var(--museum-ivory)]">{artwork.title}</span>
+                  <span className="shrink-0 text-sm text-[var(--museum-stone)]"><WorkspaceText label="workFields" /></span>
+                  <span aria-hidden="true" className="shrink-0 text-[var(--museum-bronze-light)] transition group-open:rotate-180">⌄</span>
+                </summary>
+                <div className="grid gap-4 border-t border-[var(--museum-border-soft)] px-4 py-5 sm:grid-cols-2 xl:grid-cols-3">
 
-                    <div>
-                      <input
-                        aria-label="Titolo opera"
+                  <label className="grid min-w-0 gap-2 text-sm text-[var(--museum-stone)]">
+                    <span><T textKey="dashboard.artworkInventory.table.title" /></span>
+                    <input
                         className="w-full rounded-2xl border border-[var(--museum-border-soft)] bg-black/55 px-3 py-2 text-sm text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
                         value={draft.title}
                         onChange={(event) =>
                           updateDraft(artwork.id, "title", event.target.value)
                         }
                       />
-                    </div>
+                  </label>
 
-                    <div>
-                      <input
-                        aria-label="Artista"
+                  <label className="grid min-w-0 gap-2 text-sm text-[var(--museum-stone)]">
+                    <span><T textKey="dashboard.artworkInventory.table.artist" /></span>
+                    <input
                         className="w-full rounded-2xl border border-[var(--museum-border-soft)] bg-black/55 px-3 py-2 text-sm text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
                         value={draft.artist_name}
                         onChange={(event) =>
@@ -404,22 +342,22 @@ export default function ArtworkInventoryTable({
                           )
                         }
                       />
-                    </div>
+                  </label>
 
-                    <div>
-                      <input
-                        aria-label="Anno"
+                  <label className="grid min-w-0 gap-2 text-sm text-[var(--museum-stone)]">
+                    <span><T textKey="dashboard.artworkInventory.table.year" /></span>
+                    <input
                         className="w-full rounded-2xl border border-[var(--museum-border-soft)] bg-black/55 px-3 py-2 text-sm text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
                         value={draft.year}
                         onChange={(event) =>
                           updateDraft(artwork.id, "year", event.target.value)
                         }
                       />
-                    </div>
+                  </label>
 
-                    <div>
-                      <input
-                        aria-label="Tecnica"
+                  <label className="grid min-w-0 gap-2 text-sm text-[var(--museum-stone)]">
+                    <span><T textKey="dashboard.artworkInventory.table.technique" /></span>
+                    <input
                         className="w-full rounded-2xl border border-[var(--museum-border-soft)] bg-black/55 px-3 py-2 text-sm text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
                         value={draft.technique}
                         onChange={(event) =>
@@ -430,11 +368,11 @@ export default function ArtworkInventoryTable({
                           )
                         }
                       />
-                    </div>
+                  </label>
 
-                    <div>
-                      <input
-                        aria-label="Prezzo"
+                  <label className="grid min-w-0 gap-2 text-sm text-[var(--museum-stone)]">
+                    <span><T textKey="dashboard.artworkInventory.table.price" /></span>
+                    <input
                         inputMode="decimal"
                         className="w-full rounded-2xl border border-[var(--museum-border-soft)] bg-black/55 px-3 py-2 text-sm text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
                         value={draft.price}
@@ -442,11 +380,11 @@ export default function ArtworkInventoryTable({
                           updateDraft(artwork.id, "price", event.target.value)
                         }
                       />
-                    </div>
+                  </label>
 
-                    <div>
-                      <input
-                        aria-label="Valuta"
+                  <label className="grid min-w-0 gap-2 text-sm text-[var(--museum-stone)]">
+                    <span><T textKey="dashboard.artworkInventory.table.currency" /></span>
+                    <input
                         className="w-full rounded-2xl border border-[var(--museum-border-soft)] bg-black/55 px-3 py-2 text-sm uppercase text-[var(--museum-ivory)] outline-none transition focus:border-[var(--museum-bronze)]"
                         maxLength={3}
                         value={draft.currency}
@@ -458,7 +396,7 @@ export default function ArtworkInventoryTable({
                           )
                         }
                       />
-                    </div>
+                  </label>
 
                     <div>
                       <label
@@ -478,14 +416,14 @@ export default function ArtworkInventoryTable({
                           }
                         />
                         <T
-                          textKey="dashboard.artworkInventory.table.yes"
-                          fallback="Sì"
+                          textKey="dashboard.artworkInventory.table.forSale"
+                          fallback="Vendita"
                         />
                       </label>
                     </div>
 
-                    <div>
-                      <div className="flex flex-col gap-2">
+                    <div className="min-w-0 sm:col-span-2 xl:col-span-3">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           disabled={isBusy}
@@ -535,9 +473,8 @@ export default function ArtworkInventoryTable({
                         </button>
                       </div>
                     </div>
-                  </div>
                 </div>
-              </div>
+              </details>
             );
           })}
         </div>      </div>

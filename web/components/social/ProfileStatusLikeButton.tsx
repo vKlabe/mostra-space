@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import T from "@/components/i18n/T";
+import ContextualSignInLink from "@/components/social/ContextualSignInLink";
 
 type ProfileStatusLikeButtonProps = {
   statusId: string;
@@ -39,14 +40,7 @@ export default function ProfileStatusLikeButton({
   const [error, setError] = useState(false);
 
   async function toggleLike() {
-    if (!canLike) {
-      window.location.href = "/auth/login";
-      return;
-    }
-
-    if (isPending) {
-      return;
-    }
+    if (!canLike || isPending) return;
 
     setIsPending(true);
     setError(false);
@@ -70,17 +64,34 @@ export default function ProfileStatusLikeButton({
     }
   }
 
+  const buttonClass = "inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border px-4 py-2 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] disabled:opacity-60";
+
+  if (!canLike) {
+    return (
+      <ContextualSignInLink
+        anchor="#stato"
+        className={`${buttonClass} border-[var(--museum-border-soft)] text-[var(--museum-ivory-soft)] hover:border-[var(--museum-bronze)]`}
+      >
+        <HeartIcon filled={liked} />
+        <span>{count}</span>
+        <T textKey="profiles.status.loginToLike" fallback="Accedi per lasciare un cuore" />
+      </ContextualSignInLink>
+    );
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex min-w-0 flex-wrap items-center gap-3">
       <button
         type="button"
         onClick={toggleLike}
         disabled={isPending}
-        className={
+        aria-pressed={liked}
+        aria-busy={isPending}
+        className={`${buttonClass} ${
           liked
-            ? "inline-flex items-center gap-2 rounded-full border border-[var(--museum-bronze)] bg-[var(--museum-bronze)]/10 px-4 py-2 text-sm text-[var(--museum-bronze-light)] transition hover:bg-[var(--museum-bronze)]/15 disabled:opacity-60"
-            : "inline-flex items-center gap-2 rounded-full border border-[var(--museum-border-soft)] px-4 py-2 text-sm text-[var(--museum-ivory-soft)] transition hover:border-[var(--museum-bronze)] hover:text-[var(--museum-bronze-light)] disabled:opacity-60"
-        }
+            ? "border-[var(--museum-bronze)] bg-[var(--museum-bronze)]/10 text-[var(--museum-bronze-light)] hover:bg-[var(--museum-bronze)]/15"
+            : "border-[var(--museum-border-soft)] text-[var(--museum-ivory-soft)] hover:border-[var(--museum-bronze)] hover:text-[var(--museum-bronze-light)]"
+        }`}
       >
         <HeartIcon filled={liked} />
         <span>{count}</span>
@@ -93,17 +104,8 @@ export default function ProfileStatusLikeButton({
         </span>
       </button>
 
-      {!canLike && (
-        <span className="text-xs text-[var(--museum-stone-muted)]">
-          <T
-            textKey="profiles.status.loginToLike"
-            fallback="Accedi per lasciare un cuore"
-          />
-        </span>
-      )}
-
       {error && (
-        <span className="text-xs text-red-300">
+        <span role="status" className="text-xs text-red-300">
           <T
             textKey="profiles.status.likeError"
             fallback="Non riesco ad aggiornare il cuore."

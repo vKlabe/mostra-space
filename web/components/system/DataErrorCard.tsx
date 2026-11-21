@@ -9,57 +9,53 @@ type DataErrorCardProps = {
 };
 
 export default function DataErrorCard({
-  title = "Errore caricamento dati",
-  message = "Non siamo riusciti a recuperare correttamente i dati richiesti.",
+  title,
+  message,
   details,
   actionHref,
-  actionLabel = "Riprova",
+  actionLabel,
   secondaryHref = "/dashboard",
-  secondaryLabel = "Torna alla dashboard",
+  secondaryLabel,
 }: DataErrorCardProps) {
   return (
-    <div className="rounded-3xl border border-red-900 bg-red-950/30 p-6 text-neutral-50">
-      <p className="mb-3 text-xs uppercase tracking-[0.25em] text-red-300">
-        Errore dati
-      </p>
-
-      <h2 className="text-2xl font-medium">{title}</h2>
-
-      <p className="mt-3 max-w-3xl text-sm leading-7 text-red-100/80">
-        {message}
-      </p>
+    <section className="museum-card rounded-[var(--museum-radius-lg)] border-l-2 border-l-[var(--museum-danger)] p-5 sm:p-7">
+      <div role="alert">
+        <p className="museum-label mb-3 text-[var(--museum-danger)]"><T textKey="ux.state.error" fallback="Caricamento interrotto" /></p>
+        <h2 className="font-editorial text-3xl font-medium">{title ?? <T textKey="ux.state.errorTitle" fallback="Questi dati non sono disponibili" />}</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--museum-stone)]">
+          {message ?? <T textKey="ux.state.errorMessage" fallback="Il caricamento dei dati richiesti si è interrotto." />}
+        </p>
+      </div>
 
       {details && (
-        <div className="mt-5 rounded-2xl border border-red-900/70 bg-black/30 p-4">
-          <p className="mb-2 text-xs uppercase tracking-[0.18em] text-red-300/80">
-            Dettaglio tecnico
-          </p>
-
-          <p className="break-all text-xs leading-6 text-red-100/70">
+        <details className="mt-5 rounded-xl border border-[var(--museum-border)] bg-black/20 px-4 py-3 text-sm text-[var(--museum-stone)]">
+          <summary className="cursor-pointer font-medium text-[var(--museum-ivory-soft)]"><T textKey="ux.state.details" fallback="Dettagli tecnici" /></summary>
+          <p className="mt-3 break-all text-xs leading-6">
             {details}
           </p>
-        </div>
+        </details>
       )}
 
       <div className="mt-6 flex flex-wrap gap-3">
         {actionHref && (
           <a
             href={actionHref}
-            className="rounded-full bg-white px-5 py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200"
+            className="museum-button-primary min-h-11 rounded-xl px-5 py-2"
           >
-            {actionLabel}
+            {actionLabel ?? <T textKey="ux.state.retry" fallback="Riprova" />}
           </a>
         )}
 
         {secondaryHref && (
           <a
             href={secondaryHref}
-            className="rounded-full border border-red-800 px-5 py-2 text-sm text-red-100 transition hover:border-red-500"
+            className="museum-button-secondary min-h-11 rounded-xl px-5 py-2"
           >
-            {secondaryLabel}
+            {secondaryLabel ?? <T textKey="ux.state.dashboard" fallback="Torna alla dashboard" />}
           </a>
         )}
       </div>
-    </div>
+    </section>
   );
 }
+import T from "@/components/i18n/T";

@@ -391,7 +391,7 @@ export default async function DashboardAnalyticsPage({
   activeSection="analytics"
   navMode="community"
 >
-        <div className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <div className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="text-sm leading-6 text-neutral-400">
             <T
               textKey="dashboard.analytics.unavailable.description"
@@ -882,7 +882,7 @@ export default async function DashboardAnalyticsPage({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         <MetricCard
   labelKey="dashboard.analytics.metrics.registeredVisits.label"
   labelFallback="Visite registrate"
@@ -951,7 +951,7 @@ export default async function DashboardAnalyticsPage({
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -1096,7 +1096,7 @@ export default async function DashboardAnalyticsPage({
           )}
         </section>
 
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T
               textKey="dashboard.analytics.conversion.label"
@@ -1182,7 +1182,7 @@ export default async function DashboardAnalyticsPage({
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
@@ -1269,7 +1269,7 @@ export default async function DashboardAnalyticsPage({
 )}
         </section>
 
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T
               textKey="dashboard.analytics.inquiries.label"
@@ -1362,7 +1362,7 @@ export default async function DashboardAnalyticsPage({
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T
               textKey="dashboard.analytics.events.label"
@@ -1442,7 +1442,7 @@ export default async function DashboardAnalyticsPage({
           </Link>
         </section>
 
-        <section className="rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
+        <section className="museum-dashboard-card min-w-0 rounded-3xl p-5 sm:p-6">
           <p className="text-xs uppercase tracking-[0.25em] text-neutral-500">
             <T
               textKey="dashboard.analytics.advancedTracking.label"

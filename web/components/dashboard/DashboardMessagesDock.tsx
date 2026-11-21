@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import T from "@/components/i18n/T";
+import { SocialText } from "@/components/social/SocialCopy";
 import { requestAppBadgeSync } from "@/lib/pwa/appBadge.client";
 
 type Contact = {
@@ -243,6 +244,7 @@ function Avatar({ name, url, size = "md" }: { name: string; url: string | null; 
 }
 
 export default function DashboardMessagesDock() {
+  const messagesId = useId();
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState<DockView>("list");
   const [isLoading, setIsLoading] = useState(true);
@@ -972,7 +974,7 @@ export default function DashboardMessagesDock() {
           <div className="shrink-0 border-t border-neutral-800 bg-neutral-950 p-3 md:p-4">
             {!activeConversation.canSend && <div className="mb-3 rounded-2xl border border-neutral-800 bg-black/30 px-3 py-2 text-xs leading-5 text-neutral-500">{activeConversation.blockState.blockedByMe ? <T textKey="messages.composer.blockedByMe" fallback="Hai bloccato questo profilo. La cronologia resta disponibile, ma non puoi inviare nuovi messaggi." /> : <T textKey="messages.composer.unavailable" fallback="I nuovi messaggi non sono disponibili. Per scrivervi dovete avere Messaggi attivo, seguirvi a vicenda e non avere blocchi attivi." />}</div>}
             <form onSubmit={sendMessage} className="flex items-end gap-2">
-              <label className="min-w-0 flex-1"><span className="sr-only"><T textKey="messages.composer.label" fallback="Scrivi un messaggio" /></span><textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={MAX_MESSAGE_LENGTH} rows={1} disabled={!activeConversation.canSend || isSending} className="max-h-32 min-h-11 w-full resize-y rounded-2xl border border-neutral-800 bg-black/45 px-4 py-3 text-sm text-neutral-100 outline-none focus:border-neutral-600 disabled:opacity-50" /></label>
+              <label className="min-w-0 flex-1"><span className="sr-only"><T textKey="messages.composer.label" fallback="Scrivi un messaggio" /></span><textarea value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={MAX_MESSAGE_LENGTH} rows={1} disabled={!activeConversation.canSend || isSending} className="max-h-32 min-h-11 w-full resize-y rounded-2xl border border-[var(--museum-border)] bg-black/45 px-4 py-3 text-base text-neutral-100 outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] disabled:opacity-50 sm:text-sm" /></label>
               <button type="submit" disabled={!activeConversation.canSend || !draft.trim() || isSending} className="rounded-2xl bg-white px-4 py-3 text-xs font-medium text-black transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-40">{isSending ? "…" : <T textKey="messages.composer.send" fallback="Invia" />}</button>
             </form>
             <div className="mt-2 flex items-center justify-between gap-3 text-[10px] text-neutral-600"><span><T textKey="messages.composer.safety" fallback="Non condividere password o codici di accesso." /></span><span>{draft.length}/{MAX_MESSAGE_LENGTH}</span></div>
@@ -999,20 +1001,24 @@ export default function DashboardMessagesDock() {
   return (
     <>
       {!isOpen && (
-        <button type="button" onClick={() => setIsOpen(true)} className="fixed bottom-4 right-4 z-[80] flex h-14 w-14 items-center justify-center rounded-full border border-[var(--museum-bronze)]/60 bg-neutral-950 text-neutral-100 shadow-2xl shadow-black/50 transition hover:border-[var(--museum-bronze)] hover:text-amber-300 md:bottom-6 md:right-6">
+        <button type="button" onClick={() => setIsOpen(true)} className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[80] flex h-14 w-14 items-center justify-center rounded-full border border-[var(--museum-bronze)]/60 bg-neutral-950 text-neutral-100 shadow-2xl shadow-black/50 transition hover:border-[var(--museum-bronze)] hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] md:bottom-6 md:right-6">
           <ChatIcon /><span className="sr-only"><T textKey="messages.actions.open" fallback="Apri Messaggi" /></span>
           {unreadCount > 0 && <span className="absolute -right-1 -top-1 flex min-h-6 min-w-6 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-black">{unreadCount > 99 ? "99+" : unreadCount}</span>}
         </button>
       )}
 
       {isOpen && (
-        <section className="fixed inset-0 z-[100] flex flex-col overflow-hidden border-neutral-800 bg-neutral-950 text-neutral-100 shadow-2xl md:inset-auto md:bottom-6 md:right-6 md:h-[min(680px,calc(100vh-3rem))] md:w-[420px] md:rounded-[1.75rem] md:border">
+        <section
+          aria-labelledby={messagesId}
+          className="fixed inset-0 z-[100] flex flex-col overflow-hidden border-[var(--museum-border)] bg-neutral-950 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] text-neutral-100 shadow-2xl md:inset-auto md:bottom-6 md:right-6 md:h-[min(680px,calc(100dvh-3rem))] md:w-[420px] md:rounded-[1.75rem] md:border md:py-0"
+        >
+          <h2 id={messagesId} className="sr-only"><SocialText text="messagesPanel" /></h2>
           {activationRequired ? renderActivation() : view === "contacts" ? renderContacts() : view === "conversation" ? renderConversation() : view === "settings" ? renderSettings() : renderList()}
         </section>
       )}
 
       {toast && !isOpen && (
-        <div className="fixed bottom-24 right-4 z-[95] w-[min(calc(100vw-2rem),370px)] rounded-3xl border border-neutral-800 bg-neutral-950/95 p-4 shadow-2xl shadow-black/50 backdrop-blur md:bottom-24 md:right-6">
+        <div className="fixed bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] right-4 z-[95] w-[min(calc(100vw-2rem),370px)] rounded-3xl border border-[var(--museum-border)] bg-neutral-950/95 p-4 shadow-2xl shadow-black/50 backdrop-blur md:bottom-24 md:right-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-xs uppercase tracking-[0.2em] text-amber-500"><T textKey="messages.toast.label" fallback="Nuovo messaggio" /></p>
@@ -1028,9 +1034,9 @@ export default function DashboardMessagesDock() {
       )}
 
       {reportMessageId && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <form onSubmit={submitReport} className="w-full max-w-md rounded-3xl border border-neutral-800 bg-neutral-950 p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-4"><div><p className="text-xs uppercase tracking-[0.22em] text-red-300"><T textKey="messages.report.label" fallback="Segnala messaggio" /></p><h3 className="mt-2 text-xl font-medium text-neutral-100"><T textKey="messages.report.title" fallback="Perché vuoi segnalarlo?" /></h3></div><button type="button" onClick={() => setReportMessageId(null)} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-neutral-800 text-neutral-500 hover:text-white"><CloseIcon /></button></div>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/75 p-3 backdrop-blur-sm sm:p-4">
+          <form onSubmit={submitReport} role="dialog" aria-labelledby={messagesId + "-report"} className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl border border-[var(--museum-border)] bg-neutral-950 p-4 shadow-2xl sm:p-5">
+            <div className="flex items-start justify-between gap-4"><div><p className="text-xs uppercase tracking-[0.22em] text-red-300"><T textKey="messages.report.label" fallback="Segnala messaggio" /></p><h3 id={messagesId + "-report"} className="mt-2 text-xl font-medium text-neutral-100"><T textKey="messages.report.title" fallback="Perché vuoi segnalarlo?" /></h3></div><button type="button" onClick={() => setReportMessageId(null)} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--museum-border)] text-[var(--museum-stone)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--museum-bronze-light)]"><CloseIcon /><span className="sr-only"><T textKey="messages.actions.cancel" fallback="Annulla" /></span></button></div>
             <p className="mt-3 text-xs leading-5 text-neutral-500"><T textKey="messages.report.context" fallback="Il messaggio selezionato e un breve contesto vicino verranno condivisi con i moderatori MostraSpace." /></p>
             <div className="mt-4 grid gap-2">
               <label className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-black/30 px-3 py-2 text-sm text-neutral-300"><input type="radio" name="reportReason" checked={reportReason === "harassment_threats"} onChange={() => setReportReason("harassment_threats")} /><T textKey="messages.report.reasons.harassment" fallback="Molestie o minacce" /></label>

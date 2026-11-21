@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import T from "@/components/i18n/T";
+import ContextualSignInLink from "@/components/social/ContextualSignInLink";
+import { SocialText } from "@/components/social/SocialCopy";
 
 type FollowProfileButtonProps = {
   profileId: string;
@@ -37,7 +39,7 @@ export default function FollowProfileButton({
   const [isPending, startTransition] = useTransition();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followerCount, setFollowerCount] = useState(initialFollowerCount);
-  const [message, setMessage] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
   const [blockedMessage, setBlockedMessage] = useState(false);
 
   const resolvedSize = compact ? "sm" : size;
@@ -47,6 +49,7 @@ export default function FollowProfileButton({
 
   const wrapperAlignClass =
     align === "center" ? "items-center text-center" : "items-start";
+  const buttonClass = "inline-flex min-h-11 max-w-full items-center justify-center rounded-full border text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)] disabled:cursor-wait disabled:opacity-60";
 
   function getButtonText() {
     if (isPending) {
@@ -83,17 +86,14 @@ export default function FollowProfileButton({
   }
 
   async function toggleFollow() {
-    setMessage(null);
+    setHasError(false);
     setBlockedMessage(false);
 
     if (isOwnProfile) {
       return;
     }
 
-    if (!canFollow) {
-      setMessage("Accedi per seguire questo profilo.");
-      return;
-    }
+    if (!canFollow) return;
 
     const nextIsFollowing = !isFollowing;
     const previousIsFollowing = isFollowing;
@@ -135,14 +135,10 @@ export default function FollowProfileButton({
       startTransition(() => {
         router.refresh();
       });
-    } catch (error) {
+    } catch {
       setIsFollowing(previousIsFollowing);
       setFollowerCount(previousFollowerCount);
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Non riesco ad aggiornare il follow."
-      );
+      setHasError(true);
     }
   }
 
@@ -173,30 +169,46 @@ export default function FollowProfileButton({
     );
   }
 
+  if (!canFollow) {
+    return (
+      <div className={`flex flex-col ${wrapperAlignClass}`}>
+        <ContextualSignInLink
+          className={`${buttonClass} ${buttonSizeClass} border-[var(--museum-border)] text-[var(--museum-ivory)] hover:border-[var(--museum-bronze)]`}
+        >
+          <SocialText text="followSignIn" />
+          {showCount ? ` · ${followerCount}` : ""}
+        </ContextualSignInLink>
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex flex-col gap-2 ${wrapperAlignClass}`}>
+    <div className={`flex min-w-0 flex-col gap-2 ${wrapperAlignClass}`}>
       <button
         type="button"
         disabled={isPending}
         onClick={toggleFollow}
-        className={
+        aria-pressed={isFollowing}
+        aria-busy={isPending}
+        className={`${buttonClass} ${buttonSizeClass} ${
           isFollowing
-            ? `rounded-full border border-neutral-700 bg-neutral-950/80 ${buttonSizeClass} text-neutral-100 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-60`
-            : `rounded-full bg-white ${buttonSizeClass} font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60`
-        }
+            ? "border-[var(--museum-border)] bg-neutral-950/80 text-[var(--museum-ivory)] hover:border-[var(--museum-bronze)]"
+            : "border-[var(--museum-ivory)] bg-[var(--museum-ivory)] font-medium text-neutral-950 hover:bg-white"
+        }`}
       >
         {getButtonText()}
       </button>
 
       {blockedMessage && (
-        <p className="text-xs text-red-300">
-          <T
-            textKey="profile.follow.errors.blocked"
-            fallback="Il follow non è disponibile perché tra questi profili è attivo un blocco."
-          />
+        <p role="status" className="text-xs text-red-300">
+          <SocialText text="followUnavailable" />
         </p>
       )}
-      {message && <p className="text-xs text-red-300">{message}</p>}
+      {hasError && (
+        <p role="status" className="text-xs text-red-300">
+          <SocialText text="followError" />
+        </p>
+      )}
     </div>
   );
 }
