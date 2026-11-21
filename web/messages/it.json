@@ -2768,10 +2768,9 @@
   "launchPage.register.benefit3": "Pronto a partecipare al lancio del 15 settembre",
   "launchPage.register.cta": "Iscriviti gratuitamente",
   "launchPage.finalCta.register": "Iscriviti gratis",
-  "blackWeek.announcement": "Aderisci dal 23 al 30 novembre 2026, ora italiana. Fino al 23 si applicano i prezzi ordinari.",
-  "blackWeek.active": "Aderisci entro le 23:59 del 30 novembre 2026, ora italiana.",
+  "blackWeek.active": "Aderisci dal 21 al 30 novembre 2026, fino alle 23:59 del 30 (ora italiana).",
   "blackWeek.monthlyFor": "al mese per i primi {months} mesi",
-  "blackWeek.thenRegular": "Poi rinnovo al prezzo ordinario di {price} al mese",
+  "blackWeek.thenRegular": "Dal quarto mese, rinnovo automatico a {price} al mese",
   "blackWeek.eligibility": "Offerta per i nuovi abbonati e per chi ha un account Free. Lo sconto si applica automaticamente. Gli abbonamenti in corso proseguono alle loro condizioni.",
   "blackWeek.cta": "Vedi piani e condizioni"
 }

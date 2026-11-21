@@ -2768,10 +2768,9 @@
   "launchPage.register.benefit3": "Ready to join the launch on 15 September",
   "launchPage.register.cta": "Sign up for free",
   "launchPage.finalCta.register": "Sign up for free",
-  "blackWeek.announcement": "Join from 23 to 30 November 2026, Italian time. Regular prices apply until 23 November.",
-  "blackWeek.active": "Join by 11:59 pm on 30 November 2026, Italian time.",
+  "blackWeek.active": "Join from 21 to 30 November 2026, until 11:59 pm on the 30th (Italian time).",
   "blackWeek.monthlyFor": "per month for the first {months} months",
-  "blackWeek.thenRegular": "Then renews at the regular price of {price} per month",
+  "blackWeek.thenRegular": "Automatically renews at {price} per month from month four",
   "blackWeek.eligibility": "For new subscribers and Free account holders. The discount applies automatically. Existing subscriptions continue under their current terms.",
   "blackWeek.cta": "View plans and terms"
 }

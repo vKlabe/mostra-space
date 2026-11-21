@@ -4,7 +4,6 @@ import Link from "next/link";
 import { type ReactNode, useId, useSyncExternalStore } from "react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import {
-  BLACK_WEEK_ANNOUNCE_AT,
   BLACK_WEEK_END_AT,
   BLACK_WEEK_MONTHS,
   BLACK_WEEK_OFFERS,
@@ -13,11 +12,7 @@ import {
   type BlackWeekPlan,
 } from "@/lib/black-week";
 
-const phaseBoundaries = [
-  BLACK_WEEK_ANNOUNCE_AT,
-  BLACK_WEEK_START_AT,
-  BLACK_WEEK_END_AT,
-];
+const phaseBoundaries = [BLACK_WEEK_START_AT, BLACK_WEEK_END_AT];
 const listeners = new Set<() => void>();
 let timer: number | undefined;
 
@@ -68,6 +63,34 @@ function formatPrice(locale: string, cents: number) {
   }).format(cents / 100);
 }
 
+function BlackWeekPriceComparison({
+  locale,
+  plan,
+  priceClassName,
+}: {
+  locale: string;
+  plan: BlackWeekPlan;
+  priceClassName: string;
+}) {
+  const { offerCents, regularCents } = BLACK_WEEK_OFFERS[plan];
+  const discount = new Intl.NumberFormat(locale, {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format((regularCents - offerCents) / regularCents);
+
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      <span className={priceClassName}>{formatPrice(locale, offerCents)}</span>
+      <del className="font-ui text-sm font-normal text-[var(--museum-stone)]">
+        {formatPrice(locale, regularCents)}
+      </del>
+      <span className="whitespace-nowrap rounded-full border border-[var(--museum-bronze-dark)] px-2 py-0.5 font-ui text-xs font-semibold leading-normal text-[var(--museum-bronze-light)]">
+        Black Friday −{discount}
+      </span>
+    </span>
+  );
+}
+
 export function BlackWeekBanner({
   className = "mx-auto max-w-7xl px-4 pt-4 md:px-8",
   plansHref = "/pricing",
@@ -89,10 +112,10 @@ export function BlackWeekBanner({
         <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
           <div>
             <h2 id={headingId} className="museum-label">
-              Black Week Mostra.Space
+              Black Friday Mostra.Space
             </h2>
             <p className="mt-2 text-sm text-[var(--museum-ivory)]">
-              {t(phase === "announcing" ? "blackWeek.announcement" : "blackWeek.active")}
+              {t("blackWeek.active")}
             </p>
           </div>
           <Link href={plansHref} className="museum-button-secondary px-4 py-2">
@@ -107,9 +130,11 @@ export function BlackWeekBanner({
               <li key={plan} className="border-l border-[var(--museum-bronze-dark)] pl-3">
                 <p className="text-sm text-[var(--museum-ivory)]">
                   <span className="font-semibold uppercase">{plan}</span>{" "}
-                  <span className="font-editorial text-2xl text-[var(--museum-bronze-light)]">
-                    {formatPrice(locale, offer.offerCents)}
-                  </span>{" "}
+                  <BlackWeekPriceComparison
+                    locale={locale}
+                    plan={plan}
+                    priceClassName="font-editorial text-2xl text-[var(--museum-bronze-light)]"
+                  />{" "}
                   {t("blackWeek.monthlyFor").replace("{months}", String(BLACK_WEEK_MONTHS))}
                 </p>
                 <p className="text-xs text-[var(--museum-stone)]">
@@ -141,9 +166,11 @@ export function BlackWeekPlanPrice({
   const offer = BLACK_WEEK_OFFERS[plan];
   return (
     <>
-      <span className="text-[var(--museum-bronze-light)]">
-        {formatPrice(locale, offer.offerCents)}
-      </span>
+      <BlackWeekPriceComparison
+        locale={locale}
+        plan={plan}
+        priceClassName="text-[var(--museum-bronze-light)]"
+      />
       <span className="mt-1 block font-ui text-sm leading-normal text-[var(--museum-ivory-soft)]">
         {t("blackWeek.monthlyFor").replace("{months}", String(BLACK_WEEK_MONTHS))}
       </span>
