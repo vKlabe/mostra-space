@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import HomeProfileAvatar from "@/components/home/HomeProfileAvatar";
 import LegalFooter from "@/components/legal/LegalFooter";
-import T from "@/components/i18n/T";
-import { SocialText } from "@/components/social/SocialCopy";
+import {
+  PersonalHomeText,
+  type PersonalHomeTextKey,
+} from "@/components/home/personal/PersonalHomeText";
 import MuseumHeader from "@/components/site/MuseumHeader";
 import { BlackWeekBanner } from "@/components/billing/BlackWeek";
 import LocalDateTime from "@/components/time/LocalDateTime";
@@ -30,6 +33,7 @@ export const metadata: Metadata = {
 
 type ViewerProfile = {
   id: string;
+  role: "user" | "gallerist" | "admin";
   display_name: string | null;
   full_name: string | null;
   avatar_url: string | null;
@@ -119,21 +123,11 @@ function getName(profile: {
   return profile.display_name || profile.full_name || null;
 }
 
-function getInitials(value: string | null | undefined) {
-  if (!value) {
-    return "M";
-  }
-
-  return (
-    value
-      .trim()
-      .split(/\s+/)
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "M"
-  );
-}
+const homeWidth = "mx-auto w-full max-w-[86rem] px-4 sm:px-6 lg:px-10";
+const matteCard = "overflow-hidden rounded-[1.25rem] border border-[var(--museum-border)] bg-[var(--museum-surface)]";
+const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--museum-bronze-light)]";
+const smallLink = "inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-[var(--museum-bronze-light)] underline-offset-4 hover:underline " + focusRing;
+const cardLink = "group block min-w-0 motion-safe:transition-colors hover:border-[var(--museum-bronze)] " + focusRing;
 
 function uniqueById<T extends { id: string }>(items: T[]) {
   return items.filter(
@@ -143,73 +137,102 @@ function uniqueById<T extends { id: string }>(items: T[]) {
 
 function CoverImage({
   src,
-  alt,
+  sizes,
   eager = false,
 }: {
-  src: string | null;
-  alt: string;
+  src: string;
+  sizes: string;
   eager?: boolean;
 }) {
-  if (!src) {
-    return (
-      <div className="flex h-full min-h-full items-center justify-center bg-[radial-gradient(circle_at_35%_15%,rgba(243,237,226,0.22),transparent_11rem),linear-gradient(135deg,rgba(168,121,69,0.24),rgba(8,7,5,0.96))] px-6 text-center font-editorial text-4xl text-[var(--museum-ivory-soft)]">
-        {getInitials(alt)}
-      </div>
-    );
-  }
-
   return (
-    <img
+    <Image
       src={src}
-      alt={alt}
+      alt=""
+      fill
+      sizes={sizes}
+      unoptimized
       loading={eager ? "eager" : "lazy"}
-      decoding="async"
-      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+      fetchPriority={eager ? "high" : undefined}
+      className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.035]"
     />
   );
 }
 
+function Arrow() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="shrink-0">
+      <path d="M2.5 8h10.25m-4-4 4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function SectionHeading({
-  eyebrowKey,
-  eyebrowFallback,
-  titleKey,
-  titleFallback,
-  descriptionKey,
-  descriptionFallback,
+  id,
+  title,
   href,
-  actionKey,
-  actionFallback,
+  action,
 }: {
-  eyebrowKey: string;
-  eyebrowFallback: string;
-  titleKey: string;
-  titleFallback: string;
-  descriptionKey: string;
-  descriptionFallback: string;
+  id: string;
+  title: PersonalHomeTextKey;
   href: string;
-  actionKey: string;
-  actionFallback: string;
+  action: PersonalHomeTextKey;
 }) {
   return (
-    <div className="mb-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-      <div>
-        <p className="museum-label">
-          <T textKey={eyebrowKey} fallback={eyebrowFallback} />
-        </p>
-        <h2 className="mt-3 font-editorial text-4xl leading-none text-[var(--museum-ivory)] md:text-5xl">
-          <T textKey={titleKey} fallback={titleFallback} />
-        </h2>
-        <p className="museum-subtitle mt-3 max-w-2xl text-sm text-[var(--museum-stone)]">
-          <T textKey={descriptionKey} fallback={descriptionFallback} />
-        </p>
-      </div>
-      <Link
-        href={href}
-        className="museum-button-secondary w-full shrink-0 px-5 py-3 sm:w-auto"
-      >
-        <T textKey={actionKey} fallback={actionFallback} />
+    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4">
+      <h2 id={id} className="font-editorial text-[1.8rem] leading-tight text-[var(--museum-ivory)] sm:text-[2rem]">
+        <PersonalHomeText text={title} />
+      </h2>
+      <Link href={href} className={smallLink}>
+        <PersonalHomeText text={action} />
+        <Arrow />
       </Link>
     </div>
+  );
+}
+
+function ProfileRow({ profile }: { profile: PublicProfile }) {
+  const name = getName(profile) || "Mostra.Space";
+  return (
+    <Link
+      href={"/profili/" + profile.profile_slug}
+      className={"flex min-w-0 items-center gap-3 rounded-xl px-2.5 py-2.5 text-[var(--museum-ivory)] hover:bg-white/5 " + focusRing}
+    >
+      <div className="shrink-0" aria-hidden="true">
+        <HomeProfileAvatar src={profile.avatar_url} name={name} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{name}</p>
+        {profile.bio && (
+          <p className="mt-0.5 line-clamp-2 break-words text-xs leading-5 text-[var(--museum-stone)]">{profile.bio}</p>
+        )}
+      </div>
+      <span className="text-[var(--museum-bronze-light)]"><Arrow /></span>
+    </Link>
+  );
+}
+
+function StatusRow({ status, profile }: { status: ProfileStatus; profile: PublicProfile }) {
+  const name = getName(profile) || "Mostra.Space";
+  return (
+    <Link
+      href={"/profili/" + profile.profile_slug + "#stato"}
+      className={"block min-w-0 rounded-lg py-2 text-[var(--museum-ivory)] hover:bg-white/5 " + focusRing}
+    >
+      <div className="flex items-center gap-2.5">
+        <div className="shrink-0" aria-hidden="true">
+          <HomeProfileAvatar src={profile.avatar_url} name={name} />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{name}</p>
+          <p className="mt-0.5 text-xs text-[var(--museum-stone)]">
+            <LocalDateTime value={status.created_at} format="date" />
+          </p>
+        </div>
+      </div>
+      <p className="mt-2 line-clamp-3 break-words text-sm leading-5 text-[var(--museum-ivory-soft)]">
+        {status.content}
+      </p>
+    </Link>
   );
 }
 
@@ -237,7 +260,7 @@ export default async function AuthenticatedHomePage() {
     admin
       .from("profiles")
       .select(
-        "id, display_name, full_name, avatar_url, profile_slug, public_profile_enabled"
+        "id, role, display_name, full_name, avatar_url, profile_slug, public_profile_enabled"
       )
       .eq("id", user.id)
       .maybeSingle<ViewerProfile>(),
@@ -454,445 +477,332 @@ export default async function AuthenticatedHomePage() {
       : null) ||
     null;
 
-  const featuredEventGalleryCandidate = featuredEvent
-    ? eventGalleriesById.get(featuredEvent.gallery_id) ||
-      galleriesById.get(featuredEvent.gallery_id) ||
-      null
-    : null;
-  const featuredEventGallery =
-    featuredEventGalleryCandidate?.status === "published"
-      ? featuredEventGalleryCandidate
-      : null;
-  const featuredEventOwner = featuredEvent
-    ? eventOwnersById.get(featuredEvent.owner_id) || null
-    : null;
+  const canCreate = viewerProfile?.role === "gallerist" || viewerProfile?.role === "admin";
+  const displayAvatar = viewerProfile?.avatar_url || null;
+  const galleryWork = featuredArtworks.find((artwork) => artwork.gallerySlug === featuredGallery?.slug);
+  const featuredCover = featuredGallery?.cover_image_url || (galleryWork ? getArtworkCardUrl(galleryWork) : null);
+  const otherGalleries = featuredGalleries.slice(1);
+  const agendaEvents = uniqueById(featuredEvent ? [featuredEvent, ...events] : events).slice(0, 3);
+  const followedUpdates = statuses.flatMap((status) => {
+    const profile = followedProfilesById.get(status.profile_id);
+    return profile ? [{ status, profile }] : [];
+  });
+  const firstSuggestion = followedUpdates.length === 0 ? suggestions[0] : undefined;
+  const profilesToDiscover = firstSuggestion ? suggestions.slice(1) : suggestions;
+  const savedLinks = [
+    { href: "/account/opere-preferite", label: "savedWorks" },
+    { href: "/dashboard/social#salvati", label: "savedGalleries" },
+    { href: "/dashboard/social#visite-recenti", label: "recentVisits" },
+  ] as const;
 
   return (
-    <main className="museum-page min-h-screen overflow-hidden">
+    <main className="museum-page min-h-screen">
       <MuseumHeader initialAccountName={displayName || "Dashboard"} />
-      <BlackWeekBanner />
 
-      <section className="border-b border-[var(--museum-border)]">
-        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 md:px-8 md:py-9 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
-          <div className="museum-card-soft relative overflow-hidden rounded-[2rem] p-5 sm:p-7 md:p-8">
-            <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[rgba(168,121,69,0.14)] blur-3xl" />
-            <div className="relative">
-              <p className="museum-label">
-                <T textKey="authHome.hero.eyebrow" fallback="Il tuo spazio" />
-              </p>
-              <h1 className="museum-title mt-3 max-w-3xl break-words text-[clamp(2.4rem,6vw,4.5rem)] text-[var(--museum-ivory)]">
-                <T textKey="authHome.hero.welcome" fallback="Bentornato," />{" "}
-                {displayName || "Mostra.Space"}.
-              </h1>
-              <p className="museum-subtitle mt-3 max-w-2xl text-sm text-[var(--museum-stone)] sm:text-base">
-                <SocialText text="exploreNetwork" />
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-2.5">
-                <Link href="#seguiti" className="museum-button-primary min-h-11 px-4 py-2.5 text-sm">
-                  <SocialText text="followedUpdates" />
-                </Link>
-                <Link href="/account" className="museum-button-secondary min-h-11 px-4 py-2.5 text-sm">
-                  <T textKey="authHome.hero.account" fallback="Gestisci account" />
-                </Link>
+      <div className={homeWidth}>
+        <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-4 sm:py-5">
+          <div className="flex min-w-0 items-center gap-3">
+            {displayName && (
+              <div className="hidden shrink-0 sm:block" aria-hidden="true">
+                <HomeProfileAvatar src={displayAvatar} name={displayName} />
               </div>
-            </div>
+            )}
+            <h1 id="personal-greeting" className="min-w-0 break-words font-editorial text-[clamp(1.7rem,3vw,2.5rem)] leading-tight text-[var(--museum-ivory)]">
+              {displayName ? <><PersonalHomeText text="welcome" /> {displayName}</> : <PersonalHomeText text="welcomeGeneric" />}
+            </h1>
           </div>
-
-          <nav aria-labelledby="home-activity-label" className="museum-card min-w-0 rounded-[2rem] p-4 sm:p-6">
-            <h2 id="home-activity-label" className="mb-3 text-lg font-semibold text-[var(--museum-ivory)]">
-              <SocialText text="yourActivity" />
-            </h2>
-            <div className="grid grid-cols-2 gap-2">
-              <Link href="/account/opere-preferite" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
-                <SocialText text="savedArtworks" />
-              </Link>
-              <Link href="/dashboard/social#salvati" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
-                <SocialText text="savedGalleries" />
-              </Link>
-              <Link href="/dashboard/social#visite-recenti" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
-                <SocialText text="recentGalleries" />
-              </Link>
-              <Link href="/dashboard/social" className="museum-button-secondary min-h-11 px-3 py-2 text-sm">
-                <T textKey="authHome.hero.social" fallback="Apri il tuo spazio social" />
-              </Link>
-            </div>
-          </nav>
-        </div>
-      </section>
-
-      <section id="seguiti" className="mx-auto grid max-w-7xl scroll-mt-24 gap-7 px-4 py-7 md:px-8 md:py-10 xl:grid-cols-[1.15fr_0.85fr]">
-        <div>
-          <SectionHeading
-            eyebrowKey="authHome.network.eyebrow"
-            eyebrowFallback="La tua rete"
-            titleKey="authHome.network.title"
-            titleFallback="Stati recenti"
-            descriptionKey="authHome.network.description"
-            descriptionFallback="Gli aggiornamenti correnti pubblicati dai profili che segui."
-            href="/dashboard/social/rete?tab=following"
-            actionKey="authHome.network.manage"
-            actionFallback="Gestisci la rete"
-          />
-
-          {statuses.length > 0 ? (
-            <div className="space-y-4">
-              {statuses.map((status) => {
-                const profile = followedProfilesById.get(status.profile_id);
-
-                if (!profile) {
-                  return null;
-                }
-
-                const name = getName(profile) || "Mostra.Space";
-
-                return (
-                  <Link
-                    key={status.id}
-                    href={`/profili/${profile.profile_slug}#stato`}
-                    className="group block rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-5 transition hover:border-[var(--museum-bronze)] sm:p-6"
-                  >
-                    <div className="flex items-center gap-3">
-                      <HomeProfileAvatar src={profile.avatar_url} name={name} />
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-[var(--museum-ivory)]">
-                          {name}
-                        </p>
-                        <p className="mt-1 text-xs text-[var(--museum-stone-muted)]">
-                          <LocalDateTime value={status.created_at} format="date" />
-                        </p>
-                      </div>
-                    </div>
-                    <blockquote className="mt-5 line-clamp-4 font-editorial text-2xl leading-relaxed text-[var(--museum-ivory-soft)] sm:text-3xl">
-                      “{status.content}”
-                    </blockquote>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="museum-card rounded-[1.75rem] p-6">
-              <h3 className="font-editorial text-3xl text-[var(--museum-ivory)]">
-                {followingIds.length > 0 ? (
-                  <SocialText text="quietTitle" />
-                ) : (
-                  <T textKey="authHome.network.emptyTitle" fallback="La tua rete è pronta a crescere" />
-                )}
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-[var(--museum-stone)]">
-                {followingIds.length > 0 ? (
-                  <SocialText text="quietDescription" />
-                ) : (
-                  <T
-                    textKey="authHome.network.emptyBody"
-                    fallback="Segui artisti, galleristi e istituzioni per vedere qui i loro aggiornamenti."
-                  />
-                )}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <SectionHeading
-            eyebrowKey="authHome.profiles.eyebrow"
-            eyebrowFallback="Community"
-            titleKey="authHome.profiles.title"
-            titleFallback="Profili da scoprire"
-            descriptionKey="authHome.profiles.description"
-            descriptionFallback="Nuove voci e progetti pubblici presenti su Mostra.Space."
-            href="/profili"
-            actionKey="authHome.profiles.explore"
-            actionFallback="Esplora i profili"
-          />
-
-          {suggestions.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              {suggestions.map((profile) => {
-                const name = getName(profile) || "Mostra.Space";
-
-                return (
-                  <Link
-                    key={profile.id}
-                    href={`/profili/${profile.profile_slug}`}
-                    className="group flex items-start gap-4 rounded-[1.5rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 transition hover:border-[var(--museum-bronze)]"
-                  >
-                    <HomeProfileAvatar src={profile.avatar_url} name={name} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-[var(--museum-ivory)]">
-                        {name}
-                      </p>
-                      {profile.bio ? (
-                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--museum-stone)]">
-                          {profile.bio}
-                        </p>
-                      ) : (
-                        <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                          <T
-                            textKey="authHome.profiles.publicProfile"
-                            fallback="Profilo pubblico Mostra.Space"
-                          />
-                        </p>
-                      )}
-                    </div>
-                    <span aria-hidden="true" className="mt-3 text-[var(--museum-bronze-light)] transition group-hover:translate-x-1">
-                      →
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="museum-card rounded-[1.75rem] p-6 text-sm leading-6 text-[var(--museum-stone)]">
-              <T
-                textKey="authHome.profiles.empty"
-                fallback="Hai già scoperto tutti i profili pubblici disponibili."
-              />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-16">
-        <SectionHeading
-          eyebrowKey="authHome.featured.eyebrow"
-          eyebrowFallback="Selezione editoriale"
-          titleKey="authHome.featured.title"
-          titleFallback="In primo piano"
-          descriptionKey="authHome.featured.description"
-          descriptionFallback="Una galleria e un appuntamento scelti per iniziare la tua visita."
-          href="/gallerie"
-          actionKey="authHome.gallery.explore"
-          actionFallback="Esplora le gallerie"
-        />
-
-        <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-          {featuredGallery ? (
-            <Link
-              href={`/gallerie/${featuredGallery.slug}`}
-              className="group relative min-h-[430px] overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-charcoal)] shadow-[var(--museum-shadow-soft)] sm:min-h-[500px]"
-            >
-              <div className="absolute inset-0">
-                <CoverImage
-                  src={featuredGallery.cover_image_url}
-                  alt={featuredGallery.title}
-                  eager
-                />
-              </div>
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,7,5,0.05),rgba(8,7,5,0.9))]" />
-              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-                <p className="museum-label">
-                  <T textKey="authHome.gallery.label" fallback="Galleria in evidenza" />
-                </p>
-                <h2 className="mt-3 font-editorial text-4xl leading-none text-[var(--museum-ivory)] sm:text-5xl">
-                  {featuredGallery.title}
-                </h2>
-                {featuredGallery.description && (
-                  <p className="mt-4 line-clamp-3 max-w-2xl text-sm leading-6 text-[var(--museum-ivory-soft)]">
-                    {featuredGallery.description}
-                  </p>
-                )}
-                <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--museum-bronze-light)]">
-                  <T textKey="authHome.gallery.open" fallback="Entra nella galleria →" />
-                </p>
-              </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/gallerie" className="museum-button-primary min-h-11 px-3.5 py-2 text-xs">
+              <PersonalHomeText text="exploreGalleries" />
             </Link>
-          ) : (
-            <div className="museum-card flex min-h-[360px] flex-col justify-end rounded-[2rem] p-7">
-              <p className="museum-label">
-                <T textKey="authHome.gallery.label" fallback="Galleria in evidenza" />
-              </p>
-              <h2 className="mt-3 font-editorial text-4xl text-[var(--museum-ivory)]">
-                <T
-                  textKey="authHome.gallery.emptyTitle"
-                  fallback="Nuovi spazi in arrivo"
-                />
-              </h2>
-              <p className="mt-4 text-sm leading-6 text-[var(--museum-stone)]">
-                <T
-                  textKey="authHome.gallery.emptyBody"
-                  fallback="Le prossime gallerie pubblicate appariranno qui."
-                />
-              </p>
-            </div>
-          )}
-
-          {featuredEvent ? (
-            <article className="group overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] shadow-[var(--museum-shadow-soft)]">
-              <div className="aspect-[16/10] overflow-hidden bg-[var(--museum-charcoal)] lg:aspect-auto lg:h-[245px]">
-                <CoverImage
-                  src={featuredEventGallery?.cover_image_url || null}
-                  alt={featuredEvent.title}
-                />
-              </div>
-              <div className="p-6 sm:p-7">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-[var(--museum-bronze-dark)] bg-[rgba(168,121,69,0.1)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.15em] text-[var(--museum-bronze-light)]">
-                    <T textKey="authHome.event.label" fallback="Evento in evidenza" />
-                  </span>
-                  {featuredEvent.status === "live" && (
-                    <span className="rounded-full border border-red-900/70 bg-red-950/30 px-3 py-1 text-[0.65rem] uppercase tracking-[0.15em] text-red-200">
-                      <T textKey="authHome.event.live" fallback="Live" />
-                    </span>
-                  )}
-                </div>
-                <h2 className="mt-4 font-editorial text-4xl leading-none text-[var(--museum-ivory)]">
-                  {featuredEvent.title}
-                </h2>
-                <p className="mt-4 text-sm font-medium text-[var(--museum-bronze-light)]">
-                  <LocalDateTime
-                    value={featuredEvent.starts_at}
-                    format="datetime-weekday"
-                    timeZone={featuredEvent.timezone}
-                  />
-                </p>
-                {featuredEventOwner && (
-                  <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                    {getName(featuredEventOwner)}
-                  </p>
-                )}
-                {featuredEvent.description && (
-                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-[var(--museum-stone)]">
-                    {featuredEvent.description}
-                  </p>
-                )}
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  {featuredEventGallery ? (
-                    <Link
-                      href={`/gallerie/${featuredEventGallery.slug}`}
-                      className="museum-button-primary px-5 py-3"
-                    >
-                      <T textKey="authHome.event.openGallery" fallback="Apri la galleria" />
-                    </Link>
-                  ) : null}
-                  <Link href="/eventi" className="museum-button-secondary px-5 py-3">
-                    <T textKey="authHome.event.explore" fallback="Esplora gli eventi" />
-                  </Link>
-                </div>
-              </div>
-            </article>
-          ) : (
-            <div className="museum-card flex min-h-[360px] flex-col justify-end rounded-[2rem] p-7">
-              <p className="museum-label">
-                <T textKey="authHome.event.label" fallback="Evento in evidenza" />
-              </p>
-              <h2 className="mt-3 font-editorial text-4xl text-[var(--museum-ivory)]">
-                <T
-                  textKey="authHome.event.emptyTitle"
-                  fallback="Nessun evento programmato"
-                />
-              </h2>
-              <p className="mt-4 text-sm leading-6 text-[var(--museum-stone)]">
-                <T
-                  textKey="authHome.event.emptyBody"
-                  fallback="I prossimi appuntamenti pubblici appariranno qui."
-                />
-              </p>
-              <Link href="/eventi" className="museum-button-secondary mt-6 px-5 py-3">
-                <T textKey="authHome.event.explore" fallback="Esplora gli eventi" />
+            <Link href="/profili" className={smallLink}>
+              <PersonalHomeText text="profiles" />
+              <Arrow />
+            </Link>
+            {canCreate && (
+              <Link href="/dashboard" className={smallLink}>
+                <PersonalHomeText text="studio" />
+                <Arrow />
               </Link>
-            </div>
-          )}
-        </div>
-      </section>
+            )}
+          </div>
+        </header>
 
-      <section className="border-y border-[var(--museum-border)] bg-[rgba(17,16,13,0.55)]">
-        <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-16">
-          <SectionHeading
-            eyebrowKey="authHome.artworks.eyebrow"
-            eyebrowFallback="Catalogo"
-            titleKey="authHome.artworks.title"
-            titleFallback="Opere in evidenza"
-            descriptionKey="authHome.artworks.description"
-            descriptionFallback="Una selezione di opere pubbliche dalle gallerie in primo piano."
-            href="/gallerie"
-            actionKey="authHome.artworks.explore"
-            actionFallback="Esplora le opere nelle gallerie"
-          />
-
-          {featuredArtworks.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-              {featuredArtworks.map((artwork) => {
-                const imageUrl = getArtworkCardUrl(artwork);
-
-                return (
-                  <Link
-                    key={artwork.id}
-                    href={`/gallerie/${artwork.gallerySlug}#catalogo`}
-                    className="group overflow-hidden rounded-[1.4rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] transition hover:border-[var(--museum-bronze)] sm:rounded-[1.75rem]"
-                  >
-                    <div className="aspect-[4/5] overflow-hidden bg-[var(--museum-charcoal)]">
-                      <CoverImage src={imageUrl || null} alt={artwork.title} />
-                    </div>
-                    <div className="p-4 sm:p-5">
-                      <h3 className="line-clamp-2 font-editorial text-xl leading-tight text-[var(--museum-ivory)] sm:text-2xl">
-                        {artwork.title}
-                      </h3>
-                      {artwork.artist_name && (
-                        <p className="mt-2 truncate text-xs text-[var(--museum-stone)]">
-                          {artwork.artist_name}
-                        </p>
-                      )}
-                      <p className="mt-3 line-clamp-1 text-[0.68rem] uppercase tracking-[0.12em] text-[var(--museum-stone-muted)]">
-                        {artwork.galleryTitle}
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="museum-card rounded-[1.75rem] p-6 text-sm leading-6 text-[var(--museum-stone)]">
-              <T
-                textKey="authHome.artworks.emptyBody"
-                fallback="Le opere pubbliche delle gallerie in evidenza appariranno qui."
-              />
-            </div>
-          )}
-        </div>
-      </section>
-
-
-      {featuredGalleries.length > 1 && (
-        <section className="border-t border-[var(--museum-border)]">
-          <div className="mx-auto max-w-7xl px-4 py-12 md:px-8 md:py-16">
-            <SectionHeading
-              eyebrowKey="authHome.moreGalleries.eyebrow"
-              eyebrowFallback="Continua a esplorare"
-              titleKey="authHome.moreGalleries.title"
-              titleFallback="Altre gallerie selezionate"
-              descriptionKey="authHome.moreGalleries.description"
-              descriptionFallback="Spazi pubblici da visitare direttamente dal browser o dall’app."
-              href="/gallerie"
-              actionKey="authHome.gallery.explore"
-              actionFallback="Esplora le gallerie"
-            />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredGalleries.slice(1, 4).map((gallery) => (
-                <Link
-                  key={gallery.id}
-                  href={`/gallerie/${gallery.slug}`}
-                  className="group overflow-hidden rounded-[1.75rem] border border-[var(--museum-border)] bg-[var(--museum-surface)] transition hover:border-[var(--museum-bronze)]"
-                >
-                  <div className="aspect-[16/10] overflow-hidden bg-[var(--museum-charcoal)]">
-                    <CoverImage src={gallery.cover_image_url} alt={gallery.title} />
+        <div id="personal-dispatch" className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          {featuredGallery ? (
+            <section aria-labelledby="personal-feature-title" className="min-w-0">
+              <Link href={"/gallerie/" + featuredGallery.slug} className={matteCard + " " + cardLink}>
+                {featuredCover && (
+                  <div className="relative aspect-video overflow-hidden bg-[var(--museum-charcoal)] md:aspect-[2.35/1]">
+                    <CoverImage src={featuredCover} sizes="(min-width: 1024px) 58vw, 100vw" eager />
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-editorial text-3xl leading-none text-[var(--museum-ivory)]">
-                      {gallery.title}
-                    </h3>
-                    {gallery.description && (
-                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--museum-stone)]">
-                        {gallery.description}
+                )}
+                <div className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3 p-4 sm:p-5">
+                  <div className="min-w-0 flex-1 basis-48">
+                    <p className="text-xs font-semibold text-[var(--museum-bronze-light)]">
+                      <PersonalHomeText text="galleryFocus" />
+                    </p>
+                    <h2 id="personal-feature-title" className="mt-1 break-words font-editorial text-[clamp(1.75rem,4vw,2.75rem)] leading-tight text-[var(--museum-ivory)]">
+                      {featuredGallery.title}
+                    </h2>
+                    {featuredGallery.description && (
+                      <p className="mt-2 line-clamp-2 break-words text-sm leading-6 text-[var(--museum-stone)]">
+                        {featuredGallery.description}
                       </p>
                     )}
                   </div>
-                </Link>
-              ))}
-            </div>
+                  <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--museum-bronze-light)]">
+                    <PersonalHomeText text="visitGallery" />
+                    <Arrow />
+                  </span>
+                </div>
+              </Link>
+            </section>
+          ) : featuredEvent ? (
+            <section aria-labelledby="personal-feature-title" className={matteCard + " px-4 py-5 sm:p-6"}>
+              <p className="text-xs font-semibold text-[var(--museum-bronze-light)]">
+                <PersonalHomeText text={featuredEvent.status === "live" ? "live" : "eventFocus"} />
+              </p>
+              <h2 id="personal-feature-title" className="mt-1 break-words font-editorial text-3xl text-[var(--museum-ivory)]">
+                {featuredEvent.title}
+              </h2>
+              <p className="my-2 text-sm text-[var(--museum-stone)]">
+                <LocalDateTime value={featuredEvent.starts_at} format="datetime-weekday" timeZone={featuredEvent.timezone} />
+              </p>
+              <Link href="/eventi" className={smallLink}>
+                <PersonalHomeText text="allEvents" />
+                <Arrow />
+              </Link>
+            </section>
+          ) : (
+            <section aria-labelledby="personal-feature-title" className={matteCard + " px-4 py-5 sm:p-6"}>
+              <h2 id="personal-feature-title" className="font-editorial text-3xl text-[var(--museum-ivory)]">
+                <PersonalHomeText text="keepExploring" />
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
+                <PersonalHomeText text="noGallery" />
+              </p>
+              <Link href="/gallerie" className={smallLink}>
+                <PersonalHomeText text="exploreGalleries" />
+                <Arrow />
+              </Link>
+            </section>
+          )}
+
+          <section id="seguiti" aria-labelledby="personal-followed-title" className={matteCard + " min-w-0 scroll-mt-24 p-4 sm:p-5"}>
+            <SectionHeading
+              id="personal-followed-title"
+              title="followed"
+              href="/dashboard/social/rete?tab=following"
+              action="yourNetwork"
+            />
+            {followedUpdates.length > 0 ? (
+              <>
+                <ul className="divide-y divide-[var(--museum-border)]">
+                  {followedUpdates.slice(0, 2).map(({ status, profile }) => (
+                    <li key={status.id} className="py-1">
+                      <StatusRow status={status} profile={profile} />
+                    </li>
+                  ))}
+                </ul>
+                {followedUpdates.length > 2 && (
+                  <details className="mt-2 border-t border-[var(--museum-border)]">
+                    <summary className={"min-h-11 cursor-pointer rounded-lg py-3 text-sm font-medium text-[var(--museum-bronze-light)] " + focusRing}>
+                      <PersonalHomeText text="moreUpdates" />
+                    </summary>
+                    <ul className="divide-y divide-[var(--museum-border)]">
+                      {followedUpdates.slice(2).map(({ status, profile }) => (
+                        <li key={status.id} className="py-1">
+                          <StatusRow status={status} profile={profile} />
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="max-w-md text-sm leading-6 text-[var(--museum-stone)]">
+                  <PersonalHomeText text={followingIds.length ? "noUpdates" : "noFollowing"} />
+                </p>
+                {firstSuggestion ? (
+                  <div className="mt-3 border-t border-[var(--museum-border)] pt-2">
+                    <p className="mb-1 text-xs font-medium text-[var(--museum-bronze-light)]">
+                      <PersonalHomeText text="discoverProfiles" />
+                    </p>
+                    <ProfileRow profile={firstSuggestion} />
+                  </div>
+                ) : (
+                  <Link href="/profili" className={smallLink + " mt-1"}>
+                    <PersonalHomeText text="exploreProfiles" />
+                    <Arrow />
+                  </Link>
+                )}
+              </>
+            )}
+            {featuredGallery && featuredEvent && (
+              <Link
+                href="#personal-agenda"
+                className={"mt-3 flex min-h-11 items-start justify-between gap-3 rounded-lg border-t border-[var(--museum-border)] pt-3 hover:bg-white/5 " + focusRing}
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-[var(--museum-bronze-light)]">
+                    <PersonalHomeText text={featuredEvent.status === "live" ? "live" : "agenda"} />
+                  </p>
+                  <p className="mt-0.5 break-words text-sm font-semibold text-[var(--museum-ivory)]">{featuredEvent.title}</p>
+                  <p className="mt-1 text-xs text-[var(--museum-stone)]">
+                    <LocalDateTime value={featuredEvent.starts_at} format="datetime-weekday" timeZone={featuredEvent.timezone} />
+                  </p>
+                </div>
+                <span className="mt-1 text-[var(--museum-bronze-light)]"><Arrow /></span>
+              </Link>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <BlackWeekBanner />
+
+      <section id="personal-shortcuts" aria-labelledby="personal-shortcuts-title" className={homeWidth + " py-5 sm:py-6"}>
+        <div className={matteCard + " flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2 sm:px-5"}>
+          <h2 id="personal-shortcuts-title" className="text-sm font-semibold text-[var(--museum-ivory)]">
+            <PersonalHomeText text="yourActivity" />
+          </h2>
+          <ul className="flex min-w-0 flex-wrap gap-x-1">
+            {savedLinks.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className={smallLink}><PersonalHomeText text={item.label} /></Link>
+              </li>
+            ))}
+            <li><Link href="/dashboard/social" className={smallLink}><PersonalHomeText text="social" /></Link></li>
+          </ul>
+        </div>
+      </section>
+
+      <div className={homeWidth + " grid min-w-0 items-start gap-6 pb-7 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]"}>
+        <div id="personal-discover" className="min-w-0 scroll-mt-24 space-y-6">
+          {otherGalleries.length > 0 && (
+            <section aria-labelledby="personal-galleries-title">
+              <SectionHeading id="personal-galleries-title" title="browseGalleries" href="/gallerie" action="exploreGalleries" />
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {otherGalleries.map((gallery) => (
+                  <li key={gallery.id} className="min-w-0">
+                    <Link href={"/gallerie/" + gallery.slug} className={matteCard + " " + cardLink + " h-full"}>
+                      {gallery.cover_image_url && (
+                        <div className="relative aspect-[2/1] overflow-hidden bg-[var(--museum-charcoal)]">
+                          <CoverImage src={gallery.cover_image_url} sizes="(min-width: 640px) 25vw, 100vw" />
+                        </div>
+                      )}
+                      <div className="p-3.5">
+                        <p className="break-words font-editorial text-xl leading-tight text-[var(--museum-ivory)]">{gallery.title}</p>
+                        {gallery.published_at && (
+                          <p className="mt-1 text-xs text-[var(--museum-stone)]">
+                            <LocalDateTime value={gallery.published_at} format="date" />
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {featuredArtworks.length > 0 && (
+            <section aria-labelledby="personal-artworks-title">
+              <SectionHeading id="personal-artworks-title" title="browseWorks" href="/gallerie" action="exploreGalleries" />
+              <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                {featuredArtworks.map((artwork) => {
+                  const cover = getArtworkCardUrl(artwork);
+                  return (
+                    <li key={artwork.id} className="min-w-0">
+                      <Link href={"/gallerie/" + artwork.gallerySlug + "#catalogo"} className={matteCard + " " + cardLink + " h-full"}>
+                        {cover && (
+                          <div className="relative aspect-square overflow-hidden bg-[var(--museum-charcoal)]">
+                            <CoverImage src={cover} sizes="(min-width: 1280px) 14vw, 47vw" />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <p className="break-words font-editorial text-lg leading-tight text-[var(--museum-ivory)]">{artwork.title}</p>
+                          {artwork.artist_name && (
+                            <p className="mt-1 break-words text-xs leading-5 text-[var(--museum-stone)]">{artwork.artist_name}</p>
+                          )}
+                          <p className="mt-1 break-words text-xs leading-5 text-[var(--museum-bronze-light)]">{artwork.galleryTitle}</p>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          {profilesToDiscover.length > 0 && (
+            <section aria-labelledby="personal-profiles-title">
+              <SectionHeading id="personal-profiles-title" title="discoverProfiles" href="/profili" action="browsePeople" />
+              <ul className="grid gap-2.5 sm:grid-cols-2">
+                {profilesToDiscover.map((profile) => (
+                  <li key={profile.id} className={matteCard + " min-w-0 p-1"}>
+                    <ProfileRow profile={profile} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+
+        <aside className="min-w-0 space-y-5">
+          <section id="personal-agenda" aria-labelledby="personal-agenda-title" className={matteCard + " scroll-mt-24 p-4 sm:p-5"}>
+            <SectionHeading id="personal-agenda-title" title="agenda" href="/eventi" action="allEvents" />
+            {agendaEvents.length > 0 ? (
+              <ul className="divide-y divide-[var(--museum-border)]">
+                {agendaEvents.map((event) => {
+                  const owner = eventOwnersById.get(event.owner_id);
+                  const gallery = eventGalleriesById.get(event.gallery_id) || galleriesById.get(event.gallery_id);
+                  const heading = owner ? getName(owner) : null;
+                  return (
+                    <li key={event.id} className="py-3 first:pt-0 last:pb-0">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-[var(--museum-bronze-light)]">
+                        <LocalDateTime value={event.starts_at} format="datetime-weekday" timeZone={event.timezone} />
+                        {event.status === "live" && <PersonalHomeText text="live" />}
+                      </div>
+                      <h3 className="mt-1 break-words text-base font-semibold leading-snug text-[var(--museum-ivory)]">{event.title}</h3>
+                      {heading && <p className="mt-1 break-words text-xs text-[var(--museum-stone)]">{heading}</p>}
+                      {event.description && (
+                        <p className="mt-1 line-clamp-2 break-words text-sm leading-5 text-[var(--museum-stone)]">{event.description}</p>
+                      )}
+                      {gallery?.status === "published" && (
+                        <Link href={"/gallerie/" + gallery.slug} className={smallLink + " -ml-2"}>
+                          <PersonalHomeText text="galleryLink" />
+                          <Arrow />
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm leading-6 text-[var(--museum-stone)]"><PersonalHomeText text="noEvents" /></p>
+            )}
+          </section>
+
+          {canCreate ? (
+            <section aria-labelledby="personal-studio-title" className={matteCard + " p-4"}>
+              <h2 id="personal-studio-title" className="text-base font-semibold text-[var(--museum-ivory)]">
+                <PersonalHomeText text="studio" />
+              </h2>
+              <div className="mt-1 flex flex-wrap gap-x-1">
+                <Link href="/dashboard/gallerie" className={smallLink}><PersonalHomeText text="manageGalleries" /></Link>
+                <Link href="/dashboard/opere" className={smallLink}><PersonalHomeText text="manageWorks" /></Link>
+              </div>
+            </section>
+          ) : null}
+          <div className="flex flex-wrap gap-x-1">
+            {!canCreate && <Link href="/dashboard" className={smallLink}><PersonalHomeText text="dashboard" /></Link>}
+            <Link href="/account" className={smallLink}><PersonalHomeText text="account" /></Link>
           </div>
-        </section>
-      )}
+        </aside>
+      </div>
 
       <LegalFooter />
     </main>

@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import JsonLd from "@/components/seo/JsonLd";
 import { BlackWeekBanner, BlackWeekPlanPrice } from "@/components/billing/BlackWeek";
+import styles from "@/components/home/public/PublicHome.module.css";
+import { PublicHomeEventDate, PublicHomeText } from "@/components/home/public/PublicHomeText";
 import MuseumHeader from "@/components/site/MuseumHeader";
-import PublicUxText from "@/components/public/PublicUxText";
 import LegalFooter from "@/components/legal/LegalFooter";
-import T from "@/components/i18n/T";
+import { getArtworkCardUrl, type ArtworkImageUrls } from "@/lib/artworks/imageUrls";
+import { PLAN_LIMITS } from "@/lib/plans";
 import {
   absoluteUrl,
   createPublicMetadata,
   DEFAULT_SITE_DESCRIPTION,
   SITE_NAME,
 } from "@/lib/seo/site";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = createPublicMetadata({
@@ -27,7 +32,7 @@ const homeStructuredData = {
   "@graph": [
     {
       "@type": "Organization",
-      "@id": `${absoluteUrl("/")}#organization`,
+      "@id": absoluteUrl("/") + "#organization",
       name: SITE_NAME,
       url: absoluteUrl("/"),
       logo: {
@@ -37,806 +42,516 @@ const homeStructuredData = {
     },
     {
       "@type": "WebSite",
-      "@id": `${absoluteUrl("/")}#website`,
+      "@id": absoluteUrl("/") + "#website",
       name: SITE_NAME,
       url: absoluteUrl("/"),
-      description: DEFAULT_SITE_DESCRIPTION,
       inLanguage: "it-IT",
       publisher: {
-        "@id": `${absoluteUrl("/")}#organization`,
+        "@id": absoluteUrl("/") + "#organization",
       },
     },
   ],
 };
 
-const heroGallery = {
-  titleKey: "home.hero.gallery.title",
-  titleFallback: "Dark Little Gallery",
-  subtitleKey: "home.hero.gallery.subtitle",
-  subtitleFallback: "Template immersivo in evidenza",
-  imageUrl: "/home/hero-gallery.jpg",
-  href: "/marketplace",
+type ViewerClient = Awaited<ReturnType<typeof createClient>>;
+
+type Gallery = {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  cover_image_url: string | null;
 };
 
-const featuredGalleries = [
-  {
-    initials: "GB",
-    titleKey: "home.featured.galleryBarattolo.title",
-    titleFallback: "Galleria Barattolo",
-    locationKey: "home.featured.galleryBarattolo.location",
-    locationFallback: "Roma, Italia",
-    imageUrl: "/home/featured-1.jpg",
-    href: "/gallerie/galleria-barattolo",
-    publishedGallery: true,
-  },
-  {
-    initials: "DL",
-    titleKey: "home.featured.darkLittleGallery.title",
-    titleFallback: "Dark Little Gallery",
-    locationKey: "home.featured.darkLittleGallery.location",
-    locationFallback: "Spazio virtuale",
-    imageUrl: "/home/featured-2.jpg",
-    href: "/marketplace",
-    publishedGallery: false,
-  },
-  {
-    initials: "LG",
-    titleKey: "home.featured.lightGallery.title",
-    titleFallback: "Light Gallery",
-    locationKey: "home.featured.lightGallery.location",
-    locationFallback: "White cube digitale",
-    imageUrl: "/home/featured-3.jpg",
-    href: "/marketplace",
-    publishedGallery: false,
-  },
-  {
-    initials: "MR",
-    titleKey: "home.featured.museumRoom.title",
-    titleFallback: "Museum Room",
-    locationKey: "home.featured.museumRoom.location",
-    locationFallback: "Ambiente curatoriale",
-    imageUrl: "/home/featured-4.jpg",
-    href: "/marketplace",
-    publishedGallery: false,
-  },
-];
+type PublicProfile = {
+  display_name: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  profile_slug: string | null;
+  public_profile_enabled: boolean;
+};
 
-const featureNotes = [
-  {
-    titleKey: "home.hero.features.immersiveSpaces.title",
-    titleFallback: "Spazi immersivi",
-    detailKey: "home.hero.features.immersiveSpaces.detail",
-    detailFallback: "Ambienti virtuali curati",
-  },
-  {
-    titleKey: "home.hero.features.browserExperience.title",
-    titleFallback: "Browser experience",
-    detailKey: "home.hero.features.browserExperience.detail",
-    detailFallback: "Accesso diretto senza app",
-  },
-  {
-    titleKey: "home.hero.features.digitalCuration.title",
-    titleFallback: "Curatela digitale",
-    detailKey: "home.hero.features.digitalCuration.detail",
-    detailFallback: "Schede, opere e richieste",
-  },
-  {
-    titleKey: "home.hero.features.fastPublishing.title",
-    titleFallback: "Pubblicazione rapida",
-    detailKey: "home.hero.features.fastPublishing.detail",
-    detailFallback: "Dal template allo spazio online",
-  },
-];
+type Artwork = ArtworkImageUrls & {
+  id: string;
+  title: string;
+  artist_name: string | null;
+  is_public: boolean;
+};
 
-const plans = [
-  {
-    name: "Free",
-    nameKey: "home.plans.free.name",
-    nameFallback: "Free",
-    price: "0€",
-    descriptionKey: "home.plans.free.description",
-    descriptionFallback: "1 galleria, 15 opere e anteprima catalogo PDF.",
-    href: "/auth/register",
-    featured: false,
-    badgeKey: "home.plans.free.badge",
-    badgeFallback: "Ingresso",
-  },
-  {
-    name: "Pro",
-    blackWeekPlan: "pro" as const,
-    nameKey: "home.plans.pro.name",
-    nameFallback: "Pro",
-    price: "14,90€",
-    suffixKey: "home.plans.pricePerMonth",
-    suffixFallback: "/mese",
-    descriptionKey: "home.plans.pro.description",
-    descriptionFallback:
-      "5 gallerie, 150 opere e PDF elegante per le tue mostre.",
-    href: "/pricing",
-    featured: false,
-    badgeKey: "home.plans.pro.badge",
-    badgeFallback: "Più popolare",
-  },
-  {
-    name: "Business",
-    blackWeekPlan: "business" as const,
-    nameKey: "home.plans.business.name",
-    nameFallback: "Business",
-    price: "24,90€",
-    suffixKey: "home.plans.pricePerMonth",
-    suffixFallback: "/mese",
-    descriptionKey: "home.plans.business.description",
-    descriptionFallback:
-      "10 gallerie, 250 opere e cataloghi PDF con tutti i layout.",
-    href: "/pricing",
-    featured: true,
-    badgeKey: "home.plans.business.badge",
-    badgeFallback: "Gallerie",
-  },
-  {
-    name: "Diamond",
-    nameKey: "home.plans.diamond.name",
-    nameFallback: "Diamond",
-    price: "49€",
-    suffixKey: "home.plans.pricePerMonth",
-    suffixFallback: "/mese",
-    descriptionKey: "home.plans.diamond.description",
-    descriptionFallback:
-      "15 gallerie, 500 opere e massima capacità espositiva.",
-    href: "/pricing",
-    featured: false,
-    badgeKey: "home.plans.diamond.badge",
-    badgeFallback: "Premium",
-  },
-];
+type ArtworkPlacement = {
+  gallery_id: string;
+  artworks: Artwork | Artwork[] | null;
+};
 
-const platformPillars = [
-  {
-    titleKey: "home.whatIs.pillars.realOnlineExhibitions.title",
-    titleFallback: "Mostre online vere",
-    detailKey: "home.whatIs.pillars.realOnlineExhibitions.detail",
-    detailFallback:
-      "Non una semplice pagina portfolio: uno spazio espositivo visitabile, ordinato e condivisibile.",
-  },
-  {
-    titleKey: "home.whatIs.pillars.artworksAndRequests.title",
-    titleFallback: "Opere, schede e richieste",
-    detailKey: "home.whatIs.pillars.artworksAndRequests.detail",
-    detailFallback:
-      "Carichi le opere, costruisci la galleria, ricevi contatti e tieni tutto sotto controllo.",
-  },
-  {
-    titleKey: "home.whatIs.pillars.pdfCatalogs.title",
-    titleFallback: "Cataloghi PDF",
-    detailKey: "home.whatIs.pillars.pdfCatalogs.detail",
-    detailFallback:
-      "Dalla galleria digitale puoi generare cataloghi professionali con QR, testi e layout diversi.",
-  },
-  {
-    titleKey: "home.whatIs.pillars.spaceMarketplace.title",
-    titleFallback: "Marketplace di spazi",
-    detailKey: "home.whatIs.pillars.spaceMarketplace.detail",
-    detailFallback:
-      "Template e ambienti acquistabili per dare alla mostra una forma visiva più forte.",
-  },
-];
+type CataloguePreview = {
+  id: string;
+  title: string;
+  artist: string | null;
+  image: string;
+  gallery: Gallery;
+};
 
-function GalleryImage({
-  src,
-  alt,
-  initials,
-}: {
-  src: string;
-  alt: string;
-  initials: string;
-}) {
-  if (!src) {
-    return (
-      <div className="relative h-full min-h-full bg-[radial-gradient(circle_at_35%_20%,rgba(243,237,226,0.28),transparent_11rem),linear-gradient(135deg,rgba(168,121,69,0.34),rgba(8,7,5,0.92))]">
-        <div className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--museum-ivory-soft)] bg-black/80 font-editorial text-lg text-[var(--museum-ivory)]">
-          {initials}
-        </div>
-      </div>
-    );
+type GalleryEvent = {
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  timezone: string | null;
+  is_listed: boolean;
+  status: string;
+  access_mode: string;
+};
+
+function galleryPath(slug: string) {
+  return "/gallerie/" + encodeURIComponent(slug);
+}
+
+function imageSource(value?: string | null) {
+  const src = value?.trim();
+  if (!src) return null;
+  if (src.startsWith("/") && !src.startsWith("//")) return src;
+  try {
+    return new URL(src).protocol === "https:" ? src : null;
+  } catch {
+    return null;
+  }
+}
+
+async function loadGalleries(supabase: ViewerClient) {
+  const { data } = await supabase
+    .from("galleries")
+    .select("id, slug, title, status, cover_image_url")
+    .eq("status", "published")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(6)
+    .returns<Gallery[]>();
+
+  return (data ?? []).filter((gallery) => gallery.status === "published" && gallery.slug && gallery.title?.trim());
+}
+
+async function loadCataloguePreviews(supabase: ViewerClient, galleries: Gallery[]) {
+  if (!galleries.length) return [];
+
+  const galleriesById = new Map(galleries.map((gallery) => [gallery.id, gallery]));
+  const { data } = await supabase
+    .from("gallery_artworks")
+    .select("gallery_id, artworks!inner(id, title, artist_name, image_url, thumbnail_url, card_url, optimized_url, is_public)")
+    .in("gallery_id", [...galleriesById.keys()])
+    .eq("artworks.is_public", true)
+    .order("sort_order")
+    .limit(24)
+    .returns<ArtworkPlacement[]>();
+
+  const works = new Map<string, CataloguePreview>();
+  for (const row of data ?? []) {
+    const gallery = galleriesById.get(row.gallery_id);
+    const artwork = Array.isArray(row.artworks) ? row.artworks[0] : row.artworks;
+    if (!gallery || artwork?.is_public !== true || !artwork.title?.trim() || works.has(artwork.id)) continue;
+    const image = imageSource(getArtworkCardUrl(artwork));
+    if (!image) continue;
+
+    works.set(artwork.id, {
+      id: artwork.id,
+      title: artwork.title,
+      artist: artwork.artist_name,
+      image,
+      gallery,
+    });
+    if (works.size === 4) break;
   }
 
+  return [...works.values()];
+}
+
+async function loadPublicCommunity() {
+  try {
+    // Match the public profile directory and events visibility before selecting any display fields.
+    const admin = createAdminClient();
+    const now = new Date().toISOString();
+    const [profilesResponse, eventsResponse] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("display_name, full_name, avatar_url, profile_slug, public_profile_enabled")
+        .eq("public_profile_enabled", true)
+        .not("profile_slug", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(6)
+        .returns<PublicProfile[]>(),
+      admin
+        .from("gallery_events")
+        .select("title, starts_at, ends_at, timezone, is_listed, status, access_mode")
+        .eq("is_listed", true)
+        .eq("access_mode", "public")
+        .in("status", ["scheduled", "live"])
+        .gt("ends_at", now)
+        .order("starts_at", { ascending: true })
+        .limit(1)
+        .returns<GalleryEvent[]>(),
+    ]);
+
+    const profiles = (profilesResponse.data ?? [])
+      .flatMap((profile) => {
+        const name = profile.display_name?.trim() || profile.full_name?.trim();
+        if (profile.public_profile_enabled !== true || !profile.profile_slug || !name) return [];
+        return [{ name, slug: profile.profile_slug, image: imageSource(profile.avatar_url) }];
+      })
+      .slice(0, 4);
+
+    const event = eventsResponse.data?.find((item) =>
+      item.is_listed === true && item.access_mode === "public" && item.title?.trim() &&
+      (item.status === "scheduled" || item.status === "live") && Date.parse(item.ends_at) > Date.parse(now)
+    );
+
+    return { profiles, event };
+  } catch {
+    return { profiles: [], event: undefined };
+  }
+}
+
+function featuredGallery(galleries: Gallery[]) {
+  return galleries.find((gallery) => imageSource(gallery.cover_image_url)) ?? galleries[0];
+}
+
+function GalleryPlaceholder({ loading = false }: { loading?: boolean }) {
   return (
-    <div className="relative h-full min-h-full overflow-hidden bg-[var(--museum-charcoal)]">
-      <img
-        src={src}
-        alt={alt}
-        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-      />
-
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.05),rgba(8,7,5,0.78))]" />
-
-      <div className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--museum-ivory-soft)] bg-black/80 font-editorial text-lg text-[var(--museum-ivory)]">
-        {initials}
+    <Link
+      href="/gallerie"
+      className="group flex aspect-[5/3] min-h-44 items-end overflow-hidden rounded-2xl border border-[var(--museum-border)] bg-[radial-gradient(ellipse_at_top_right,rgba(168,121,69,0.22),transparent_65%),var(--museum-surface)] p-5 sm:p-8"
+    >
+      <div className="max-w-xs">
+        <p className="font-editorial text-3xl leading-tight text-[var(--museum-ivory)] sm:text-4xl">
+          <PublicHomeText id="heroFallback" />
+        </p>
+        {!loading && (
+          <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]">
+            <PublicHomeText id="heroFallbackDescription" />
+          </p>
+        )}
+        <p className="mt-3 text-sm font-medium text-[var(--museum-bronze-light)] group-hover:underline">
+          <PublicHomeText id="galleryArchive" /> <span aria-hidden="true">↗</span>
+        </p>
       </div>
-    </div>
+    </Link>
+  );
+}
+
+async function HeroGallery({ galleries }: { galleries: Promise<Gallery[]> }) {
+  const gallery = featuredGallery(await galleries);
+  if (!gallery) return <GalleryPlaceholder />;
+
+  const cover = imageSource(gallery.cover_image_url);
+  return (
+    <figure className="group relative isolate aspect-[5/3] min-h-44 overflow-hidden rounded-2xl border border-[var(--museum-border)] bg-[radial-gradient(ellipse_at_top_right,rgba(168,121,69,0.22),transparent_65%),var(--museum-surface)]">
+      {cover && (
+        <>
+          <Image
+            fill
+            unoptimized
+            fetchPriority="high"
+            loading="eager"
+            src={cover}
+            alt=""
+            sizes="(min-width: 1024px) 55vw, 92vw"
+            className="object-cover"
+          />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-transparent" />
+        </>
+      )}
+      <figcaption className="absolute inset-x-3 bottom-3 flex flex-wrap items-end justify-between gap-3 rounded-xl border border-white/15 bg-[rgba(8,7,5,0.94)] p-3 sm:inset-x-4 sm:bottom-4 sm:p-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-[var(--museum-ivory-soft)]"><PublicHomeText id="gallery" /></p>
+          <p className="mt-1 font-editorial text-3xl leading-none text-[var(--museum-ivory)] [overflow-wrap:anywhere] sm:text-4xl">
+            {gallery.title}
+          </p>
+        </div>
+        <Link
+          href={galleryPath(gallery.slug)}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[var(--museum-border)] bg-[var(--museum-black)]/90 px-3 text-sm font-medium text-[var(--museum-ivory)] transition-colors hover:border-[var(--museum-bronze-light)]"
+        >
+          <PublicHomeText id="openGallery" /> <span aria-hidden="true">↗</span>
+        </Link>
+      </figcaption>
+    </figure>
+  );
+}
+function ArchiveLink({ href, id }: { href: string; id: "galleryArchive" | "peopleArchive" | "cultureCalendar" | "comparePlans" }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[var(--museum-bronze-light)] underline-offset-4 hover:underline"
+    >
+      <PublicHomeText id={id} /> <span aria-hidden="true">↗</span>
+    </Link>
+  );
+}
+
+async function GalleryDiscovery({ galleries }: { galleries: Promise<Gallery[]> }) {
+  const published = await galleries;
+  const featured = featuredGallery(published);
+  const remaining = published.filter((gallery) => gallery.id !== featured?.id).slice(0, 3);
+
+  return (
+    <section aria-labelledby="public-home-galleries" className="min-w-0">
+      <div className="flex flex-wrap items-end justify-between gap-x-3">
+        <h2 id="public-home-galleries" className="font-editorial text-3xl text-[var(--museum-ivory)] sm:text-4xl">
+          <PublicHomeText id="discoverHeading" />
+        </h2>
+        <ArchiveLink href="/gallerie" id="galleryArchive" />
+      </div>
+      {remaining.length ? (
+        <ul className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
+          {remaining.map((gallery) => {
+            const cover = imageSource(gallery.cover_image_url);
+            return (
+              <li key={gallery.id} className="min-w-0">
+                <Link
+                  href={galleryPath(gallery.slug)}
+                  className="group flex h-full flex-col overflow-hidden rounded-xl border border-[var(--museum-border)] bg-[var(--museum-surface)] transition-colors hover:border-[var(--museum-bronze-light)]"
+                >
+                  {cover && (
+                    <div className="relative aspect-[16/10] overflow-hidden bg-[var(--museum-black)]">
+                      <Image fill unoptimized loading="lazy" src={cover} alt="" sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 90vw" className="object-cover" />
+                    </div>
+                  )}
+                  <div className="flex grow items-center justify-between gap-2 p-2 sm:p-3">
+                    <span className="font-editorial text-base leading-tight text-[var(--museum-ivory)] [overflow-wrap:anywhere] sm:text-xl">{gallery.title}</span>
+                    <span aria-hidden="true" className="hidden text-[var(--museum-bronze-light)] sm:inline">↗</span>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="mt-3 rounded-xl border border-[var(--museum-border)] p-4 text-sm leading-6 text-[var(--museum-stone)]">
+          <PublicHomeText id="heroFallbackDescription" />
+        </p>
+      )}
+    </section>
+  );
+}
+
+async function CommunityDiscovery({ community }: { community: ReturnType<typeof loadPublicCommunity> }) {
+  const { profiles } = await community;
+  return (
+    <section aria-labelledby="public-home-community" className="min-w-0">
+      <div className="flex flex-wrap items-end justify-between gap-x-3">
+        <h2 id="public-home-community" className="font-editorial text-3xl text-[var(--museum-ivory)] sm:text-4xl">
+          <PublicHomeText id="peopleHeading" />
+        </h2>
+        <ArchiveLink href="/profili" id="peopleArchive" />
+      </div>
+      {profiles.length > 0 && (
+        <ul className="mt-3 grid grid-cols-2 gap-2">
+          {profiles.map((profile) => (
+            <li key={profile.slug} className="min-w-0">
+              <Link
+                href={"/profili/" + encodeURIComponent(profile.slug)}
+                className="flex min-h-16 items-center gap-3 rounded-xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-2.5 transition-colors hover:border-[var(--museum-bronze-light)]"
+              >
+                <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--museum-black)] text-lg text-[var(--museum-bronze-light)]">
+                  {profile.image ? (
+                    <Image fill unoptimized loading="lazy" src={profile.image} alt="" sizes="40px" className="object-cover" />
+                  ) : (
+                    <span aria-hidden="true">{profile.name.slice(0, 1).toUpperCase()}</span>
+                  )}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-[var(--museum-ivory)] [overflow-wrap:anywhere]">{profile.name}</span>
+                  <span className="mt-0.5 block text-xs text-[var(--museum-stone)]"><PublicHomeText id="publicProfile" /></span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+async function ArtworkDiscovery({ artwork }: { artwork: Promise<CataloguePreview[]> }) {
+  const works = await artwork;
+  if (!works.length) return null;
+
+  return (
+    <section aria-labelledby="public-home-artwork" className="border-t border-[var(--museum-border)]">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:px-8 md:py-12">
+        <h2 id="public-home-artwork" className="font-editorial text-3xl text-[var(--museum-ivory)] sm:text-4xl">
+          <PublicHomeText id="artHeading" />
+        </h2>
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[var(--museum-stone)]">
+          <PublicHomeText id="artDescription" />
+        </p>
+        <ul className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {works.map((work) => (
+            <li key={work.id} className="min-w-0">
+              <Link
+                href={galleryPath(work.gallery.slug) + "#catalogo"}
+                className="group flex h-full flex-col overflow-hidden rounded-xl border border-[var(--museum-border)] bg-[var(--museum-surface)] transition-colors hover:border-[var(--museum-bronze-light)]"
+              >
+                <div className="relative aspect-[5/4] overflow-hidden bg-[var(--museum-black)]">
+                  <Image fill unoptimized loading="lazy" src={work.image} alt="" sizes="(min-width: 1024px) 25vw, 45vw" className="object-contain" />
+                </div>
+                <div className="flex grow flex-col gap-1 p-3 sm:p-4">
+                  <span className="font-editorial text-xl leading-tight text-[var(--museum-ivory)] [overflow-wrap:anywhere] sm:text-2xl">{work.title}</span>
+                  {work.artist && <span className="text-sm text-[var(--museum-stone)] [overflow-wrap:anywhere]">{work.artist}</span>}
+                  <span className="mt-auto pt-2 text-xs text-[var(--museum-bronze-light)] underline-offset-4 group-hover:underline">
+                    <PublicHomeText id="artCatalogue" /> <span className="sr-only"> — {work.gallery.title}</span><span aria-hidden="true"> ↗</span>
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+async function CultureDiscovery({ community }: { community: ReturnType<typeof loadPublicCommunity> }) {
+  const { event } = await community;
+  return (
+    <section aria-labelledby="public-home-culture" className="rounded-2xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-1">
+        <div className="min-w-0">
+          <h2 id="public-home-culture" className="font-editorial text-3xl text-[var(--museum-ivory)]"><PublicHomeText id="cultureHeading" /></h2>
+          <p className="mt-1 text-sm leading-6 text-[var(--museum-stone)]"><PublicHomeText id="cultureDescription" /></p>
+        </div>
+        <ArchiveLink href="/eventi" id="cultureCalendar" />
+      </div>
+      {event && (
+        <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 border-t border-[var(--museum-border)] pt-4">
+          <p className="font-editorial text-xl leading-tight text-[var(--museum-ivory)] [overflow-wrap:anywhere] sm:text-2xl">{event.title}</p>
+          <div className="text-sm text-[var(--museum-bronze-light)]"><PublicHomeEventDate value={event.starts_at} timeZone={event.timezone} /></div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const audiencePaths = [
+  { title: "visitorTitle", description: "visitorDescription", action: "explore", href: "/gallerie" },
+  { title: "creatorTitle", description: "creatorDescription", action: "register", href: "/auth/register" },
+  { title: "curatorTitle", description: "curatorDescription", action: "templates", href: "/marketplace" },
+] as const;
+
+function AudiencePaths() {
+  return (
+    <section aria-labelledby="public-home-audience" className="mt-9">
+      <h2 id="public-home-audience" className="font-editorial text-3xl text-[var(--museum-ivory)] sm:text-4xl">
+        <PublicHomeText id="audienceHeading" />
+      </h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        {audiencePaths.map((item) => (
+          <article key={item.title} className="flex min-w-0 flex-col rounded-xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-4 sm:p-5">
+            <h3 className="font-editorial text-2xl leading-tight text-[var(--museum-ivory)]"><PublicHomeText id={item.title} /></h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--museum-stone)]"><PublicHomeText id={item.description} /></p>
+            <Link href={item.href} className="mt-auto inline-flex min-h-11 items-center gap-2 pt-2 text-sm font-medium text-[var(--museum-bronze-light)] hover:underline">
+              <PublicHomeText id={item.action} /> <span aria-hidden="true">↗</span>
+            </Link>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const publicPlans = ["free", "pro", "business", "diamond"] as const;
+
+function PlanOverview() {
+  return (
+    <section aria-labelledby="public-home-plans" className="border-y border-[var(--museum-border)]">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:px-8 md:py-12">
+        <div className="flex flex-wrap items-end justify-between gap-x-4">
+          <h2 id="public-home-plans" className="font-editorial text-3xl text-[var(--museum-ivory)] sm:text-4xl">
+            <PublicHomeText id="planHeading" />
+          </h2>
+          <ArchiveLink href="/pricing" id="comparePlans" />
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {publicPlans.map((plan) => (
+            <Link
+              key={plan}
+              href={plan === "free" ? "/auth/register" : "/pricing"}
+              className="flex min-w-0 flex-col rounded-xl border border-[var(--museum-border)] bg-[var(--museum-surface)] p-3 transition-colors hover:border-[var(--museum-bronze-light)] sm:p-5"
+            >
+              <span className="text-sm font-semibold text-[var(--museum-ivory)]">{PLAN_LIMITS[plan].label}</span>
+              <span className="mt-2 block font-editorial text-2xl leading-tight text-[var(--museum-ivory)] sm:text-3xl">
+                <BlackWeekPlanPrice plan={plan === "pro" || plan === "business" ? plan : undefined}>
+                  {PLAN_LIMITS[plan].monthlyPriceLabel}
+                </BlackWeekPlanPrice>
+              </span>
+              <span className="mt-auto block pt-3 text-xs font-medium text-[var(--museum-bronze-light)]">
+                <PublicHomeText id={plan === "free" ? "freePlanAction" : "planAction"} /> <span aria-hidden="true">↗</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect("/home");
-  }
+  if (user) redirect("/home");
+
+  const galleries = loadGalleries(supabase);
+  const community = loadPublicCommunity();
+  const artwork = galleries.then((published) => loadCataloguePreviews(supabase, published));
 
   return (
-    <main className="museum-page overflow-hidden">
+    <main className={"museum-page " + styles.page}>
       <JsonLd data={homeStructuredData} />
-      <MuseumHeader initialAccountName={null} />
-      <BlackWeekBanner />
+      <MuseumHeader />
 
-      <section className="border-b border-[var(--museum-border)]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-[0.95fr_1.25fr] md:px-8 md:py-20">
-          <div className="flex flex-col justify-center">
-            <p className="museum-label">
-              <T textKey="home.hero.label" fallback="L’arte senza confini" />
-            </p>
-
-            <h1 className="museum-title mt-6 max-w-2xl text-5xl text-[var(--museum-ivory)] sm:text-6xl md:text-7xl lg:text-8xl">
-              <T
-                textKey="home.hero.title"
-                fallback="L’arte merita uno spazio senza confini."
-              />
+      <section aria-labelledby="public-home-title" className="border-b border-[var(--museum-border)]">
+        <div className="mx-auto grid max-w-7xl items-center gap-5 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-9 lg:px-8 lg:py-12">
+          <div className="min-w-0">
+            <h1 id="public-home-title" className={"font-editorial font-medium leading-[0.98] tracking-tight text-[var(--museum-ivory)] [overflow-wrap:anywhere] " + styles.heroHeading}>
+              <span className="block"><PublicHomeText id="heroHeadingFirst" /></span>{" "}
+              <span className="block"><PublicHomeText id="heroHeadingSecond" /></span>
             </h1>
-
-            <p className="museum-subtitle mt-7 max-w-xl text-base text-[var(--museum-stone)] md:text-lg">
-              <T
-                textKey="home.hero.subtitle"
-                fallback="mostra.space è il portale per vivere, esporre e collezionare arte in gallerie virtuali immersive."
-              />
+            <p className={"mt-3 max-w-lg text-base leading-6 text-[var(--museum-ivory-soft)] sm:mt-5 sm:text-lg sm:leading-7 " + styles.heroDescription}>
+              <PublicHomeText id="heroDescription" />
             </p>
-
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-              <Link
-                href="/gallerie"
-                className="museum-button-primary px-7 py-3.5"
-              >
-                <T
-                  textKey="home.hero.ctaExplore"
-                  fallback="Esplora le gallerie"
-                />
+            <div className="mt-4 flex flex-col items-start gap-2 sm:mt-6 sm:flex-row sm:flex-wrap">
+              <Link href="/auth/register" className="museum-button-primary min-h-11 max-w-full px-4 py-2.5 sm:px-5">
+                <PublicHomeText id="register" />
               </Link>
-
-              <Link
-                href="/auth/register"
-                className="museum-button-secondary px-7 py-3.5"
-              >
-                <T
-                  textKey="home.hero.ctaCreate"
-                  fallback="Crea la tua galleria"
-                />
-              </Link>
-
-              <Link href="/profili" className="museum-button-secondary px-7 py-3.5">
-                <T textKey="events.header.exploreProfiles" fallback="Esplora profili" />
+              <Link href="/gallerie" className="museum-button-secondary min-h-11 max-w-full px-4 py-2.5 sm:px-5">
+                <PublicHomeText id="explore" />
               </Link>
             </div>
-
-            <div className="mt-11 grid grid-cols-2 gap-6 border-t border-[var(--museum-border)] pt-7 md:grid-cols-4">
-              {featureNotes.map((item) => (
-                <div key={item.titleKey}>
-                  <p className="font-editorial text-2xl leading-none text-[var(--museum-ivory)]">
-                    <T
-                      textKey={item.titleKey}
-                      fallback={item.titleFallback}
-                    />
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-[var(--museum-stone-muted)]">
-                    <T
-                      textKey={item.detailKey}
-                      fallback={item.detailFallback}
-                    />
-                  </p>
-                </div>
-              ))}
-            </div>
+            <p className={"mt-3 max-w-lg text-xs leading-5 text-[var(--museum-stone)] sm:text-sm sm:leading-6 " + styles.heroBenefit}>
+              <PublicHomeText id="heroBenefit" />
+            </p>
           </div>
-
-          <Link
-            href={heroGallery.href}
-            className="group relative min-h-[18rem] overflow-hidden rounded-[2rem] border border-[var(--museum-border)] bg-[var(--museum-charcoal)] shadow-[var(--museum-shadow-soft)] sm:min-h-[25rem] lg:min-h-[32rem]"
-          >
-            {heroGallery.imageUrl ? (
-              <>
-                <img
-                  src={heroGallery.imageUrl}
-                  alt={heroGallery.titleFallback}
-                  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,7,5,0.18),rgba(8,7,5,0.62)),linear-gradient(180deg,rgba(8,7,5,0.08),rgba(8,7,5,0.78))]" />
-              </>
-            ) : (
-              <>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(243,237,226,0.18),transparent_22rem),linear-gradient(120deg,rgba(0,0,0,0.1),rgba(0,0,0,0.72))]" />
-                <div className="absolute left-1/2 top-10 h-36 w-72 -translate-x-1/2 rounded-b-full border border-[rgba(243,237,226,0.28)] bg-[radial-gradient(circle_at_center,rgba(243,237,226,0.55),rgba(243,237,226,0.08)_45%,transparent_70%)] blur-[0.2px]" />
-                <div className="absolute inset-x-16 top-28 h-[22rem] rounded-t-full border border-[rgba(197,151,94,0.26)] bg-[linear-gradient(180deg,rgba(216,205,187,0.08),rgba(0,0,0,0.2))]" />
-                <div className="absolute left-1/2 top-48 h-44 w-24 -translate-x-1/2 rounded-full border-[10px] border-[rgba(168,121,69,0.88)] opacity-90 shadow-[0_0_60px_rgba(168,121,69,0.18)]" />
-                <div className="absolute left-1/2 top-60 h-32 w-16 -translate-x-1/2 rotate-45 rounded-full border-[8px] border-[rgba(197,151,94,0.75)] opacity-90" />
-              </>
-            )}
-
-            <div className="absolute inset-x-4 bottom-4 rounded-3xl border border-[rgba(216,205,187,0.16)] bg-[rgba(8,7,5,0.78)] p-5 backdrop-blur-md sm:inset-x-8 sm:bottom-8">
-              <p className="museum-label">
-                <T
-                  textKey={heroGallery.subtitleKey}
-                  fallback={heroGallery.subtitleFallback}
-                />
-              </p>
-
-              <h2 className="mt-3 font-editorial text-4xl leading-tight text-[var(--museum-ivory)]">
-                <T
-                  textKey={heroGallery.titleKey}
-                  fallback={heroGallery.titleFallback}
-                />
-              </h2>
-
-              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--museum-bronze-light)]">
-                <PublicUxText id="exploreTemplates" /> <span aria-hidden="true">→</span>
-              </p>
-            </div>
-          </Link>
+          <Suspense fallback={<GalleryPlaceholder loading />}>
+            <HeroGallery galleries={galleries} />
+          </Suspense>
         </div>
       </section>
 
-      <section className="border-b border-[var(--museum-border)]">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-[1.45fr_0.9fr] md:px-8">
-          <div>
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="museum-label">
-                <PublicUxText id="featured" />
-              </h2>
+      <div className="mx-auto grid max-w-7xl gap-7 px-4 py-8 sm:px-6 md:px-8 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-9 lg:py-10">
+        <Suspense fallback={<div aria-hidden="true" className="min-h-28 rounded-xl border border-[var(--museum-border)] bg-[var(--museum-surface)] lg:min-h-44" />}>
+          <GalleryDiscovery galleries={galleries} />
+        </Suspense>
+        <Suspense fallback={<div aria-hidden="true" className="min-h-24 rounded-xl border border-[var(--museum-border)] bg-[var(--museum-surface)]" />}>
+          <CommunityDiscovery community={community} />
+        </Suspense>
+      </div>
 
-              <Link
-                href="/gallerie"
-                className="text-xs uppercase tracking-[0.16em] text-[var(--museum-stone-muted)] transition hover:text-[var(--museum-bronze-light)]"
-              >
-                <T textKey="home.featured.viewAll" fallback="Vedi tutte →" />
-              </Link>
-            </div>
+      <BlackWeekBanner className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:px-8" />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {featuredGalleries.map((gallery) => (
-                <Link
-                  key={gallery.titleKey}
-                  href={gallery.href}
-                  className="group overflow-hidden rounded-2xl border border-[var(--museum-border)] bg-[var(--museum-surface)] transition hover:border-[var(--museum-bronze)]"
-                >
-                  <div className="h-52">
-                    <GalleryImage
-                      src={gallery.imageUrl}
-                      alt={gallery.titleFallback}
-                      initials={gallery.initials}
-                    />
-                  </div>
+      <Suspense fallback={null}><ArtworkDiscovery artwork={artwork} /></Suspense>
 
-                  <div className="p-4">
-                    <h3 className="font-editorial text-xl leading-tight text-[var(--museum-ivory)]">
-                      <T
-                        textKey={gallery.titleKey}
-                        fallback={gallery.titleFallback}
-                      />
-                    </h3>
-
-                    <p className="mt-2 text-xs text-[var(--museum-stone)]">
-                      {gallery.publishedGallery ? (
-                        <T textKey={gallery.locationKey} fallback={gallery.locationFallback} />
-                      ) : (
-                        <PublicUxText id="templatePreview" />
-                      )}
-                    </p>
-
-                    <p className="mt-4 text-xs font-medium text-[var(--museum-bronze-light)]">
-                      {gallery.publishedGallery ? (
-                        <T textKey="galleries.actions.openGallery" fallback="Apri galleria" />
-                      ) : (
-                        <PublicUxText id="exploreTemplates" />
-                      )} <span aria-hidden="true">→</span>
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="museum-card rounded-[1.75rem] p-5">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="museum-label">
-                <T
-                  textKey="home.plans.title"
-                  fallback="Scegli il tuo spazio"
-                />
-              </h2>
-
-              <Link
-                href="/pricing"
-                className="text-xs uppercase tracking-[0.16em] text-[var(--museum-stone-muted)] transition hover:text-[var(--museum-bronze-light)]"
-              >
-                <T
-                  textKey="home.plans.viewAll"
-                  fallback="Vedi tutti i piani →"
-                />
-              </Link>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {plans.map((plan) => (
-                <Link
-                  key={plan.name}
-                  href={plan.href}
-                  className={
-                    plan.featured
-                      ? "relative rounded-2xl border border-[var(--museum-bronze)] bg-[rgba(168,121,69,0.08)] p-5 shadow-[var(--museum-shadow-bronze)]"
-                      : "rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.38)] p-5 transition hover:border-[var(--museum-bronze)]"
-                  }
-                >
-                  {plan.featured && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--museum-bronze)] px-3 py-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-black)]">
-                      <T
-                        textKey="home.plans.featuredBadge"
-                        fallback="Più popolare"
-                      />
-                    </span>
-                  )}
-
-                  {!plan.featured && plan.badgeKey && (
-                    <span className="mb-4 inline-flex rounded-full border border-[var(--museum-border)] px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.14em] text-[var(--museum-stone-muted)]">
-                      <T
-                        textKey={plan.badgeKey}
-                        fallback={plan.badgeFallback}
-                      />
-                    </span>
-                  )}
-
-                  <p className="font-editorial text-xl text-[var(--museum-ivory-soft)]">
-                    <T textKey={plan.nameKey} fallback={plan.nameFallback} />
-                  </p>
-
-                  <p className="mt-4 font-editorial text-3xl text-[var(--museum-ivory)]">
-                    <BlackWeekPlanPrice plan={plan.blackWeekPlan}>
-                      {plan.price}
-                      {plan.suffixKey && (
-                        <span className="ml-1 font-ui text-xs text-[var(--museum-stone-muted)]">
-                          <T
-                            textKey={plan.suffixKey}
-                            fallback={plan.suffixFallback}
-                          />
-                        </span>
-                      )}
-                    </BlackWeekPlanPrice>
-                  </p>
-
-                  <p className="mt-4 min-h-20 text-xs leading-5 text-[var(--museum-stone)]">
-                    <T
-                      textKey={plan.descriptionKey}
-                      fallback={plan.descriptionFallback}
-                    />
-                  </p>
-
-                  <span
-                    className={
-                      plan.featured
-                        ? "museum-button-primary mt-6 w-full px-4 py-3"
-                        : "museum-button-secondary mt-6 w-full px-4 py-3"
-                    }
-                  >
-                    {plan.name === "Free" ? (
-                      <T
-                        textKey="home.plans.actions.startFree"
-                        fallback="Inizia gratis"
-                      />
-                    ) : (
-                      <T
-                        textKey="home.plans.actions.viewPlan"
-                        fallback="Vedi il piano"
-                      />
-                    )}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-[var(--museum-border)]">
-        <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-18">
-          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-            <div>
-              <p className="museum-label">
-                <T textKey="home.whatIs.label" fallback="Cos’è mostra.space" />
-              </p>
-
-              <h2 className="museum-title mt-5 max-w-3xl text-5xl text-[var(--museum-ivory)] md:text-6xl">
-                <T
-                  textKey="home.whatIs.title"
-                  fallback="La tua mostra online, pronta da visitare, condividere e vendere."
-                />
-              </h2>
-
-              <p className="museum-subtitle mt-6 max-w-2xl text-sm text-[var(--museum-stone)] md:text-base">
-                <T
-                  textKey="home.whatIs.subtitle"
-                  fallback="MostraSpace trasforma opere, testi, immagini e identità visiva in uno spazio espositivo digitale completo: una galleria immersiva da browser, una dashboard per gestirla e strumenti professionali per presentarla al pubblico."
-                />
-              </p>
-
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Link
-                  href="/auth/register"
-                  className="museum-button-primary px-7 py-3.5"
-                >
-                  <T
-                    textKey="home.whatIs.ctaCreate"
-                    fallback="Crea il tuo spazio"
-                  />
-                </Link>
-
-                <Link
-                  href="/marketplace"
-                  className="museum-button-secondary px-7 py-3.5"
-                >
-                  <T
-                    textKey="home.whatIs.ctaMarketplace"
-                    fallback="Scopri il marketplace"
-                  />
-                </Link>
-              </div>
-            </div>
-
-            <div className="museum-card-soft rounded-[1.75rem] p-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {platformPillars.map((item, index) => (
-                  <div
-                    key={item.titleKey}
-                    className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-5"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--museum-bronze-light)]">
-                      {String(index + 1).padStart(2, "0")}
-                    </p>
-
-                    <h3 className="mt-5 font-editorial text-2xl leading-tight text-[var(--museum-ivory)]">
-                      <T
-                        textKey={item.titleKey}
-                        fallback={item.titleFallback}
-                      />
-                    </h3>
-
-                    <p className="mt-3 text-xs leading-6 text-[var(--museum-stone)]">
-                      <T
-                        textKey={item.detailKey}
-                        fallback={item.detailFallback}
-                      />
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-[rgba(197,151,94,0.34)] bg-[rgba(168,121,69,0.08)] p-5">
-                <p className="museum-label">
-                  <T
-                    textKey="home.whatIs.workflow.label"
-                    fallback="Dal portfolio alla mostra"
-                  />
-                </p>
-
-                <p className="mt-4 font-editorial text-3xl leading-tight text-[var(--museum-ivory)]">
-                  <T
-                    textKey="home.whatIs.workflow.title"
-                    fallback="Carichi le opere. Scegli lo spazio. Pubblici la galleria. Generi il catalogo."
-                  />
-                </p>
-
-                <p className="mt-4 text-sm leading-7 text-[var(--museum-stone)]">
-                  <T
-                    textKey="home.whatIs.workflow.description"
-                    fallback="Tutto in un unico flusso: più rapido di un sito su misura, più professionale di un semplice portfolio, più immersivo di una pagina statica."
-                  />
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-[0.85fr_1.45fr] md:px-8">
-        <div className="flex flex-col justify-center">
-          <p className="museum-label">
-            <T
-              textKey="home.dashboard.label"
-              fallback="Il tuo mondo, tutto in un luogo"
-            />
-          </p>
-
-          <h2 className="museum-title mt-5 text-5xl text-[var(--museum-ivory)] md:text-6xl">
-            <T
-              textKey="home.dashboard.titleLineOne"
-              fallback="Dashboard intuitiva."
-            />
-            <br />
-            <T
-              textKey="home.dashboard.titleLineTwo"
-              fallback="Controllo totale."
-            />
-          </h2>
-
-          <p className="museum-subtitle mt-6 max-w-md text-sm text-[var(--museum-stone)]">
-            <T
-              textKey="home.dashboard.subtitle"
-              fallback="Gestisci le tue opere, la tua galleria e le tue attività con strumenti professionali e semplici da usare."
-            />
-          </p>
-
-          <Link
-            href="/dashboard"
-            className="mt-7 inline-flex text-xs font-semibold uppercase tracking-[0.16em] text-[var(--museum-bronze-light)] transition hover:text-[var(--museum-ivory)]"
-          >
-            <T
-              textKey="home.dashboard.cta"
-              fallback="Scopri la dashboard →"
-            />
-          </Link>
-        </div>
-
-        <div className="museum-card-soft rounded-[1.75rem] p-5">
-          <div className="flex items-center justify-between border-b border-[var(--museum-border)] pb-4">
-            <div>
-              <p className="museum-logo text-2xl text-[var(--museum-ivory)]">
-                mostra<span className="text-[var(--museum-bronze-light)]">.</span>
-                <span className="text-[var(--museum-ivory-soft)]">space</span>
-              </p>
-
-              <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                <T
-                  textKey="home.dashboard.preview.overview"
-                  fallback="Panoramica"
-                />
-              </p>
-            </div>
-
-            <Link
-              href="/dashboard"
-              className="museum-button-secondary px-4 py-2"
-            >
-              <T
-                textKey="home.dashboard.preview.visitGallery"
-                fallback="Visita la mia galleria"
-              />
-            </Link>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-4">
-            {[
-              {
-                labelKey: "home.dashboard.preview.stats.spaces.label",
-                labelFallback: "Spazi",
-                valueKey: "home.dashboard.preview.stats.spaces.value",
-                valueFallback: "Template",
-                detailKey: "home.dashboard.preview.stats.spaces.detail",
-                detailFallback: "Gallerie configurabili",
-              },
-              {
-                labelKey: "home.dashboard.preview.stats.artworks.label",
-                labelFallback: "Opere",
-                valueKey: "home.dashboard.preview.stats.artworks.value",
-                valueFallback: "Catalogo",
-                detailKey: "home.dashboard.preview.stats.artworks.detail",
-                detailFallback: "Schede e immagini",
-              },
-              {
-                labelKey: "home.dashboard.preview.stats.requests.label",
-                labelFallback: "Richieste",
-                valueKey: "home.dashboard.preview.stats.requests.value",
-                valueFallback: "Lead",
-                detailKey: "home.dashboard.preview.stats.requests.detail",
-                detailFallback: "Contatti dal pubblico",
-              },
-              {
-                labelKey: "home.dashboard.preview.stats.plan.label",
-                labelFallback: "Piano",
-                valueKey: "home.dashboard.preview.stats.plan.value",
-                valueFallback: "Billing",
-                detailKey: "home.dashboard.preview.stats.plan.detail",
-                detailFallback: "Limiti e abbonamento",
-              },
-            ].map((item) => (
-              <div
-                key={item.labelKey}
-                className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4"
-              >
-                <p className="text-xs text-[var(--museum-stone-muted)]">
-                  <T
-                    textKey={item.labelKey}
-                    fallback={item.labelFallback}
-                  />
-                </p>
-
-                <p className="mt-3 font-editorial text-2xl text-[var(--museum-ivory)]">
-                  <T
-                    textKey={item.valueKey}
-                    fallback={item.valueFallback}
-                  />
-                </p>
-
-                <p className="mt-2 text-xs text-[var(--museum-stone-muted)]">
-                  <T
-                    textKey={item.detailKey}
-                    fallback={item.detailFallback}
-                  />
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1.25fr]">
-            <div className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
-              <p className="museum-label">
-                <T
-                  textKey="home.dashboard.preview.recentActivities.title"
-                  fallback="Attività recenti"
-                />
-              </p>
-
-              <div className="mt-4 space-y-3 text-xs text-[var(--museum-stone)]">
-                <p>
-                  <T
-                    textKey="home.dashboard.preview.recentActivities.newRequest"
-                    fallback="Nuova richiesta ricevuta da una galleria pubblica"
-                  />
-                </p>
-                <p>
-                  <T
-                    textKey="home.dashboard.preview.recentActivities.artworkSaved"
-                    fallback="Opera salvata da un collezionista"
-                  />
-                </p>
-                <p>
-                  <T
-                    textKey="home.dashboard.preview.recentActivities.templateUpdated"
-                    fallback="Template aggiornato nello spazio espositivo"
-                  />
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--museum-border)] bg-[rgba(8,7,5,0.42)] p-4">
-              <div className="flex items-center justify-between">
-                <p className="museum-label">
-                  <T
-                    textKey="home.dashboard.preview.exhibitionFlow.title"
-                    fallback="Flusso espositivo"
-                  />
-                </p>
-
-                <p className="font-editorial text-2xl text-[var(--museum-ivory)]">
-                  <T
-                    textKey="home.dashboard.preview.exhibitionFlow.status"
-                    fallback="Live"
-                  />
-                </p>
-              </div>
-
-              <div className="mt-8 flex h-28 items-end gap-2">
-                {[32, 48, 38, 62, 55, 86, 74].map((height, index) => (
-                  <div
-                    key={index}
-                    className="flex-1 rounded-t-full bg-[linear-gradient(180deg,var(--museum-bronze-light),rgba(168,121,69,0.18))]"
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      <div className="mx-auto max-w-7xl px-4 pb-8 pt-2 sm:px-6 md:px-8 md:pb-12">
+        <Suspense fallback={null}><CultureDiscovery community={community} /></Suspense>
+        <AudiencePaths />
+      </div>
+      <PlanOverview />
       <LegalFooter />
     </main>
   );
