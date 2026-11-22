@@ -1,0 +1,43 @@
+.heroHeading {
+  min-block-size: 2lh;
+  font-size: clamp(2.3rem, 10vw, 3.75rem);
+}
+
+.heroDescription {
+  min-block-size: 3lh;
+}
+
+.heroBenefit {
+  min-block-size: 2lh;
+}
+
+@media (min-width: 640px) {
+  .heroDescription {
+    min-block-size: 2lh;
+  }
+}
+
+@media (min-width: 1024px) {
+  .heroHeading {
+    font-size: clamp(3.75rem, 5.15vw, 5.25rem);
+  }
+}
+
+@media (max-width: 360px) {
+  .page header :global(.museum-logo) {
+    font-size: 1.35rem;
+  }
+
+  .page header a[href="/auth/register"],
+  .page header button[aria-controls] {
+    padding-inline: 0.45rem;
+    letter-spacing: 0.04em;
+  }
+
+  .page header a[href="/auth/register"] {
+    min-inline-size: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+}
