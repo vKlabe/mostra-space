@@ -4,6 +4,9 @@ import { useLanguage } from "@/components/i18n/LanguageProvider";
 import type { Locale } from "@/lib/i18n/dictionaries";
 
 const labels = {
+  home: {
+    it: "Home", en: "Home", fr: "Accueil", es: "Inicio",
+  },
   workspace: {
     it: "Il tuo lavoro", en: "Your workspace", fr: "Votre espace de travail", es: "Tu espacio de trabajo",
   },

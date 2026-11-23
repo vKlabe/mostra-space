@@ -33,13 +33,16 @@ type DashboardShellProps = {
 };
 
 type Section = NonNullable<DashboardShellProps["activeSection"]>;
+type NavigationSection = Section | "home";
 
 type NavItem = { href: string; label: ReactNode };
 
 const SIDEBAR_STORAGE_KEY = "mostraspace:dashboard-sidebar-collapsed";
 
-const navItems: Record<Section, NavItem> = {
+const navItems: Record<NavigationSection, NavItem> = {
+  home: { href: "/home", label: <WorkspaceText label="home" /> },
   dashboard: { href: "/dashboard", label: <T textKey="dashboard.shell.creatorNav.dashboard.label" fallback="Dashboard" /> },
+  premio: { href: "/dashboard/premiomostraspace", label: <T textKey="premio.navMenu" fallback="Premio Mostra.Space" /> },
   gallerie: { href: "/dashboard/gallerie", label: <T textKey="dashboard.shell.creatorNav.galleries.label" fallback="Gallerie" /> },
   opere: { href: "/dashboard/opere", label: <T textKey="dashboard.shell.creatorNav.artworks.label" fallback="Opere" /> },
   eventi: { href: "/dashboard/eventi", label: <T textKey="dashboard.events.shell.title" fallback="Eventi" /> },
@@ -47,7 +50,6 @@ const navItems: Record<Section, NavItem> = {
   analytics: { href: "/dashboard/analytics", label: <T textKey="dashboard.shell.creatorNav.analytics.label" fallback="Analytics" /> },
   vendite: { href: "/dashboard/vendite", label: <T textKey="commerce.sales" fallback="Vendita opere" /> },
   social: { href: "/dashboard/social", label: <T textKey="dashboard.shell.creatorNav.social.label" fallback="Social" /> },
-  premio: { href: "/dashboard/premiomostraspace", label: <T textKey="premio.navMenu" fallback="Premio Mostra.Space" /> },
   account: { href: "/account", label: <T textKey="dashboard.shell.communityNav.account.description" fallback="Profilo e impostazioni" /> },
   acquisti: { href: "/account/acquisti", label: <T textKey="commerce.purchases" fallback="I miei acquisti" /> },
   help: { href: "/dashboard/help", label: <T textKey="dashboard.shell.creatorNav.help.label" fallback="Guida & FAQ" /> },
@@ -59,7 +61,7 @@ const navGroups: ReadonlyArray<{
   creatorOnly?: boolean;
 }> = [
   { label: "workspace", sections: ["gallerie", "opere", "eventi", "richieste", "analytics", "vendite"], creatorOnly: true },
-  { label: "connections", sections: ["social", "premio"] },
+  { label: "connections", sections: ["social"] },
   { label: "account", sections: ["account", "acquisti", "help"] },
 ];
 
@@ -241,7 +243,7 @@ export default function DashboardShell({
     });
   }
 
-  function renderNavLink(section: Section) {
+  function renderNavLink(section: NavigationSection) {
     const { href, label } = navItems[section];
     const isActive = section === activeSection;
 
@@ -376,7 +378,9 @@ export default function DashboardShell({
         </div>
 
         <nav aria-labelledby="dashboard-sidebar-title" className="mt-5 space-y-2">
+          {renderNavLink("home")}
           {renderNavLink("dashboard")}
+          {renderNavLink("premio")}
           {visibleGroups.map((group) => (
             <details
               key={`${activeSection}-${group.label}`}
