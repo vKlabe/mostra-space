@@ -1,7 +1,12 @@
 import AdminShell from "@/components/admin/AdminShell";
 import AdminUserControls from "@/components/admin/AdminUserControls";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
+import { shopifyExportDate } from "@/lib/admin/shopifyCustomerCsv";
 import LocalDateTime from "@/components/time/LocalDateTime";
+
+const exportUrl = "/api/admin/users/export";
+const exportButtonClass =
+  "inline-flex min-h-11 items-center justify-center rounded-full border border-neutral-700 px-4 py-2 text-sm text-neutral-100 transition hover:border-neutral-400";
 
 type UserRole = "user" | "gallerist" | "admin";
 type UserPlan = "free" | "pro" | "business" | "diamond" | "institution";
@@ -211,6 +216,46 @@ export default async function AdminUsersPage() {
         </article>
       </div>
 
+      <section
+        aria-labelledby="shopify-export-heading"
+        className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6"
+      >
+        <h2 id="shopify-export-heading" className="text-2xl font-medium">
+          Esporta utenti per Shopify
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-neutral-400">
+          Il CSV riporta «no» nei campi marketing. Il consenso alla newsletter
+          va raccolto separatamente dalla registrazione.
+        </p>
+        <div className="mt-4 flex flex-wrap items-end gap-4">
+          <a href={exportUrl} className={exportButtonClass}>
+            Esporta tutti
+          </a>
+          <form action={exportUrl} method="get" className="flex flex-wrap items-end gap-3">
+            <div>
+              <label htmlFor="shopify-export-from" className="block text-sm text-neutral-300">
+                Data di creazione account
+              </label>
+              <input
+                required
+                type="date"
+                name="from"
+                id="shopify-export-from"
+                max={shopifyExportDate(new Date())}
+                aria-describedby="shopify-export-date-hint"
+                className="mt-1 min-h-11 rounded-xl border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 [color-scheme:dark]"
+              />
+            </div>
+            <button type="submit" className={exportButtonClass}>
+              Esporta dalla data
+            </button>
+          </form>
+        </div>
+        <p id="shopify-export-date-hint" className="mt-3 text-xs text-neutral-400">
+          Dalla mezzanotte del giorno scelto fino a ora, secondo il fuso orario italiano.
+        </p>
+      </section>
+
       <section className="mt-6 rounded-3xl border border-neutral-800 bg-neutral-900 p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
@@ -309,6 +354,12 @@ export default async function AdminUsersPage() {
                       <p className="mt-2 break-all text-sm text-neutral-400">
                         {profile.email || "Email assente"}
                       </p>
+                      <a
+                        href={`${exportUrl}?userId=${profile.id}`}
+                        className={`mt-3 ${exportButtonClass}`}
+                      >
+                        Esporta CSV<span className="sr-only"> di {displayName}</span>
+                      </a>
 
                       <dl className="mt-5 grid gap-4 text-sm md:grid-cols-4">
                         <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
